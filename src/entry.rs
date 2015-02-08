@@ -2,13 +2,13 @@ use realm_management_monitor::io::{stdout, Write as IoWrite};
 use realm_management_monitor::println;
 
 use crate::allocator;
-use crate::config::RMM_STACK_SIZE;
+use crate::config::{NUM_OF_CPU, RMM_STACK_SIZE};
 
 extern crate alloc;
 
 #[no_mangle]
 #[link_section = ".stack"]
-static mut RMM_STACK: [u8; RMM_STACK_SIZE] = [0; RMM_STACK_SIZE];
+static mut RMM_STACK: [u8; RMM_STACK_SIZE * NUM_OF_CPU] = [0; RMM_STACK_SIZE * NUM_OF_CPU];
 
 #[naked]
 #[link_section = ".head.text"]
@@ -17,16 +17,21 @@ unsafe extern "C" fn rmm_entry() {
     #![allow(unsupported_naked_functions)]
     llvm_asm! {
         "
-		ldr x0, =__RMM_STACK_END__
-		mov sp, x0
+        bl get_cpu_id
 
-		bl setup
+        ldr x1, =__RMM_STACK_END__
+        mov x2, $0
+        mul x0, x0, x2
+        sub x0, x1, x0
+        mov sp, x0
 
-		1:
-		bl main
-		b 1b
+        bl setup
+
+        1:
+        bl main
+        b 1b
         "
-        : : : : "volatile"
+        : : "i"(RMM_STACK_SIZE): : "volatile"
     }
 }
 

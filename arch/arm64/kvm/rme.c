@@ -73,6 +73,28 @@ static int rmi_check_version(void)
 	return 0;
 }
 
+static void realm_destroy_undelegate_range(struct realm *realm,
+					   unsigned long ipa,
+					   unsigned long addr,
+					   ssize_t size)
+{
+	unsigned long rd = virt_to_phys(realm->rd);
+	int ret;
+
+	while (size > 0) {
+		ret = rmi_data_destroy(rd, ipa);
+		WARN_ON(ret);
+		ret = rmi_granule_undelegate(addr);
+
+		if (ret)
+			get_page(phys_to_page(addr));
+
+		addr += PAGE_SIZE;
+		ipa += PAGE_SIZE;
+		size -= PAGE_SIZE;
+	}
+}
+
 static unsigned long create_realm_feat_reg0(struct kvm *kvm)
 {
 	unsigned long ia_bits = VTCR_EL2_IPA(kvm->arch.vtcr);
@@ -168,6 +190,123 @@ out_undelegate_tables:
 out:
 	free_page((unsigned long)rd);
 	return r;
+}
+
+static int realm_rtt_destroy(struct realm *realm, unsigned long addr,
+			     int level, phys_addr_t rtt_granule)
+{
+	addr = ALIGN_DOWN(addr, rme_rtt_level_mapsize(level - 1));
+	return rmi_rtt_destroy(rtt_granule, virt_to_phys(realm->rd), addr,
+			level);
+}
+
+static int realm_destroy_free_rtt(struct realm *realm, unsigned long addr,
+				  int level, phys_addr_t rtt_granule)
+{
+	if (realm_rtt_destroy(realm, addr, level, rtt_granule))
+		return -ENXIO;
+	if (!WARN_ON(rmi_granule_undelegate(rtt_granule)))
+		put_page(phys_to_page(rtt_granule));
+
+	return 0;
+}
+
+static int realm_rtt_create(struct realm *realm,
+			    unsigned long addr,
+			    int level,
+			    phys_addr_t phys)
+{
+	addr = ALIGN_DOWN(addr, rme_rtt_level_mapsize(level - 1));
+	return rmi_rtt_create(phys, virt_to_phys(realm->rd), addr, level);
+}
+
+static int realm_tear_down_rtt_range(struct realm *realm, int level,
+				     unsigned long start, unsigned long end)
+{
+	phys_addr_t rd = virt_to_phys(realm->rd);
+	ssize_t map_size = rme_rtt_level_mapsize(level);
+	unsigned long addr, next_addr;
+	bool failed = false;
+
+	for (addr = start; addr < end; addr = next_addr) {
+		phys_addr_t rtt_addr, tmp_rtt;
+		struct rtt_entry rtt;
+		unsigned long end_addr;
+
+		next_addr = ALIGN(addr + 1, map_size);
+
+		end_addr = min(next_addr, end);
+
+		if (rmi_rtt_read_entry(rd, ALIGN_DOWN(addr, map_size),
+				       level, &rtt)) {
+			failed = true;
+			continue;
+		}
+
+		rtt_addr = rmi_rtt_get_phys(&rtt);
+		WARN_ON(level != rtt.walk_level);
+
+		switch (rtt.state) {
+		case RMI_UNASSIGNED:
+		case RMI_DESTROYED:
+			break;
+		case RMI_TABLE:
+			if (realm_tear_down_rtt_range(realm, level + 1,
+						      addr, end_addr)) {
+				failed = true;
+				break;
+			}
+			if (IS_ALIGNED(addr, map_size) &&
+			    next_addr <= end &&
+			    realm_destroy_free_rtt(realm, addr, level + 1,
+						   rtt_addr))
+				failed = true;
+			break;
+		case RMI_ASSIGNED:
+			WARN_ON(!rtt_addr);
+			/*
+			 * If there is a block mapping, break it now, using the
+			 * spare_page. We are sure to have a valid delegated
+			 * page at spare_page before we enter here, otherwise
+			 * WARN once, which will be followed by further
+			 * warnings.
+			 */
+			tmp_rtt = realm->spare_page;
+			if (level == 2 &&
+			    !WARN_ON_ONCE(tmp_rtt == PHYS_ADDR_MAX) &&
+			    realm_rtt_create(realm, addr,
+					     RME_RTT_MAX_LEVEL, tmp_rtt)) {
+				WARN_ON(1);
+				failed = true;
+				break;
+			}
+			realm_destroy_undelegate_range(realm, addr,
+						       rtt_addr, map_size);
+			/*
+			 * Collapse the last level table and make the spare page
+			 * reusable again.
+			 */
+			if (level == 2 &&
+			    realm_rtt_destroy(realm, addr, RME_RTT_MAX_LEVEL,
+					      tmp_rtt))
+				failed = true;
+			break;
+		case RMI_VALID_NS:
+			WARN_ON(rmi_rtt_unmap_unprotected(rd, addr, level));
+			break;
+		default:
+			WARN_ON(1);
+			failed = true;
+			break;
+		}
+	}
+
+	return failed ? -EINVAL : 0;
+}
+
+void kvm_realm_destroy_rtts(struct realm *realm, u32 ia_bits, u32 start_level)
+{
+	realm_tear_down_rtt_range(realm, start_level, 0, (1UL << ia_bits));
 }
 
 /* Protects access to rme_vmid_bitmap */

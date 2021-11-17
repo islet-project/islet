@@ -67,6 +67,14 @@ static int rmi_check_version(void)
 	version_major = RMI_ABI_VERSION_GET_MAJOR(res.a0);
 	version_minor = RMI_ABI_VERSION_GET_MINOR(res.a0);
 
+#ifdef PROTOTYPE_RMI_ABI_MAJOR_VERSION
+	// Support the prototype
+	if (version_major == PROTOTYPE_RMI_ABI_MAJOR_VERSION) {
+		kvm_err("Using prototype RMM support (version %d.%d)\n",
+			version_major, version_minor);
+		return 0;
+	}
+#endif
 	if (version_major != RMI_ABI_MAJOR_VERSION) {
 		kvm_err("Unsupported RMI ABI (version %d.%d) we support %d\n",
 			version_major, version_minor,

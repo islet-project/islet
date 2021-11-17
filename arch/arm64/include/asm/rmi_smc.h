@@ -6,6 +6,13 @@
 #ifndef __ASM_RME_SMC_H
 #define __ASM_RME_SMC_H
 
+#ifdef CONFIG_RME_USE_PROTOTYPE_HACKS
+
+// Allow the prototype RMI version
+#define PROTOTYPE_RMI_ABI_MAJOR_VERSION  56
+
+#endif /* CONFIG_RME_USE_PROTOTYPE_HACKS */
+
 #include <linux/arm-smccc.h>
 
 #define SMC_RxI_CALL(func)				\

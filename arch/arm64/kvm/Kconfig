@@ -58,6 +58,14 @@ config NVHE_EL2_DEBUG
 
 	  If unsure, say N.
 
+config RME_USE_PROTOTYPE_HACKS
+	bool "Allow RMM prototype version numbers"
+	default y
+	help
+	  For compatibility with the the current RMM code allow versions
+	  numbers from a prototype implementation as well as the expected
+	  version number from the RMM specification.
+
 config PROTECTED_NVHE_STACKTRACE
 	bool "Protected KVM hypervisor stacktraces"
 	depends on NVHE_EL2_DEBUG

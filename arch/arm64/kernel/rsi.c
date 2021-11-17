@@ -41,6 +41,11 @@ static bool rsi_version_matches(void)
 		RSI_ABI_VERSION_GET_MAJOR(ver),
 		RSI_ABI_VERSION_GET_MINOR(ver));
 
+#ifdef CONFIG_RME_USE_PROTOTYPE_HACKS
+	if (ver == RSI_LEGACY_ABI_VERSION)
+		return true;
+#endif
+
 	return (ver >= RSI_ABI_VERSION &&
 		RSI_ABI_VERSION_GET_MAJOR(ver) == RSI_ABI_VERSION_MAJOR);
 }

@@ -29,6 +29,8 @@
 #define RSI_ABI_VERSION			((RSI_ABI_VERSION_MAJOR << 16) | \
 					 RSI_ABI_VERSION_MINOR)
 
+#define RSI_LEGACY_ABI_VERSION		0xc0000
+
 #define RSI_ABI_VERSION_GET_MAJOR(_version) ((_version) >> 16)
 #define RSI_ABI_VERSION_GET_MINOR(_version) ((_version) & 0xFFFF)
 

@@ -1,0 +1,12 @@
+[submodule "trusted-firmware-a"]
+	path = trusted-firmware-a
+	url = https://github.sec.samsung.net/SYSSEC/trusted-firmware-a.git
+[submodule "tf-a-tests"]
+	path = tf-a-tests
+	url = https://github.sec.samsung.net/SYSSEC/tf-a-tests.git
+[submodule "hafnium"]
+	path = hafnium
+	url = https://github.sec.samsung.net/SYSSEC/hafnium.git
+[submodule "assets-arm-cca"]
+	path = assets
+	url = https://github.sec.samsung.net/SYSSEC/assets-arm-cca.git

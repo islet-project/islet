@@ -9,4 +9,6 @@ source ${ROOT}/scripts/env.sh
 	git submodule update --init --recursive
 )
 
-sudo apt install -y -qq device-tree-compiler xterm
+sudo apt install -y -qq --no-install-recommends \
+	device-tree-compiler xterm \
+	libxml2 libxml2-dev

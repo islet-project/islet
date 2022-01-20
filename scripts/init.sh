@@ -8,3 +8,5 @@ source ${ROOT}/scripts/env.sh
 	cd  ${ROOT}
 	git submodule update --init --recursive
 )
+
+sudo apt install device-tree-compiler

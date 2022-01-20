@@ -1,0 +1,6 @@
+[build]
+target = "aarch64-unknown-none"
+target-dir = "out"
+rustflags = [
+  "-C", "link-args=-Tmemory.x",
+]

@@ -6,10 +6,6 @@
 	path = tf-a-tests
 	url = https://github.sec.samsung.net/SYSSEC/tf-a-tests.git
 	branch = main
-[submodule "hafnium"]
-	path = hafnium
-	url = https://github.sec.samsung.net/SYSSEC/hafnium.git
-	branch = main
 [submodule "assets-arm-cca"]
 	path = assets
 	url = https://github.sec.samsung.net/SYSSEC/assets-arm-cca.git

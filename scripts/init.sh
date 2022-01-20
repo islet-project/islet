@@ -9,4 +9,4 @@ source ${ROOT}/scripts/env.sh
 	git submodule update --init --recursive
 )
 
-sudo apt install device-tree-compiler
+sudo apt install -y -qq device-tree-compiler xterm

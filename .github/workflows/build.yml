@@ -1,0 +1,25 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: [ code-default ]
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+
+    - name: Run scripts/init.sh
+      run: ./scripts/init.sh
+
+    - name: Run scripts/build.sh
+      run: ./scripts/build.sh

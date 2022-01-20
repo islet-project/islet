@@ -11,4 +11,4 @@ source ${ROOT}/scripts/env.sh
 
 sudo apt install -y -qq --no-install-recommends \
 	device-tree-compiler xterm \
-	libxml2 libxml2-dev
+	libxml-libxml-perl

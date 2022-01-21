@@ -28,3 +28,10 @@ jobs:
 
     - name: Run scripts/build.sh
       run: ./scripts/build.sh
+
+    - name: Archive binaries
+      uses: actions/upload-artifact@v2
+      with:
+        name: binaries
+        path: |
+          out/*.bin  

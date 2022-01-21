@@ -26,10 +26,13 @@
 #![warn(rust_2018_idioms)]
 
 pub mod config;
+pub mod driver;
+pub mod io;
 pub mod panic;
 pub mod rmi;
 
 use crate::config::RMM_STACK_SIZE;
+use crate::io::{stdout, Write};
 
 #[no_mangle]
 #[link_section = ".stack"]
@@ -58,6 +61,12 @@ pub fn rmm_exit() {
 #[allow(dead_code)]
 #[no_mangle]
 fn main() -> ! {
+    /*
+        unsafe {
+            let _ = stdout().write_all("Hello World!\n".as_bytes());
+        }
+    */
+
     loop {
         rmm_exit();
     }

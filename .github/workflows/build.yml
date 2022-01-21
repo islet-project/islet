@@ -12,11 +12,16 @@ env:
 jobs:
   build:
     runs-on: [ code-default ]
+    container: art.sec.samsung.net/docker-remote/rust:latest
 
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: 'true'
+
+    - name: Install sudo
+      run: |
+        apt update && apt install sudo
 
     - name: Run scripts/init.sh
       run: ./scripts/init.sh

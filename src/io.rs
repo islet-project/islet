@@ -17,7 +17,8 @@
  */
 #[derive(Clone, Copy, Debug)]
 pub enum ErrorKind {
-    NotFound,
+    NotConnected,
+    AlreadyExists,
     Unsupported,
     Other,
 }
@@ -38,20 +39,31 @@ impl Error {
 
 pub type Result<T> = core::result::Result<T, Error>;
 
+pub trait Device {
+    fn initialize(&mut self) -> Result<()>;
+    fn initialized(&self) -> bool;
+}
+
 pub trait Write {
     fn write_all(&mut self, buf: &[u8]) -> Result<()>;
 }
 
+pub trait ConsoleWriter: Device + Write {}
+
 pub struct Stdout<'a> {
-    device: Option<&'a mut dyn Write>,
+    device: Option<&'a mut dyn ConsoleWriter>,
 }
 
 impl<'a> Stdout<'a> {
     pub const fn new() -> Self {
-        Stdout { device: None }
+        Self { device: None }
     }
-    pub fn attach(&mut self, device: &'a mut dyn Write) {
+    pub fn attach(&mut self, device: &'a mut dyn ConsoleWriter) -> Result<()> {
+        if !device.initialized() {
+            device.initialize()?;
+        }
         self.device.replace(device);
+        Ok(())
     }
 }
 
@@ -60,7 +72,7 @@ impl<'a> Write for Stdout<'a> {
         self.device
             .as_mut()
             .map(|dev| dev.write_all(buf))
-            .unwrap_or(Err(Error::new(ErrorKind::NotFound)))
+            .unwrap_or(Err(Error::new(ErrorKind::NotConnected)))
     }
 }
 

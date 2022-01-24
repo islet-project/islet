@@ -66,12 +66,20 @@ extern "C" {
     static __BSS_SIZE__: usize;
 }
 
+#[no_mangle]
+#[allow(unused)]
 unsafe fn clear_bss() {
     let bss = core::slice::from_raw_parts_mut(
         &__BSS_START__ as *const usize as *mut u64,
         &__BSS_SIZE__ as *const usize as usize / core::mem::size_of::<u64>(),
     );
     bss.fill(0);
+}
+
+unsafe fn init_console() {
+    let _ = stdout().attach(driver::uart::pl011::device());
+
+    let _ = stdout().write_all("RMM: initialized the console!\n".as_bytes());
 }
 
 pub fn rmm_exit() {
@@ -85,6 +93,8 @@ pub fn rmm_exit() {
 unsafe fn setup() {
     if COLD_BOOT {
         clear_bss();
+        init_console();
+
         COLD_BOOT = false;
     }
 }
@@ -92,7 +102,7 @@ unsafe fn setup() {
 #[no_mangle]
 #[allow(unused)]
 unsafe fn main() -> ! {
-    let _ = stdout().write_all("Hello World!\n".as_bytes());
+    let _ = stdout().write_all("RMM: booted on core!\n".as_bytes());
 
     loop {
         rmm_exit();

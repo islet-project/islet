@@ -19,5 +19,5 @@ sudo apt install -y -qq --no-install-recommends \
 	libxml-libxml-perl
 
 rustup toolchain install `cat ${ROOT}/rust-toolchain`
-rustup target add aarch64-unknown-none
+rustup target add aarch64-unknown-none-softfloat
 rustup component add rust-src

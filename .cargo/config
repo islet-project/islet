@@ -1,5 +1,5 @@
 [build]
-target = "aarch64-unknown-none"
+target = "aarch64-unknown-none-softfloat"
 target-dir = "out"
 rustflags = [
   "-C", "link-args=-Tmemory.x",

@@ -15,7 +15,7 @@ source ${ROOT}/scripts/env.sh
 )
 
 cargo build --release
-${CROSS_COMPILE}objcopy -O binary ${ROOT}/out/aarch64-unknown-none/release/rmm ${ROOT}/out/aarch64-unknown-none/release/rmm.bin;
+${CROSS_COMPILE}objcopy -O binary ${ROOT}/out/aarch64-unknown-none-softfloat/release/rmm ${ROOT}/out/aarch64-unknown-none-softfloat/release/rmm.bin;
 
 cp ${TRUSTED_FIRMWARE_A}/build/fvp/debug/bl1.bin out/.
 
@@ -28,7 +28,7 @@ ${FIPTOOL} create \
  --hw-config ${TRUSTED_FIRMWARE_A}/build/fvp/debug/fdts/fvp-base-gicv3-psci-1t.dtb \
  --tb-fw ${TRUSTED_FIRMWARE_A}/build/fvp/debug/bl2.bin \
  --soc-fw ${TRUSTED_FIRMWARE_A}/build/fvp/debug/bl31.bin \
- --rmm-fw ${ROOT}/out/aarch64-unknown-none/release/rmm.bin \
+ --rmm-fw ${ROOT}/out/aarch64-unknown-none-softfloat/release/rmm.bin \
  --nt-fw ${TF_A_TESTS}/build/fvp/debug/tftf.bin \
  ${ROOT}/out/fip.bin
 

@@ -13,18 +13,20 @@ SECTIONS
   . = ALIGN(8);
   *(.text*)
  } >RAM
- . = ALIGN(PAGE_SIZE_4K);
  .rodata : {
+  . = ALIGN(PAGE_SIZE_4K);
   *(.rodata*)
  } >RAM
- . = ALIGN(PAGE_SIZE_4K);
-  __RW_START__ = . ;
  .data : {
+  . = ALIGN(PAGE_SIZE_4K);
+   __RW_START__ = . ;
   *(.data*)
  } >RAM
  .bss (NOLOAD) : {
+ . = ALIGN(8);
   __BSS_START__ = .;
   *(.bss*)
+ . = ALIGN(8);
   __BSS_END__ = .;
  } >RAM
  __BSS_SIZE__ = SIZEOF(.bss);
@@ -32,14 +34,13 @@ SECTIONS
   __RMM_STACK_START__ = .;
   KEEP(*(.stack))
   __RMM_STACK_END__ = .;
-  KEEP(*(.stack*))
  } >RAM
  __RW_END__ = .;
- __RMM_END__ = .;
  /DISCARD/ : { *(.dynstr*) }
  /DISCARD/ : { *(.dynamic*) }
  /DISCARD/ : { *(.plt*) }
  /DISCARD/ : { *(.interp*) }
  /DISCARD/ : { *(.gnu*) }
  /DISCARD/ : { *(.note*) }
+ /DISCARD/ : { *(.comment*) }
 }

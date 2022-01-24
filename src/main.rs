@@ -52,6 +52,19 @@ unsafe extern "C" fn rmm_entry() -> ! {
     loop {}
 }
 
+extern "C" {
+    static __BSS_START__: usize;
+    static __BSS_SIZE__: usize;
+}
+
+pub unsafe fn clear_bss() {
+	let bss = core::slice::from_raw_parts_mut(
+		&__BSS_START__ as *const usize as *mut u64,
+		&__BSS_SIZE__  as *const usize as usize / core::mem::size_of::<u64>(),
+	);
+	bss.fill(0);
+}
+
 pub fn rmm_exit() {
     unsafe {
         rmi::smc(rmi::RMM_REQ_COMPLETE, 0);
@@ -61,11 +74,13 @@ pub fn rmm_exit() {
 #[allow(dead_code)]
 #[no_mangle]
 fn main() -> ! {
-    /*
-        unsafe {
-            let _ = stdout().write_all("Hello World!\n".as_bytes());
-        }
-    */
+	unsafe {
+		clear_bss();
+	}
+
+    unsafe {
+        let _ = stdout().write_all("Hello World!\n".as_bytes());
+    }
 
     loop {
         rmm_exit();

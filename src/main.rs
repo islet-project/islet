@@ -106,5 +106,6 @@ unsafe fn main() -> ! {
 
     loop {
         rmm_exit();
+        let _ = stdout().write_all("RMM: invoked!\n".as_bytes());
     }
 }

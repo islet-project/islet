@@ -35,6 +35,9 @@ use crate::config::RMM_STACK_SIZE;
 use crate::io::{stdout, Write};
 
 #[no_mangle]
+static mut COLD_BOOT: bool = true;
+
+#[no_mangle]
 #[link_section = ".stack"]
 static mut RMM_STACK: [u8; RMM_STACK_SIZE] = [0; RMM_STACK_SIZE];
 
@@ -45,10 +48,16 @@ unsafe extern "C" fn rmm_entry() -> ! {
         "
 		ldr x0, =__RMM_STACK_END__
 		mov sp, x0
-        bl main
+
+		bl setup
+
+		1:
+		bl main
+		b 1b
         "
         : : : : "volatile"
     }
+
     loop {}
 }
 
@@ -57,12 +66,12 @@ extern "C" {
     static __BSS_SIZE__: usize;
 }
 
-pub unsafe fn clear_bss() {
-	let bss = core::slice::from_raw_parts_mut(
-		&__BSS_START__ as *const usize as *mut u64,
-		&__BSS_SIZE__  as *const usize as usize / core::mem::size_of::<u64>(),
-	);
-	bss.fill(0);
+unsafe fn clear_bss() {
+    let bss = core::slice::from_raw_parts_mut(
+        &__BSS_START__ as *const usize as *mut u64,
+        &__BSS_SIZE__ as *const usize as usize / core::mem::size_of::<u64>(),
+    );
+    bss.fill(0);
 }
 
 pub fn rmm_exit() {
@@ -71,16 +80,19 @@ pub fn rmm_exit() {
     }
 }
 
-#[allow(dead_code)]
 #[no_mangle]
-fn main() -> ! {
-	unsafe {
-		clear_bss();
-	}
-
-    unsafe {
-        let _ = stdout().write_all("Hello World!\n".as_bytes());
+#[allow(unused)]
+unsafe fn setup() {
+    if COLD_BOOT {
+        clear_bss();
+        COLD_BOOT = false;
     }
+}
+
+#[no_mangle]
+#[allow(unused)]
+unsafe fn main() -> ! {
+    let _ = stdout().write_all("Hello World!\n".as_bytes());
 
     loop {
         rmm_exit();

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020 Samsung Electronics Co., Ltd. All Rights Reserved.
+ * Copyright (c) 2022 Samsung Electronics Co., Ltd. All Rights Reserved.
  *
  * PROPRIETARY/CONFIDENTIAL
  * This software is the confidential and proprietary information of

@@ -16,7 +16,7 @@
  * MODIFYING OR DISTRIBUTING THIS SOFTWARE OR ITS DERIVATIVES.
  */
 
-pub const RMM_REQ_COMPLETE: usize = 0xc400018f;
+pub const RMM_REQ_COMPLETE: usize = 0xc0000010;
 
 #[inline(always)]
 pub unsafe fn smc(x0: usize, x1: usize) {

@@ -1,5 +1,5 @@
 [package]
-name = "realm-magement-moniter"
+name = "realm-management-monitor"
 version = "0.0.1"
 authors = ["CCA Contributors"]
 edition = "2018"

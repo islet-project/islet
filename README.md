@@ -1,3 +1,5 @@
+![build badge](https://github.sec.samsung.net/SYSSEC/arm-cca/actions/workflows/build.yml/badge.svg?branch=main)
+
 # arm-cca
 
 # How to prepare build

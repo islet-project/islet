@@ -14,15 +14,16 @@ pub mod entry;
 pub mod panic;
 pub mod rmi;
 
-use realm_management_monitor::io::{stdout, Write};
+use realm_management_monitor::eprintln;
 
 #[no_mangle]
 #[allow(unused)]
 pub unsafe fn main() -> ! {
-    let _ = stdout().write_all("RMM: booted on core!\n".as_bytes());
+    //TODO Add lock - the below occurs race-condition
+    //println!("RMM: booted on core!");
 
     loop {
         rmi::rmm_exit();
-        let _ = stdout().write_all("RMM: invoked!\n".as_bytes());
+        eprintln!("RMM: no proper rmi handler!");
     }
 }

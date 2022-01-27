@@ -1,4 +1,5 @@
-use realm_management_monitor::io::{stdout, Write};
+use realm_management_monitor::io::stdout;
+use realm_management_monitor::println;
 
 use crate::alloc::init_heap;
 use crate::config::RMM_STACK_SIZE;
@@ -43,7 +44,7 @@ unsafe fn clear_bss() {
 unsafe fn init_console() {
     let _ = stdout().attach(crate::driver::uart::pl011::device());
 
-    let _ = stdout().write_all("RMM: initialized the console!\n".as_bytes());
+    println!("RMM: initialized the console!");
 }
 
 #[no_mangle]

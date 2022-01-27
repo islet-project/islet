@@ -1,39 +1,59 @@
 #[macro_export]
 macro_rules! print {
-    ($($arg:tt)*) => {{
-        extern crate alloc;
-        use core::fmt::Write;
-        use $crate::io::Write as IoWrite;
-        let buffer = alloc::format!($($arg)*);
-        let _ = unsafe {
-			$crate::io::stdout()
-		 }.write_all(buffer.as_bytes());
-    }};
+    ($($arg:tt)*) => {};
 }
 
 #[macro_export]
 macro_rules! println {
-    () => {$crate::print!("\n")};
-    ($fmt:expr) => {$crate::print!(concat!($fmt, "\n"))};
-    ($fmt:expr, $($arg:tt)*) => {$crate::print!(concat!($fmt, "\n"), $($arg)*)};
+    () => {};
+    ($fmt:expr) => {};
+    ($fmt:expr, $($arg:tt)*) => {};
 }
 
 #[macro_export]
 macro_rules! eprint {
-    ($($arg:tt)*) => {{
-        extern crate alloc;
-        use core::fmt::Write;
-        use $crate::io::Write as IoWrite;
-        let buffer = alloc::format!("\x1b[0;31m{}\x1b[0m", $($arg)*);
-        let _ = unsafe {
-			$crate::io::stdout()
-		 }.write_all(buffer.as_bytes());
-    }};
+    ($fmt:expr) => {};
+    ($fmt:expr, $($arg:tt)*) => {};
 }
 
 #[macro_export]
 macro_rules! eprintln {
-    () => {$crate::eprint!("\n")};
-    ($fmt:expr) => {$crate::eprint!(concat!($fmt, "\n"))};
-    ($fmt:expr, $($arg:tt)*) => {$crate::eprint!(concat!($fmt, "\n"), $($arg)*)};
+    () => {};
+    ($fmt:expr) => {};
+    ($fmt:expr, $($arg:tt)*) => {};
+}
+
+#[cfg(test)]
+mod test {
+	use crate::{println, eprintln};
+
+	#[test]
+	fn println_without_arg() {
+		println!();
+	}
+
+	#[test]
+	fn println_without_format() {
+		println!("hello");
+	}
+
+	#[test]
+	fn println_with_format() {
+		println!("number {}", 1234);
+	}
+
+	#[test]
+	fn eprintln_without_arg() {
+		eprintln!();
+	}
+
+	#[test]
+	fn eprintln_without_format() {
+		eprintln!("hello");
+	}
+
+	#[test]
+	fn eprintln_with_format() {
+		eprintln!("number {}", 4321);
+	}
 }

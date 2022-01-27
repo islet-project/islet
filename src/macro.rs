@@ -55,35 +55,58 @@ macro_rules! eprintln {
 
 #[cfg(test)]
 mod test {
+    use crate::io::stdout;
+    use crate::io::test::MockDevice;
     use crate::{eprintln, println};
+
+    static mut MOCK: MockDevice = MockDevice::new();
+
+    fn setup() {
+        unsafe {
+            stdout().attach(&mut MOCK).ok().unwrap();
+            MOCK.clear();
+        }
+    }
 
     #[test]
     fn println_without_arg() {
+        setup();
         println!();
+        assert_eq!(unsafe { MOCK.output() }, "\n");
     }
 
     #[test]
     fn println_without_format() {
+        setup();
         println!("hello");
+        assert_eq!(unsafe { MOCK.output() }, "hello\n");
     }
 
     #[test]
     fn println_with_format() {
+        setup();
         println!("number {}", 1234);
+        assert_eq!(unsafe { MOCK.output() }, "number 1234\n");
     }
 
     #[test]
     fn eprintln_without_arg() {
+        setup();
         eprintln!();
+        assert_eq!(unsafe { MOCK.output() }, "\x1b[0;31m\n\x1b[0m");
     }
 
     #[test]
     fn eprintln_without_format() {
+        setup();
         eprintln!("hello");
+        assert_eq!(unsafe { MOCK.output() }, "\x1b[0;31mhello\n\x1b[0m");
     }
 
     #[test]
     fn eprintln_with_format() {
+        setup();
         eprintln!("number {}", 4321);
+        assert_eq!(unsafe { MOCK.output() }, "\x1b[0;31mnumber 4321\n\x1b[0m");
     }
 }

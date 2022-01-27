@@ -64,3 +64,79 @@ pub unsafe fn stdout() -> &'static mut Stdout<'static> {
     static mut STDOUT: Stdout<'_> = Stdout::new();
     &mut STDOUT
 }
+
+#[cfg(test)]
+pub mod test {
+    extern crate alloc;
+    use crate::io::{ConsoleWriter, Device, Result, Stdout, Write};
+    use alloc::string::String;
+    use alloc::vec::Vec;
+    use core::cell::RefCell;
+
+    pub struct MockDevice {
+        buffer: RefCell<Vec<u8>>,
+        ready: bool,
+    }
+
+    impl MockDevice {
+        pub const fn new() -> Self {
+            MockDevice {
+                buffer: RefCell::new(Vec::new()),
+                ready: false,
+            }
+        }
+
+        pub fn output(&self) -> String {
+            String::from_utf8(self.buffer.borrow().to_vec()).unwrap()
+        }
+
+        pub fn clear(&mut self) {
+            self.buffer.borrow_mut().clear()
+        }
+    }
+
+    impl Device for MockDevice {
+        fn initialize(&mut self) -> Result<()> {
+            self.ready = true;
+            Ok(())
+        }
+
+        fn initialized(&self) -> bool {
+            self.ready
+        }
+    }
+
+    impl Write for MockDevice {
+        fn write_all(&mut self, buf: &[u8]) -> Result<()> {
+            self.buffer.borrow_mut().extend_from_slice(buf);
+            Ok(())
+        }
+    }
+
+    impl ConsoleWriter for MockDevice {}
+
+    #[test]
+    fn attach_and_ready() {
+        let mut mock = MockDevice::new();
+        let mut stdout = Stdout::new();
+
+        assert!(!mock.initialized());
+
+        stdout.attach(&mut mock).ok().unwrap();
+
+        assert!(mock.initialized());
+    }
+
+    #[test]
+    fn write() {
+        let mut mock = MockDevice::new();
+        let mut stdout = Stdout::new();
+
+        stdout.attach(&mut mock).ok().unwrap();
+
+        stdout.write_all("Hello ".as_bytes()).ok().unwrap();
+        stdout.write_all("World!".as_bytes()).ok().unwrap();
+
+        assert_eq!(mock.output(), "Hello World!");
+    }
+}

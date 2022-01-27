@@ -9,6 +9,8 @@ name = "rmm"
 path = "src/main.rs"
 
 [dependencies]
+linked_list_allocator = "0.9.1"
+lock_api = "=0.4.3"
 
 [build-dependencies]
 cc = "1.0"

@@ -7,6 +7,7 @@
 #![feature(alloc_error_handler)]
 #![warn(rust_2018_idioms)]
 
+pub mod alloc;
 pub mod config;
 pub mod driver;
 pub mod entry;

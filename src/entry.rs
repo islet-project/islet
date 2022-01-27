@@ -1,5 +1,6 @@
 use realm_management_monitor::io::{stdout, Write};
 
+use crate::alloc::init_heap;
 use crate::config::RMM_STACK_SIZE;
 
 #[no_mangle]
@@ -52,6 +53,8 @@ unsafe fn setup() {
 
     if (&COLD_BOOT as *const bool).read_volatile() {
         clear_bss();
+        init_heap();
+
         init_console();
 
         (&mut COLD_BOOT as *mut bool).write_volatile(false);

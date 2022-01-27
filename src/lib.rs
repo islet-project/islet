@@ -5,3 +5,4 @@
 #![warn(rust_2018_idioms)]
 
 pub mod io;
+pub mod r#macro;

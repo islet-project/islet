@@ -8,6 +8,13 @@ edition = "2018"
 name = "rmm"
 path = "src/main.rs"
 
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+lto = true
+panic = "abort"
+
 [dependencies]
 linked_list_allocator = "0.9.1"
 lock_api = "=0.4.3"

@@ -1,4 +1,6 @@
-![build badge](https://github.sec.samsung.net/SYSSEC/arm-cca/actions/workflows/build.yml/badge.svg?branch=main)
+![Build](https://github.sec.samsung.net/SYSSEC/arm-cca/actions/workflows/build.yml/badge.svg?branch=main)
+![License](https://img.shields.io/badge/license-Samsung%20Inner%20Source-informational.svg)
+![Test](https://art.sec.samsung.net/artifactory/rs8-dsca-da_generic/status/arm-cca/test.png)
 
 # arm-cca
 This repository contains code for confidential computing on the ARM CCA architecture.

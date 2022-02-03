@@ -3,7 +3,7 @@ use linked_list_allocator::LockedHeap;
 
 use crate::config::RMM_HEAP_SIZE;
 
-pub unsafe fn init_heap() {
+pub unsafe fn init() {
     static mut HEAP: [MaybeUninit<u8>; RMM_HEAP_SIZE] = [MaybeUninit::uninit(); RMM_HEAP_SIZE];
 
     #[global_allocator]

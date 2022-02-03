@@ -7,14 +7,17 @@
 #![feature(alloc_error_handler)]
 #![warn(rust_2018_idioms)]
 
-pub mod alloc;
+pub mod allocator;
 pub mod config;
 pub mod driver;
 pub mod entry;
 pub mod panic;
 pub mod rmi;
 
+extern crate alloc;
+
 use realm_management_monitor::eprintln;
+use realm_management_monitor::io::Write as IoWrite;
 
 #[no_mangle]
 #[allow(unused)]

@@ -1,11 +1,6 @@
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => {
-		#[allow(unused_extern_crates)]
-        extern crate alloc;
-		#[allow(unused_imports)]
-        use core::fmt::Write;
-        use $crate::io::Write as IoWrite;
         let buffer = alloc::format!($($arg)*);
         let _ = unsafe {
 			$crate::io::stdout()
@@ -23,11 +18,6 @@ macro_rules! println {
 #[macro_export]
 macro_rules! eprint {
     ($fmt:expr) => {
-		#[allow(unused_extern_crates)]
-        extern crate alloc;
-		#[allow(unused_imports)]
-        use core::fmt::Write;
-        use $crate::io::Write as IoWrite;
         let buffer = concat!("\x1b[0;31m", $fmt, "\x1b[0m");
         let _ = unsafe {
 			$crate::io::stdout()
@@ -35,10 +25,6 @@ macro_rules! eprint {
 
 	};
     ($fmt:expr, $($arg:tt)*) => {{
-        extern crate alloc;
-		#[allow(unused_imports)]
-        use core::fmt::Write;
-        use $crate::io::Write as IoWrite;
         let buffer = alloc::format!(concat!("\x1b[0;31m", $fmt, "\x1b[0m"), $($arg)*);
         let _ = unsafe {
 			$crate::io::stdout()
@@ -55,9 +41,11 @@ macro_rules! eprintln {
 
 #[cfg(test)]
 mod test {
-    use crate::io::stdout;
     use crate::io::test::MockDevice;
+    use crate::io::{stdout, Write as IoWrite};
     use crate::{eprintln, println};
+
+    extern crate alloc;
 
     static mut MOCK: MockDevice = MockDevice::new();
 

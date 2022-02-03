@@ -1,8 +1,10 @@
-use realm_management_monitor::io::stdout;
+use realm_management_monitor::io::{stdout, Write as IoWrite};
 use realm_management_monitor::println;
 
-use crate::alloc::init_heap;
+use crate::allocator;
 use crate::config::RMM_STACK_SIZE;
+
+extern crate alloc;
 
 #[no_mangle]
 #[link_section = ".stack"]
@@ -54,7 +56,7 @@ unsafe fn setup() {
 
     if (&COLD_BOOT as *const bool).read_volatile() {
         clear_bss();
-        init_heap();
+        allocator::init();
 
         init_console();
 

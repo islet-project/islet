@@ -26,9 +26,6 @@ jobs:
     - name: Run scripts/init.sh
       run: ./scripts/init.sh
 
-    - name: Run scripts/test.sh
-      run: ./scripts/test.sh
-
     - name: Run scripts/build.sh
       run: ./scripts/build.sh
 
@@ -37,4 +34,68 @@ jobs:
       with:
         name: binaries
         path: |
-          out/*.bin  
+          out/*.bin
+
+  test:
+    runs-on: [ code-default ]
+    container: art.sec.samsung.net/docker-remote/rust:latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+
+    - name: Install sudo
+      run: |
+        apt update && apt install sudo
+
+    - name: Run scripts/init.sh
+      run: ./scripts/init.sh
+
+    - name: Run scripts/test.sh --junit
+      run: ./scripts/test.sh --junit
+
+    - name: Publish unit test results
+      uses: code-actions/EnricoMi-publish-unit-test-result-action@v1
+      if: always()
+      with:
+        files: out/test.xml
+
+    - name: Archive junit
+      uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: test results
+        path: |
+          out/test.xml
+
+    - name: Archive badges
+      uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: badge
+        path: |
+          out/*.svg
+
+  badge:
+    needs: test
+    if: always() && github.event_name == 'push' 
+    runs-on: [ code-default ]
+
+    steps:
+    - name: Install inkscape
+      run: |
+        apt install -y -qq --no-install-recommends inkscape
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: badge
+
+    - name: Upload badge to artifactories
+      env:
+        ART_KEY: ${{ secrets.ART_KEY }}
+      run: |
+        ls -lah .
+        inkscape -e test.png test.svg
+        curl -H "X-JFrog-Art-Api:${ART_KEY}" -T test.png https://art.sec.samsung.net/artifactory/rs8-dsca-da_generic/status/arm-cca/test.png
+

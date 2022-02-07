@@ -148,6 +148,7 @@ impl Write for Device {
 }
 
 impl ConsoleWriter for Device {}
+unsafe impl Send for Device {}
 
 //TODO Add lock and remove unsafe
 pub unsafe fn device() -> &'static mut Device {

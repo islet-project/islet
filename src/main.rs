@@ -16,14 +16,13 @@ pub mod rmi;
 
 extern crate alloc;
 
-use realm_management_monitor::eprintln;
 use realm_management_monitor::io::Write as IoWrite;
+use realm_management_monitor::{eprintln, println};
 
 #[no_mangle]
 #[allow(unused)]
 pub unsafe fn main() -> ! {
-    //TODO Add lock - the below occurs race-condition
-    //println!("RMM: booted on core!");
+    println!("RMM: booted on core!");
 
     loop {
         rmi::rmm_exit();

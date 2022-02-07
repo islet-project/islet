@@ -17,6 +17,7 @@ panic = "abort"
 
 [dependencies]
 linked_list_allocator = "0.9.1"
+spinning_top = "0.2.4"
 lock_api = "=0.4.3"
 
 [build-dependencies]

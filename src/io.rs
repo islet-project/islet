@@ -1,3 +1,5 @@
+use spinning_top::{Spinlock, SpinlockGuard};
+
 #[derive(Clone, Copy, Debug)]
 pub enum ErrorKind {
     NotConnected,
@@ -31,7 +33,7 @@ pub trait Write {
     fn write_all(&mut self, buf: &[u8]) -> Result<()>;
 }
 
-pub trait ConsoleWriter: Device + Write {}
+pub trait ConsoleWriter: Device + Write + Send {}
 
 pub struct Stdout<'a> {
     device: Option<&'a mut dyn ConsoleWriter>,
@@ -59,10 +61,9 @@ impl<'a> Write for Stdout<'a> {
     }
 }
 
-//TODO Add lock and remove unsafe
-pub unsafe fn stdout() -> &'static mut Stdout<'static> {
-    static mut STDOUT: Stdout<'_> = Stdout::new();
-    &mut STDOUT
+pub fn stdout() -> SpinlockGuard<'static, Stdout<'static>> {
+    static STDOUT: Spinlock<Stdout<'_>> = Spinlock::new(Stdout::new());
+    STDOUT.lock()
 }
 
 #[cfg(test)]

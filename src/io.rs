@@ -1,3 +1,6 @@
+extern crate alloc;
+
+use alloc::boxed::Box;
 use spinning_top::{Spinlock, SpinlockGuard};
 
 #[derive(Clone, Copy, Debug)]
@@ -35,15 +38,15 @@ pub trait Write {
 
 pub trait ConsoleWriter: Device + Write + Send {}
 
-pub struct Stdout<'a> {
-    device: Option<&'a mut dyn ConsoleWriter>,
+pub struct Stdout {
+    device: Option<Box<dyn ConsoleWriter>>,
 }
 
-impl<'a> Stdout<'a> {
+impl Stdout {
     pub const fn new() -> Self {
         Self { device: None }
     }
-    pub fn attach(&mut self, device: &'a mut dyn ConsoleWriter) -> Result<()> {
+    pub fn attach(&mut self, mut device: Box<dyn ConsoleWriter>) -> Result<()> {
         if !device.initialized() {
             device.initialize()?;
         }
@@ -52,7 +55,7 @@ impl<'a> Stdout<'a> {
     }
 }
 
-impl<'a> Write for Stdout<'a> {
+impl Write for Stdout {
     fn write_all(&mut self, buf: &[u8]) -> Result<()> {
         self.device
             .as_mut()
@@ -61,8 +64,8 @@ impl<'a> Write for Stdout<'a> {
     }
 }
 
-pub fn stdout() -> SpinlockGuard<'static, Stdout<'static>> {
-    static STDOUT: Spinlock<Stdout<'_>> = Spinlock::new(Stdout::new());
+pub fn stdout() -> SpinlockGuard<'static, Stdout> {
+    static STDOUT: Spinlock<Stdout> = Spinlock::new(Stdout::new());
     STDOUT.lock()
 }
 
@@ -70,6 +73,7 @@ pub fn stdout() -> SpinlockGuard<'static, Stdout<'static>> {
 pub mod test {
     extern crate alloc;
     use crate::io::{ConsoleWriter, Device, Result, Stdout, Write};
+    use alloc::boxed::Box;
     use alloc::string::String;
     use alloc::vec::Vec;
     use core::cell::RefCell;
@@ -118,26 +122,27 @@ pub mod test {
 
     #[test]
     fn attach_and_ready() {
-        let mut mock = MockDevice::new();
+        let mock = Box::new(MockDevice::new());
+        let mock_ptr = mock.as_ref() as *const MockDevice;
         let mut stdout = Stdout::new();
 
         assert!(!mock.initialized());
 
-        stdout.attach(&mut mock).ok().unwrap();
+        stdout.attach(mock).ok().unwrap();
 
-        assert!(mock.initialized());
+        assert!(unsafe { (*mock_ptr).initialized() });
     }
 
     #[test]
     fn write() {
-        let mut mock = MockDevice::new();
+        let mock = Box::new(MockDevice::new());
+        let mock_ptr = mock.as_ref() as *const MockDevice;
         let mut stdout = Stdout::new();
 
-        stdout.attach(&mut mock).ok().unwrap();
+        stdout.attach(mock).ok().unwrap();
 
         stdout.write_all("Hello ".as_bytes()).ok().unwrap();
         stdout.write_all("World!".as_bytes()).ok().unwrap();
-
-        assert_eq!(mock.output(), "Hello World!");
+        assert_eq!(unsafe { (*mock_ptr).output() }, "Hello World!");
     }
 }

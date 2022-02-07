@@ -38,57 +38,71 @@ mod test {
     use crate::io::test::MockDevice;
     use crate::io::{stdout, Write as IoWrite};
     use crate::{eprintln, println};
+    use alloc::boxed::Box;
 
     extern crate alloc;
 
-    static mut MOCK: MockDevice = MockDevice::new();
-
-    fn setup() {
-        unsafe {
-            stdout().attach(&mut MOCK).ok().unwrap();
-            MOCK.clear();
-        }
-    }
-
     #[test]
     fn println_without_arg() {
-        setup();
+        let mock = Box::new(MockDevice::new());
+        let mock_ptr = mock.as_ref() as *const MockDevice;
+        stdout().attach(mock).ok().unwrap();
+
         println!();
-        assert_eq!(unsafe { MOCK.output() }, "\n");
+
+        assert_eq!(unsafe { (*mock_ptr).output() }, "\n");
     }
 
     #[test]
     fn println_without_format() {
-        setup();
+        let mock = Box::new(MockDevice::new());
+        let mock_ptr = mock.as_ref() as *const MockDevice;
+        stdout().attach(mock).ok().unwrap();
+
         println!("hello");
-        assert_eq!(unsafe { MOCK.output() }, "hello\n");
+        assert_eq!(unsafe { (*mock_ptr).output() }, "hello\n");
     }
 
     #[test]
     fn println_with_format() {
-        setup();
+        let mock = Box::new(MockDevice::new());
+        let mock_ptr = mock.as_ref() as *const MockDevice;
+        stdout().attach(mock).ok().unwrap();
+
         println!("number {}", 1234);
-        assert_eq!(unsafe { MOCK.output() }, "number 1234\n");
+        assert_eq!(unsafe { (*mock_ptr).output() }, "number 1234\n");
     }
 
     #[test]
     fn eprintln_without_arg() {
-        setup();
+        let mock = Box::new(MockDevice::new());
+        let mock_ptr = mock.as_ref() as *const MockDevice;
+        stdout().attach(mock).ok().unwrap();
+
         eprintln!();
-        assert_eq!(unsafe { MOCK.output() }, "\x1b[0;31m\n\x1b[0m");
+        assert_eq!(unsafe { (*mock_ptr).output() }, "\x1b[0;31m\n\x1b[0m");
     }
 
     #[test]
     fn eprintln_without_format() {
-        setup();
+        let mock = Box::new(MockDevice::new());
+        let mock_ptr = mock.as_ref() as *const MockDevice;
+        stdout().attach(mock).ok().unwrap();
+
         eprintln!("hello");
-        assert_eq!(unsafe { MOCK.output() }, "\x1b[0;31mhello\n\x1b[0m");
+        assert_eq!(unsafe { (*mock_ptr).output() }, "\x1b[0;31mhello\n\x1b[0m");
     }
 
     #[test]
     fn eprintln_with_format() {
-        setup();
+        let mock = Box::new(MockDevice::new());
+        let mock_ptr = mock.as_ref() as *const MockDevice;
+        stdout().attach(mock).ok().unwrap();
+
         eprintln!("number {}", 4321);
-        assert_eq!(unsafe { MOCK.output() }, "\x1b[0;31mnumber 4321\n\x1b[0m");
+        assert_eq!(
+            unsafe { (*mock_ptr).output() },
+            "\x1b[0;31mnumber 4321\n\x1b[0m"
+        );
     }
 }

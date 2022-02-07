@@ -1,3 +1,8 @@
+extern crate alloc;
+
+use alloc::boxed::Box;
+use spinning_top::Spinlock;
+
 use realm_management_monitor::io::{self, ConsoleWriter, Error, ErrorKind, Result, Write};
 
 const V2M_OFFSET: usize = 0;
@@ -66,12 +71,12 @@ enum UARTLCR_H {
 
 const LINE_CONTROL: u32 = UARTLCR_H::FEN as u32 | UARTLCR_H::WLEN_8 as u32;
 
-pub struct Device {
+struct DeviceInner {
     register: *mut u32,
     ready: bool,
 }
 
-impl Device {
+impl DeviceInner {
     pub const fn new() -> Self {
         Self {
             register: BASE as *mut u32,
@@ -92,7 +97,7 @@ impl Device {
     }
 }
 
-impl io::Device for Device {
+impl io::Device for DeviceInner {
     fn initialized(&self) -> bool {
         self.ready
     }
@@ -134,7 +139,7 @@ impl io::Device for Device {
     }
 }
 
-impl Write for Device {
+impl Write for DeviceInner {
     fn write_all(&mut self, buf: &[u8]) -> Result<()> {
         for byte in buf {
             //Prepand '\r' to '\n'
@@ -147,11 +152,36 @@ impl Write for Device {
     }
 }
 
-impl ConsoleWriter for Device {}
-unsafe impl Send for Device {}
+unsafe impl Send for DeviceInner {}
 
-//TODO Add lock and remove unsafe
-pub unsafe fn device() -> &'static mut Device {
-    static mut DEVICE: Device = Device::new();
-    &mut DEVICE
+static DEVICE_INNER: Spinlock<DeviceInner> = Spinlock::new(DeviceInner::new());
+
+pub struct Device {}
+
+impl Device {
+    pub const fn new() -> Self {
+        Self {}
+    }
+}
+
+impl io::Device for Device {
+    fn initialized(&self) -> bool {
+        DEVICE_INNER.lock().initialized()
+    }
+
+    fn initialize(&mut self) -> Result<()> {
+        DEVICE_INNER.lock().initialize()
+    }
+}
+
+impl Write for Device {
+    fn write_all(&mut self, buf: &[u8]) -> Result<()> {
+        DEVICE_INNER.lock().write_all(buf)
+    }
+}
+
+impl ConsoleWriter for Device {}
+
+pub fn device() -> Box<Device> {
+    Box::new(Device::new())
 }

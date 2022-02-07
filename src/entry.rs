@@ -43,7 +43,7 @@ unsafe fn clear_bss() {
     bss.fill(0);
 }
 
-unsafe fn init_console() {
+fn init_console() {
     let _ = stdout().attach(crate::driver::uart::pl011::device());
 
     println!("RMM: initialized the console!");

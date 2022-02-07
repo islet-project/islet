@@ -30,8 +30,33 @@ function fn_get_junit_result() {
 	exit ${FAILED}
 }
 
+function fn_make_coverage_badge() {
+	if [ "${1}" -lt "60" ]; then
+		RESULT="orange"
+	elif [ "${1}" -lt "80" ]; then
+		RESULT="yellow"
+	else
+		RESULT="brightgreen"
+	fi
+
+	curl -s -o out/coverage.svg "https://img.shields.io/badge/coverage-${1}-${RESULT}.svg"
+}
+
 function fn_measure_coverage() {
-	echo "Not implemented yet"
+	cargo install cargo-tarpaulin --version 0.18.5
+
+	cd ${ROOT}
+	cargo tarpaulin -v --ignore-tests --out Lcov --lib --output-dir out \
+		--target x86_64-unknown-linux-gnu \
+		--exclude-files src/rmi.rs \
+		-- --test-threads=1
+
+	genhtml --output-directory out/coverage --show-details --highlight \
+		--no-function-coverage --ignore-errors source --legend out/lcov.info
+
+	COVERAGE=`grep headerCovTableEntryLo out/coverage/index.html | cut -d ">" -f2 | cut -d "%" -f1 | cut -d "." -f1`
+
+	fn_make_coverage_badge $COVERAGE
 }
 
 function fn_usage() {

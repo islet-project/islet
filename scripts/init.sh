@@ -16,7 +16,8 @@ source ${ROOT}/scripts/env.sh
 
 sudo apt install -y -qq --no-install-recommends \
 	device-tree-compiler xterm \
-	libxml-libxml-perl jq
+	libxml-libxml-perl \
+	jq lcov
 
 rustup toolchain install `cat ${ROOT}/rust-toolchain`
 rustup target add aarch64-unknown-none-softfloat

@@ -38,7 +38,9 @@ jobs:
 
   test:
     runs-on: [ code-default ]
-    container: art.sec.samsung.net/docker-remote/rust:latest
+    container:
+      image: art.sec.samsung.net/docker-remote/rust:latest
+      options: --security-opt seccomp=unconfined
 
     steps:
     - uses: actions/checkout@v2
@@ -60,6 +62,10 @@ jobs:
       if: always()
       with:
         files: out/test.xml
+
+    - name: Run scripts/test.sh --coverage
+      if: always()
+      run: ./scripts/test.sh --coverage
 
     - name: Archive junit
       uses: actions/upload-artifact@v2
@@ -98,4 +104,6 @@ jobs:
         ls -lah .
         inkscape -e test.png test.svg
         curl -H "X-JFrog-Art-Api:${ART_KEY}" -T test.png https://art.sec.samsung.net/artifactory/rs8-dsca-da_generic/status/arm-cca/test.png
+        inkscape -e coverage.png coverage.svg
+        curl -H "X-JFrog-Art-Api:${ART_KEY}" -T coverage.png https://art.sec.samsung.net/artifactory/rs8-dsca-da_generic/status/arm-cca/coverage.png
 

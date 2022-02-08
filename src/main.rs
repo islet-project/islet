@@ -5,6 +5,7 @@
 #![feature(const_mut_refs)]
 #![feature(llvm_asm)]
 #![feature(alloc_error_handler)]
+#![feature(naked_functions)]
 #![warn(rust_2018_idioms)]
 
 pub mod allocator;
@@ -22,7 +23,7 @@ use realm_management_monitor::{eprintln, println};
 #[no_mangle]
 #[allow(unused)]
 pub unsafe fn main() -> ! {
-    println!("RMM: booted on core!");
+    println!("RMM: booted on core {:?}!", cpu::id());
 
     loop {
         rmi::rmm_exit();

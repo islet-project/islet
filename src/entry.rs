@@ -10,9 +10,11 @@ extern crate alloc;
 #[link_section = ".stack"]
 static mut RMM_STACK: [u8; RMM_STACK_SIZE] = [0; RMM_STACK_SIZE];
 
+#[naked]
 #[link_section = ".head.text"]
 #[no_mangle]
-unsafe extern "C" fn rmm_entry() -> ! {
+unsafe extern "C" fn rmm_entry() {
+    #![allow(unsupported_naked_functions)]
     llvm_asm! {
         "
 		ldr x0, =__RMM_STACK_END__
@@ -26,8 +28,6 @@ unsafe extern "C" fn rmm_entry() -> ! {
         "
         : : : : "volatile"
     }
-
-    loop {}
 }
 
 extern "C" {

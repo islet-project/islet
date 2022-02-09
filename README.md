@@ -31,6 +31,14 @@ This repository contains code for confidential computing on the ARM CCA architec
 ./scripts/test.sh --coverage
 ```
 
+## How to connect T32
+```bash
+./scripts/run.sh --cadi-server
+```
+
+Then, execute the t32 application (e.g., ./t32marm-qt)
+and run the script ./debug/t32.cmm via "File -> Run Script".
+
 ## List of Maintainers
 - Beomheyn Kim (beomheyn.kim@samsung.com)
 - Bokdeuk Jeong (bd.jeong@samsung.com)

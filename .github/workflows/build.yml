@@ -54,8 +54,8 @@ jobs:
     - name: Run scripts/init.sh
       run: ./scripts/init.sh
 
-    - name: Run scripts/test.sh --junit
-      run: ./scripts/test.sh --junit
+    - name: Run scripts/test.sh --unit-test
+      run: ./scripts/test.sh --unit-test
 
     - name: Publish unit test results
       uses: code-actions/EnricoMi-publish-unit-test-result-action@v1

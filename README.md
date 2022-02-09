@@ -21,6 +21,16 @@ This repository contains code for confidential computing on the ARM CCA architec
 ./scripts/run.sh
 ```
 
+## How to do unit-tests
+```bash
+./scripts/test.sh --unit-test
+```
+
+## How to measure line coverage of unit-tests
+```bash
+./scripts/test.sh --coverage
+```
+
 ## List of Maintainers
 - Beomheyn Kim (beomheyn.kim@samsung.com)
 - Bokdeuk Jeong (bd.jeong@samsung.com)

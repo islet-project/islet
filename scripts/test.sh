@@ -12,7 +12,7 @@ function fn_make_test_badge() {
 	curl -s -o out/test.svg "https://img.shields.io/badge/tests-${1}%20passed,%20${2}%20failed-${RESULT}.svg"
 }
 
-function fn_get_junit_result() {
+function fn_unit_test {
 	cargo install cargo2junit
 
 	cd ${ROOT}
@@ -70,19 +70,15 @@ options:
 EOF
 }
 
-function fn_test() {
-	cd ${ROOT}
-	cargo test --lib --target x86_64-unknown-linux-gnu -- --test-threads=1
-}
 
 if [ $# -lt 1 ]; then
-	fn_test
+	fn_usage
 fi
 
 while [ $# -gt 0 ]; do
 
 	case "$1" in
-		--junit) fn_get_junit_result
+		--unit-test) fn_unit_test
 			;;
 		--coverage) fn_measure_coverage
 			;;

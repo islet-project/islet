@@ -10,7 +10,7 @@ SECTIONS
  . = (((0x80000000) + (0x80000000) - ((0x0) + (0x00300000) + (0x02000000) + (0x00100000))));
  .text : {
   KEEP(*(.head.text))
-  . = ALIGN(8);
+  . = ALIGN(16);
   *(.text*)
  } >RAM
  .rodata : {
@@ -23,10 +23,10 @@ SECTIONS
   *(.data*)
  } >RAM
  .bss (NOLOAD) : {
- . = ALIGN(8);
+ . = ALIGN(16);
   __BSS_START__ = .;
   *(.bss*)
- . = ALIGN(8);
+ . = ALIGN(16);
   __BSS_END__ = .;
  } >RAM
  __BSS_SIZE__ = SIZEOF(.bss);

@@ -10,6 +10,7 @@
 
 pub mod allocator;
 pub mod config;
+pub mod cpu;
 pub mod driver;
 pub mod entry;
 pub mod panic;

@@ -1,0 +1,12 @@
+[book]
+authors = ["CCA Contributors"]
+language = "en"
+multilingual = false
+src = "."
+title = "ARM CCA Documentation"
+
+[build]
+build-dir = "../out/book"
+
+[preprocessor.plantuml]
+plantuml-cmd = "java -jar ../assets/plantuml/plantuml.jar"

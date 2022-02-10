@@ -39,6 +39,10 @@ This repository contains code for confidential computing on the ARM CCA architec
 Then, execute the t32 application (e.g., ./t32marm-qt)
 and run the script ./debug/t32.cmm via "File -> Run Script".
 
+## See also
+[Detailed Description](https://pages.github.sec.samsung.net/SYSSEC/arm-cca/)
+
+
 ## List of Maintainers
 - Beomheyn Kim (beomheyn.kim@samsung.com)
 - Bokdeuk Jeong (bd.jeong@samsung.com)

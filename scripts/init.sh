@@ -17,7 +17,8 @@ source ${ROOT}/scripts/env.sh
 sudo apt install -y -qq --no-install-recommends \
 	device-tree-compiler xterm \
 	libxml-libxml-perl \
-	jq lcov
+	jq lcov graphviz \
+	openjdk-11-jre
 
 rustup toolchain install `cat ${ROOT}/rust-toolchain`
 rustup target add aarch64-unknown-none-softfloat

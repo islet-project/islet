@@ -54,7 +54,7 @@ function fn_measure_coverage() {
 	genhtml --output-directory out/coverage --show-details --highlight \
 		--no-function-coverage --ignore-errors source --legend out/lcov.info
 
-	COVERAGE=`grep "headerCovTableEntry[A-z]" out/coverage/index.html | cut -d ">" -f2 | cut -d "%" -f1 | cut -d "." -f1`
+	COVERAGE=`grep "headerCovTableEntry[A-Za-z]" out/coverage/index.html | cut -d ">" -f2 | cut -d "%" -f1 | cut -d "." -f1`
 
 	fn_make_coverage_badge $COVERAGE
 }

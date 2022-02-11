@@ -15,9 +15,11 @@ pub mod driver;
 pub mod entry;
 pub mod panic;
 pub mod rmi;
+pub mod smc;
 
 extern crate alloc;
 
+use realm_management_monitor::communication::{Event, Receiver};
 use realm_management_monitor::io::Write as IoWrite;
 use realm_management_monitor::{eprintln, println};
 
@@ -26,8 +28,12 @@ use realm_management_monitor::{eprintln, println};
 pub unsafe fn main() -> ! {
     println!("RMM: booted on core {:?}!", cpu::id());
 
-    loop {
-        rmi::rmm_exit();
-        eprintln!("RMM: no proper rmi handler!");
+    let receiver = rmi::Receiver::new();
+    for call in receiver.iter() {
+        eprintln!("RMM: no proper rmi handler - code:{:?}", call.code());
     }
+
+    //TODO implement panic!
+    eprintln!("RMM: failed to receive RMI\n");
+    panic::halt();
 }

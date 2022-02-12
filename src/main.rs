@@ -19,8 +19,9 @@ pub mod smc;
 
 extern crate alloc;
 
-use realm_management_monitor::communication::{Event, Receiver};
+use realm_management_monitor::communication::Event;
 use realm_management_monitor::io::Write as IoWrite;
+use realm_management_monitor::mainloop::Mainloop;
 use realm_management_monitor::{eprintln, println};
 
 #[no_mangle]
@@ -28,12 +29,20 @@ use realm_management_monitor::{eprintln, println};
 pub unsafe fn main() -> ! {
     println!("RMM: booted on core {:?}!", cpu::id());
 
-    let receiver = rmi::Receiver::new();
-    for call in receiver.iter() {
+    let mut mainloop = Mainloop::new(rmi::Receiver::new());
+
+    mainloop.set_event_handler(rmi::Code::Version, |call| {
+        println!("RMM: requested version information");
+        //TODO Return version information
+    });
+
+    mainloop.set_default_handler(|call| {
         eprintln!("RMM: no proper rmi handler - code:{:?}", call.code());
-    }
+    });
+
+    mainloop.run();
 
     //TODO implement panic!
-    eprintln!("RMM: failed to receive RMI\n");
+    eprintln!("RMM: failed to run the mainloop\n");
     panic::halt();
 }

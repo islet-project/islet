@@ -75,6 +75,14 @@ jobs:
         path: |
           out/test.xml
 
+    - name: Archive coverage result
+      uses: actions/upload-artifact@v2
+      if: always()
+      with:
+        name: coverage results
+        path: |
+          out/coverage
+
     - name: Archive badges
       uses: actions/upload-artifact@v2
       if: always()

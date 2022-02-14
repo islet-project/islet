@@ -22,4 +22,4 @@ sudo apt install -y -qq --no-install-recommends \
 
 rustup toolchain install $(cat ${ROOT}/rust-toolchain)
 rustup target add aarch64-unknown-none-softfloat
-rustup component add rust-src
+rustup component add rust-src rustfmt

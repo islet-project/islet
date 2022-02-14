@@ -36,6 +36,24 @@ jobs:
         path: |
           out/*.bin
 
+  coding-style:
+    runs-on: [ code-default ]
+    container: art.sec.samsung.net/docker-remote/rust:latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+
+    - name: Install rustfmt
+      run: rustup component add rustfmt
+
+    - name: Check bash scripts
+      run: ./assets/formatter/shfmt -d -ci -bn -fn `find scripts/. -name *.sh`
+
+    - name: Check rust code
+      run: cargo fmt --all -- --check
+
   test:
     runs-on: [ code-default ]
     container:

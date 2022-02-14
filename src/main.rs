@@ -33,7 +33,7 @@ pub unsafe fn main() -> ! {
 
     mainloop.set_event_handler(rmi::Code::Version, |call| {
         println!("RMM: requested version information");
-        //TODO Return version information
+        call.reply(config::ABI_VERSION);
     });
 
     mainloop.set_default_handler(|call| {

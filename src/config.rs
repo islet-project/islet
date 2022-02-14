@@ -1,3 +1,5 @@
+pub const ABI_VERSION: usize = 1;
+
 pub const NUM_OF_CPU: usize = 8;
 pub const NUM_OF_CLUSTER: usize = 2;
 pub const NUM_OF_CPU_PER_CLUSTER: usize = NUM_OF_CPU / NUM_OF_CLUSTER;

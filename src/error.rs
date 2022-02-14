@@ -2,6 +2,7 @@
 pub enum ErrorKind {
     NotConnected,
     AlreadyExists,
+    StorageFull,
     Unsupported,
     Other,
 }

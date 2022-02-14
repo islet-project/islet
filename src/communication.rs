@@ -27,3 +27,9 @@ pub trait Receiver {
         Iter { receiver: self }
     }
 }
+
+pub trait Sender {
+    type Event;
+
+    fn send(&self, event: Self::Event) -> Result<(), Error>;
+}

@@ -5,13 +5,13 @@ ROOT=$(git rev-parse --show-toplevel)
 source ${ROOT}/scripts/env.sh
 
 (
-	cd  ${ROOT}
+	cd ${ROOT}
 	git submodule update --init --recursive
 )
 
 {
 	cd ${TRUSTED_FIRMWARE_A}/tools/fiptool
-	make 
+	make
 }
 
 sudo apt install -y -qq --no-install-recommends \
@@ -20,6 +20,6 @@ sudo apt install -y -qq --no-install-recommends \
 	jq lcov graphviz \
 	openjdk-11-jre
 
-rustup toolchain install `cat ${ROOT}/rust-toolchain`
+rustup toolchain install $(cat ${ROOT}/rust-toolchain)
 rustup target add aarch64-unknown-none-softfloat
 rustup component add rust-src

@@ -133,3 +133,53 @@ jobs:
         inkscape -e coverage.png coverage.svg
         curl -H "X-JFrog-Art-Api:${ART_KEY}" -T coverage.png https://art.sec.samsung.net/artifactory/rs8-dsca-da_generic/status/arm-cca/coverage.png
 
+  documentation:
+    if: always() && github.event_name == 'push' 
+    runs-on: [ code-default ]
+    container: art.sec.samsung.net/docker-remote/rust:latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+
+    - name: Run scripts/init.sh
+      run: ./scripts/init.sh
+
+    - name: Make documentation
+      run: |
+        ./scripts/make_doc.sh
+        mv out/book ..
+        rm -Rf out
+
+    - name: Config git
+      env:
+        USER_NAME: ${{ github.event.pusher.name }}
+        USER_EMAIL: ${{ github.event.pusher.email }}
+      run: |
+        git config --global user.email "$USER_EMAIL"
+        git config --global user.name "$USER_NAME"
+
+    - name: Install deploy key
+      env:
+        GH_PAGES_DEPLOY_KEY: ${{ secrets.GH_PAGES_DEPLOY_KEY }}
+      run: |
+        mkdir -p /root/.ssh/
+        echo "${GH_PAGES_DEPLOY_KEY}" > /root/.ssh/id_rsa
+        ssh-keyscan -t rsa -H github.sec.samsung.net >> /root/.ssh/known_hosts
+        chmod 600 /root/.ssh/*
+
+    - name: Add files to the commit
+      run: |
+        git fetch origin
+        git checkout origin/gh-pages
+        git clean -f -d
+        rm -Rf assets tf-a-tests trusted-firmware-a
+        cp -Rf ../book/* .
+        git add *
+        git commit --amend --no-edit
+
+    - name: Push the commit
+      run: |
+        git remote add origin-ssh git@github.sec.samsung.net:SYSSEC/arm-cca.git
+        git push -f origin-ssh HEAD:gh-pages

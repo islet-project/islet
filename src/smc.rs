@@ -1,5 +1,19 @@
-pub const SMC_ASC_MARK_REALM: usize = 0xc400_0100;
-pub const SMC_ASC_MARK_NONSECURE: usize = 0xc400_0101;
+const SMC_ASC_MARK_REALM: usize = 0xc400_0100;
+const SMC_ASC_MARK_NONSECURE: usize = 0xc400_0101;
+
+pub enum Code {
+    MarkRealm,
+    MarkNonSecure,
+}
+
+impl From<Code> for usize {
+    fn from(origin: Code) -> Self {
+        match origin {
+            Code::MarkRealm => SMC_ASC_MARK_REALM,
+            Code::MarkNonSecure => SMC_ASC_MARK_NONSECURE,
+        }
+    }
+}
 
 pub fn call(args: [usize; 5]) -> [usize; 5] {
     let mut ret: [usize; 5] = [0usize; 5];

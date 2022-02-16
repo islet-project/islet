@@ -10,12 +10,16 @@ use realm_management_monitor::communication::{self, Error, ErrorKind};
 extern crate alloc;
 
 const RMM_VERSION: usize = 0xc000_0000;
+const RMM_GRANULE_DELEGATE: usize = 0xc000_0001;
+const RMM_GRANULE_UNDELEGATE: usize = 0xc000_0002;
 const RMM_REQ_COMPLETE: usize = 0xc000_0010;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Code {
     Version,
     RequestComplete,
+    GranuleDelegate,
+    GranuleUndelegate,
     Unknown(usize),
 }
 
@@ -24,6 +28,8 @@ impl From<Code> for usize {
         match origin {
             Code::Version => RMM_VERSION,
             Code::RequestComplete => RMM_REQ_COMPLETE,
+            Code::GranuleDelegate => RMM_GRANULE_DELEGATE,
+            Code::GranuleUndelegate => RMM_GRANULE_UNDELEGATE,
             Code::Unknown(remain) => remain,
         }
     }
@@ -34,6 +40,8 @@ impl From<usize> for Code {
         match origin {
             RMM_VERSION => Code::Version,
             RMM_REQ_COMPLETE => Code::RequestComplete,
+            RMM_GRANULE_DELEGATE => Code::GranuleDelegate,
+            RMM_GRANULE_UNDELEGATE => Code::GranuleUndelegate,
             remain => Code::Unknown(remain),
         }
     }

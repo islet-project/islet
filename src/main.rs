@@ -36,6 +36,16 @@ pub unsafe fn main() -> ! {
         call.reply(config::ABI_VERSION);
     });
 
+    mainloop.set_event_handler(rmi::Code::GranuleDelegate, |call| {
+        println!("RMM: requested granule delegation");
+        // TODO: Add handler
+    });
+
+    mainloop.set_event_handler(rmi::Code::GranuleUndelegate, |call| {
+        println!("RMM: requested granule undelegation");
+        // TODO: Add handler
+    });
+
     mainloop.set_default_handler(|call| {
         eprintln!("RMM: no proper rmi handler - code:{:?}", call.code());
     });

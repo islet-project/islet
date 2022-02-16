@@ -1,3 +1,6 @@
+pub const SMC_ASC_MARK_REALM: usize = 0xc400_0100;
+pub const SMC_ASC_MARK_NONSECURE: usize = 0xc400_0101;
+
 pub fn call(args: [usize; 5]) -> [usize; 5] {
     let mut ret: [usize; 5] = [0usize; 5];
 

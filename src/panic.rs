@@ -1,11 +1,15 @@
+use realm_management_monitor::eprintln;
+use realm_management_monitor::io::Write as IoWrite;
+
 #[alloc_error_handler]
 fn alloc_error_handler(_layout: core::alloc::Layout) -> ! {
-    halt();
+    panic!("OOM! memory allocation of {} bytes failed", _layout.size())
 }
 
 #[panic_handler]
 pub extern "C" fn panic_handler(_info: &core::panic::PanicInfo<'_>) -> ! {
-    halt();
+    eprintln!("RMM: {}", _info);
+    halt()
 }
 
 pub fn halt() -> ! {

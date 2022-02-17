@@ -58,7 +58,5 @@ pub unsafe fn main() -> ! {
 
     mainloop.run();
 
-    //TODO implement panic!
-    eprintln!("RMM: failed to run the mainloop\n");
-    panic::halt();
+    panic!("failed to run the mainloop");
 }

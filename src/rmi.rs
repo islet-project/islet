@@ -85,16 +85,14 @@ impl communication::Receiver for Receiver {
     type Event = Call;
 
     fn recv(&self) -> Result<Call, Error> {
-        let mut input = [usize::from(Code::RequestComplete), 0, 0, 0, 0];
-        input[1..].copy_from_slice(&self.sender.pop());
+        let cmd = usize::from(Code::RequestComplete);
+        let arg = self.sender.pop();
+        let ret = smc::call(cmd, arg);
 
-        let ret = smc::call(input);
-
-        let code = ret[0];
-        let mut args = [0usize; 4];
-        args.copy_from_slice(&ret[1..5]);
-
-        Ok(Call::new(Code::from(code), args, self.sender.clone()))
+        let cmd = ret[0];
+        let mut arg = [0usize; 4];
+        arg.clone_from_slice(&ret[1..5]);
+        Ok(Call::new(Code::from(cmd), arg, self.sender.clone()))
     }
 }
 

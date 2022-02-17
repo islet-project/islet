@@ -38,27 +38,17 @@ pub unsafe fn main() -> ! {
 
     mainloop.set_event_handler(rmi::Code::GranuleDelegate, |call| {
         println!("RMM: requested granule delegation");
-        let arg = [
-            usize::from(smc::Code::MarkRealm),
-            call.argument()[0],
-            0,
-            0,
-            0,
-        ];
-        let ret = smc::call(arg);
+        let cmd = usize::from(smc::Code::MarkRealm);
+        let arg = [call.argument()[0], 0, 0, 0];
+        let ret = smc::call(cmd, arg);
         call.reply(ret[0]);
     });
 
     mainloop.set_event_handler(rmi::Code::GranuleUndelegate, |call| {
         println!("RMM: requested granule undelegation");
-        let arg = [
-            usize::from(smc::Code::MarkNonSecure),
-            call.argument()[0],
-            0,
-            0,
-            0,
-        ];
-        let ret = smc::call(arg);
+        let cmd = usize::from(smc::Code::MarkNonSecure);
+        let arg = [call.argument()[0], 0, 0, 0];
+        let ret = smc::call(cmd, arg);
         call.reply(ret[0]);
     });
 

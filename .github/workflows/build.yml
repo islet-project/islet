@@ -143,6 +143,10 @@ jobs:
       with:
         submodules: 'true'
 
+    - name: Install sudo
+      run: |
+        apt update && apt install sudo
+
     - name: Run scripts/init.sh
       run: ./scripts/init.sh
 

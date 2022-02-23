@@ -6,8 +6,10 @@
 #![feature(llvm_asm)]
 #![feature(alloc_error_handler)]
 #![feature(naked_functions)]
+#![feature(global_asm)]
 #![warn(rust_2018_idioms)]
 
+pub mod aarch64;
 pub mod allocator;
 pub mod config;
 pub mod cpu;
@@ -16,6 +18,7 @@ pub mod entry;
 pub mod panic;
 pub mod rmi;
 pub mod smc;
+pub mod traps;
 
 extern crate alloc;
 
@@ -56,6 +59,8 @@ pub unsafe fn main() -> ! {
         eprintln!("RMM: no proper rmi handler - code:{:?}", call.code());
     });
 
+    println!("CurrentEL is {}", crate::aarch64::regs::current_el());
+    // crate::aarch64::asm::brk(10);
     mainloop.run();
 
     panic!("failed to run the mainloop");

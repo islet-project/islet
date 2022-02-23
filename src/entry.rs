@@ -1,10 +1,13 @@
 use realm_management_monitor::io::{stdout, Write as IoWrite};
 use realm_management_monitor::println;
 
+use crate::aarch64;
 use crate::allocator;
 use crate::config::{NUM_OF_CPU, RMM_STACK_SIZE};
 
 extern crate alloc;
+
+global_asm!(include_str!("aarch64/vectors.s"));
 
 #[no_mangle]
 #[link_section = ".stack"]
@@ -38,6 +41,7 @@ unsafe extern "C" fn rmm_entry() {
 extern "C" {
     static __BSS_START__: usize;
     static __BSS_SIZE__: usize;
+    static mut vectors: u64;
 }
 
 unsafe fn clear_bss() {
@@ -61,6 +65,9 @@ unsafe fn setup() {
 
     if (&COLD_BOOT as *const bool).read_volatile() {
         clear_bss();
+
+        //TODO: Need to replace with EL1
+        aarch64::regs::VBAR_EL2.set(&vectors as *const u64 as u64);
         allocator::init();
 
         init_console();

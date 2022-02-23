@@ -18,7 +18,6 @@ pub mod entry;
 pub mod panic;
 pub mod rmi;
 pub mod smc;
-pub mod traps;
 
 extern crate alloc;
 

@@ -14,8 +14,8 @@ macro_rules! define_bitfield {
 }
 
 #[macro_export]
-macro_rules! defreg {
-    ($regname:ident) => { defreg!($regname, ); };
+macro_rules! define_register {
+    ($regname:ident) => { define_register!($regname, ); };
     ($regname:ident, $($field:ident $bits:tt),*) => {
         #[allow(non_snake_case)]
         pub mod $regname {

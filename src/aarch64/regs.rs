@@ -1,10 +1,10 @@
-defreg!(CurrentEL, EL[3 - 2]);
+define_register!(CurrentEL, EL[3 - 2]);
 pub unsafe fn current_el() -> u8 {
     CurrentEL.get_masked_value(CurrentEL::EL) as u8
 }
 
-defreg!(VBAR_EL2, RES0[10 - 0]);
-defreg!(
+define_register!(VBAR_EL2, RES0[10 - 0]);
+define_register!(
     ESR_EL2,
     EC[31 - 26],
     IL[25 - 25],

@@ -7,8 +7,6 @@ use crate::config::{NUM_OF_CPU, RMM_STACK_SIZE};
 
 extern crate alloc;
 
-global_asm!(include_str!("aarch64/vectors.s"));
-
 #[no_mangle]
 #[link_section = ".stack"]
 static mut RMM_STACK: [u8; RMM_STACK_SIZE * NUM_OF_CPU] = [0; RMM_STACK_SIZE * NUM_OF_CPU];
@@ -41,7 +39,6 @@ unsafe extern "C" fn rmm_entry() {
 extern "C" {
     static __BSS_START__: usize;
     static __BSS_SIZE__: usize;
-    static mut vectors: u64;
 }
 
 unsafe fn clear_bss() {
@@ -67,7 +64,7 @@ unsafe fn setup() {
         clear_bss();
 
         //TODO: Need to replace with EL1
-        aarch64::regs::VBAR_EL2.set(&vectors as *const u64 as u64);
+        aarch64::init();
         allocator::init();
 
         init_console();

@@ -7,3 +7,13 @@ pub fn brk(b: u16) {
         }
     }
 }
+
+#[inline(always)]
+pub fn eret() {
+    unsafe {
+        llvm_asm! {
+            "eret"
+            : : : : "volatile"
+        }
+    }
+}

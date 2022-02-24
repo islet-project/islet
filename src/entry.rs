@@ -62,12 +62,9 @@ unsafe fn setup() {
 
     if (&COLD_BOOT as *const bool).read_volatile() {
         clear_bss();
-
-        //TODO: Need to replace with EL1
-        aarch64::init();
         allocator::init();
-
         init_console();
+        aarch64::init();
 
         (&mut COLD_BOOT as *mut bool).write_volatile(false);
     }

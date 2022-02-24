@@ -1,5 +1,9 @@
+use realm_management_monitor::{eprintln, io::Write as IoWrite};
+
+mod frame;
 mod syndrome;
 
+use self::frame::TrapFrame;
 use self::syndrome::Syndrome;
 
 #[repr(u16)]
@@ -33,11 +37,12 @@ pub struct Info {
 /// The `esr` has the value of a syndrome register (ESR_ELx) holding the cause
 /// of the Synchronous and SError exception.
 #[no_mangle]
-pub extern "C" fn handle_exception(info: Info, esr: u32) {
+pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
     match info.kind {
         Kind::Synchronous => match Syndrome::from(esr) {
             Syndrome::Brk(b) => {
-                panic!("brk #{}", b);
+                eprintln!("brk #{} with {:?}, {:x}", b, info, esr);
+                tf.elr += 4; //continue
             }
             undefined => {
                 panic!("{:?} and {:?}", info, undefined);

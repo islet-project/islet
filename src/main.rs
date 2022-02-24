@@ -58,8 +58,6 @@ pub unsafe fn main() -> ! {
         eprintln!("RMM: no proper rmi handler - code:{:?}", call.code());
     });
 
-    println!("CurrentEL is {}", crate::aarch64::regs::current_el());
-    // crate::aarch64::asm::brk(10);
     mainloop.run();
 
     panic!("failed to run the mainloop");

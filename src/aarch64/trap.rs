@@ -41,7 +41,8 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
     match info.kind {
         Kind::Synchronous => match Syndrome::from(esr) {
             Syndrome::Brk(b) => {
-                eprintln!("brk #{} with {:?}, {:x}", b, info, esr);
+                eprintln!("brk #{}", b);
+                eprintln!("{:?}\nESR: {:X}\n{:#X?}", info, esr, tf);
                 tf.elr += 4; //continue
             }
             undefined => {

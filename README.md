@@ -50,6 +50,15 @@ For rust,
 cargo fmt
 ```
 
+Pre-commit script is ready for convenience.
+After installing pre-commit, every commit will be checked automatically
+before creation.
+
+```bash
+pip3 install pre-commit
+pre-commit install
+```
+
 ## See also
 [Detailed Description](https://pages.github.sec.samsung.net/SYSSEC/arm-cca/)
 
@@ -63,4 +72,3 @@ cargo fmt
 
 ## Governance
 All decisions in this project are made by consensus, respecting the principles and rules of the community.  Please refer to the [Samsung Inner Source Governance](docs/Governance.md) in more detail.
-

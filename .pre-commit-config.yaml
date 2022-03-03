@@ -1,0 +1,24 @@
+repos:
+-   repo: local
+    hooks:
+    -   id: check-bash
+        name: Check codingstyle of bash scripts
+        language: system
+        entry: assets/formatter/shfmt -w -ci -bn -fn
+        args: ['-w', '-ci', '-bn', '-fn']
+        files: \.sh$
+
+-   repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+    -   id: fmt
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-yaml
+    -   id: check-toml
+    -   id: check-symlinks
+    -   id: check-merge-conflict
+    -   id: detect-private-key

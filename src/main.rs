@@ -12,7 +12,6 @@
 pub mod aarch64;
 pub mod allocator;
 pub mod config;
-pub mod cpu;
 pub mod driver;
 pub mod entry;
 pub mod panic;
@@ -29,7 +28,7 @@ use realm_management_monitor::{eprintln, println};
 #[no_mangle]
 #[allow(unused)]
 pub unsafe fn main() -> ! {
-    println!("RMM: booted on core {:?}!", cpu::id());
+    println!("RMM: booted on core {:?}!", aarch64::cpu::id());
 
     let mut mainloop = Mainloop::new(rmi::Receiver::new());
 

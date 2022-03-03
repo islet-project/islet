@@ -1,3 +1,9 @@
+define_sys_register!(
+    MPIDR_EL1,     // ref. D7.2.74
+    AFF2[23 - 16], // Affinity level 2
+    AFF1[15 - 08]  // Affinity level 1
+);
+
 define_sys_register!(CurrentEL, EL[3 - 2]);
 pub fn current_el() -> u8 {
     unsafe { CurrentEL.get_masked_value(CurrentEL::EL) as u8 }

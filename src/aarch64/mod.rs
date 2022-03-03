@@ -2,6 +2,7 @@
 pub mod r#macro;
 
 pub mod asm;
+pub mod cpu;
 pub mod regs;
 pub mod trap;
 

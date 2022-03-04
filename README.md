@@ -51,6 +51,7 @@ cargo fmt
 ```
 
 Pre-commit script is ready for convenience.
+
 After installing pre-commit, every commit will be checked automatically
 before creation.
 
@@ -58,6 +59,14 @@ before creation.
 pip3 install pre-commit
 pre-commit install
 ```
+
+.editorconfig is also ready as well.
+
+This file helps use proper indentation when you use editor (e.g., vim, vscode).
+
+You can set the editor configuration like the below if you use vim.
+
+[How to use .editorconfig for vim](https://github.com/editorconfig/editorconfig-vim)
 
 ## See also
 [Detailed Description](https://pages.github.sec.samsung.net/SYSSEC/arm-cca/)

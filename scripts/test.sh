@@ -60,6 +60,8 @@ function fn_measure_coverage()
 
 	COVERAGE=$(grep "headerCovTableEntry[A-Za-z]" out/coverage/index.html | cut -d ">" -f2 | cut -d "%" -f1 | cut -d "." -f1)
 
+	mv out/lcov.info out/coverage/.
+
 	fn_make_coverage_badge $COVERAGE
 }
 

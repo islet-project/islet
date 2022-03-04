@@ -89,7 +89,7 @@ jobs:
       uses: actions/upload-artifact@v2
       if: always()
       with:
-        name: test results
+        name: test
         path: |
           out/test.xml
 
@@ -97,7 +97,7 @@ jobs:
       uses: actions/upload-artifact@v2
       if: always()
       with:
-        name: coverage results
+        name: coverage
         path: |
           out/coverage
 
@@ -109,9 +109,9 @@ jobs:
         path: |
           out/*.svg
 
-  badge:
+  badge-testhub:
     needs: test
-    if: always() && github.event_name == 'push' 
+    if: always() && github.event_name == 'push'
     runs-on: [ code-default ]
 
     steps:
@@ -133,8 +133,19 @@ jobs:
         inkscape -e coverage.png coverage.svg
         curl -H "X-JFrog-Art-Api:${ART_KEY}" -T coverage.png https://art.sec.samsung.net/artifactory/rs8-dsca-da_generic/status/arm-cca/coverage.png
 
+    - name: Send to TestHub
+      uses: CODE-Actions/testhub@v1
+      with:
+        test-tool: junit
+        test-artifact-name: test
+        coverage-tool: gcov
+        coverage-artifact-name: coverage
+        sub-project: arm-cca
+        plm-prj-code: RAJ0122ZZ-29RF
+        release-key: SRRELEASE-1155
+
   documentation:
-    if: always() && github.event_name == 'push' 
+    if: always() && github.event_name == 'push'
     runs-on: [ code-default ]
     container: art.sec.samsung.net/docker-remote/rust:latest
 

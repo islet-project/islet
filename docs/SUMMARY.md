@@ -16,3 +16,4 @@
 
 [Contributors](./contributors.md)
 [Governance](./Governance.md)
+[Branch Policy](./branch-policy.md)

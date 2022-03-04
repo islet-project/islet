@@ -56,7 +56,7 @@ function fn_measure_coverage()
 		-- --test-threads=1
 
 	genhtml --output-directory out/coverage --show-details --highlight \
-		--no-function-coverage --ignore-errors source --legend out/lcov.info
+		--ignore-errors source --legend out/lcov.info
 
 	COVERAGE=$(grep "headerCovTableEntry[A-Za-z]" out/coverage/index.html | cut -d ">" -f2 | cut -d "%" -f1 | cut -d "." -f1)
 
@@ -68,10 +68,10 @@ function fn_usage()
 	echo "./${SCRIPT_NAME} [OPTIONS]"
 	cat <<EOF
 no option:
-	Just unit-test and print the results
+    Do unit-test and print the results
 options:
-	--junit		Get test results as a JUnit xml file to out/test-result.xml
-	--coverage	Measure coverage tests and get results in out/coverage
+    --unit-test  Get test results as a JUnit xml file to out/test-result.xml
+    --coverage   Measure coverage tests and get results in out/coverage
 EOF
 }
 

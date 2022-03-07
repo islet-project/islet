@@ -59,3 +59,119 @@ where
         }
     }
 }
+
+#[cfg(test)]
+pub mod test {
+    use alloc::collections::linked_list::LinkedList;
+    use alloc::rc::Rc;
+    use core::cell::RefCell;
+
+    use super::{Mainloop, Receiver};
+    use crate::io::{Error, ErrorKind};
+    use crate::mainloop::Event;
+
+    extern crate alloc;
+
+    struct MockReceiver {
+        list: RefCell<LinkedList<usize>>,
+    }
+
+    impl MockReceiver {
+        pub fn new(codes: &[usize]) -> Self {
+            let mut list = LinkedList::new();
+            for code in codes {
+                list.push_back(*code);
+            }
+
+            Self {
+                list: RefCell::new(list),
+            }
+        }
+    }
+
+    impl Receiver for MockReceiver {
+        type Event = MockEvent;
+
+        fn recv(&self) -> Result<MockEvent, Error> {
+            self.list
+                .borrow_mut()
+                .pop_back()
+                .ok_or(Error::new(ErrorKind::NotConnected))
+                .map(|code| MockEvent::new(code))
+        }
+    }
+
+    struct MockEvent {
+        code: usize,
+    }
+
+    impl MockEvent {
+        pub fn new(code: usize) -> Self {
+            Self { code }
+        }
+    }
+
+    impl Event for MockEvent {
+        type Code = usize;
+
+        fn code(&self) -> Self::Code {
+            self.code
+        }
+    }
+
+    #[test]
+    fn event_handler() {
+        let receiver = MockReceiver::new(&[1234usize, 5678usize]);
+        let mut mainloop = Mainloop::new(receiver);
+        let result = Rc::new(RefCell::new(false));
+        let r = result.clone();
+
+        mainloop.set_event_handler(1234usize, move |event| {
+            r.replace(true);
+            assert_eq!(event.code(), 1234usize);
+        });
+
+        mainloop.set_event_handler(91011usize, |_| {
+            assert!(false);
+        });
+
+        mainloop.run();
+
+        assert!(*result.borrow());
+    }
+
+    #[test]
+    fn default_handler() {
+        let receiver = MockReceiver::new(&[1234usize, 5678usize]);
+        let mut mainloop = Mainloop::new(receiver);
+        let result = Rc::new(RefCell::new(false));
+        let r = result.clone();
+
+        mainloop.set_event_handler(1234usize, |_| {});
+
+        mainloop.set_default_handler(move |event| {
+            r.replace(true);
+            assert_eq!(event.code(), 5678usize);
+        });
+
+        mainloop.run();
+
+        assert!(*result.borrow());
+    }
+
+    #[test]
+    fn idle_handler() {
+        let receiver = MockReceiver::new(&[1234usize, 5678usize]);
+        let mut mainloop = Mainloop::new(receiver);
+        let result = Rc::new(RefCell::new(0usize));
+        let r = result.clone();
+
+        mainloop.set_event_handler(5678usize, |_| {});
+
+        mainloop.set_idle_handler(move || (*r.borrow_mut()) += 1);
+
+        mainloop.run();
+
+        assert_eq!(*result.borrow(), 2);
+    }
+}

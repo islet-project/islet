@@ -52,7 +52,9 @@ function fn_measure_coverage()
 	cd ${ROOT}
 	cargo tarpaulin -v --ignore-tests --out Lcov --lib --output-dir out \
 		--target x86_64-unknown-linux-gnu \
-		--exclude-files src/rmi.rs \
+		--exclude-files \
+		src/rmi.rs \
+		src/aarch64/* \
 		-- --test-threads=1
 
 	genhtml --output-directory out/coverage --show-details --highlight \

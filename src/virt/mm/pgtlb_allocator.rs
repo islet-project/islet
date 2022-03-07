@@ -21,8 +21,6 @@ pub fn allocate_tables<T>(num: usize, align: usize) -> Result<*mut PageTable<T>,
 
 #[cfg(test)]
 pub mod test {
-    extern crate alloc;
-
     use crate::virt::mm::page_table::{L1Table, L2Table, PageTable};
     use crate::virt::mm::pgtlb_allocator;
     use crate::virt::mm::PAGE_SIZE;

@@ -1,14 +1,10 @@
-extern crate alloc;
-
 use super::address::{to_paddr, to_vaddr};
 use super::address::{GuestPhysAddr, PhysAddr};
 use super::page_table_entry::{Page, PageIter, PageSize, PageTableEntry, PageTableEntryFlags};
 use super::pgtlb_allocator;
-use super::{PAGE_BITS, PAGE_SIZE};
-use crate::error::Error;
-use crate::io::Write;
-use crate::println;
+use super::PAGE_SIZE;
 use core::marker::PhantomData;
+use realm_management_monitor::error::Error;
 
 /// An interface to allow for a generic implementation of struct PageTable
 /// for all 4 levels.
@@ -36,9 +32,8 @@ pub trait LevelHierarchy: PageTableLevel {
 
 pub trait TranslationGranule {
     fn table_index<S: PageSize>(&self, page: Page<S>) -> usize;
-    fn get_table_addr_mask(&self) -> usize;
-    fn get_block_addr_mask(&self) -> usize;
-    fn get_page_addr_mask(&self) -> usize;
+    fn table_addr_mask(&self) -> usize;
+    fn page_addr_mask(&self) -> usize;
 }
 
 /// Representation of any page table in memory.
@@ -100,14 +95,15 @@ impl<L: PageTableLevel> PageTablePrivateMethods for PageTable<L> {
         flags: PageTableEntryFlags,
     ) -> Result<(), Error> {
         assert_eq!(L::THIS_LEVEL, S::MAP_TABLE_LEVEL);
+        assert_eq!(paddr & !page.mask(), 0);
         let index = self.table_index::<S>(page);
         let flush = self.entries[index].is_valid();
 
         if flags == PageTableEntryFlags::BLANK {
             // in this case we unmap the pages
-            self.entries[index].set_pte(paddr, flags, S::SIZE);
+            self.entries[index].set_pte(paddr, flags, self.page_addr_mask());
         } else {
-            self.entries[index].set_pte(paddr, S::MAP_EXTRA_FLAG | flags, S::SIZE);
+            self.entries[index].set_pte(paddr, S::MAP_EXTRA_FLAG | flags, self.page_addr_mask());
         }
 
         if flush {
@@ -182,7 +178,7 @@ where
                 self.entries[index].set_pte(
                     subtable_paddr,
                     PageTableEntryFlags::VALID | PageTableEntryFlags::TABLE_OR_PAGE_DESC,
-                    PAGE_SIZE,
+                    self.table_addr_mask(),
                 );
 
                 // Mark all entries as unused in the newly created table.
@@ -215,7 +211,7 @@ where
 
         // Calculate the address of the subtable.
         let index = self.table_index::<S>(page);
-        let subtable_paddr = self.entries[index].output_address(self.get_table_addr_mask());
+        let subtable_paddr = self.entries[index].output_address(self.table_addr_mask());
         let subtable_address = to_vaddr(subtable_paddr);
         unsafe { &mut *(subtable_address as *mut PageTable<L::NextLevel>) }
     }
@@ -246,7 +242,7 @@ where
 }
 
 #[inline]
-fn get_page_range<S: PageSize>(gpa: GuestPhysAddr, count: usize) -> PageIter<S> {
+pub fn get_page_range<S: PageSize>(gpa: GuestPhysAddr, count: usize) -> PageIter<S> {
     let first_page = Page::<S>::including_address(gpa);
     let last_page = Page::<S>::including_address(gpa + (count - 1) * S::SIZE);
     Page::range(first_page, last_page)
@@ -255,9 +251,8 @@ fn get_page_range<S: PageSize>(gpa: GuestPhysAddr, count: usize) -> PageIter<S> 
 #[cfg(test)]
 pub mod test {
     use crate::virt::mm::address::{GuestPhysAddr, PhysAddr};
-    use crate::virt::mm::page_table::get_page_range;
     use crate::virt::mm::page_table::PageTablePrivateMethods;
-    use crate::virt::mm::page_table::{L1Table, PageTable, PageTableLevel};
+    use crate::virt::mm::page_table::{L1Table, PageTable};
     use crate::virt::mm::page_table_entry::{
         BasePageSize, HugePageSize, LargePageSize, Page, PageTableEntryFlags,
     };
@@ -274,47 +269,50 @@ pub mod test {
             root_raw.unwrap() as usize,
             { root as *const PageTable<L1Table> } as usize
         );
+        let flags: PageTableEntryFlags = PageTableEntryFlags::MEMATTR_NORMAL
+            | PageTableEntryFlags::S2AP_RW
+            | PageTableEntryFlags::VALID;
         let page1: Page<BasePageSize> =
             Page::<BasePageSize>::including_address(GuestPhysAddr(0x99155000));
-        //let page1 = get_page_range::<BasePageSize>(GuestPhysAddr(0x99155000), 1);
         let paddr1 = PhysAddr(0x8806_6000);
-        assert!(root
-            .map_page(page1, paddr1, PageTableEntryFlags::VALID)
-            .is_ok());
+        assert!(root.map_page(page1, paddr1, flags).is_ok());
         let pte1 = root.get_page_table_entry(page1);
         assert_eq!(
             pte1.unwrap()
-                .output_address(0x0000_FFFF_FFFF_F000)
+                .output_address(page1.mask()) // 0x0000_FFFF_FFFF_F000
                 .as_usize(),
             0x8806_6000
         );
+        assert_eq!(pte1.unwrap().flags() & flags, flags);
 
+        let flags2: PageTableEntryFlags = PageTableEntryFlags::MEMATTR_DEVICE_NGNRE
+            | PageTableEntryFlags::S2AP_RO
+            | PageTableEntryFlags::XN
+            | PageTableEntryFlags::VALID;
         let page2: Page<LargePageSize> =
             Page::<LargePageSize>::including_address(GuestPhysAddr(0x1_91C0_0000));
         let paddr2 = PhysAddr(0x8820_0000);
-        assert!(root
-            .map_page(page2, paddr2, PageTableEntryFlags::VALID)
-            .is_ok());
+        assert!(root.map_page(page2, paddr2, flags2).is_ok());
         let pte2 = root.get_page_table_entry(page2);
         assert_eq!(
             pte2.unwrap()
-                .output_address(0x0000_FFFF_FFF0_0000)
+                .output_address(page2.mask()) // 0x0000_FFFF_FFF0_0000
                 .as_usize(),
             0x8820_0000
         );
+        assert_eq!(pte2.unwrap().flags() & flags2, flags2);
 
         let page3: Page<HugePageSize> =
             Page::<HugePageSize>::including_address(GuestPhysAddr(0x1_91C0_0000));
         let paddr3 = PhysAddr(0x88_0000_0000);
-        assert!(root
-            .map_page(page3, paddr3, PageTableEntryFlags::VALID)
-            .is_ok());
+        assert!(root.map_page(page3, paddr3, flags).is_ok());
         let pte3 = root.get_page_table_entry(page3);
         assert_eq!(
             pte3.unwrap()
-                .output_address(0x0000_FFFF_C000_0000)
+                .output_address(page3.mask()) // 0x0000_FFFF_C000_0000
                 .as_usize(),
             0x88_0000_0000
         );
+        assert_eq!(pte3.unwrap().flags() & flags, flags);
     }
 }

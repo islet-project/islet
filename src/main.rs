@@ -7,6 +7,7 @@
 #![feature(alloc_error_handler)]
 #![feature(naked_functions)]
 #![feature(global_asm)]
+#![feature(specialization)]
 #![warn(rust_2018_idioms)]
 
 pub mod aarch64;
@@ -17,8 +18,12 @@ pub mod entry;
 pub mod panic;
 pub mod rmi;
 pub mod smc;
+pub mod virt;
 
 extern crate alloc;
+
+#[macro_use(bitflags)]
+extern crate bitflags;
 
 use realm_management_monitor::communication::Event;
 use realm_management_monitor::io::Write as IoWrite;

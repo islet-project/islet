@@ -3,6 +3,7 @@ use super::page_table::{LevelHierarchy, PageTable, PageTableLevel, TranslationGr
 use super::page_table_entry::{BasePageSize, HugePageSize, LargePageSize, PageSize};
 use super::page_table_entry::{Page, PageTableEntryFlags};
 use super::PAGE_BITS;
+use crate::define_mask;
 
 /// Number of bits of the index in each table level.
 const PAGE_MAP_BITS: usize = 9;
@@ -62,43 +63,33 @@ impl<L: PageTableLevel> TranslationGranule for PageTable<L> {
     //      . level0 ~ level2: bits[47:12]
     //   - page descriptor (bits[1:0] = 0b11)
     //      . level3:  bits[47:12]
-    default fn get_table_addr_mask(&self) -> usize {
-        // desc addr bits[47:12]
-        0x0000_FFFF_FFFF_F000
+    default fn table_addr_mask(&self) -> usize {
+        define_mask!(47, 12)
     }
-    default fn get_block_addr_mask(&self) -> usize {
-        0x0
-    }
-    default fn get_page_addr_mask(&self) -> usize {
-        0x0
-    }
-}
-
-impl TranslationGranule for PageTable<L0Table> {
-    fn get_block_addr_mask(&self) -> usize {
+    default fn page_addr_mask(&self) -> usize {
         0x0
     }
 }
 
 impl TranslationGranule for PageTable<L1Table> {
-    fn get_block_addr_mask(&self) -> usize {
-        0x0000_FFFF_C000_0000
+    fn page_addr_mask(&self) -> usize {
+        define_mask!(47, 30)
     }
 }
 
 impl TranslationGranule for PageTable<L2Table> {
-    fn get_block_addr_mask(&self) -> usize {
-        0x0000_FFFF_FFF0_0000
+    fn page_addr_mask(&self) -> usize {
+        define_mask!(47, 21)
     }
 }
 
 impl TranslationGranule for PageTable<L3Table> {
-    fn get_table_addr_mask(&self) -> usize {
+    fn table_addr_mask(&self) -> usize {
         0x0
     }
 
-    fn get_page_addr_mask(&self) -> usize {
-        0x0000_FFFF_FFFF_F000
+    fn page_addr_mask(&self) -> usize {
+        define_mask!(47, 12)
     }
 }
 

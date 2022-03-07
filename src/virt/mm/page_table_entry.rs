@@ -1,4 +1,5 @@
 use super::address::{GuestPhysAddr, PhysAddr};
+use crate::define_mask;
 use core::marker::PhantomData;
 
 bitflags! {
@@ -16,13 +17,20 @@ bitflags! {
         const AF = 1 << 10;
 
         /// Shareability
-        const SH = 1 << 9 | 1 << 8;
+        const SH_INNER = 1 << 9 | 1 << 8;
 
         /// Stage 2 data Access Permissions
-        const S2AP = 1 << 7 | 1 << 6;
+        const S2AP_RW = 1 << 7 | 1 << 6;
+        const S2AP_WO = 1 << 7 | 0 << 6;
+        const S2AP_RO = 0 << 7 | 1 << 6;
+        const S2AP_NONE = 0 << 7 | 0 << 6;
 
         /// Stage 2 memory attributes
-        const MEMATTR = 1 << 5 | 1 << 4 | 1 << 3 | 1 << 2;
+        const MEMATTR_NORMAL = 1 << 4 | 0 << 3 | 0 << 2;
+        const MEMATTR_NORMAL_NC = 0 << 4 | 1 << 3 | 1 << 2; // non-cacheable
+        // NG: non-gathering, NR: non-reordering, E: early write ack
+        //const MEMATTR_DEVICE_NGNRE = 0 << 4 | 0 << 3 | 1 << 2;
+        const MEMATTR_DEVICE_NGNRE = 0 << 4 | 0 << 3 | 1 << 2;
 
         /// Set if this entry points to a table or a block/page.
         const TABLE_OR_PAGE_DESC = 1 << 1;
@@ -36,6 +44,7 @@ impl PageTableEntryFlags {
     //// An empty set of flags for unused/zeroed table entries.
     //// Needed as long as empty() is no const function.
     pub const BLANK: PageTableEntryFlags = PageTableEntryFlags { bits: 0 };
+    const FLAG_MASK: usize = define_mask!(63, 52) | define_mask!(11, 0);
 }
 
 /// An entry in either table
@@ -52,6 +61,12 @@ impl PageTableEntry {
         PhysAddr(self.pte & mask & !(usize::MAX << 48))
     }
 
+    pub fn flags(&self) -> PageTableEntryFlags {
+        PageTableEntryFlags {
+            bits: self.pte & PageTableEntryFlags::FLAG_MASK,
+        }
+    }
+
     /// Returns whether this entry is valid (present).
     pub fn is_valid(&self) -> bool {
         (self.pte & PageTableEntryFlags::VALID.bits()) != 0
@@ -63,17 +78,18 @@ impl PageTableEntry {
     //
     /// * `paddr` - The physical memory address this entry shall translate to
     /// * `flags` - Flags from PageTableEntryFlags (note that the VALID, and ACCESSED flags are set automatically)
-    pub fn set_pte(&mut self, paddr: PhysAddr, flags: PageTableEntryFlags, unit_size: usize) {
+    pub fn set_pte(&mut self, paddr: PhysAddr, flags: PageTableEntryFlags, mask: usize) {
         assert_eq!(
-            paddr % unit_size,
+            paddr & !mask,
             0,
             "Physical address is not on a {:#X} boundary (paddr = {:#X})",
-            unit_size,
+            mask,
             paddr.as_usize()
         );
         let mut flags_to_set = flags;
         // TODO: validate flags and set additional flags
-        //flags_to_set.insert(PageTableEntryFlags::XXXX);
+        flags_to_set.insert(PageTableEntryFlags::SH_INNER);
+        flags_to_set.insert(PageTableEntryFlags::AF);
         self.pte = paddr.as_usize() | flags_to_set.bits();
     }
 
@@ -111,6 +127,10 @@ pub struct Page<S: PageSize> {
 }
 
 impl<S: PageSize> Page<S> {
+    pub fn mask(&self) -> usize {
+        (1 << 48) - S::SIZE
+    }
+
     /// Return the stored virtual address.
     pub fn address(&self) -> GuestPhysAddr {
         self.gpa

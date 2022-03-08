@@ -52,28 +52,23 @@ pub fn create_stage2_table() -> Box<Stage2Translation> {
     s2_trans_tbl
 }
 
-#[cfg(test)]
-pub mod test {
+// To start VM with reserved memory during MS1
+fn create_static_stage2_table() {
     use crate::virt::mm::address::{GuestPhysAddr, PhysAddr};
     use crate::virt::mm::page_table::get_page_range;
-    use crate::virt::mm::page_table::L1Table;
     use crate::virt::mm::page_table_entry::{BasePageSize, LargePageSize, PageTableEntryFlags};
-    use crate::virt::mm::stage2_translation::create_stage2_table;
 
-    #[test]
-    fn test_stage2_table() {
-        let stg2_tlb = create_stage2_table();
-        let root = stg2_tlb.get_root_pgtlb::<L1Table>();
-        let flags: PageTableEntryFlags = PageTableEntryFlags::MEMATTR_NORMAL
-            | PageTableEntryFlags::S2AP_RW
-            | PageTableEntryFlags::VALID;
-        let pages1 = get_page_range::<BasePageSize>(GuestPhysAddr(0x88100000), 0x200 - 0x66);
-        let block_2m = get_page_range::<LargePageSize>(GuestPhysAddr(0x88200000), 1);
-        let pages2 = get_page_range::<BasePageSize>(GuestPhysAddr(0x88400000), 0x300 - 0x266);
-        assert!(root.map_pages(pages1, PhysAddr(0x88066000), flags).is_ok());
-        assert!(root
-            .map_pages(block_2m, PhysAddr(0x88200000), flags)
-            .is_ok());
-        assert!(root.map_pages(pages2, PhysAddr(0x88400000), flags).is_ok());
-    }
+    let stg2_tlb = create_stage2_table();
+    let root = stg2_tlb.get_root_pgtlb::<L1Table>();
+    let flags: PageTableEntryFlags = PageTableEntryFlags::MEMATTR_NORMAL
+        | PageTableEntryFlags::S2AP_RW
+        | PageTableEntryFlags::VALID;
+    let pages1 = get_page_range::<BasePageSize>(GuestPhysAddr(0x88100000), 0x200 - 0x66);
+    let block_2m = get_page_range::<LargePageSize>(GuestPhysAddr(0x88200000), 1);
+    let pages2 = get_page_range::<BasePageSize>(GuestPhysAddr(0x88400000), 0x300 - 0x266);
+    assert!(root.map_pages(pages1, PhysAddr(0x88066000), flags).is_ok());
+    assert!(root
+        .map_pages(block_2m, PhysAddr(0x88200000), flags)
+        .is_ok());
+    assert!(root.map_pages(pages2, PhysAddr(0x88400000), flags).is_ok());
 }

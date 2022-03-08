@@ -110,7 +110,7 @@ jobs:
         path: |
           out/*.svg
 
-  badge-testhub:
+  badge:
     needs: test
     if: always() && github.event_name == 'push'
     runs-on: [ code-default ]
@@ -134,6 +134,12 @@ jobs:
         inkscape -e coverage.png coverage.svg
         curl -H "X-JFrog-Art-Api:${ART_KEY}" -T coverage.png https://art.sec.samsung.net/artifactory/rs8-dsca-da_generic/status/arm-cca/coverage.png
 
+  testhub:
+    needs: test
+    if: always() && ( github.event_name == 'push' || github.event_name == 'schedule' )
+    runs-on: [ code-default ]
+
+    steps:
     - name: Send to TestHub
       uses: CODE-Actions/testhub@v1
       with:

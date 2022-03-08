@@ -2,7 +2,7 @@ use super::page_table::{L0Table, L1Table, L2Table, L3Table};
 use super::page_table::{LevelHierarchy, PageTable, PageTableLevel, TranslationGranule};
 use super::page_table_entry::{BasePageSize, HugePageSize, LargePageSize, PageSize};
 use super::page_table_entry::{Page, PageTableEntryFlags};
-use super::PAGE_BITS;
+use crate::config::PAGE_BITS;
 use crate::define_mask;
 
 /// Number of bits of the index in each table level.

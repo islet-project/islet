@@ -2,7 +2,7 @@ extern crate alloc;
 
 use super::page_table::{L1Table, PageTable};
 use super::pgtlb_allocator;
-use super::PAGE_SIZE;
+use crate::config::PAGE_SIZE;
 use alloc::boxed::Box;
 use core::mem;
 

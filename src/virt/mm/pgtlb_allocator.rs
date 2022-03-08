@@ -1,7 +1,7 @@
 extern crate alloc;
 
 use super::page_table::PageTable;
-use super::PAGE_SIZE;
+use crate::config::PAGE_SIZE;
 
 pub fn allocate_tables<T>(num: usize, align: usize) -> Result<*mut PageTable<T>, ()> {
     let ptr = unsafe {

@@ -2,8 +2,9 @@ use super::address::{to_paddr, to_vaddr};
 use super::address::{GuestPhysAddr, PhysAddr};
 use super::page_table_entry::{Page, PageIter, PageSize, PageTableEntry, PageTableEntryFlags};
 use super::pgtlb_allocator;
-use super::PAGE_SIZE;
+use crate::config::PAGE_SIZE;
 use core::marker::PhantomData;
+use core::mem;
 use realm_management_monitor::error::Error;
 
 /// An interface to allow for a generic implementation of struct PageTable
@@ -24,8 +25,6 @@ pub enum L3Table {}
 /// (all except L3Table).
 /// Having both PageTableLevel and LevelHierarchy leverages Rust's typing system
 ///  to provide a subtable method only for those that have sub page tables.
-//
-/// Kudos to Philipp Oppermann for the trick!
 pub trait LevelHierarchy: PageTableLevel {
     type NextLevel;
 }
@@ -41,7 +40,7 @@ pub trait TranslationGranule {
 /// to distinguish between the different tables.
 pub struct PageTable<L> {
     /// Each page table has 512 entries (can be calculated using PAGE_MAP_BITS).
-    entries: [PageTableEntry; (PAGE_SIZE / 8)],
+    entries: [PageTableEntry; (PAGE_SIZE / mem::size_of::<usize>())],
 
     /// Required by Rust to support the L parameter.
     level: PhantomData<L>,

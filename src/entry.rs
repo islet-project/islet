@@ -3,7 +3,10 @@ use realm_management_monitor::println;
 
 use crate::aarch64;
 use crate::allocator;
-use crate::config::{NUM_OF_CPU, RMM_STACK_SIZE};
+use crate::config::{MAX_VCPUS, NUM_OF_CPU, PRIMARY_VM_ID, RMM_STACK_SIZE};
+use crate::hyper::vm::{VM, VMS};
+use alloc::sync::Arc;
+use spin::Mutex;
 
 extern crate alloc;
 
@@ -18,6 +21,7 @@ unsafe extern "C" fn rmm_entry() {
     #![allow(unsupported_naked_functions)]
     llvm_asm! {
         "
+        msr spsel, #1
         bl get_cpu_id
 
         ldr x1, =__RMM_STACK_END__
@@ -64,8 +68,15 @@ unsafe fn setup() {
         clear_bss();
         allocator::init();
         init_console();
-        aarch64::init();
+
+        VMS[PRIMARY_VM_ID] = Some(Arc::new(Mutex::new(VM::uninitialized())));
+        VM::get_vm_as_mut_ref(PRIMARY_VM_ID)
+            .unwrap()
+            .lock()
+            .initialize(PRIMARY_VM_ID, MAX_VCPUS);
 
         (&mut COLD_BOOT as *mut bool).write_volatile(false);
     }
+
+    aarch64::init();
 }

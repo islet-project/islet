@@ -15,6 +15,7 @@ pub mod allocator;
 pub mod config;
 pub mod driver;
 pub mod entry;
+pub mod hyper;
 pub mod panic;
 pub mod rmi;
 pub mod smc;

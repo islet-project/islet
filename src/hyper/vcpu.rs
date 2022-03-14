@@ -1,7 +1,7 @@
 use super::vm::{VM, VMS};
 use crate::aarch64::cpu::get_cpu_id;
 use crate::config::PRIMARY_VM_ID;
-use alloc::sync::Arc;
+use alloc::sync::{Arc, Weak};
 use spin::Mutex;
 
 pub const VCPU_INIT: Option<Arc<Mutex<VCPU>>> = None;
@@ -10,7 +10,7 @@ pub const VCPU_INIT: Option<Arc<Mutex<VCPU>>> = None;
 #[derive(Default, Debug)]
 pub struct VCPU {
     pub context: Context,
-    pub vm: Arc<Mutex<VM>>, // VM struct the VCPU belongs to
+    pub vm: Weak<Mutex<VM>>, // VM struct the VCPU belongs to
     pub state: State,
     pub pcpu: u32,
 }
@@ -24,7 +24,7 @@ impl VCPU {
 
         let mut vcpu: VCPU = Default::default();
         vcpu.vm = match VMS[PRIMARY_VM_ID] {
-            Some(ref arcvm) => Arc::clone(arcvm),
+            Some(ref arcvm) => Arc::downgrade(arcvm),
             None => panic!(),
         };
         vcpu.state = State::Init;

@@ -11,6 +11,13 @@ This repository contains code for confidential computing on the ARM CCA architec
 ./scripts/init.sh
 ```
 
+Or, use a docker image as the below
+
+```bash
+sudo docker run --rm -it art.sec.samsung.net/syssec_docker/cca_build /bin/bash
+
+```
+
 ## How to build
 ```bash
 ./scripts/build.sh

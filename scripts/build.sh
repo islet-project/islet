@@ -21,6 +21,11 @@ source ${ROOT}/scripts/env.sh
 	${CROSS_COMPILE}objcopy -O binary ${ROOT}/out/aarch64-unknown-none-softfloat/release/rmm ${ROOT}/out/aarch64-unknown-none-softfloat/release/rmm.bin
 )
 
+if [ ! -f "${FIPTOOL}" ]; then
+	cd ${TRUSTED_FIRMWARE_A}/tools/fiptool
+	make
+fi
+
 #Make fip.bin
 ${FIPTOOL} create \
 	--fw-config ${TRUSTED_FIRMWARE_A}/build/fvp/debug/fdts/fvp_fw_config.dtb \

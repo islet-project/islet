@@ -14,18 +14,11 @@ env:
 jobs:
   build:
     runs-on: [ code-default ]
-    container: art.sec.samsung.net/docker-remote/rust:latest
+    container: art.sec.samsung.net/syssec_docker/cca_build:latest
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: 'true'
-
-    - name: Install sudo
-      run: |
-        apt update && apt install sudo
-
-    - name: Run scripts/init.sh
-      run: ./scripts/init.sh
 
     - name: Run scripts/build.sh
       run: ./scripts/build.sh
@@ -39,8 +32,7 @@ jobs:
 
   coding-style:
     runs-on: [ code-default ]
-    container: art.sec.samsung.net/docker-remote/rust:latest
-
+    container: art.sec.samsung.net/syssec_docker/cca_build:latest
     steps:
     - uses: actions/checkout@v2
       with:
@@ -58,20 +50,13 @@ jobs:
   test:
     runs-on: [ code-default ]
     container:
-      image: art.sec.samsung.net/docker-remote/rust:latest
+      image: art.sec.samsung.net/syssec_docker/cca_build:latest
       options: --security-opt seccomp=unconfined
 
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: 'true'
-
-    - name: Install sudo
-      run: |
-        apt update && apt install sudo
-
-    - name: Run scripts/init.sh
-      run: ./scripts/init.sh
 
     - name: Run scripts/test.sh --unit-test
       run: ./scripts/test.sh --unit-test
@@ -154,19 +139,12 @@ jobs:
   documentation:
     if: always() && github.event_name == 'push'
     runs-on: [ code-default ]
-    container: art.sec.samsung.net/docker-remote/rust:latest
+    container: art.sec.samsung.net/syssec_docker/cca_build:latest
 
     steps:
     - uses: actions/checkout@v2
       with:
         submodules: 'true'
-
-    - name: Install sudo
-      run: |
-        apt update && apt install sudo
-
-    - name: Run scripts/init.sh
-      run: ./scripts/init.sh
 
     - name: Make documentation
       run: |
@@ -205,3 +183,33 @@ jobs:
       run: |
         git remote add origin-ssh git@github.sec.samsung.net:SYSSEC/arm-cca.git
         git push -f origin-ssh HEAD:gh-pages
+
+  build-docker:
+    if: always() && github.event_name == 'push'
+    runs-on: [ code-default ]
+    env:
+      ART_USER: sungbae.yoo
+      ART_DOMAIN: art.sec.samsung.net
+      ART_DOCKER_REPO: syssec_docker
+      ART_DOCKER_SUBTAG: cca_build:latest
+      ART_URL: https://art.sec.samsung.net/artifactory
+      ART_KEY: ${{ secrets.ART_KEY }}
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+
+    - name : Preparing jfrog
+      run: curl -XGET https://art.sec.samsung.net/artifactory/tools/art/jfrog -L -k > jfrog && chmod u+x jfrog
+
+    - name: Building docker image
+      run: |
+        export
+        docker build -t ${ART_DOMAIN}/${ART_DOCKER_REPO}/${ART_DOCKER_SUBTAG} .
+
+    - name: Pushing docker image to artifactory
+      run: |
+        ./jfrog rt config --url ${ART_URL} --user ${ART_USER} --password ${ART_KEY} --interactive=false
+        ./jfrog rt docker-push ${ART_DOMAIN}/${ART_DOCKER_REPO}/${ART_DOCKER_SUBTAG} ${ART_DOCKER_REPO} --build-name=${GITHUB_REPOSITORY} --build-number=${GITHUB_SHA}
+        ./jfrog rt bag ${GITHUB_REPOSITORY} ${GITHUB_SHA} .

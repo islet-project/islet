@@ -15,8 +15,6 @@ function fn_make_test_badge()
 
 function fn_unit_test
 {
-	cargo install cargo2junit
-
 	mkdir ${ROOT}/out
 
 	cd ${ROOT}/rmm/core
@@ -50,8 +48,6 @@ function fn_make_coverage_badge()
 
 function fn_measure_coverage()
 {
-	cargo install cargo-tarpaulin --version 0.18.5
-
 	cd ${ROOT}/rmm/core
 	cargo tarpaulin --lib --exclude-files bin/* -v --ignore-tests --out Lcov --output-dir ${ROOT}/out \
 		-- --test-threads=1

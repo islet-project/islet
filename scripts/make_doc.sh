@@ -4,8 +4,6 @@ ROOT=$(git rev-parse --show-toplevel)
 
 source ${ROOT}/scripts/env.sh
 
-cargo install mdbook mdbook-plantuml
-
 (
 	cd ${ROOT}/docs
 	mdbook build

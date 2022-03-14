@@ -9,16 +9,16 @@ source ${ROOT}/scripts/env.sh
 	git submodule update --init --recursive
 )
 
-{
-	cd ${TRUSTED_FIRMWARE_A}/tools/fiptool
-	make
-}
-
 sudo apt install -y -qq --no-install-recommends \
 	device-tree-compiler xterm \
 	libxml-libxml-perl \
 	jq lcov graphviz \
 	openjdk-11-jre
+
+cargo install \
+	mdbook mdbook-plantuml \
+	cargo2junit \
+	cargo-tarpaulin
 
 (
 	cd ${RMM}

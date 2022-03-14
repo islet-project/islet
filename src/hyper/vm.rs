@@ -9,7 +9,7 @@ pub static mut VMS: [Option<Arc<Mutex<VM>>>; MAX_VMS] = [VM_INIT; MAX_VMS];
 #[derive(Default, Debug)]
 pub struct VM {
     pub id: u32,
-    pub state: VMState,
+    pub state: State,
     pub vcpus: [Option<Arc<Mutex<VCPU>>>; MAX_VCPUS],
     pub num_vcpu: u32,
     // TODO: add pagetable
@@ -23,7 +23,7 @@ impl VM {
     pub const fn uninitialized() -> Self {
         Self {
             id: 0,
-            state: VMState::VMInit,
+            state: State::Init,
             vcpus: [VCPU_INIT; MAX_VCPUS],
             num_vcpu: 0,
         }
@@ -34,7 +34,7 @@ impl VM {
         // TODO: initialize pagetable
         self.id = id as u32;
         self.num_vcpu = num_vcpu as u32;
-        self.state = VMState::VMInit;
+        self.state = State::Init;
     }
 
     pub fn get_vm_as_mut_ref(id: usize) -> Option<Arc<Mutex<VM>>> {
@@ -48,15 +48,15 @@ impl VM {
 }
 
 #[derive(Debug)]
-pub enum VMState {
-    VMInit,
-    VMReady,
-    VMRunning,
-    VMDestroy,
+pub enum State {
+    Init,
+    Ready,
+    Running,
+    Destroy,
 }
 
-impl Default for VMState {
+impl Default for State {
     fn default() -> Self {
-        VMState::VMInit
+        State::Init
     }
 }

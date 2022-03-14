@@ -9,9 +9,9 @@ pub const VCPU_INIT: Option<Arc<Mutex<VCPU>>> = None;
 #[repr(C)]
 #[derive(Default, Debug)]
 pub struct VCPU {
-    pub context: VCPUContext,
+    pub context: Context,
     pub vm: Arc<Mutex<VM>>, // VM struct the VCPU belongs to
-    pub state: VCPUState,
+    pub state: State,
     pub pcpu: u32,
 }
 
@@ -27,7 +27,7 @@ impl VCPU {
             Some(ref arcvm) => Arc::clone(arcvm),
             None => panic!(),
         };
-        vcpu.state = VCPUState::VCPUInit;
+        vcpu.state = State::Init;
         vcpu.pcpu = cpu as u32;
 
         primary_vm.vcpus[cpu] = Some(Arc::new(Mutex::new(vcpu)));
@@ -38,7 +38,7 @@ impl VCPU {
 
 #[repr(C)]
 #[derive(Default, Debug)]
-pub struct VCPUContext {
+pub struct Context {
     pub gp_regs: [u64; 31],
     pub elr: u64,
     pub spsr: u64,
@@ -47,17 +47,17 @@ pub struct VCPUContext {
 }
 
 #[derive(Debug)]
-pub enum VCPUState {
-    VCPUInit,
-    VCPUReady,
-    VCPURunning,
-    VCPUTrapped,
-    VCPUDestroy,
+pub enum State {
+    Init,
+    Ready,
+    Running,
+    Trapped,
+    Destroy,
 }
 
-impl Default for VCPUState {
+impl Default for State {
     fn default() -> Self {
-        VCPUState::VCPUInit
+        State::Init
     }
 }
 

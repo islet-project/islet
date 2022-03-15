@@ -1,10 +1,11 @@
 use super::vcpu::{VCPU, VCPU_INIT};
-use crate::config::{MAX_VCPUS, MAX_VMS};
+use crate::config::MAX_VCPUS;
 use alloc::sync::Arc;
+use alloc::vec::Vec;
 use spin::mutex::Mutex;
 
 const VM_INIT: Option<Arc<Mutex<VM>>> = None;
-pub static mut VMS: [Option<Arc<Mutex<VM>>>; MAX_VMS] = [VM_INIT; MAX_VMS];
+pub static mut VMS: Vec<Arc<Mutex<VM>>> = Vec::new();
 
 #[derive(Default, Debug)]
 pub struct VM {
@@ -30,16 +31,15 @@ impl VM {
     }
 
     pub unsafe fn initialize(&mut self, id: usize, num_vcpu: usize) {
-        // TODO: assert VMS[id] is self
         // TODO: initialize pagetable
         self.id = id as u32;
         self.num_vcpu = num_vcpu as u32;
         self.state = State::Init;
     }
 
-    pub fn get_vm_as_mut_ref(id: usize) -> Option<Arc<Mutex<VM>>> {
+    pub fn get_vm(id: usize) -> Option<Arc<Mutex<VM>>> {
         unsafe {
-            match VMS[id] {
+            match VMS.iter().find(|&vm| vm.lock().id == id as u32) {
                 Some(ref mut arcvm) => Some(Arc::clone(arcvm)),
                 _ => None,
             }

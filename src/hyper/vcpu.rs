@@ -20,17 +20,14 @@ impl VCPU {
     pub unsafe fn vcpu_init() {
         let cpu = get_cpu_id();
 
-        let primary_vm = VM::get_vm_as_mut_ref(PRIMARY_VM_ID).unwrap();
-        let mut primary_vm = primary_vm.lock();
+        let primary_vm = VM::get_vm(PRIMARY_VM_ID).unwrap();
 
         let mut vcpu: VCPU = Default::default();
-        vcpu.vm = match VMS[PRIMARY_VM_ID] {
-            Some(ref arcvm) => Arc::downgrade(arcvm),
-            None => panic!(),
-        };
+        vcpu.vm = Arc::downgrade(&primary_vm);
         vcpu.state = State::Init;
         vcpu.pcpu = cpu as u32;
 
+        let mut primary_vm = primary_vm.lock();
         primary_vm.vcpus[cpu] = Some(Arc::new(Mutex::new(vcpu)));
 
         // TPIDR_EL2.set(&current_vcpu_context as *const u64 as u64);

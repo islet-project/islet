@@ -11,5 +11,4 @@ pub const RMM_STACK_SIZE: usize = 1024 * 1024;
 pub const RMM_HEAP_SIZE: usize = 8 * 1024 * 1024;
 
 pub const MAX_VCPUS: usize = 8;
-pub const MAX_VMS: usize = 8;
 pub const PRIMARY_VM_ID: usize = 0;

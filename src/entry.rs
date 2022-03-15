@@ -69,11 +69,10 @@ unsafe fn setup() {
         allocator::init();
         init_console();
 
-        VMS[PRIMARY_VM_ID] = Some(Arc::new(Mutex::new(VM::uninitialized())));
-        VM::get_vm_as_mut_ref(PRIMARY_VM_ID)
-            .unwrap()
-            .lock()
-            .initialize(PRIMARY_VM_ID, MAX_VCPUS);
+        let mut primary_vm = VM::uninitialized();
+        primary_vm.initialize(PRIMARY_VM_ID, MAX_VCPUS);
+
+        VMS.push(Arc::new(Mutex::new(primary_vm)));
 
         (&mut COLD_BOOT as *mut bool).write_volatile(false);
     }

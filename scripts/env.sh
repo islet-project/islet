@@ -6,3 +6,4 @@ TF_A_TESTS=${ROOT}/tf-a-tests/
 TRUSTED_FIRMWARE_A=${ROOT}/trusted-firmware-a/
 FIPTOOL=${TRUSTED_FIRMWARE_A}/tools/fiptool/fiptool
 FASTMODEL=${ROOT}/assets/fastmodel/
+RMM=${ROOT}/rmm/bin/

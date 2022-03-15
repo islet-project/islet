@@ -17,10 +17,11 @@ function fn_unit_test
 {
 	cargo install cargo2junit
 
+	cd ${ROOT}/rmm/core
+	cargo test --lib -- --test-threads=1 \
+		-Z unstable-options --format json >${ROOT}/out/test.json
+
 	cd ${ROOT}
-	mkdir out
-	cargo test --lib --target x86_64-unknown-linux-gnu -- --test-threads=1 \
-		-Z unstable-options --format json >out/test.json
 	cat out/test.json | cargo2junit >out/test.xml
 
 	PASSED=$(jq -r "select(.type == \"suite\" and .event != \"started\") | .passed" out/test.json)
@@ -49,13 +50,11 @@ function fn_measure_coverage()
 {
 	cargo install cargo-tarpaulin --version 0.18.5
 
-	cd ${ROOT}
-	cargo tarpaulin -v --ignore-tests --out Lcov --lib --output-dir out \
-		--target x86_64-unknown-linux-gnu \
-		--exclude-files \
-		src/rmi.rs \
-		src/aarch64/* \
+	cd ${ROOT}/rmm/core
+	cargo tarpaulin --lib --exclude-files bin/* -v --ignore-tests --out Lcov --output-dir ${ROOT}/out \
 		-- --test-threads=1
+
+	cd ${ROOT}
 
 	genhtml --output-directory out/coverage --show-details --highlight \
 		--ignore-errors source --legend out/lcov.info

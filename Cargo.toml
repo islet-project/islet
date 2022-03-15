@@ -1,12 +1,9 @@
-[package]
-name = "realm-management-monitor"
-version = "0.0.1"
-authors = ["CCA Contributors"]
-edition = "2018"
-
-[[bin]]
-name = "rmm"
-path = "src/main.rs"
+[workspace]
+resolver = "2"
+members = [
+    "rmm/core",
+    "rmm/bin",
+]
 
 [profile.dev]
 panic = "abort"
@@ -14,15 +11,3 @@ panic = "abort"
 [profile.release]
 lto = true
 panic = "abort"
-
-[dependencies]
-linked_list_allocator = "0.9.1"
-spinning_top = "0.2.4"
-lock_api = "=0.4.3"
-bitflags = "1.3"
-spin = "0.9.2"
-
-[build-dependencies]
-cc = "1.0"
-
-[features]

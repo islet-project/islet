@@ -5,7 +5,7 @@ use super::pgtlb_allocator;
 use crate::config::PAGE_SIZE;
 use core::marker::PhantomData;
 use core::mem;
-use realm_management_monitor::error::Error;
+use rmm_core::error::Error;
 
 /// An interface to allow for a generic implementation of struct PageTable
 /// for all 4 levels.

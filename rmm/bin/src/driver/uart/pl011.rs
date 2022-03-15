@@ -3,7 +3,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 use spinning_top::Spinlock;
 
-use realm_management_monitor::io::{self, ConsoleWriter, Error, ErrorKind, Result, Write};
+use rmm_core::io::{self, ConsoleWriter, Error, ErrorKind, Result, Write};
 
 const V2M_OFFSET: usize = 0;
 const V2M_IOFPGA_UART3_BASE: usize = V2M_OFFSET + 0x1c0c0000usize;

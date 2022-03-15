@@ -1,4 +1,4 @@
-use realm_management_monitor::{eprintln, io::Write as IoWrite};
+use rmm_core::{eprintln, io::Write as IoWrite};
 
 mod frame;
 mod syndrome;

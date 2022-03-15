@@ -26,10 +26,10 @@ extern crate alloc;
 #[macro_use(bitflags)]
 extern crate bitflags;
 
-use realm_management_monitor::communication::Event;
-use realm_management_monitor::io::Write as IoWrite;
-use realm_management_monitor::mainloop::Mainloop;
-use realm_management_monitor::{eprintln, println};
+use rmm_core::communication::Event;
+use rmm_core::io::Write as IoWrite;
+use rmm_core::mainloop::Mainloop;
+use rmm_core::{eprintln, println};
 
 #[no_mangle]
 #[allow(unused)]

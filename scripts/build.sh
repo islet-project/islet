@@ -12,12 +12,14 @@ source ${ROOT}/scripts/env.sh
 (
 	cd ${TRUSTED_FIRMWARE_A}
 	make CROSS_COMPILE=${CROSS_COMPILE} PLAT=fvp ENABLE_RME=1 FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts DEBUG=1 all
+	cp build/fvp/debug/bl1.bin ${ROOT}/out/.
 )
 
-cargo build --release
-${CROSS_COMPILE}objcopy -O binary ${ROOT}/out/aarch64-unknown-none-softfloat/release/rmm ${ROOT}/out/aarch64-unknown-none-softfloat/release/rmm.bin
-
-cp ${TRUSTED_FIRMWARE_A}/build/fvp/debug/bl1.bin out/.
+(
+	cd ${RMM}
+	cargo build --release
+	${CROSS_COMPILE}objcopy -O binary ${ROOT}/out/aarch64-unknown-none-softfloat/release/rmm ${ROOT}/out/aarch64-unknown-none-softfloat/release/rmm.bin
+)
 
 #Make fip.bin
 ${FIPTOOL} create \

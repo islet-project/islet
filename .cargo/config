@@ -1,8 +1,2 @@
 [build]
-target = "aarch64-unknown-none-softfloat"
 target-dir = "out"
-
-[target.aarch64-unknown-none-softfloat]
-rustflags = [
-  "-C", "link-args=-Tmemory.x",
-]

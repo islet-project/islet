@@ -7,8 +7,8 @@ pub mod regs;
 pub mod trap;
 
 use crate::hyper::vcpu::VCPU;
-use realm_management_monitor::{io::Write as IoWrite, println};
 pub use regs::*;
+use rmm_core::{io::Write as IoWrite, println};
 
 global_asm!(include_str!("vectors.s"));
 extern "C" {

@@ -1,5 +1,5 @@
-use realm_management_monitor::io::{stdout, Write as IoWrite};
-use realm_management_monitor::println;
+use rmm_core::io::{stdout, Write as IoWrite};
+use rmm_core::println;
 
 use crate::aarch64;
 use crate::allocator;

@@ -20,6 +20,9 @@ sudo apt install -y -qq --no-install-recommends \
 	jq lcov graphviz \
 	openjdk-11-jre
 
-rustup toolchain install $(cat ${ROOT}/rust-toolchain)
-rustup target add aarch64-unknown-none-softfloat
-rustup component add rust-src rustfmt
+(
+	cd ${RMM}
+	rustup toolchain install $(cat ${ROOT}/rmm/rust-toolchain)
+	rustup target add aarch64-unknown-none-softfloat
+	rustup component add rust-src rustfmt
+)

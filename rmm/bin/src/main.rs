@@ -3,6 +3,7 @@
 #![feature(const_fn)]
 #![feature(const_fn_fn_ptr_basics)]
 #![feature(const_mut_refs)]
+#![feature(const_btree_new)]
 #![feature(llvm_asm)]
 #![feature(alloc_error_handler)]
 #![feature(naked_functions)]
@@ -34,6 +35,10 @@ use rmm_core::{eprintln, println};
 #[allow(unused)]
 pub unsafe fn main() -> ! {
     println!("RMM: booted on core {:?}!", aarch64::cpu::id());
+
+    realm::registry::get(0).unwrap().lock().vcpus[aarch64::cpu::get_cpu_id()]
+        .lock()
+        .set_current();
 
     let mut mainloop = Mainloop::new(rmi::Receiver::new());
 

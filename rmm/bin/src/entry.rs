@@ -3,10 +3,8 @@ use rmm_core::println;
 
 use crate::aarch64;
 use crate::allocator;
-use crate::config::{MAX_VCPUS, NUM_OF_CPU, PRIMARY_VM_ID, RMM_STACK_SIZE};
-use crate::realm::vm::{VM, VMS};
-use alloc::sync::Arc;
-use spin::Mutex;
+use crate::config::{NUM_OF_CPU, RMM_STACK_SIZE};
+use crate::realm;
 
 extern crate alloc;
 
@@ -69,10 +67,7 @@ unsafe fn setup() {
         allocator::init();
         init_console();
 
-        let mut primary_vm = VM::uninitialized();
-        primary_vm.initialize(PRIMARY_VM_ID, MAX_VCPUS);
-
-        VMS.push(Arc::new(Mutex::new(primary_vm)));
+        realm::registry::new(NUM_OF_CPU);
 
         (&mut COLD_BOOT as *mut bool).write_volatile(false);
     }

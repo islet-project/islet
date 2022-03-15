@@ -6,7 +6,6 @@ pub mod cpu;
 pub mod regs;
 pub mod trap;
 
-use crate::realm::vcpu::VCPU;
 pub use regs::*;
 use rmm_core::{io::Write as IoWrite, println};
 
@@ -32,8 +31,6 @@ pub unsafe fn init() {
     );
 
     enable_hyp_mode();
-
-    VCPU::vcpu_init();
 
     VBAR_EL2.set(&vectors as *const u64 as u64);
 

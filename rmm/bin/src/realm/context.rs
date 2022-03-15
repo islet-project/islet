@@ -1,3 +1,7 @@
+use crate::aarch64::cpu::get_cpu_id;
+use crate::aarch64::TPIDR_EL2;
+use rmm_core::realm::vcpu::VCPU;
+
 #[repr(C)]
 #[derive(Default, Debug)]
 pub struct Context {
@@ -5,7 +9,14 @@ pub struct Context {
     pub elr: u64,
     pub spsr: u64,
     pub sys_regs: SystemRegister,
-    // pub fp_regs: [u128; 32],
+    pub fp_regs: [u128; 32],
+}
+
+impl rmm_core::realm::vcpu::Context for Context {
+    unsafe fn set_current(vcpu: &mut VCPU<Self>) {
+        vcpu.pcpu = Some(get_cpu_id());
+        TPIDR_EL2.set(vcpu as *const _ as u64);
+    }
 }
 
 #[repr(C)]

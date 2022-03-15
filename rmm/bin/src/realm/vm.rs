@@ -4,7 +4,6 @@ use alloc::sync::Arc;
 use alloc::vec::Vec;
 use spin::mutex::Mutex;
 
-const VM_INIT: Option<Arc<Mutex<VM>>> = None;
 pub static mut VMS: Vec<Arc<Mutex<VM>>> = Vec::new();
 
 #[derive(Default, Debug)]

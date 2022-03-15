@@ -15,11 +15,10 @@ pub mod allocator;
 pub mod config;
 pub mod driver;
 pub mod entry;
-pub mod hyper;
 pub mod panic;
+pub mod realm;
 pub mod rmi;
 pub mod smc;
-pub mod virt;
 
 extern crate alloc;
 

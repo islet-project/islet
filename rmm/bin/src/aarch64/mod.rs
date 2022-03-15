@@ -6,7 +6,7 @@ pub mod cpu;
 pub mod regs;
 pub mod trap;
 
-use crate::hyper::vcpu::VCPU;
+use crate::realm::vcpu::VCPU;
 pub use regs::*;
 use rmm_core::{io::Write as IoWrite, println};
 

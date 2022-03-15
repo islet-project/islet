@@ -1,5 +1,5 @@
 use super::context::Context;
-use super::vm::{VM, VMS};
+use super::vm::VM;
 use crate::aarch64::cpu::get_cpu_id;
 use crate::config::PRIMARY_VM_ID;
 use alloc::sync::{Arc, Weak};

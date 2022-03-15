@@ -4,7 +4,7 @@ use rmm_core::println;
 use crate::aarch64;
 use crate::allocator;
 use crate::config::{MAX_VCPUS, NUM_OF_CPU, PRIMARY_VM_ID, RMM_STACK_SIZE};
-use crate::hyper::vm::{VM, VMS};
+use crate::realm::vm::{VM, VMS};
 use alloc::sync::Arc;
 use spin::Mutex;
 

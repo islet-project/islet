@@ -1,6 +1,8 @@
 extern crate alloc;
 
-use super::page_table::{L1Table, PageTable};
+use super::address::{GuestPhysAddr, PhysAddr};
+use super::page_table::{get_page_range, L1Table, PageTable};
+use super::page_table_entry::{BasePageSize, LargePageSize, PageTableEntryFlags};
 use super::pgtlb_allocator;
 use crate::config::PAGE_SIZE;
 use alloc::boxed::Box;
@@ -54,10 +56,6 @@ pub fn create_stage2_table() -> Box<Stage2Translation> {
 
 // To start VM with reserved memory during MS1
 fn create_static_stage2_table() {
-    use crate::virt::mm::address::{GuestPhysAddr, PhysAddr};
-    use crate::virt::mm::page_table::get_page_range;
-    use crate::virt::mm::page_table_entry::{BasePageSize, LargePageSize, PageTableEntryFlags};
-
     let stg2_tlb = create_stage2_table();
     let root = stg2_tlb.get_root_pgtlb::<L1Table>();
     let flags: PageTableEntryFlags = PageTableEntryFlags::MEMATTR_NORMAL

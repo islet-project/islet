@@ -17,6 +17,8 @@ function fn_unit_test
 {
 	cargo install cargo2junit
 
+	mkdir ${ROOT}/out
+
 	cd ${ROOT}/rmm/core
 	cargo test --lib -- --test-threads=1 \
 		-Z unstable-options --format json >${ROOT}/out/test.json

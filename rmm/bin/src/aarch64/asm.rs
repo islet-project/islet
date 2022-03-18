@@ -17,3 +17,13 @@ pub fn eret() {
         }
     }
 }
+
+#[inline(always)]
+pub fn smc(b: u16) {
+    unsafe {
+        llvm_asm! {
+            "smc $0"
+            : : "i"(b) : : "volatile"
+        }
+    }
+}

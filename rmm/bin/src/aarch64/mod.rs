@@ -6,21 +6,14 @@ pub mod cpu;
 pub mod regs;
 pub mod trap;
 
+use crate::realm;
 pub use regs::*;
 use rmm_core::{io::Write as IoWrite, println};
 
 global_asm!(include_str!("vectors.s"));
 extern "C" {
     static mut vectors: u64;
-}
-
-unsafe fn enable_hyp_mode() {
-    HCR_EL2.set(
-        HCR_EL2::RW, // Execution state for EL1 is AArch64
-                     // | HCR_EL2::VM  // Enable stage 2 address translation
-                     // | HCR_EL2::TSC // Traps SMC instructions
-                     // | HCR_EL2::FMO // Route physical FIQ interrupts to EL2
-    );
+    fn restore_all_from_vcpu_and_run();
 }
 
 pub unsafe fn init() {
@@ -30,9 +23,13 @@ pub unsafe fn init() {
         regs::current_el()
     );
 
-    enable_hyp_mode();
-
     VBAR_EL2.set(&vectors as *const u64 as u64);
 
-    asm::brk(10);
+    realm::registry::get(0).unwrap().lock().vcpus[cpu::get_cpu_id()]
+        .lock()
+        .set_current();
+
+    // asm::brk(10);
+
+    restore_all_from_vcpu_and_run();
 }

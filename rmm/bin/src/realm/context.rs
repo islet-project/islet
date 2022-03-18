@@ -1,5 +1,6 @@
 use crate::aarch64::cpu::get_cpu_id;
-use crate::aarch64::TPIDR_EL2;
+use crate::aarch64::{HCR_EL2, SPSR_EL2, TPIDR_EL2};
+use crate::config::{STACK_ALIGN, VM_STACK_SIZE};
 use rmm_core::realm::vcpu::VCPU;
 
 #[repr(C)]
@@ -15,15 +16,35 @@ pub struct Context {
 impl rmm_core::realm::vcpu::Context for Context {
     unsafe fn set_current(vcpu: &mut VCPU<Self>) {
         vcpu.pcpu = Some(get_cpu_id());
+
+        // TODO[1]: Set PC (and arg) for vCPU entry
+        vcpu.context.elr = crate::dummy_main as u64;
+
+        // TODO[2]: Set appropriate sys registers (hcr, spsr, ..)
+        vcpu.context.sys_regs.sp = alloc::alloc::alloc_zeroed(
+            alloc::alloc::Layout::from_size_align(VM_STACK_SIZE, STACK_ALIGN).unwrap(),
+        ) as u64;
+        vcpu.context.sys_regs.sp += VM_STACK_SIZE as u64;
+
+        vcpu.context.spsr =
+            SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M & 0b0101);
+        vcpu.context.sys_regs.hcr = HCR_EL2::RW | HCR_EL2::TSC;
+        vcpu.context.sys_regs.vmpidr = vcpu.pcpu.unwrap() as u64;
+
+        // TODO[3]: enable floating point
+        // CPTR_EL2, CPACR_EL1, update vectors.s, etc..
+
+        // TODO[4]: enable virtual memory
+        // TTBR, ..
+
         TPIDR_EL2.set(vcpu as *const _ as u64);
+        vcpu.state = rmm_core::realm::vcpu::State::Ready;
     }
 }
 
 #[repr(C)]
 #[derive(Default, Debug)]
 pub struct SystemRegister {
-    pub spsr: u64,
-    pub elr: u64,
     pub sctlr: u64,
     pub sp: u64,
     pub sp_el0: u64,
@@ -38,7 +59,7 @@ pub struct SystemRegister {
     pub tpidr_el0: u64,
     pub tpidrro: u64,
     pub actlr: u64,
-    pub mpidr: u64,
+    pub vmpidr: u64,
     pub csselr: u64,
     pub cpacr: u64,
     pub afsr0: u64,
@@ -47,7 +68,6 @@ pub struct SystemRegister {
     pub contextidr: u64,
     pub cntkctl: u64,
     pub par: u64,
-    pub disr: u64,
     pub hcr: u64,
     pub esr_el2: u64,
     pub hpfar: u64,

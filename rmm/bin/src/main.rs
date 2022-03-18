@@ -34,11 +34,11 @@ use rmm_core::{eprintln, println};
 #[no_mangle]
 #[allow(unused)]
 pub unsafe fn main() -> ! {
-    println!("RMM: booted on core {:?}!", aarch64::cpu::id());
-
-    realm::registry::get(0).unwrap().lock().vcpus[aarch64::cpu::get_cpu_id()]
-        .lock()
-        .set_current();
+    println!(
+        "RMM: booted on core {:2} with EL{}!",
+        aarch64::cpu::get_cpu_id(),
+        aarch64::regs::current_el()
+    );
 
     let mut mainloop = Mainloop::new(rmi::Receiver::new());
 
@@ -70,4 +70,15 @@ pub unsafe fn main() -> ! {
     mainloop.run();
 
     panic!("failed to run the mainloop");
+}
+
+#[no_mangle]
+#[allow(unused)]
+pub unsafe fn dummy_main() {
+    println!(
+        "DUMMY: booted on core {:2} with EL{}!",
+        aarch64::cpu::get_cpu_id(),
+        aarch64::regs::current_el()
+    );
+    aarch64::asm::smc(5);
 }

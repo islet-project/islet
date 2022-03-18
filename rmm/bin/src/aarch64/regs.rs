@@ -36,6 +36,12 @@ define_sys_register!(
 
 define_sys_register!(ELR_EL2);
 define_sys_register!(TPIDR_EL2);
+use crate::realm::context::Context;
+use rmm_core::realm::vcpu::VCPU;
+pub unsafe fn current_vcpu() -> &'static mut VCPU<Context> {
+    &mut *(TPIDR_EL2.get() as *mut VCPU<Context>)
+}
+
 define_sys_register!(
     HCR_EL2,        // ref. D13.2.46
     ID[33 - 33],    // Disables stage 2 instruction cache

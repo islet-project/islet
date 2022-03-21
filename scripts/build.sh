@@ -10,6 +10,12 @@ source ${ROOT}/scripts/env.sh
 )
 
 (
+	cd ${VM_IMAGE}
+	make CROSS_COMPILE=${CROSS_COMPILE} PLAT=fvp DEBUG=1
+	cp ${VM_IMAGE}/build/fvp/debug/tftf.bin ${ROOT}/out/vm-image.bin
+)
+
+(
 	cd ${TRUSTED_FIRMWARE_A}
 	make CROSS_COMPILE=${CROSS_COMPILE} PLAT=fvp ENABLE_RME=1 FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts DEBUG=1 all
 	cp build/fvp/debug/bl1.bin ${ROOT}/out/.

@@ -10,6 +10,6 @@
 	path = assets
 	url = https://github.sec.samsung.net/SYSSEC/assets-arm-cca.git
 	branch = main
-[submodule "arm-cca-vm-image"]
-	path = arm-cca-vm-image
+[submodule "vm-image"]
+	path = vm-image
 	url = https://github.sec.samsung.net/SYSSEC/arm-cca-vm-image.git

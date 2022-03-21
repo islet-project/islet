@@ -40,6 +40,7 @@ pub struct Info {
 /// of the Synchronous and SError exception.
 /// The `tf` has the TrapFrame of current context.
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
     match info.kind {
         Kind::Synchronous => match Syndrome::from(esr) {
@@ -65,6 +66,7 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
 /// of the Synchronous and SError exception.
 /// The `vcpu` has the VCPU context.
 #[no_mangle]
+#[allow(unused_variables)]
 pub extern "C" fn handle_lower_exception(info: Info, esr: u32, vcpu: &mut VCPU<Context>) -> u64 {
     // eprintln!("{:?}\nESR: {:X}\n{:#X?}", info, esr, vcpu);
     // TODO: Handle exceptions properly

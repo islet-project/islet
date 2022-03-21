@@ -5,6 +5,7 @@ mod syndrome;
 
 use self::frame::TrapFrame;
 use self::syndrome::Syndrome;
+use crate::aarch64::cpu;
 use crate::realm::context::Context;
 use rmm_core::realm::vcpu::VCPU;
 
@@ -50,11 +51,16 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
                 tf.elr += 4; //continue
             }
             undefined => {
-                panic!("{:?} and {:?}", info, undefined);
+                panic!("{:?} and {:?} on CPU {:?}", info, undefined, cpu::id());
             }
         },
         _ => {
-            panic!("Unknown exception! Info={:?}, ESR={:x}", info, esr);
+            panic!(
+                "Unknown exception! Info={:?}, ESR={:x} on CPU {:?}",
+                info,
+                esr,
+                cpu::id()
+            );
         }
     }
 }

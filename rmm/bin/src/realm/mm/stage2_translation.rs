@@ -1,63 +1,71 @@
 extern crate alloc;
 
+use rmm_core::realm::vmem::IPATranslation;
+
 use super::address::{GuestPhysAddr, PhysAddr};
 use super::page_table::{get_page_range, L1Table, PageTable};
 use super::page_table_entry::{BasePageSize, LargePageSize, PageTableEntryFlags};
 use super::pgtlb_allocator;
+use crate::aarch64::reg_bitvalue::bits_in_reg;
+use crate::aarch64::VTTBR_EL2;
 use crate::config::PAGE_SIZE;
-use alloc::boxed::Box;
-use core::mem;
+use core::{fmt, mem};
 
 // initial lookup starts at level 1 with 2 page tables concatenated
 pub const NUM_ROOT_PAGE: usize = 2;
 pub const ROOT_PGTLB_ALIGNMENT: usize = PAGE_SIZE * NUM_ROOT_PAGE;
 
-pub struct Stage2Translation {
+pub struct Stage2Translation<'a> {
     // We will set the translation granule with 4KB.
-    // Each VM is exepected to use less than 8GB.
     // To reduce the level of page lookup, initial lookup will start from L1.
-    // We allocate a single page able which is still able to address 512GB.
-    root_pgtlb: Result<*mut PageTable<L1Table>, ()>,
-    //vttbr0_el2: u64,
-    //vtcr_el2: u64,
-    //mair_el2: u64,
-    //tcr_el2: u64,
-    //sctlr_el2: u64,
-    //vstcr_el2: u64,
-    //hcr_el2: u64,
+    // We allocate two single page table initial lookup table, addresing up 1TB.
+    //root_pgtlb: Result<*mut PageTable<L1Table>, ()>,
+    root_pgtlb: &'a mut PageTable<L1Table>,
+    vttbr_el2: u64,
 }
 
-impl Stage2Translation {
-    fn new() -> Self {
+impl<'a> Stage2Translation<'a> {
+    pub fn new(vmid: u64) -> Self {
+        let _root_pgtlb = pgtlb_allocator::allocate_tables(NUM_ROOT_PAGE, ROOT_PGTLB_ALIGNMENT);
+        // FIXME: temporary for mile stone 1
+        fill_stage2_table(&_root_pgtlb);
         Self {
-            root_pgtlb: pgtlb_allocator::allocate_tables(NUM_ROOT_PAGE, ROOT_PGTLB_ALIGNMENT),
-            // TODO: set the initial values
-            //vttbr0_el2: 0,
-            // TODO: VTCR_EL2 SL0=1, T0SZ: 25, granule
-            //vtcr_el2: 0,
-            //mair_el2: 0,
-            //tcr_el2: 0,
-            //sctlr_el2: 0,
-            //vstcr_el2: 0,
-            //hcr_el2: 0,
+            root_pgtlb: unsafe { mem::transmute(_root_pgtlb.unwrap()) },
+            vttbr_el2: get_vttbr(vmid, &_root_pgtlb),
         }
     }
 
-    fn get_root_pgtlb<T>(&self) -> &mut PageTable<T> {
-        unsafe { mem::transmute(self.root_pgtlb.unwrap()) }
+    /*
+    fn get_root_pgtlb(&self) -> &mut PageTable<L1Table> {
+         //unsafe { mem::transmute(self.root_pgtlb.unwrap()) }
+         self.root_pgtlb
+    }
+    */
+}
+
+impl<'a> IPATranslation for Stage2Translation<'a> {
+    fn set_mmu(&mut self) {
+        unsafe {
+            VTTBR_EL2.set(self.vttbr_el2);
+        }
     }
 }
 
-pub fn create_stage2_table() -> Box<Stage2Translation> {
-    let s2_trans_tbl = Box::new(Stage2Translation::new());
-
-    s2_trans_tbl
+impl<'a> fmt::Debug for Stage2Translation<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Stage2Translation")
+            //.field("root_pgtlb", &self.root_pgtlb)
+            .field("vttbr_el2", &self.vttbr_el2)
+            .finish()
+    }
 }
 
-// To start VM with reserved memory during MS1
-fn create_static_stage2_table() {
-    let stg2_tlb = create_stage2_table();
-    let root = stg2_tlb.get_root_pgtlb::<L1Table>();
+fn get_vttbr(vmid: u64, pgtlb: &Result<*mut PageTable<L1Table>, ()>) -> u64 {
+    bits_in_reg(VTTBR_EL2::VMID, vmid) | bits_in_reg(VTTBR_EL2::BADDR, pgtlb.unwrap() as u64)
+}
+
+fn fill_stage2_table(pgtlb: &Result<*mut PageTable<L1Table>, ()>) {
+    let root: &mut PageTable<L1Table> = unsafe { mem::transmute(pgtlb.unwrap()) };
     let flags: PageTableEntryFlags = PageTableEntryFlags::MEMATTR_NORMAL
         | PageTableEntryFlags::S2AP_RW
         | PageTableEntryFlags::VALID;
@@ -70,3 +78,12 @@ fn create_static_stage2_table() {
         .is_ok());
     assert!(root.map_pages(pages2, PhysAddr(0x88400000), flags).is_ok());
 }
+
+// To start VM with reserved memory during MS1
+/*
+pub fn create_stage2_table(vmid: u64) -> Stage2Translation<'static> {
+    let s2_trans_tbl = Stage2Translation::new(vmid);
+
+    s2_trans_tbl
+}
+*/

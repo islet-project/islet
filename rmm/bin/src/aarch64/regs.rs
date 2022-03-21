@@ -78,3 +78,45 @@ define_sys_register!(
     RES0[63 - 34 | 29 - 29],
     RES1[01 - 01]
 );
+
+define_sys_register!(
+    SCTLR_EL2,
+    EE[25 - 25],  // Endianness of data accesses at EL2
+    WXN[19 - 19], // Write permission implies Execute-never
+    I[12 - 12],   // Instruction access Cacheability at EL2
+    SA[3 - 3],    // SP Alignment check enable
+    C[2 - 2],     // Data access Cacheability  at EL2
+    A[1 - 1],     // Alignment check enable
+    M[0 - 0]      // MMU enable for EL2
+);
+
+define_sys_register!(
+    ID_AA64MMFR0_EL1,
+    PARANGE[2 - 0] // PARangs, bits[3:0]. bit[3] is always 0 and unused
+);
+
+define_sys_register!(
+    MAIR_EL2,
+    Attr7[63 - 56],
+    Attr6[55 - 48],
+    Attr5[47 - 40],
+    Attr4[39 - 32],
+    Attr3[31 - 24],
+    Attr2[23 - 16],
+    Attr1[15 - 8],
+    Attr0[7 - 0]
+);
+
+define_sys_register!(
+    VTCR_EL2,
+    VS[19 - 19],    // VMID size. 0b0: 8bits, 0b1: 16bit
+    PS[18 - 16],    // Physical address size for the second stage of translation
+    TG0[15 - 14],   // Granule size (VTTBR_EL2)
+    SH0[13 - 12],   // Shareability (VTTBR_EL2)
+    ORGN0[11 - 10], // Outer cacheability (VTTBR_EL2)
+    IRGN0[9 - 8],   // Outer cacheability (VTTBR_EL2)
+    SL0[7 - 6],     // Starting level of the stage 2 translation lookup
+    T0SZ[5 - 0]     // Size offset of the memory region (TTBR0_EL2)
+);
+
+define_sys_register!(VTTBR_EL2, VMID[63 - 48], BADDR[47 - 1]);

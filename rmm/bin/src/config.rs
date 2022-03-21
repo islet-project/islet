@@ -10,5 +10,5 @@ pub const PAGE_SIZE: usize = 1 << PAGE_BITS;
 pub const RMM_STACK_SIZE: usize = 1024 * 1024;
 pub const RMM_HEAP_SIZE: usize = 8 * 1024 * 1024;
 
-pub const VM_STACK_SIZE: usize = 1 << 20;
+pub const VM_STACK_SIZE: usize = 1 << 15;
 pub const STACK_ALIGN: usize = 16;

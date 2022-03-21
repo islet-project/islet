@@ -7,7 +7,7 @@ core.assign 1. 2. 3. 4. 5. 6. 7. 8.
 
 sys.up
 
-d.load.elf out/aarch64-unknown-none-softfloat/release/rmm /nocode
+d.load.elf ../out/aarch64-unknown-none-softfloat/release/rmm /nocode
 
 list
 register
@@ -15,4 +15,3 @@ register
 break.set HX:rmm_entry
 
 go
-

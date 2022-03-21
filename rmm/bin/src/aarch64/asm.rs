@@ -27,3 +27,13 @@ pub fn smc(b: u16) {
         }
     }
 }
+
+#[inline(always)]
+pub fn hvc(b: u16) {
+    unsafe {
+        llvm_asm! {
+            "hvc $0"
+            : : "i"(b) : : "volatile"
+        }
+    }
+}

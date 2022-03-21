@@ -15,7 +15,7 @@ use rmm_core::{io::Write as IoWrite, println};
 global_asm!(include_str!("vectors.s"));
 extern "C" {
     static mut vectors: u64;
-    fn restore_all_from_vcpu_and_run();
+    pub fn rmm_exit();
 }
 
 pub fn activate_stage2_mmu() {
@@ -75,6 +75,4 @@ pub unsafe fn init() {
         .set_mmu();
 
     // asm::brk(10);
-
-    restore_all_from_vcpu_and_run();
 }

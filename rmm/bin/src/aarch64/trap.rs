@@ -74,10 +74,22 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
 #[no_mangle]
 #[allow(unused_variables)]
 pub extern "C" fn handle_lower_exception(info: Info, esr: u32, vcpu: &mut VCPU<Context>) -> u64 {
-    // eprintln!("{:?}\nESR: {:X}\n{:#X?}", info, esr, vcpu);
-    // TODO: Handle exceptions properly
-    let cmd = usize::from(crate::rmi::Code::RequestComplete);
-    let arg = [0; 4];
-    crate::smc::call(cmd, arg);
-    0
+    match info.kind {
+        Kind::Synchronous => match Syndrome::from(esr) {
+            Syndrome::HVC => 1,
+            undefined => {
+                eprintln!("{:?} and {:?} on CPU {:?}", info, undefined, cpu::id());
+                0
+            }
+        },
+        _ => {
+            eprintln!(
+                "Unknown exception! Info={:?}, ESR={:x} on CPU {:?}",
+                info,
+                esr,
+                cpu::id()
+            );
+            0
+        }
+    }
 }

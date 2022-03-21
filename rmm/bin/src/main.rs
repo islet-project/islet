@@ -67,6 +67,10 @@ pub unsafe fn main() -> ! {
         eprintln!("RMM: no proper rmi handler - code:{:?}", call.code());
     });
 
+    mainloop.set_idle_handler(|| {
+        aarch64::rmm_exit();
+    });
+
     mainloop.run();
 
     panic!("failed to run the mainloop");
@@ -80,5 +84,8 @@ pub unsafe fn dummy_main() {
         aarch64::cpu::get_cpu_id(),
         aarch64::regs::current_el()
     );
-    aarch64::asm::smc(5);
+    loop {
+        println!("DUMMY: switched!");
+        aarch64::asm::hvc(5);
+    }
 }

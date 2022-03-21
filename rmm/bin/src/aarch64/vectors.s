@@ -47,77 +47,6 @@
 	stp x1, x2, [x18, #VCPU_GP_REGS + 8 * 31]
 .endm
 
-vcpu_switch:
-	/* Save non-volatile registers */
-	mrs x1, tpidr_el2
-	stp x19, x20, [x1, #VCPU_GP_REGS + 8 * 19]
-	stp x21, x22, [x1, #VCPU_GP_REGS + 8 * 21]
-	stp x23, x24, [x1, #VCPU_GP_REGS + 8 * 23]
-	stp x25, x26, [x1, #VCPU_GP_REGS + 8 * 25]
-	stp x27, x28, [x1, #VCPU_GP_REGS + 8 * 27]
-
-	/* Save system registers */
-	/* Use x28 as the base */
-	add x28, x1, #VCPU_SYS_REGS
-
-	mrs x2, sctlr_el2
-	mrs x3, sp_el1
-	stp x2, x3, [x28], #16
-
-	mrs x2, sp_el0
-	mrs x3, esr_el1
-	stp x2, x3, [x28], #16
-
-	mrs x2, vbar_el1
-	mrs x3, ttbr0_el1
-	stp x2, x3, [x28], #16
-
-	mrs x2, ttbr1_el1
-	mrs x3, mair_el1
-	stp x2, x3, [x28], #16
-
-	mrs x2, amair_el1
-	mrs x3, tcr_el1
-	stp x2, x3, [x28], #16
-
-	mrs x2, tpidr_el1
-	mrs x3, tpidr_el0
-	stp x2, x3, [x28], #16
-
-	mrs x2, tpidrro_el0
-	mrs x3, actlr_el1
-	stp x2, x3, [x28], #16
-
-	mrs x2, vmpidr_el2
-	mrs x3, csselr_el1
-	stp x2, x3, [x28], #16
-
-	mrs x2, cpacr_el1
-	mrs x3, afsr0_el1
-	stp x2, x3, [x28], #16
-
-	mrs x2, afsr1_el1
-	mrs x3, far_el1
-	stp x2, x3, [x28], #16
-
-	mrs x2, contextidr_el1
-	mrs x3, cntkctl_el1
-	stp x2, x3, [x28], #16
-
-	mrs x2, par_el1
-	mrs x3, hcr_el2
-	stp x2, x3, [x28], #16
-
-	mrs x2, esr_el2
-	mrs x3, hpfar_el2
-	stp x2, x3, [x28], #16
-
-	/* TODO: FP_REGS */
-
-	/* x0 has pointer of vCPU to switch into */
-	msr tpidr_el2, x0
-
-	/* Intentional Fall-through*/
 .global restore_all_from_vcpu_and_run
 restore_all_from_vcpu_and_run:
 	mrs x0, tpidr_el2
@@ -258,13 +187,120 @@ restore_volatile_from_stack_and_return:
 
 	bl handle_lower_exception
 
-	/* Switch vCPU if requested by handler */
-	cbnz x0, vcpu_switch
+	/* Enter to rmm */
+	/* vcpu will be switched by rmm if needed */
+	cbnz x0, rmm_enter
 
-	/* vCPU is not changing */
 	mrs x0, tpidr_el2
 	b restore_volatile_from_vcpu_and_run
 .endm
+
+.global rmm_enter
+rmm_enter:
+	/* Save non-volatile registers */
+	mrs x1, tpidr_el2
+	stp x19, x20, [x1, #VCPU_GP_REGS + 8 * 19]
+	stp x21, x22, [x1, #VCPU_GP_REGS + 8 * 21]
+	stp x23, x24, [x1, #VCPU_GP_REGS + 8 * 23]
+	stp x25, x26, [x1, #VCPU_GP_REGS + 8 * 25]
+	stp x27, x28, [x1, #VCPU_GP_REGS + 8 * 27]
+
+	/* Save system registers */
+	/* Use x28 as the base */
+	add x28, x1, #VCPU_SYS_REGS
+
+	mrs x2, sctlr_el2
+	mrs x3, sp_el1
+	stp x2, x3, [x28], #16
+
+	mrs x2, sp_el0
+	mrs x3, esr_el1
+	stp x2, x3, [x28], #16
+
+	mrs x2, vbar_el1
+	mrs x3, ttbr0_el1
+	stp x2, x3, [x28], #16
+
+	mrs x2, ttbr1_el1
+	mrs x3, mair_el1
+	stp x2, x3, [x28], #16
+
+	mrs x2, amair_el1
+	mrs x3, tcr_el1
+	stp x2, x3, [x28], #16
+
+	mrs x2, tpidr_el1
+	mrs x3, tpidr_el0
+	stp x2, x3, [x28], #16
+
+	mrs x2, tpidrro_el0
+	mrs x3, actlr_el1
+	stp x2, x3, [x28], #16
+
+	mrs x2, vmpidr_el2
+	mrs x3, csselr_el1
+	stp x2, x3, [x28], #16
+
+	mrs x2, cpacr_el1
+	mrs x3, afsr0_el1
+	stp x2, x3, [x28], #16
+
+	mrs x2, afsr1_el1
+	mrs x3, far_el1
+	stp x2, x3, [x28], #16
+
+	mrs x2, contextidr_el1
+	mrs x3, cntkctl_el1
+	stp x2, x3, [x28], #16
+
+	mrs x2, par_el1
+	mrs x3, hcr_el2
+	stp x2, x3, [x28], #16
+
+	mrs x2, esr_el2
+	mrs x3, hpfar_el2
+	stp x2, x3, [x28], #16
+
+	/* TODO: FP_REGS */
+
+	ldr x0, [SP], #8
+	ldp x1, x2, [SP], #16
+	ldp x3, x4, [SP], #16
+	ldp x5, x6, [SP], #16
+	ldp x7, x8, [SP], #16
+	ldp x9, x10, [SP], #16
+	ldp x11, x12, [SP], #16
+	ldp x13, x14, [SP], #16
+	ldp x15, x16, [SP], #16
+	ldp x17, x18, [SP], #16
+	ldp x19, x20, [SP], #16
+	ldp x21, x22, [SP], #16
+	ldp x23, x24, [SP], #16
+	ldp x25, x26, [SP], #16
+	ldp x27, x28, [SP], #16
+	ldp x29, x30, [SP], #16
+	ret
+
+.global rmm_exit
+rmm_exit:
+	stp x29, x30, [SP, #-16]!
+	stp x27, x28, [SP, #-16]!
+	stp x25, x26, [SP, #-16]!
+	stp x23, x24, [SP, #-16]!
+	stp x21, x22, [SP, #-16]!
+	stp x19, x20, [SP, #-16]!
+	stp x17, x18, [SP, #-16]!
+	stp x15, x16, [SP, #-16]!
+	stp x13, x14, [SP, #-16]!
+	stp x11, x12, [SP, #-16]!
+	stp x9, x10, [SP, #-16]!
+	stp x7, x8, [SP, #-16]!
+	stp x5, x6, [SP, #-16]!
+	stp x3, x4, [SP, #-16]!
+	stp x1, x2, [SP, #-16]!
+	str x0, [SP, #-8]!
+
+	b restore_all_from_vcpu_and_run
 
 .align 11
 .global vectors

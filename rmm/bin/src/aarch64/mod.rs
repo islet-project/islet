@@ -7,7 +7,6 @@ pub mod reg_bitvalue;
 pub mod regs;
 pub mod trap;
 
-use crate::realm;
 use reg_bitvalue::*;
 pub use regs::*;
 use rmm_core::{io::Write as IoWrite, println};
@@ -62,17 +61,6 @@ pub unsafe fn init() {
 
     VBAR_EL2.set(&vectors as *const u64 as u64);
     activate_stage2_mmu();
-
-    realm::registry::get(0).unwrap().lock().vcpus[cpu::get_cpu_id()]
-        .lock()
-        .set_current();
-
-    realm::registry::get(0)
-        .unwrap()
-        .lock()
-        .page_table
-        .lock()
-        .set_mmu();
 
     // asm::brk(10);
 }

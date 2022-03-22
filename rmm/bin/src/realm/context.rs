@@ -14,31 +14,33 @@ pub struct Context {
 }
 
 impl rmm_core::realm::vcpu::Context for Context {
-    unsafe fn set_current(vcpu: &mut VCPU<Self>) {
-        vcpu.pcpu = Some(get_cpu_id());
-
+    fn new() -> Self {
+        let mut context: Self = Default::default();
         // TODO[1]: Set PC (and arg) for vCPU entry
-        vcpu.context.elr = crate::dummy_main as u64;
+        context.elr = crate::dummy_main as u64;
 
         // TODO[2]: Set appropriate sys registers (hcr, spsr, ..)
-        vcpu.context.sys_regs.sp = alloc::alloc::alloc_zeroed(
-            alloc::alloc::Layout::from_size_align(VM_STACK_SIZE, STACK_ALIGN).unwrap(),
-        ) as u64;
-        vcpu.context.sys_regs.sp += VM_STACK_SIZE as u64;
-
-        vcpu.context.spsr =
+        context.sys_regs.sp = unsafe {
+            alloc::alloc::alloc_zeroed(
+                alloc::alloc::Layout::from_size_align(VM_STACK_SIZE, STACK_ALIGN).unwrap(),
+            )
+        } as u64;
+        context.sys_regs.sp += VM_STACK_SIZE as u64;
+        context.spsr =
             SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M & 0b0101);
-        vcpu.context.sys_regs.hcr = HCR_EL2::RW | HCR_EL2::TSC;
-        vcpu.context.sys_regs.vmpidr = vcpu.pcpu.unwrap() as u64;
+        context.sys_regs.hcr = HCR_EL2::RW | HCR_EL2::TSC;
 
         // TODO[3]: enable floating point
         // CPTR_EL2, CPACR_EL1, update vectors.s, etc..
 
-        // TODO[4]: enable virtual memory
-        // TTBR, ..
+        context
+    }
 
+    unsafe fn set_current(vcpu: &mut VCPU<Self>) {
+        vcpu.pcpu = Some(get_cpu_id());
+        vcpu.context.sys_regs.vmpidr = vcpu.pcpu.unwrap() as u64;
+        vcpu.state = rmm_core::realm::vcpu::State::Running;
         TPIDR_EL2.set(vcpu as *const _ as u64);
-        vcpu.state = rmm_core::realm::vcpu::State::Ready;
     }
 }
 

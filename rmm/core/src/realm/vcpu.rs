@@ -6,6 +6,9 @@ use spin::Mutex;
 extern crate alloc;
 
 pub trait Context {
+    fn new() -> Self
+    where
+        Self: Sized;
     unsafe fn set_current(vcpu: &mut VCPU<Self>)
     where
         Self: Sized;
@@ -25,7 +28,7 @@ impl<T: Context + Default> VCPU<T> {
         Self {
             vm: vm,
             state: State::Init,
-            context: Default::default(),
+            context: T::new(),
             pcpu: None,
         }
     }

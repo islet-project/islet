@@ -40,6 +40,11 @@ pub unsafe fn main() -> ! {
         aarch64::regs::current_el()
     );
 
+    realm::registry::get(0)
+        .unwrap()
+        .lock()
+        .switch_to(aarch64::cpu::get_cpu_id());
+
     let mut mainloop = Mainloop::new(rmi::Receiver::new());
 
     mainloop.set_event_handler(rmi::Code::Version, |call| {

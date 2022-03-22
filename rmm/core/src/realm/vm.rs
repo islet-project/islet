@@ -1,6 +1,7 @@
 use super::vcpu::{Context, VCPU};
 use super::vmem::IPATranslation;
 
+use crate::error::{Error, ErrorKind};
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
@@ -17,7 +18,7 @@ pub struct VM<T: Context> {
     // TODO: add pagetable
 }
 
-impl<T: Context> VM<T> {
+impl<T: Context + Default> VM<T> {
     pub const fn new(id: usize, page_table: Arc<Mutex<Box<dyn IPATranslation>>>) -> Self {
         Self {
             id: id,
@@ -29,6 +30,16 @@ impl<T: Context> VM<T> {
 
     pub fn id(&self) -> usize {
         self.id
+    }
+
+    pub fn switch_to(&self, vcpu: usize) -> Result<(), Error> {
+        self.vcpus
+            .get(vcpu)
+            .map(|vcpu| vcpu.lock().set_current())
+            .ok_or(Error::new(ErrorKind::NotConnected))?;
+        self.page_table.lock().set_mmu();
+
+        Ok(())
     }
 }
 

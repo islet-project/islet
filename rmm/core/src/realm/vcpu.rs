@@ -38,6 +38,12 @@ impl<T: Context + Default> VCPU<T> {
     }
 }
 
+impl<T: Context> Drop for VCPU<T> {
+    fn drop(&mut self) {
+        //TODO unset current if the current is this
+    }
+}
+
 #[derive(Debug)]
 pub enum State {
     Ready,

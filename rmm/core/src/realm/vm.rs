@@ -43,6 +43,12 @@ impl<T: Context + Default> VM<T> {
     }
 }
 
+impl<T: Context> Drop for VM<T> {
+    fn drop(&mut self) {
+        //TODO unset pagetable
+    }
+}
+
 #[derive(Debug)]
 pub enum State {
     Init,

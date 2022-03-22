@@ -107,7 +107,9 @@ pub unsafe fn main() -> ! {
     });
 
     mainloop.set_idle_handler(|| {
-        aarch64::rmm_exit();
+        if realm::vcpu::current().is_some() {
+            aarch64::rmm_exit();
+        }
     });
 
     mainloop.run();

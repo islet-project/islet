@@ -1,3 +1,4 @@
+use rmm_core::error::{Error, ErrorKind};
 use rmm_core::realm::vcpu::VCPU;
 use rmm_core::realm::vm::VM;
 use rmm_core::realm::vmem::IPATranslation;
@@ -40,6 +41,10 @@ pub fn get(id: usize) -> Option<Arc<Mutex<VM<Context>>>> {
     VMS.lock().1.get(&id).map(|vm| Arc::clone(vm))
 }
 
-pub fn remove(id: usize) {
-    VMS.lock().1.remove(&id);
+pub fn remove(id: usize) -> Result<(), Error> {
+    VMS.lock()
+        .1
+        .remove(&id)
+        .ok_or(Error::new(ErrorKind::NotConnected))?;
+    Ok(())
 }

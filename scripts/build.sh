@@ -16,7 +16,7 @@ fi
 
 (
 	cd ${VM_IMAGE}
-	make CROSS_COMPILE=${CROSS_COMPILE} PLAT=fvp DEBUG=1
+	make CROSS_COMPILE=${CROSS_COMPILE} PLAT=fvp DEBUG=1 tftf
 	cp ${VM_IMAGE}/build/fvp/debug/tftf.bin ${ROOT}/out/vm-image.bin
 
 	${FIPTOOL} create \

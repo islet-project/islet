@@ -27,7 +27,7 @@ impl<T: Context + Default> VCPU<T> {
     pub fn new(vm: Weak<Mutex<VM<T>>>) -> Self {
         Self {
             vm: vm,
-            state: State::Init,
+            state: State::Ready,
             context: T::new(),
             pcpu: None,
         }
@@ -40,9 +40,7 @@ impl<T: Context + Default> VCPU<T> {
 
 #[derive(Debug)]
 pub enum State {
-    Init,
     Ready,
     Running,
-    Trapped,
-    Destroy,
+    Blocked,
 }

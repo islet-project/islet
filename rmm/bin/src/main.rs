@@ -40,10 +40,13 @@ pub unsafe fn main() -> ! {
         aarch64::regs::current_el()
     );
 
-    realm::registry::get(0)
-        .unwrap()
-        .lock()
-        .switch_to(aarch64::cpu::get_cpu_id());
+    //TODO remove this test code after normal world setting
+    match realm::registry::get(0) {
+        Some(vm) => vm,
+        _ => realm::registry::new(config::NUM_OF_CPU),
+    }
+    .lock()
+    .switch_to(aarch64::cpu::get_cpu_id());
 
     let mut mainloop = Mainloop::new(rmi::Receiver::new());
 
@@ -66,6 +69,37 @@ pub unsafe fn main() -> ! {
         let arg = [call.argument()[0], 0, 0, 0];
         let ret = smc::call(cmd, arg);
         call.reply(ret[0]);
+    });
+
+    mainloop.set_event_handler(rmi::Code::VMCreate, |call| {
+        let num_of_vcpu = call.argument()[0];
+        println!("RMM: requested to create VM with {} vcpus", num_of_vcpu);
+        let vm = realm::registry::new(num_of_vcpu);
+        println!("RMM: create VM {}", vm.lock().id());
+        call.reply(vm.lock().id());
+    });
+
+    mainloop.set_event_handler(rmi::Code::VMSwitch, |call| {
+        let vm = call.argument()[0];
+        let vcpu = call.argument()[1];
+        println!("RMM: requested to switch to VCPU {} on VM {}", vcpu, vm);
+        realm::registry::get(vm).unwrap().lock().switch_to(vcpu);
+    });
+
+    mainloop.set_event_handler(rmi::Code::VMResume, |_| { /* Intentionally emptied */ });
+
+    mainloop.set_event_handler(rmi::Code::VMDestroy, |call| {
+        let vm = call.argument()[0];
+        println!("RMM: requested to destroy VM {}", vm);
+        match realm::registry::remove(vm) {
+            Ok(_) => call.reply(0),
+            Err(_) => call.reply(usize::MAX),
+        };
+    });
+
+    mainloop.set_event_handler(rmi::Code::Version, |call| {
+        println!("RMM: requested version information");
+        call.reply(config::ABI_VERSION);
     });
 
     mainloop.set_default_handler(|call| {

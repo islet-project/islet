@@ -4,7 +4,6 @@ use rmm_core::println;
 use crate::aarch64;
 use crate::allocator;
 use crate::config::{NUM_OF_CPU, RMM_STACK_SIZE};
-use crate::realm;
 
 extern crate alloc;
 
@@ -66,8 +65,6 @@ unsafe fn setup() {
         clear_bss();
         allocator::init();
         init_console();
-
-        realm::registry::new(NUM_OF_CPU);
 
         (&mut COLD_BOOT as *mut bool).write_volatile(false);
     }

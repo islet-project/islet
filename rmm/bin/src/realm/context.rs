@@ -17,7 +17,8 @@ impl rmm_core::realm::vcpu::Context for Context {
     fn new() -> Self {
         let mut context: Self = Default::default();
         // TODO[1]: Set PC (and arg) for vCPU entry
-        context.elr = crate::dummy_main as u64;
+        // context.elr = crate::dummy_main as u64;
+        context.elr = 0x8806c000 as u64;
 
         // TODO[2]: Set appropriate sys registers (hcr, spsr, ..)
         context.sys_regs.sp = unsafe {

@@ -40,14 +40,6 @@ pub unsafe fn main() -> ! {
         aarch64::regs::current_el()
     );
 
-    //TODO remove this test code after normal world setting
-    match realm::registry::get(0) {
-        Some(vm) => vm,
-        _ => realm::registry::new(config::NUM_OF_CPU),
-    }
-    .lock()
-    .switch_to(aarch64::cpu::get_cpu_id());
-
     let mut mainloop = Mainloop::new(rmi::Receiver::new());
 
     mainloop.set_event_handler(rmi::Code::Version, |call| {
@@ -56,18 +48,18 @@ pub unsafe fn main() -> ! {
     });
 
     mainloop.set_event_handler(rmi::Code::GranuleDelegate, |call| {
-        println!("RMM: requested granule delegation");
         let cmd = usize::from(smc::Code::MarkRealm);
         let arg = [call.argument()[0], 0, 0, 0];
         let ret = smc::call(cmd, arg);
+        println!("RMM: requested granule delegation {:X?}", arg);
         call.reply(ret[0]);
     });
 
     mainloop.set_event_handler(rmi::Code::GranuleUndelegate, |call| {
-        println!("RMM: requested granule undelegation");
         let cmd = usize::from(smc::Code::MarkNonSecure);
         let arg = [call.argument()[0], 0, 0, 0];
         let ret = smc::call(cmd, arg);
+        println!("RMM: requested granule undelegation {:X?}", arg);
         call.reply(ret[0]);
     });
 

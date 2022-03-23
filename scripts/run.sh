@@ -20,7 +20,7 @@ source ${HERE}/env.sh
 			./FVP_Base_RevC-2xAEMvA \
 				-C bp.flashloader0.fname=${ROOT}/out/fip.bin \
 				-C bp.secureflashloader.fname=${ROOT}/out/bl1.bin \
-				--data="${ROOT}/out/vm-image.bin"@0x88066000 \
+				--data="${ROOT}/out/vm-image.bin"@0x8806c000 \
 				-f ${HERE}/.config \
 				-Q 1000 "$@"
 			;;

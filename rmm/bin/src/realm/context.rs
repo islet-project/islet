@@ -16,22 +16,14 @@ pub struct Context {
 impl rmm_core::realm::vcpu::Context for Context {
     fn new() -> Self {
         let mut context: Self = Default::default();
-        // TODO[1]: Set PC (and arg) for vCPU entry
-        // context.elr = crate::dummy_main as u64;
         context.elr = 0x8806c000 as u64;
 
-        // TODO[2]: Set appropriate sys registers (hcr, spsr, ..)
-        context.sys_regs.sp = unsafe {
-            alloc::alloc::alloc_zeroed(
-                alloc::alloc::Layout::from_size_align(VM_STACK_SIZE, STACK_ALIGN).unwrap(),
-            )
-        } as u64;
-        context.sys_regs.sp += VM_STACK_SIZE as u64;
+        // Set appropriate sys registers
         context.spsr =
             SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M & 0b0101);
         context.sys_regs.hcr = HCR_EL2::RW | HCR_EL2::TSC;
 
-        // TODO[3]: enable floating point
+        // TODO: enable floating point
         // CPTR_EL2, CPACR_EL1, update vectors.s, etc..
 
         context

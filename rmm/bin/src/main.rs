@@ -108,17 +108,3 @@ pub unsafe fn main() -> ! {
 
     panic!("failed to run the mainloop");
 }
-
-#[no_mangle]
-#[allow(unused)]
-pub unsafe fn dummy_main() {
-    println!(
-        "DUMMY: booted on core {:2} with EL{}!",
-        aarch64::cpu::get_cpu_id(),
-        aarch64::regs::current_el()
-    );
-    loop {
-        println!("DUMMY: switched!");
-        aarch64::asm::hvc(5);
-    }
-}

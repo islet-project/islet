@@ -51,7 +51,7 @@ pub unsafe fn main() -> ! {
         let cmd = usize::from(smc::Code::MarkRealm);
         let arg = [call.argument()[0], 0, 0, 0];
         let ret = smc::call(cmd, arg);
-        println!("RMM: requested granule delegation {:X?}", arg);
+        //println!("RMM: requested granule delegation {:X?}", arg);
         call.reply(ret[0]);
     });
 
@@ -59,7 +59,7 @@ pub unsafe fn main() -> ! {
         let cmd = usize::from(smc::Code::MarkNonSecure);
         let arg = [call.argument()[0], 0, 0, 0];
         let ret = smc::call(cmd, arg);
-        println!("RMM: requested granule undelegation {:X?}", arg);
+        //println!("RMM: requested granule undelegation {:X?}", arg);
         call.reply(ret[0]);
     });
 

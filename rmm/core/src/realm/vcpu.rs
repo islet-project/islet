@@ -1,6 +1,6 @@
 use super::vm::VM;
 
-use alloc::sync::Weak;
+use alloc::sync::{Arc, Weak};
 use spin::Mutex;
 
 extern crate alloc;
@@ -24,13 +24,13 @@ pub struct VCPU<T: Context> {
 }
 
 impl<T: Context + Default> VCPU<T> {
-    pub fn new(vm: Weak<Mutex<VM<T>>>) -> Self {
-        Self {
+    pub fn new(vm: Weak<Mutex<VM<T>>>) -> Arc<Mutex<Self>> {
+        Arc::new(Mutex::new(Self {
             vm: vm,
             state: State::Ready,
             context: T::new(),
             pcpu: None,
-        }
+        }))
     }
 
     pub fn set_current(&mut self) {

@@ -19,13 +19,24 @@ pub struct VM<T: Context> {
 }
 
 impl<T: Context + Default> VM<T> {
-    pub const fn new(id: usize, page_table: Arc<Mutex<Box<dyn IPATranslation>>>) -> Self {
-        Self {
-            id: id,
-            state: State::Init,
-            vcpus: Vec::new(),
-            page_table: page_table,
-        }
+    pub fn new(
+        id: usize,
+        num_vcpu: usize,
+        page_table: Arc<Mutex<Box<dyn IPATranslation>>>,
+    ) -> Arc<Mutex<Self>> {
+        Arc::<Mutex<Self>>::new_cyclic(|me| {
+            let mut vcpus = Vec::with_capacity(num_vcpu);
+            vcpus.resize_with(num_vcpu, move || VCPU::new(me.clone()));
+
+            let vm = Mutex::new(Self {
+                id: id,
+                state: State::Init,
+                vcpus: vcpus,
+                page_table: page_table,
+            });
+
+            vm
+        })
     }
 
     pub fn id(&self) -> usize {

@@ -1,6 +1,5 @@
 use crate::aarch64::cpu::get_cpu_id;
 use crate::aarch64::{HCR_EL2, SPSR_EL2, TPIDR_EL2};
-use crate::config::{STACK_ALIGN, VM_STACK_SIZE};
 use rmm_core::realm::vcpu::VCPU;
 
 #[repr(C)]

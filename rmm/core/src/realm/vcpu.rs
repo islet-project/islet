@@ -9,7 +9,12 @@ pub trait Context {
     fn new() -> Self
     where
         Self: Sized;
-    unsafe fn set_current(vcpu: &mut VCPU<Self>)
+
+    unsafe fn into_current(vcpu: &mut VCPU<Self>)
+    where
+        Self: Sized;
+
+    unsafe fn from_current(vcpu: &mut VCPU<Self>)
     where
         Self: Sized;
 }
@@ -18,35 +23,59 @@ pub trait Context {
 #[derive(Debug)]
 pub struct VCPU<T: Context> {
     pub context: T,
-    pub vm: Weak<Mutex<VM<T>>>, // VM struct the VCPU belongs to
     pub state: State,
     pub pcpu: Option<usize>,
+    pub vm: Weak<Mutex<VM<T>>>, // VM struct the VCPU belongs to
+    me: Weak<Mutex<Self>>,
 }
 
 impl<T: Context + Default> VCPU<T> {
     pub fn new(vm: Weak<Mutex<VM<T>>>) -> Arc<Mutex<Self>> {
-        Arc::new(Mutex::new(Self {
-            vm: vm,
-            state: State::Ready,
-            context: T::new(),
-            pcpu: None,
-        }))
+        Arc::<Mutex<Self>>::new_cyclic(|me| {
+            Mutex::new(Self {
+                vm: vm,
+                me: me.clone(),
+                state: State::Stopped,
+                context: T::new(),
+                pcpu: None,
+            })
+        })
     }
 
-    pub fn set_current(&mut self) {
-        unsafe { T::set_current(self) }
+    pub fn into_current(&mut self) {
+        unsafe {
+            T::into_current(self);
+
+            core::mem::forget(self.me.upgrade().unwrap());
+        }
+        self.state = State::Running;
+    }
+
+    pub fn from_current(&mut self) {
+        unsafe {
+            T::from_current(self);
+
+            let ptr = Arc::into_raw(self.me.upgrade().unwrap());
+            Arc::decrement_strong_count(ptr);
+            Arc::from_raw(ptr);
+        }
+        self.state = State::Stopped;
+    }
+
+    pub fn is_vm_dead(&self) -> bool {
+        self.vm.strong_count() == 0
     }
 }
 
 impl<T: Context> Drop for VCPU<T> {
     fn drop(&mut self) {
-        //TODO unset current if the current is this
+        use crate::io::Write;
+        crate::println!("VCPU dropeed!");
     }
 }
 
 #[derive(Debug)]
 pub enum State {
-    Ready,
     Running,
-    Blocked,
+    Stopped,
 }

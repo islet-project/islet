@@ -99,8 +99,12 @@ pub unsafe fn main() -> ! {
     });
 
     mainloop.set_idle_handler(|| {
-        if realm::vcpu::current().is_some() {
-            aarch64::rmm_exit();
+        if let Some(vcpu) = realm::vcpu::current() {
+            if vcpu.is_vm_dead() {
+                vcpu.from_current()
+            } else {
+                aarch64::rmm_exit();
+            }
         }
     });
 

@@ -28,11 +28,16 @@ impl rmm_core::realm::vcpu::Context for Context {
         context
     }
 
-    unsafe fn set_current(vcpu: &mut VCPU<Self>) {
+    unsafe fn into_current(vcpu: &mut VCPU<Self>) {
         vcpu.pcpu = Some(get_cpu_id());
         vcpu.context.sys_regs.vmpidr = vcpu.pcpu.unwrap() as u64;
-        vcpu.state = rmm_core::realm::vcpu::State::Running;
         TPIDR_EL2.set(vcpu as *const _ as u64);
+    }
+
+    unsafe fn from_current(vcpu: &mut VCPU<Self>) {
+        vcpu.pcpu = None;
+        vcpu.context.sys_regs.vmpidr = 0u64;
+        TPIDR_EL2.set(0u64);
     }
 }
 

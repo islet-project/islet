@@ -46,7 +46,7 @@ impl<T: Context + Default> VM<T> {
     pub fn switch_to(&self, vcpu: usize) -> Result<(), Error> {
         self.vcpus
             .get(vcpu)
-            .map(|vcpu| vcpu.lock().set_current())
+            .map(|vcpu| VCPU::into_current(&mut *vcpu.lock()))
             .ok_or(Error::new(ErrorKind::NotConnected))?;
         self.page_table.lock().set_mmu();
 
@@ -56,7 +56,8 @@ impl<T: Context + Default> VM<T> {
 
 impl<T: Context> Drop for VM<T> {
     fn drop(&mut self) {
-        //TODO unset pagetable
+        use crate::io::Write;
+        crate::println!("VM #{} was destroyed!", self.id);
     }
 }
 

@@ -29,6 +29,12 @@ impl rmm_core::realm::vcpu::Context for Context {
     }
 
     unsafe fn into_current(vcpu: &mut VCPU<Self>) {
+        let before = TPIDR_EL2.get();
+        if before != 0 {
+            let old = &mut *(before as *mut VCPU<Context>);
+            old.from_current();
+        }
+
         vcpu.pcpu = Some(get_cpu_id());
         vcpu.context.sys_regs.vmpidr = vcpu.pcpu.unwrap() as u64;
         TPIDR_EL2.set(vcpu as *const _ as u64);

@@ -136,6 +136,72 @@ jobs:
         plm-prj-code: RAJ0122ZZ-29RF
         release-key: SRRELEASE-1155
 
+  run-fvp:
+    needs: build
+    if: always() && github.event_name == 'pull_request'
+    runs-on: [ code-default ]
+    container:
+      image: art.sec.samsung.net/syssec_docker/cca_build:latest
+
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: 'true'
+
+    - uses: actions/download-artifact@v2
+      with:
+        name: binaries
+        path: out
+
+    - name: Run on FVP
+      run: |
+        ./scripts/run.sh &
+        sleep 20
+        echo 'UART0_LOG<<EOF_GITHUB_ENV' >> $GITHUB_ENV
+        cat out/uart0.log >> $GITHUB_ENV
+        echo '\nEOF_GITHUB_ENV' >> $GITHUB_ENV
+        echo 'UART1_LOG<<EOF_GITHUB_ENV' >> $GITHUB_ENV
+        cat out/uart1.log >> $GITHUB_ENV
+        echo '\nEOF_GITHUB_ENV' >> $GITHUB_ENV
+        echo 'UART2_LOG<<EOF_GITHUB_ENV' >> $GITHUB_ENV
+        cat out/uart2.log >> $GITHUB_ENV
+        echo '\nEOF_GITHUB_ENV' >> $GITHUB_ENV
+        echo 'UART3_LOG<<EOF_GITHUB_ENV' >> $GITHUB_ENV
+        cat out/uart3.log >> $GITHUB_ENV
+        echo '\nEOF_GITHUB_ENV' >> $GITHUB_ENV
+
+    - name: Create comment to PR
+      continue-on-error: true
+      uses: actions/github-script@v2
+      with:
+        github-token: ${{ secrets.OUTPUT_REVIEW_TOKEN }}
+        script: |
+          const ref = "${{github.ref}}"
+          const pull_number = Number(ref.split("/")[2])
+
+          await github.pulls.createReview({
+            ...context.repo,
+            pull_number,
+            body: "## Outputs\n" +
+              "### UART0\n" +
+              "<details><summary>접기/펼치기</summary><div markdown='1'>\n" +
+              "\n```\n" + process.env.UART0_LOG + "\n```\n" +
+              "</div></details>\n\n" +
+              "### UART1\n" +
+              "<details><summary>접기/펼치기</summary><div markdown='1'>\n" +
+              "\n```\n" + process.env.UART1_LOG + "\n```\n" +
+              "</div></details>\n\n" +
+              "### UART2\n" +
+              "<details><summary>접기/펼치기</summary><div markdown='1'>\n" +
+              "\n```\n" + process.env.UART2_LOG + "\n```\n" +
+              "</div></details>\n\n" +
+              "### UART3\n" +
+              "<details><summary>접기/펼치기</summary><div markdown='1'>\n" +
+              "\n```\n" + process.env.UART3_LOG + "\n````\n" +
+              "</div></details>\n\n",
+            event: "COMMENT"
+          })
+
   documentation:
     if: always() && github.event_name == 'push'
     runs-on: [ code-default ]

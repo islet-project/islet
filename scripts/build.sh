@@ -67,7 +67,7 @@ fi
 (
 	cd ${RMM}
 	cargo build --release
-	${CROSS_COMPILE}objcopy -O binary ${ROOT}/out/aarch64-unknown-none-softfloat/release/rmm ${ROOT}/out/aarch64-unknown-none-softfloat/release/rmm.bin
+	${CROSS_COMPILE}objcopy -O binary ${ROOT}/out/aarch64-unknown-none-softfloat/release/fvp ${ROOT}/out/aarch64-unknown-none-softfloat/release/rmm.bin
 )
 
 if [ $? -ne 0 ]; then

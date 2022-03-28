@@ -7,4 +7,4 @@ TRUSTED_FIRMWARE_A=${ROOT}/trusted-firmware-a/
 VM_IMAGE=${ROOT}/vm-image/
 FIPTOOL=${TRUSTED_FIRMWARE_A}/tools/fiptool/fiptool
 FASTMODEL=${ROOT}/assets/fastmodel/
-RMM=${ROOT}/rmm/bin/
+RMM=${ROOT}/rmm/board/fvp

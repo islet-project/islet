@@ -1,8 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
+    "rmm/armv9a",
+    "rmm/board/fvp",
     "rmm/monitor",
-    "rmm/bin",
 ]
 
 [profile.dev]

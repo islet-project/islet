@@ -7,9 +7,9 @@ pub mod reg_bitvalue;
 pub mod regs;
 pub mod trap;
 
+use monitor::{io::Write as IoWrite, println};
 use reg_bitvalue::*;
 pub use regs::*;
-use monitor::{io::Write as IoWrite, println};
 
 global_asm!(include_str!("vectors.s"));
 extern "C" {

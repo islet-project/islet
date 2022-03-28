@@ -15,6 +15,7 @@ sudo apt install -y -qq --no-install-recommends \
 	jq lcov graphviz \
 	openjdk-11-jre
 
+rustup default nightly && rustup update
 cargo install \
 	mdbook mdbook-plantuml \
 	cargo2junit \

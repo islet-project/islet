@@ -1,10 +1,10 @@
 use monitor::io::{stdout, Write as IoWrite};
 use monitor::println;
 
-use crate::aarch64;
-use crate::aarch64::ID_AA64MMFR0_EL1;
 use crate::allocator;
 use crate::config::{NUM_OF_CPU, RMM_STACK_SIZE};
+use crate::helper;
+use crate::helper::ID_AA64MMFR0_EL1;
 
 extern crate alloc;
 
@@ -88,5 +88,5 @@ unsafe fn setup() {
         (&mut COLD_BOOT as *mut bool).write_volatile(false);
     }
 
-    aarch64::init();
+    helper::init();
 }

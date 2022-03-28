@@ -1,4 +1,4 @@
-use crate::aarch64::ESR_EL2;
+use crate::helper::ESR_EL2;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Fault {

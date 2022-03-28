@@ -10,9 +10,11 @@
 #![feature(specialization)]
 #![warn(rust_2018_idioms)]
 
-pub mod aarch64;
 pub mod allocator;
 pub mod config;
+pub mod cpu;
+pub mod exception;
+pub mod helper;
 pub mod panic;
 pub mod realm;
 pub mod rmi;

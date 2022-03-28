@@ -2,20 +2,15 @@
 pub mod r#macro;
 
 pub mod asm;
-pub mod cpu;
 pub mod reg_bitvalue;
 pub mod regs;
-pub mod trap;
 
 use monitor::{io::Write as IoWrite, println};
 use reg_bitvalue::*;
 pub use regs::*;
 
-global_asm!(include_str!("vectors.s"));
-extern "C" {
-    static mut vectors: u64;
-    pub fn rmm_exit();
-}
+use crate::cpu;
+use crate::exception::vectors;
 
 pub fn activate_stage2_mmu() {
     // stage 2 intitial table: L1 with 1024 entries (2 continuous 4KB pages)
@@ -65,4 +60,8 @@ pub unsafe fn init() {
     activate_stage2_mmu();
 
     // asm::brk(10);
+}
+
+extern "C" {
+    pub fn rmm_exit();
 }

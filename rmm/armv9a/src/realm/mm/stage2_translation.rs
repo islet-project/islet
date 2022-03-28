@@ -4,9 +4,9 @@ use super::address::{GuestPhysAddr, PhysAddr};
 use super::page_table::{get_page_range, L1Table, PageTable};
 use super::page_table_entry::{BasePageSize, LargePageSize, PageTableEntryFlags};
 use super::pgtlb_allocator;
-use crate::aarch64::reg_bitvalue::bits_in_reg;
-use crate::aarch64::VTTBR_EL2;
 use crate::config::PAGE_SIZE;
+use crate::helper::reg_bitvalue::bits_in_reg;
+use crate::helper::VTTBR_EL2;
 use core::{fmt, mem};
 
 // initial lookup starts at level 1 with 2 page tables concatenated

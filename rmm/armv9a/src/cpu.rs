@@ -1,5 +1,5 @@
-use crate::aarch64::MPIDR_EL1;
 use crate::config::NUM_OF_CPU_PER_CLUSTER;
+use crate::helper::MPIDR_EL1;
 
 #[naked]
 #[no_mangle]

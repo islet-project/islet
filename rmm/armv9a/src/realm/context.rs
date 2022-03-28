@@ -1,5 +1,5 @@
-use crate::aarch64::cpu::get_cpu_id;
-use crate::aarch64::{SPSR_EL2, TPIDR_EL2};
+use crate::cpu::get_cpu_id;
+use crate::helper::{SPSR_EL2, TPIDR_EL2};
 use monitor::realm::vcpu::VCPU;
 
 #[repr(C)]

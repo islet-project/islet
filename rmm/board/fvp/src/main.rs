@@ -8,9 +8,10 @@ extern crate alloc;
 mod driver;
 mod entry;
 
-use armv9a::aarch64;
 use armv9a::allocator;
 use armv9a::config;
+use armv9a::cpu;
+use armv9a::helper;
 use armv9a::realm;
 use armv9a::rmi;
 use armv9a::smc;
@@ -25,8 +26,8 @@ use monitor::{eprintln, println};
 pub unsafe fn main() -> ! {
     println!(
         "RMM: booted on core {:2} with EL{}!",
-        aarch64::cpu::get_cpu_id(),
-        aarch64::regs::current_el()
+        cpu::get_cpu_id(),
+        helper::regs::current_el()
     );
 
     let mut mainloop = Mainloop::new(rmi::Receiver::new());
@@ -92,7 +93,7 @@ pub unsafe fn main() -> ! {
             if vcpu.is_vm_dead() {
                 vcpu.from_current()
             } else {
-                aarch64::rmm_exit();
+                helper::rmm_exit();
             }
         }
     });

@@ -1,1 +1,1 @@
-pub use crate::aarch64::regs::current_vcpu as current;
+pub use crate::helper::regs::current_vcpu as current;

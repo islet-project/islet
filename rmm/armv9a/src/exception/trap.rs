@@ -5,8 +5,7 @@ mod syndrome;
 
 use self::frame::TrapFrame;
 use self::syndrome::Syndrome;
-use crate::aarch64::cpu;
-use crate::aarch64::regs::*;
+use crate::cpu;
 use crate::realm::context::Context;
 use monitor::realm::vcpu::VCPU;
 

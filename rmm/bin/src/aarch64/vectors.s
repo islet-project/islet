@@ -55,8 +55,8 @@ restore_all_from_vcpu_and_run:
 	/* Use x28 as the base */
 	add x28, x0, #VCPU_SYS_REGS
 
-	ldp x2, x3, [x28], #16
-	msr sctlr_el2, x2
+	ldr x3, [x28], #8
+	/* msr sctlr_el2, x2 */
 	msr sp_el1, x3
 
 	ldp x2, x3, [x28], #16
@@ -209,9 +209,9 @@ rmm_enter:
 	/* Use x28 as the base */
 	add x28, x1, #VCPU_SYS_REGS
 
-	mrs x2, sctlr_el2
+	/* mrs x2, sctlr_el2 */
 	mrs x3, sp_el1
-	stp x2, x3, [x28], #16
+	str x3, [x28], #8
 
 	mrs x2, sp_el0
 	mrs x3, esr_el1

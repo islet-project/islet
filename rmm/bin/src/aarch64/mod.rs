@@ -61,6 +61,7 @@ pub unsafe fn init() {
 
     HCR_EL2.set(HCR_EL2::RW | HCR_EL2::TSC | HCR_EL2::VM);
     VBAR_EL2.set(&vectors as *const u64 as u64);
+    SCTLR_EL2.set(SCTLR_EL2::I | SCTLR_EL2::C);
     activate_stage2_mmu();
 
     // asm::brk(10);

@@ -101,7 +101,7 @@ restore_all_from_vcpu_and_run:
 
 	ldp x2, x3, [x28], #16
 	msr par_el1, x2
-	msr hcr_el2, x3
+	msr vttbr_el2, x3
 
 	ldp x2, x3, [x28], #16
 	msr esr_el2, x2
@@ -254,7 +254,7 @@ rmm_enter:
 	stp x2, x3, [x28], #16
 
 	mrs x2, par_el1
-	mrs x3, hcr_el2
+	mrs x3, vttbr_el2
 	stp x2, x3, [x28], #16
 
 	mrs x2, esr_el2

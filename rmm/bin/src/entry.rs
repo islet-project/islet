@@ -2,6 +2,7 @@ use rmm_core::io::{stdout, Write as IoWrite};
 use rmm_core::println;
 
 use crate::aarch64;
+use crate::aarch64::ID_AA64MMFR0_EL1;
 use crate::allocator;
 use crate::config::{NUM_OF_CPU, RMM_STACK_SIZE};
 
@@ -56,6 +57,23 @@ fn init_console() {
     println!("RMM: initialized the console!");
 }
 
+/// Initialize the memory management configuration.
+/// This function is called once in cold boot.
+unsafe fn init_mm() {
+    // Assert 4KB granules are supported.
+    assert_eq!(
+        ID_AA64MMFR0_EL1.get_masked_value(ID_AA64MMFR0_EL1::TGran4),
+        0,
+        "4KB granules are not supported"
+    );
+
+    // Assert ID_AA64MMFR0_EL1::PARange
+    let pa_bits_table = [32, 36, 40, 42, 44, 48, 52];
+    let pa = ID_AA64MMFR0_EL1.get_masked_value(ID_AA64MMFR0_EL1::PARange) as usize;
+    let pa_range = pa_bits_table[pa]; // Panic if pa > 6
+    println!("pa range is {}", pa_range);
+}
+
 #[no_mangle]
 #[allow(unused)]
 unsafe fn setup() {
@@ -65,6 +83,7 @@ unsafe fn setup() {
         clear_bss();
         allocator::init();
         init_console();
+        init_mm();
 
         (&mut COLD_BOOT as *mut bool).write_volatile(false);
     }

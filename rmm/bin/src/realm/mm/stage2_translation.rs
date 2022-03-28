@@ -1,5 +1,3 @@
-extern crate alloc;
-
 use rmm_core::realm::vmem::IPATranslation;
 
 use super::address::{GuestPhysAddr, PhysAddr};
@@ -21,17 +19,15 @@ pub struct Stage2Translation<'a> {
     // We allocate two single page table initial lookup table, addresing up 1TB.
     //root_pgtlb: Result<*mut PageTable<L1Table>, ()>,
     root_pgtlb: &'a mut PageTable<L1Table>,
-    vttbr_el2: u64,
 }
 
 impl<'a> Stage2Translation<'a> {
-    pub fn new(vmid: u64) -> Self {
+    pub fn new() -> Self {
         let _root_pgtlb = pgtlb_allocator::allocate_tables(NUM_ROOT_PAGE, ROOT_PGTLB_ALIGNMENT);
         // FIXME: temporary for mile stone 1
         fill_stage2_table(&_root_pgtlb);
         Self {
             root_pgtlb: unsafe { mem::transmute(_root_pgtlb.unwrap()) },
-            vttbr_el2: get_vttbr(vmid, &_root_pgtlb),
         }
     }
 
@@ -44,9 +40,10 @@ impl<'a> Stage2Translation<'a> {
 }
 
 impl<'a> IPATranslation for Stage2Translation<'a> {
-    fn set_mmu(&mut self) {
+    fn get_vttbr(&self, vmid: usize) -> u64 {
         unsafe {
-            VTTBR_EL2.set(self.vttbr_el2);
+            bits_in_reg(VTTBR_EL2::VMID, vmid as u64)
+                | bits_in_reg(VTTBR_EL2::BADDR, self.root_pgtlb as *const _ as u64)
         }
     }
 }
@@ -55,13 +52,8 @@ impl<'a> fmt::Debug for Stage2Translation<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Stage2Translation")
             //.field("root_pgtlb", &self.root_pgtlb)
-            .field("vttbr_el2", &self.vttbr_el2)
             .finish()
     }
-}
-
-fn get_vttbr(vmid: u64, pgtlb: &Result<*mut PageTable<L1Table>, ()>) -> u64 {
-    bits_in_reg(VTTBR_EL2::VMID, vmid) | bits_in_reg(VTTBR_EL2::BADDR, pgtlb.unwrap() as u64)
 }
 
 fn fill_stage2_table(pgtlb: &Result<*mut PageTable<L1Table>, ()>) {

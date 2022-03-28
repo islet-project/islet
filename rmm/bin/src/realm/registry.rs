@@ -1,4 +1,5 @@
 use rmm_core::error::{Error, ErrorKind};
+use rmm_core::realm::vcpu::VCPU;
 use rmm_core::realm::vm::VM;
 use rmm_core::realm::vmem::IPATranslation;
 
@@ -21,9 +22,16 @@ pub fn new(num_vcpu: usize) -> Arc<Mutex<VM<Context>>> {
     let id = vms.0;
 
     let s2_table = Arc::new(Mutex::new(
-        Box::new(Stage2Translation::new(id as u64)) as Box<dyn IPATranslation>
+        Box::new(Stage2Translation::new()) as Box<dyn IPATranslation>
     ));
+
+    let vttbr = s2_table.lock().get_vttbr(id);
     let vm = VM::new(id, num_vcpu, s2_table);
+
+    vm.lock()
+        .vcpus
+        .iter()
+        .for_each(|vcpu: &Arc<Mutex<VCPU<Context>>>| vcpu.lock().context.sys_regs.vttbr = vttbr);
 
     vms.0 += 1;
     vms.1.insert(id, vm.clone());

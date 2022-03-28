@@ -94,12 +94,19 @@ define_sys_register!(
 );
 
 define_sys_register!(
-    ID_AA64MMFR0_EL1,
-    PARANGE[2 - 0] // PARangs, bits[3:0]. bit[3] is always 0 and unused
+    ID_AA64MMFR0_EL1, // ref. D7.2.43: AArch64 Memory Model Feature Register 0
+    TGran4[31 - 28],
+    TGran64[27 - 24],
+    TGran16[23 - 20],
+    BigEndEL0[19 - 16],
+    SNSMem[15 - 12],
+    BigEnd[11 - 08],
+    ASIDBits[07 - 04],
+    PARange[03 - 00]
 );
 
 define_sys_register!(
-    MAIR_EL2,
+    MAIR_EL2, // ref. D7.2.71: Memory Attribute Indirection Register
     Attr7[63 - 56],
     Attr6[55 - 48],
     Attr5[47 - 40],
@@ -122,4 +129,8 @@ define_sys_register!(
     T0SZ[5 - 0]     // Size offset of the memory region (TTBR0_EL2)
 );
 
-define_sys_register!(VTTBR_EL2, VMID[63 - 48], BADDR[47 - 1]);
+define_sys_register!(
+    VTTBR_EL2,
+    VMID[63 - 48], // The VMID for the translation table
+    BADDR[47 - 1]  // Translation table base address
+);

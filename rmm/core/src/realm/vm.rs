@@ -48,7 +48,6 @@ impl<T: Context + Default> VM<T> {
             .get(vcpu)
             .map(|vcpu| VCPU::into_current(&mut *vcpu.lock()))
             .ok_or(Error::new(ErrorKind::NotConnected))?;
-        self.page_table.lock().set_mmu();
 
         Ok(())
     }

@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "rmm/core",
+    "rmm/monitor",
     "rmm/bin",
 ]
 

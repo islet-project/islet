@@ -1,7 +1,7 @@
-use rmm_core::error::{Error, ErrorKind};
-use rmm_core::realm::vcpu::VCPU;
-use rmm_core::realm::vm::VM;
-use rmm_core::realm::vmem::IPATranslation;
+use monitor::error::{Error, ErrorKind};
+use monitor::realm::vcpu::VCPU;
+use monitor::realm::vm::VM;
+use monitor::realm::vmem::IPATranslation;
 
 use super::context::Context;
 use super::mm::stage2_translation::Stage2Translation;

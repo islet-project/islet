@@ -4,8 +4,8 @@ use core::cmp::Ordering;
 
 use crate::smc;
 
-use rmm_core::call;
-use rmm_core::communication::{self, Error, ErrorKind};
+use monitor::call;
+use monitor::communication::{self, Error, ErrorKind};
 
 extern crate alloc;
 

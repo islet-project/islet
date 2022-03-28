@@ -37,7 +37,7 @@ define_sys_register!(
 define_sys_register!(ELR_EL2);
 define_sys_register!(TPIDR_EL2);
 use crate::realm::context::Context;
-use rmm_core::realm::vcpu::VCPU;
+use monitor::realm::vcpu::VCPU;
 pub unsafe fn current_vcpu() -> Option<&'static mut VCPU<Context>> {
     match TPIDR_EL2.get() {
         0 => None,

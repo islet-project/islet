@@ -1,4 +1,4 @@
-use rmm_core::realm::vmem::IPATranslation;
+use monitor::realm::vmem::IPATranslation;
 
 use super::address::{GuestPhysAddr, PhysAddr};
 use super::page_table::{get_page_range, L1Table, PageTable};

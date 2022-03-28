@@ -1,6 +1,6 @@
 use crate::aarch64::cpu::get_cpu_id;
 use crate::aarch64::{SPSR_EL2, TPIDR_EL2};
-use rmm_core::realm::vcpu::VCPU;
+use monitor::realm::vcpu::VCPU;
 
 #[repr(C)]
 #[derive(Default, Debug)]
@@ -12,7 +12,7 @@ pub struct Context {
     pub fp_regs: [u128; 32],
 }
 
-impl rmm_core::realm::vcpu::Context for Context {
+impl monitor::realm::vcpu::Context for Context {
     fn new() -> Self {
         let mut context: Self = Default::default();
         context.elr = 0x8806c000 as u64;

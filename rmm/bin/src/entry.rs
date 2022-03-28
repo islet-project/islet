@@ -1,5 +1,5 @@
-use rmm_core::io::{stdout, Write as IoWrite};
-use rmm_core::println;
+use monitor::io::{stdout, Write as IoWrite};
+use monitor::println;
 
 use crate::aarch64;
 use crate::aarch64::ID_AA64MMFR0_EL1;

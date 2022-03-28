@@ -1,4 +1,4 @@
-use rmm_core::{eprintln, io::Write as IoWrite};
+use monitor::{eprintln, io::Write as IoWrite};
 
 mod frame;
 mod syndrome;
@@ -8,7 +8,7 @@ use self::syndrome::Syndrome;
 use crate::aarch64::cpu;
 use crate::aarch64::regs::*;
 use crate::realm::context::Context;
-use rmm_core::realm::vcpu::VCPU;
+use monitor::realm::vcpu::VCPU;
 
 #[repr(u16)]
 #[derive(Debug, Copy, Clone)]

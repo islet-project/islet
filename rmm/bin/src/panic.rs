@@ -1,5 +1,5 @@
-use rmm_core::eprintln;
-use rmm_core::io::Write as IoWrite;
+use monitor::eprintln;
+use monitor::io::Write as IoWrite;
 
 #[alloc_error_handler]
 fn alloc_error_handler(_layout: core::alloc::Layout) -> ! {

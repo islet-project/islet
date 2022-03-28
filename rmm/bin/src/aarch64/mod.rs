@@ -9,7 +9,7 @@ pub mod trap;
 
 use reg_bitvalue::*;
 pub use regs::*;
-use rmm_core::{io::Write as IoWrite, println};
+use monitor::{io::Write as IoWrite, println};
 
 global_asm!(include_str!("vectors.s"));
 extern "C" {

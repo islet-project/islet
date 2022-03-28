@@ -1,5 +1,5 @@
 use crate::aarch64::cpu::get_cpu_id;
-use crate::aarch64::{SPSR_EL2, TPIDR_EL2};
+use crate::aarch64::{SCTLR_EL2, SPSR_EL2, TPIDR_EL2};
 use rmm_core::realm::vcpu::VCPU;
 
 #[repr(C)]
@@ -20,6 +20,7 @@ impl rmm_core::realm::vcpu::Context for Context {
         // Set appropriate sys registers
         context.spsr =
             SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M & 0b0101);
+        context.sys_regs.sctlr = SCTLR_EL2::I | SCTLR_EL2::C;
 
         // TODO: enable floating point
         // CPTR_EL2, CPACR_EL1, update vectors.s, etc..

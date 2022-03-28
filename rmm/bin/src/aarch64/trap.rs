@@ -6,6 +6,7 @@ mod syndrome;
 use self::frame::TrapFrame;
 use self::syndrome::Syndrome;
 use crate::aarch64::cpu;
+use crate::aarch64::regs::*;
 use crate::realm::context::Context;
 use rmm_core::realm::vcpu::VCPU;
 
@@ -78,7 +79,9 @@ pub extern "C" fn handle_lower_exception(info: Info, esr: u32, vcpu: &mut VCPU<C
         Kind::Synchronous => match Syndrome::from(esr) {
             Syndrome::HVC => 1,
             undefined => {
-                eprintln!("{:?} and {:?} on CPU {:?}", info, undefined, cpu::id());
+                eprintln!("{:?} and {:X?} on CPU {:?}", info, esr, cpu::id());
+                eprintln!("{:#X?}", vcpu);
+                panic!();
                 0
             }
         },

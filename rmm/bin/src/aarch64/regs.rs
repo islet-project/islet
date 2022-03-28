@@ -132,5 +132,5 @@ define_sys_register!(
 define_sys_register!(
     VTTBR_EL2,
     VMID[63 - 48], // The VMID for the translation table
-    BADDR[47 - 1]  // Translation table base address
+    BADDR[47 - 0]  // Translation table base address
 );

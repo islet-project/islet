@@ -25,7 +25,7 @@ pub fn activate_stage2_mmu() {
         | bits_in_reg(VTCR_EL2::ORGN0, tcr_cacheable::WBWA)
         | bits_in_reg(VTCR_EL2::IRGN0, tcr_cacheable::WBWA)
         | bits_in_reg(VTCR_EL2::SL0, tcr_start_level::L1)
-        | bits_in_reg(VTCR_EL2::T0SZ, 20); // T0SZ, input address is 2^40 bytes
+        | bits_in_reg(VTCR_EL2::T0SZ, 24); // T0SZ, input address is 2^40 bytes
 
     unsafe {
         // Flush dcache

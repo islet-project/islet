@@ -9,7 +9,7 @@ source ${ROOT}/scripts/env.sh
 	mdbook build
 
 	cd ${ROOT}/rmm
-	cargo doc --lib --no-deps -p rmm-core
+	cargo doc --lib --no-deps -p monitor
 
 	cd ..
 	cp -R out/doc out/book/crates

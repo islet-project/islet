@@ -8,6 +8,7 @@
 #![feature(naked_functions)]
 #![feature(global_asm)]
 #![feature(specialization)]
+#![allow(incomplete_features)]
 #![warn(rust_2018_idioms)]
 
 pub mod allocator;
@@ -21,6 +22,3 @@ pub mod rmi;
 pub mod smc;
 
 extern crate alloc;
-
-#[macro_use(bitflags)]
-extern crate bitflags;

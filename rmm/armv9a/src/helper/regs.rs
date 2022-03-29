@@ -35,6 +35,7 @@ define_sys_register!(
 );
 
 define_sys_register!(ELR_EL2);
+
 define_sys_register!(TPIDR_EL2);
 use crate::realm::context::Context;
 use monitor::realm::vcpu::VCPU;
@@ -117,6 +118,16 @@ define_sys_register!(
     Attr0[7 - 0]
 );
 
+pub mod mair_attr {
+    // N: non
+    // G: Gathering, R: Reodering, E: Early write-back
+    pub const MT_DEVICE_NGNRNE: u64 = 0b0000; // 0x0
+    pub const MT_DEVICE_NGNRE: u64 = 0b0100; // 0x4
+    pub const MT_DEVICE_GRE: u64 = 0b1100; // 0xc
+    pub const MT_NORMAL_NC: u64 = 0b01000100; // 0x44, normal memory, non-cacheable
+    pub const MT_NORMAL: u64 = 0b11111111; // 0xff, nomral memory, inner read-alloc, write-alloc,wb, non-transient
+}
+
 define_sys_register!(
     VTCR_EL2,
     VS[19 - 19],    // VMID size. 0b0: 8bits, 0b1: 16bit
@@ -128,6 +139,46 @@ define_sys_register!(
     SL0[7 - 6],     // Starting level of the stage 2 translation lookup
     T0SZ[5 - 0]     // Size offset of the memory region (TTBR0_EL2)
 );
+
+pub mod tcr_paddr_size {
+    // PS
+    pub const PS_4G: u64 = 0b000; // 32bits
+    pub const PS_64G: u64 = 0b001; // 36bits
+    pub const PS_1T: u64 = 0b010; // 40bits
+    pub const PS_4T: u64 = 0b011; // 42bits
+    pub const PS_16T: u64 = 0b100; // 44bits
+    pub const PS_256T: u64 = 0b101; // 48bits
+    pub const PS_4P: u64 = 0b110; // 52bits
+}
+
+pub mod tcr_granule {
+    // TG0
+    pub const G_4K: u64 = 0b00;
+    pub const G_64K: u64 = 0b01;
+    pub const G_16K: u64 = 0b10;
+}
+
+pub mod tcr_shareable {
+    // SH0
+    pub const NONE: u64 = 0b00;
+    pub const OUTER: u64 = 0b10;
+    pub const INNER: u64 = 0b11;
+}
+
+pub mod tcr_cacheable {
+    // ORGN0, IRGN0
+    pub const NONE: u64 = 0b00; // NonCacheable
+    pub const WBWA: u64 = 0b01; // Write-Back; Read-Alloc; Write-Alloc
+    pub const WTNWA: u64 = 0b10; // Write-thru; Read-Alloc; No Write-Alloc
+    pub const WBNWA: u64 = 0b11; // Write-Back; Read-Alloc; No Write-Alloc
+}
+
+pub mod tcr_start_level {
+    // SL0
+    pub const L2: u64 = 0b00;
+    pub const L1: u64 = 0b01;
+    pub const L0: u64 = 0b10;
+}
 
 define_sys_register!(
     VTTBR_EL2,

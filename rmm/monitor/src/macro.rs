@@ -46,6 +46,31 @@ macro_rules! offset_of {
     }};
 }
 
+#[macro_export]
+macro_rules! const_assert {
+    ($cond:expr) => {
+        // Causes overflow if condition is false
+        let _ = [(); 0 - (!($cond) as usize)];
+    };
+}
+
+#[macro_export]
+macro_rules! const_assert_eq {
+    ($left:expr, $right:expr) => {
+        const _: () = {
+            $crate::const_assert!($left == $right);
+            ()
+        };
+    };
+}
+
+#[macro_export]
+macro_rules! const_assert_size {
+    ($struct:ty, $size:expr) => {
+        $crate::const_assert_eq!(core::mem::size_of::<$struct>(), ($size));
+    };
+}
+
 #[cfg(test)]
 mod test {
     use crate::io::test::MockDevice;
@@ -136,5 +161,18 @@ mod test {
         assert_eq!(offset_of!(Context, elr), 248);
         assert_eq!(offset_of!(Context, spsr), 256);
         assert_eq!(offset_of!(Context, sys_regs), 264);
+    }
+
+    #[test]
+    fn set_of_const_assert() {
+        const_assert!(1 == 2);
+        const_assert!(true);
+        const_assert!(1);
+
+        const_assert_eq!(1, 1);
+        const_assert_eq!(false, false);
+
+        const_assert_size!(u32, 4);
+        const_assert_size!(u64, 8);
     }
 }

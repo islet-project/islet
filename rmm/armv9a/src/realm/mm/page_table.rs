@@ -1,37 +1,57 @@
-use super::address::{GuestPhysAddr, PhysAddr};
-use super::page_table_entry::{Page, PageIter, PageSize, PageTableEntry, PageTableEntryFlags};
+use super::address::PhysAddr;
+use super::page::{Page, PageIter, PageSize};
+use super::page_table_entry::{pte_mem_attr, pte_type, PageTableEntry};
 use super::pgtlb_allocator;
+use super::translation_granule_4k::{RawPTE, PAGE_MAP_BITS};
 use crate::config::PAGE_SIZE;
+use crate::helper::bits_in_reg;
 use core::marker::PhantomData;
-use core::mem;
-use monitor::error::Error;
+use monitor::const_assert_size;
 
 /// An interface to allow for a generic implementation of struct PageTable
 /// for all 4 levels.
 /// Must be implemented by all page tables.
 pub trait PageTableLevel {
-    /// Numeric page table level
     const THIS_LEVEL: usize;
 }
 
-/// PageTableLevels
-pub enum L0Table {}
-pub enum L1Table {}
-pub enum L2Table {}
-pub enum L3Table {}
-
-/// An interface for page tables with sub page tables
-/// (all except L3Table).
-/// Having both PageTableLevel and LevelHierarchy leverages Rust's typing system
-///  to provide a subtable method only for those that have sub page tables.
-pub trait LevelHierarchy: PageTableLevel {
+/// Leverages Rust's typing system to provide a subtable method only for those that have sub page
+/// tables.
+pub trait HasSubtable: PageTableLevel {
     type NextLevel;
 }
 
-pub trait TranslationGranule {
-    fn table_index<S: PageSize>(&self, page: Page<S>) -> usize;
-    fn table_addr_mask(&self) -> usize;
-    fn page_addr_mask(&self) -> usize;
+/// The Level 0 Table
+pub enum L0Table {}
+impl PageTableLevel for L0Table {
+    const THIS_LEVEL: usize = 0;
+}
+impl HasSubtable for L0Table {
+    type NextLevel = L1Table;
+}
+
+/// The Level 1 Table
+pub enum L1Table {}
+impl PageTableLevel for L1Table {
+    const THIS_LEVEL: usize = 1;
+}
+impl HasSubtable for L1Table {
+    type NextLevel = L2Table;
+}
+
+/// The Level 2 Table
+pub enum L2Table {}
+impl PageTableLevel for L2Table {
+    const THIS_LEVEL: usize = 2;
+}
+impl HasSubtable for L2Table {
+    type NextLevel = L3Table;
+}
+
+/// The Level 3 Table (Doesn't have Subtable!)
+pub enum L3Table {}
+impl PageTableLevel for L3Table {
+    const THIS_LEVEL: usize = 3;
 }
 
 /// Representation of any page table in memory.
@@ -39,209 +59,147 @@ pub trait TranslationGranule {
 /// to distinguish between the different tables.
 pub struct PageTable<L> {
     /// Each page table has 512 entries (can be calculated using PAGE_MAP_BITS).
-    entries: [PageTableEntry; (PAGE_SIZE / mem::size_of::<usize>())],
+    entries: [PageTableEntry; 1 << PAGE_MAP_BITS],
 
     /// Required by Rust to support the L parameter.
     level: PhantomData<L>,
 }
+const_assert_size!(PageTable<L0Table>, PAGE_SIZE);
 
-/// A trait defining methods every page table has to implement.
-/// This additional trait is necessary to make use of Rust's specialization
-///  feature and provide a default implementation of some methods.
-trait PageTablePrivateMethods {
+pub trait PageTableMethods<L> {
+    // common methods
+    fn new() -> PageTable<L>;
+    fn map_multiple_pages<S: PageSize>(&mut self, range: PageIter<S>, paddr: PhysAddr, flags: u64);
+
+    // will be specialized
     fn get_page_table_entry<S: PageSize>(&self, page: Page<S>) -> Option<PageTableEntry>;
-    fn map_page_in_this_table<S: PageSize>(
-        &mut self,
-        page: Page<S>,
-        paddr: PhysAddr,
-        flags: PageTableEntryFlags,
-    ) -> Result<(), Error>;
-    fn map_page<S: PageSize>(
-        &mut self,
-        page: Page<S>,
-        paddr: PhysAddr,
-        flags: PageTableEntryFlags,
-    ) -> Result<(), Error>;
+    fn map_page<S: PageSize>(&mut self, page: Page<S>, paddr: PhysAddr, flags: u64);
 }
 
-impl<L: PageTableLevel> PageTablePrivateMethods for PageTable<L> {
-    /// Returns the PageTableEntry for the given page if it is present,
+impl<L: PageTableLevel> PageTableMethods<L> for PageTable<L> {
+    fn new() -> PageTable<L> {
+        Self {
+            entries: [PageTableEntry::new(); 1 << PAGE_MAP_BITS],
+            level: PhantomData,
+        }
+    }
+
+    /// Maps a continuous range of pages.
+    ///
+    /// # Arguments
+    ///
+    /// * `range` - The range of pages of size S
+    /// * `paddr` - First physical address to map these pages to
+    /// * `flags` - Flags to set for the page table entry (e.g. WRITABLE or EXECUTE_DISABLE).
+    ///             The VALID and AF will be set automatically.
+    fn map_multiple_pages<S: PageSize>(&mut self, range: PageIter<S>, paddr: PhysAddr, flags: u64) {
+        let mut current_paddr = paddr;
+
+        for page in range {
+            self.map_page::<S>(page, current_paddr, flags);
+            current_paddr += S::SIZE.into();
+        }
+    }
+
+    /// Returns the PageTableEntry for the given page if it is valid,
     /// otherwise returns None.
     ///
     /// This is the default implementation called only for L3Table.
-    /// It is overridden by a specialized implementation
-    /// for all tables with sub tables (all except L3Table).
+    /// It is overridden by a specialized implementation for all tables with subtables.
     default fn get_page_table_entry<S: PageSize>(&self, page: Page<S>) -> Option<PageTableEntry> {
-        assert_eq!(L::THIS_LEVEL, S::MAP_TABLE_LEVEL);
-        let index = self.table_index::<S>(page);
+        assert!(L::THIS_LEVEL == S::MAP_TABLE_LEVEL);
 
-        if self.entries[index].is_valid() {
-            Some(self.entries[index])
-        } else {
-            None
+        let index = page.table_index::<L>();
+        match self.entries[index].is_valid() {
+            true => Some(self.entries[index]),
+            false => None,
         }
-    }
-
-    /// Maps a single page in this table to the given physical address.
-    ///
-    /// Must only be called if a page of this size
-    /// is mapped at this page table level!
-    fn map_page_in_this_table<S: PageSize>(
-        &mut self,
-        page: Page<S>,
-        paddr: PhysAddr,
-        flags: PageTableEntryFlags,
-    ) -> Result<(), Error> {
-        assert_eq!(L::THIS_LEVEL, S::MAP_TABLE_LEVEL);
-        assert_eq!(paddr.as_usize() & !page.mask(), 0);
-        let index = self.table_index::<S>(page);
-        let flush = self.entries[index].is_valid();
-
-        if flags == PageTableEntryFlags::BLANK {
-            // in this case we unmap the pages
-            self.entries[index].set_pte(paddr, flags, self.page_addr_mask());
-        } else {
-            self.entries[index].set_pte(paddr, S::MAP_EXTRA_FLAG | flags, self.page_addr_mask());
-        }
-
-        if flush {
-            page.flush_from_tlb();
-        }
-        Ok(())
     }
 
     /// Maps a single page to the given physical address.
     //
-    /// This is the default implementation that just calls
-    /// the map_page_in_this_table method. It is overridden by a specialized
-    /// implementation for all tables with sub tables (all except L3Table).
-    default fn map_page<S: PageSize>(
-        &mut self,
-        page: Page<S>,
-        paddr: PhysAddr,
-        flags: PageTableEntryFlags,
-    ) -> Result<(), Error> {
-        self.map_page_in_this_table::<S>(page, paddr, flags)
+    /// This is the default implementation called only for L3Table.
+    /// It is overridden by a specialized implementation for all tables with sub tables.
+    default fn map_page<S: PageSize>(&mut self, page: Page<S>, paddr: PhysAddr, flags: u64) {
+        assert!(L::THIS_LEVEL == S::MAP_TABLE_LEVEL);
+
+        let index = page.table_index::<L>();
+
+        // Map page in this level page table
+        self.entries[index].set_pte(paddr, flags | S::MAP_EXTRA_FLAG);
+
+        // TODO: Flush from TLB?
     }
 }
 
-impl<L: LevelHierarchy> PageTablePrivateMethods for PageTable<L>
+/// This overrides default PageTableMethods for PageTables with subtable.
+/// (L0Table, L1Table, L2Table)
+/// PageTableMethods for L3 Table remains unmodified.
+impl<L: HasSubtable> PageTableMethods<L> for PageTable<L>
 where
     L::NextLevel: PageTableLevel,
 {
-    /// Returns the PageTableEntry for the given page if it is present,
-    /// otherwise returns None.
-    //
-    /// This is the implementation for all tables with subtables (L0Table,
-    /// L1Table, L2Table). It overrides the default implementation above.
     fn get_page_table_entry<S: PageSize>(&self, page: Page<S>) -> Option<PageTableEntry> {
         assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
-        let index = self.table_index::<S>(page);
+        let index = page.table_index::<L>();
 
-        if self.entries[index].is_valid() {
-            if L::THIS_LEVEL < S::MAP_TABLE_LEVEL {
-                let subtable = self.subtable::<S>(page);
-                subtable.get_page_table_entry::<S>(page)
-            } else {
-                Some(self.entries[index])
+        match self.entries[index].is_valid() {
+            true => {
+                if L::THIS_LEVEL < S::MAP_TABLE_LEVEL {
+                    // Need to go deeper (recursive)
+                    let subtable = self.subtable::<S>(page);
+                    subtable.get_page_table_entry::<S>(page)
+                } else {
+                    // The page is either LargePage or HugePage
+                    Some(self.entries[index])
+                }
             }
-        } else {
-            None
+            false => None,
         }
     }
 
-    /// Maps a single page to the given physical address.
-    //
-    /// This is the implementation for all tables with subtables
-    /// (L0Table, L1Table, L2Table). It overrides the default implementation
-    fn map_page<S: PageSize>(
-        &mut self,
-        page: Page<S>,
-        paddr: PhysAddr,
-        flags: PageTableEntryFlags,
-    ) -> Result<(), Error> {
+    fn map_page<S: PageSize>(&mut self, page: Page<S>, paddr: PhysAddr, flags: u64) {
         assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
 
-        if L::THIS_LEVEL < S::MAP_TABLE_LEVEL {
-            let index = self.table_index::<S>(page);
+        let index = page.table_index::<L>();
 
-            // Does the table exist yet?
+        if L::THIS_LEVEL < S::MAP_TABLE_LEVEL {
+            // Need to go deeper (recursive)
             if !self.entries[index].is_valid() {
-                // Allocate a single page for the new entry
-                // and mark it as a valid, writable subtable.
+                // The subtable is not yet there. Let's create one
+
                 let subtable: *mut PageTable<L::NextLevel> =
                     pgtlb_allocator::allocate_tables(1, PAGE_SIZE).unwrap();
-
                 let subtable_paddr = PhysAddr::from(subtable);
+
                 self.entries[index].set_pte(
                     subtable_paddr,
-                    PageTableEntryFlags::VALID | PageTableEntryFlags::TABLE_OR_PAGE_DESC,
-                    self.table_addr_mask(),
+                    bits_in_reg(RawPTE::ATTR, pte_mem_attr::NORMAL)
+                        | bits_in_reg(RawPTE::TYPE, pte_type::TABLE_OR_PAGE),
                 );
-
-                // Mark all entries as unused in the newly created table.
-                let subtable = self.subtable::<S>(page);
-                for entry in subtable.entries.iter_mut() {
-                    entry.set_pte(PhysAddr::zero(), PageTableEntryFlags::BLANK, PAGE_SIZE);
-                }
             }
 
+            // map the page in the subtable (recursive)
             let subtable = self.subtable::<S>(page);
-            subtable.map_page::<S>(page, paddr, flags)?;
-        } else {
-            // Calling the default implementation from a specialized one
-            // is not supported (yet), so we have to resort to an extra function.
-            self.map_page_in_this_table::<S>(page, paddr, flags)?;
+            subtable.map_page::<S>(page, paddr, flags);
+        } else if L::THIS_LEVEL == S::MAP_TABLE_LEVEL {
+            // Map page in this level page table
+            self.entries[index].set_pte(paddr, flags | S::MAP_EXTRA_FLAG);
+            // TODO: Flush from TLB?
         }
-        Ok(())
     }
 }
 
-impl<L: LevelHierarchy> PageTable<L>
+impl<L: HasSubtable> PageTable<L>
 where
     L::NextLevel: PageTableLevel,
 {
     /// Returns the next subtable for the given page in the page table hierarchy.
-    //
-    /// Must only be called if a page of this size is mapped in a subtable!
     fn subtable<S: PageSize>(&self, page: Page<S>) -> &mut PageTable<L::NextLevel> {
         assert!(L::THIS_LEVEL < S::MAP_TABLE_LEVEL);
 
-        // Calculate the address of the subtable.
-        let index = self.table_index::<S>(page);
-        let subtable_paddr = self.entries[index].output_address(self.table_addr_mask());
-        let subtable_address = subtable_paddr.as_usize();
-        unsafe { &mut *(subtable_address as *mut PageTable<L::NextLevel>) }
+        let index = page.table_index::<L>();
+        let subtable_addr = self.entries[index].get_page_addr(L::THIS_LEVEL).unwrap();
+        unsafe { &mut *(subtable_addr.as_usize() as *mut PageTable<L::NextLevel>) }
     }
-
-    /// Maps a continuous range of pages.
-    //
-    /// # Arguments
-    //
-    /// * `range` - The range of pages of size S
-    /// * `paddr` - First physical address to map these pages to
-    /// * `flags` - Flags from PageTableEntryFlags to set for the page table
-    ///             entry (e.g. WRITABLE or EXECUTE_DISABLE).
-    ///             The PRESENT and ACCESSED are already set automatically.
-    pub fn map_pages<S: PageSize>(
-        &mut self,
-        range: PageIter<S>,
-        paddr: PhysAddr,
-        flags: PageTableEntryFlags,
-    ) -> Result<(), Error> {
-        let mut current_paddr = paddr;
-
-        for page in range {
-            self.map_page::<S>(page, current_paddr, flags)?;
-            current_paddr += S::SIZE.into();
-        }
-        Ok(())
-    }
-}
-
-#[inline]
-pub fn get_page_range<S: PageSize>(gpa: GuestPhysAddr, count: usize) -> PageIter<S> {
-    let first_page = Page::<S>::including_address(gpa);
-    let last_page = Page::<S>::including_address(gpa + ((count - 1) * S::SIZE).into());
-    Page::range(first_page, last_page)
 }

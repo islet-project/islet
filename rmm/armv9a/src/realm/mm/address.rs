@@ -121,7 +121,7 @@ macro_rules! impl_addr {
         impl fmt::Debug for $T {
             fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
                 f.debug_struct(stringify!($T))
-                    .field("{:#016x}", &self.0)
+                    .field("", &format_args!("{:#016x}", self.0))
                     .finish()
             }
         }

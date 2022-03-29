@@ -122,3 +122,68 @@ macro_rules! define_register {
         pub static $regname: $regname::Register = $regname::Register {};
     };
 }
+
+#[macro_export]
+macro_rules! define_bits {
+    ($name:ident) => { define_register!($name, ); };
+    ($name:ident, $($field:ident $bits:tt),*) => {
+        #[allow(non_snake_case)]
+        #[derive(Copy, Clone)]
+        #[repr(C)]
+        pub struct $name (u64);
+        impl $name {
+            #[inline(always)]
+            pub fn new(data: u64) -> $name {
+                $name(data)
+            }
+
+            #[inline(always)]
+            pub fn get(&self) -> u64 {
+                self.0
+            }
+
+            #[inline(always)]
+            pub fn get_masked(&self, mask: u64) -> u64 {
+                self.0 & mask
+            }
+
+            #[inline(always)]
+            pub fn get_masked_value(&self, mask: u64) -> u64 {
+                (self.0 & mask) >> (mask.trailing_zeros())
+            }
+
+            #[inline(always)]
+            pub fn set(&mut self, val: u64) -> &mut Self {
+                self.0 = val;
+                self
+            }
+
+            #[inline(always)]
+            pub fn set_masked(&mut self, mask: u64, val: u64) -> &mut Self {
+                self.0 = (self.0 & !mask) | (val & mask);
+                self
+            }
+
+             #[inline(always)]
+            pub fn set_masked_value(&mut self, mask: u64, val: u64) -> &mut Self {
+                self.0 = (self.0 & !mask)
+                    | ((val << (mask.trailing_zeros())) & mask);
+                self
+            }
+
+            #[inline(always)]
+            pub fn set_bits(&mut self, mask: u64) -> &mut Self {
+                self.0 |= mask;
+                self
+            }
+
+            #[inline(always)]
+            pub fn clear_bits(&mut self, mask: u64) -> &mut Self {
+                self.0 &= !mask;
+                self
+            }
+
+            $( define_bitfield!($field, $bits); )*
+        }
+    }
+}

@@ -2,17 +2,19 @@
 pub mod r#macro;
 
 pub mod asm;
-pub mod reg_bitvalue;
 pub mod regs;
 
 use monitor::{io::Write as IoWrite, println};
-use reg_bitvalue::*;
 pub use regs::*;
 
 use crate::cpu;
 use crate::exception::vectors;
 
-pub fn activate_stage2_mmu() {
+pub const fn bits_in_reg(mask: u64, val: u64) -> u64 {
+    (val << (mask.trailing_zeros())) & mask
+}
+
+fn activate_stage2_mmu() {
     // stage 2 intitial table: L1 with 1024 entries (2 continuous 4KB pages)
     let vtcr_el2: u64 = bits_in_reg(VTCR_EL2::PS, tcr_paddr_size::PS_1T)
         | bits_in_reg(VTCR_EL2::TG0, tcr_granule::G_4K)

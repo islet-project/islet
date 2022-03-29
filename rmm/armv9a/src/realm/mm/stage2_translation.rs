@@ -1,13 +1,15 @@
 use monitor::realm::vmem::IPATranslation;
 
 use super::address::{GuestPhysAddr, PhysAddr};
-use super::page_table::{get_page_range, L1Table, PageTable};
-use super::page_table_entry::{BasePageSize, PageTableEntryFlags};
+use super::page::{get_page_range, BasePageSize, Page};
+use super::page_table::{L1Table, PageTable, PageTableMethods};
+use super::page_table_entry::{pte_access_perm, pte_mem_attr};
 use super::pgtlb_allocator;
+use super::translation_granule_4k::RawPTE;
 use crate::config::PAGE_SIZE;
-use crate::helper::reg_bitvalue::bits_in_reg;
+use crate::helper::bits_in_reg;
 use crate::helper::VTTBR_EL2;
-use core::{fmt, mem};
+use core::fmt;
 
 // initial lookup starts at level 1 with 2 page tables concatenated
 pub const NUM_ROOT_PAGE: usize = 2;
@@ -17,75 +19,50 @@ pub struct Stage2Translation<'a> {
     // We will set the translation granule with 4KB.
     // To reduce the level of page lookup, initial lookup will start from L1.
     // We allocate two single page table initial lookup table, addresing up 1TB.
-    //root_pgtlb: Result<*mut PageTable<L1Table>, ()>,
     root_pgtlb: &'a mut PageTable<L1Table>,
 }
 
 impl<'a> Stage2Translation<'a> {
     pub fn new() -> Self {
-        let _root_pgtlb = pgtlb_allocator::allocate_tables(NUM_ROOT_PAGE, ROOT_PGTLB_ALIGNMENT);
-        // FIXME: temporary for mile stone 1
-        fill_stage2_table(&_root_pgtlb);
+        let root_pgtlb = unsafe {
+            &mut *(pgtlb_allocator::allocate_tables(NUM_ROOT_PAGE, ROOT_PGTLB_ALIGNMENT).unwrap())
+        };
+
+        fill_stage2_table(root_pgtlb);
+
         Self {
-            root_pgtlb: unsafe { mem::transmute(_root_pgtlb.unwrap()) },
+            root_pgtlb: root_pgtlb,
         }
     }
-
-    /*
-    fn get_root_pgtlb(&self) -> &mut PageTable<L1Table> {
-         //unsafe { mem::transmute(self.root_pgtlb.unwrap()) }
-         self.root_pgtlb
-    }
-    */
 }
 
 impl<'a> IPATranslation for Stage2Translation<'a> {
     fn get_vttbr(&self, vmid: usize) -> u64 {
-        unsafe {
-            bits_in_reg(VTTBR_EL2::VMID, vmid as u64)
-                | bits_in_reg(VTTBR_EL2::BADDR, self.root_pgtlb as *const _ as u64)
-        }
+        bits_in_reg(VTTBR_EL2::VMID, vmid as u64)
+            | bits_in_reg(VTTBR_EL2::BADDR, self.root_pgtlb as *const _ as u64)
     }
 }
 
 impl<'a> fmt::Debug for Stage2Translation<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Stage2Translation")
-            //.field("root_pgtlb", &self.root_pgtlb)
-            .finish()
+        f.debug_struct("Stage2Translation").finish()
     }
 }
 
-fn fill_stage2_table(pgtlb: &Result<*mut PageTable<L1Table>, ()>) {
-    let root: &mut PageTable<L1Table> = unsafe { mem::transmute(pgtlb.unwrap()) };
-    let flags: PageTableEntryFlags = PageTableEntryFlags::MEMATTR_NORMAL
-        | PageTableEntryFlags::S2AP_RW
-        | PageTableEntryFlags::VALID;
+fn fill_stage2_table(root: &mut PageTable<L1Table>) {
+    // page for vm
+    let flags = bits_in_reg(RawPTE::ATTR, pte_mem_attr::NORMAL)
+        | bits_in_reg(RawPTE::AP, pte_access_perm::RW);
     let pages1 =
         get_page_range::<BasePageSize>(GuestPhysAddr::from(0x8806c000 as usize), 0x200 - 0x6c);
-    // let block_2m = get_page_range::<LargePageSize>(GuestPhysAddr(0x88200000), 1);
 
-    let device_flags: PageTableEntryFlags = PageTableEntryFlags::MEMATTR_DEVICE_NGNRE
-        | PageTableEntryFlags::S2AP_RW
-        | PageTableEntryFlags::VALID;
-    let uart_page = get_page_range::<BasePageSize>(GuestPhysAddr::from(0x1c0a0000 as usize), 1);
+    root.map_multiple_pages(pages1, PhysAddr::from(0x8806c000 as usize), flags);
 
-    assert!(root
-        .map_pages(pages1, PhysAddr::from(0x8806c000 as usize), flags)
-        .is_ok());
-    // assert!(root
-    //     .map_pages(block_2m, PhysAddr(0x88200000), flags)
-    //     .is_ok());
-    assert!(root
-        .map_pages(uart_page, PhysAddr::from(0x1c0a0000), flags)
-        .is_ok());
+    // page for uart
+    let device_flags = bits_in_reg(RawPTE::ATTR, pte_mem_attr::DEVICE_NGNRE)
+        | bits_in_reg(RawPTE::AP, pte_access_perm::RW);
+
+    let uart_page =
+        Page::<BasePageSize>::including_address(GuestPhysAddr::from(0x1c0a0000 as usize));
+    root.map_page(uart_page, PhysAddr::from(0x1c0a0000), device_flags);
 }
-
-// To start VM with reserved memory during MS1
-/*
-pub fn create_stage2_table(vmid: u64) -> Stage2Translation<'static> {
-    let s2_trans_tbl = Stage2Translation::new(vmid);
-
-    s2_trans_tbl
-}
-*/

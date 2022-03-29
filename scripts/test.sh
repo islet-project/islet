@@ -17,9 +17,14 @@ function fn_unit_test
 {
 	mkdir ${ROOT}/out
 
-	cd ${ROOT}/rmm/core
+	cd ${ROOT}/rmm/monitor
 	cargo test --lib -- --test-threads=1 \
 		-Z unstable-options --format json >${ROOT}/out/test.json
+
+	if [ $? -ne 0 ]; then
+		echo "[!] cargo test failed "
+		exit 1
+	fi
 
 	cd ${ROOT}
 	cat out/test.json | cargo2junit >out/test.xml
@@ -48,9 +53,14 @@ function fn_make_coverage_badge()
 
 function fn_measure_coverage()
 {
-	cd ${ROOT}/rmm/core
-	cargo tarpaulin --lib --exclude-files bin/* -v --ignore-tests --out Lcov --output-dir ${ROOT}/out \
+	cd ${ROOT}/rmm/monitor
+	cargo tarpaulin --lib --exclude-files armv9a/* -v --ignore-tests --out Lcov --output-dir ${ROOT}/out \
 		-- --test-threads=1
+
+	if [ $? -ne 0 ]; then
+		echo "[!] cargo tarpaulin failed "
+		exit 1
+	fi
 
 	cd ${ROOT}
 

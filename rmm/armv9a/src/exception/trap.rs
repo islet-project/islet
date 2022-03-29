@@ -80,7 +80,6 @@ pub extern "C" fn handle_lower_exception(info: Info, esr: u32, vcpu: &mut VCPU<C
             undefined => {
                 eprintln!("{:?} and {:X?} on CPU {:?}", info, esr, cpu::id());
                 eprintln!("{:#X?}", vcpu);
-                panic!();
                 0
             }
         },

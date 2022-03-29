@@ -1,4 +1,3 @@
-use super::address::{to_paddr, to_vaddr};
 use super::address::{GuestPhysAddr, PhysAddr};
 use super::page_table_entry::{Page, PageIter, PageSize, PageTableEntry, PageTableEntryFlags};
 use super::pgtlb_allocator;
@@ -94,7 +93,7 @@ impl<L: PageTableLevel> PageTablePrivateMethods for PageTable<L> {
         flags: PageTableEntryFlags,
     ) -> Result<(), Error> {
         assert_eq!(L::THIS_LEVEL, S::MAP_TABLE_LEVEL);
-        assert_eq!(paddr & !page.mask(), 0);
+        assert_eq!(paddr.as_usize() & !page.mask(), 0);
         let index = self.table_index::<S>(page);
         let flush = self.entries[index].is_valid();
 
@@ -173,7 +172,7 @@ where
                 let subtable: *mut PageTable<L::NextLevel> =
                     pgtlb_allocator::allocate_tables(1, PAGE_SIZE).unwrap();
 
-                let subtable_paddr = to_paddr(subtable as usize);
+                let subtable_paddr = PhysAddr::from(subtable);
                 self.entries[index].set_pte(
                     subtable_paddr,
                     PageTableEntryFlags::VALID | PageTableEntryFlags::TABLE_OR_PAGE_DESC,
@@ -211,7 +210,7 @@ where
         // Calculate the address of the subtable.
         let index = self.table_index::<S>(page);
         let subtable_paddr = self.entries[index].output_address(self.table_addr_mask());
-        let subtable_address = to_vaddr(subtable_paddr);
+        let subtable_address = subtable_paddr.as_usize();
         unsafe { &mut *(subtable_address as *mut PageTable<L::NextLevel>) }
     }
 
@@ -234,7 +233,7 @@ where
 
         for page in range {
             self.map_page::<S>(page, current_paddr, flags)?;
-            current_paddr += S::SIZE as usize;
+            current_paddr += S::SIZE.into();
         }
         Ok(())
     }
@@ -243,6 +242,6 @@ where
 #[inline]
 pub fn get_page_range<S: PageSize>(gpa: GuestPhysAddr, count: usize) -> PageIter<S> {
     let first_page = Page::<S>::including_address(gpa);
-    let last_page = Page::<S>::including_address(gpa + (count - 1) * S::SIZE);
+    let last_page = Page::<S>::including_address(gpa + ((count - 1) * S::SIZE).into());
     Page::range(first_page, last_page)
 }

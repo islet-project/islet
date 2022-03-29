@@ -1,4 +1,4 @@
-use super::address::{GuestPhysAddr, PhysAddr};
+use super::address::{align_down, GuestPhysAddr, PhysAddr};
 use crate::define_mask;
 use core::marker::PhantomData;
 
@@ -58,7 +58,7 @@ pub struct PageTableEntry {
 impl PageTableEntry {
     /// Return the stored physical address.
     pub fn output_address(&self, mask: usize) -> PhysAddr {
-        PhysAddr(self.pte & mask & !(usize::MAX << 48))
+        PhysAddr::from(self.pte & mask & !(usize::MAX << 48))
     }
 
     pub fn flags(&self) -> PageTableEntryFlags {
@@ -80,7 +80,7 @@ impl PageTableEntry {
     /// * `flags` - Flags from PageTableEntryFlags (note that the VALID, and ACCESSED flags are set automatically)
     pub fn set_pte(&mut self, paddr: PhysAddr, flags: PageTableEntryFlags, mask: usize) {
         assert_eq!(
-            paddr & !mask,
+            paddr.as_usize() & !mask,
             0,
             "Physical address is not on a {:#X} boundary (paddr = {:#X})",
             mask,
@@ -142,26 +142,11 @@ impl<S: PageSize> Page<S> {
         // TODO:
     }
 
-    /// Returns whether the given virtual address is a valid one in the AArch64 memory model.
-    //
-    /// Current AArch64 supports only 48-bit for virtual memory addresses.
-    /// The upper bits must always be 0 or 1 and indicate whether TBBR0 or TBBR1 contains the
-    /// base address. So always enforce 0 here.
-    fn is_valid_address(gpa: GuestPhysAddr) -> bool {
-        gpa < GuestPhysAddr(0x1_0000_0000_0000)
-    }
-
     /// Returns a Page including the given virtual address.
     /// That means, the address is rounded down to a page size boundary.
     pub fn including_address(gpa: GuestPhysAddr) -> Self {
-        assert!(
-            Self::is_valid_address(gpa),
-            "Guest Physical address {:#X} is invalid",
-            gpa.as_usize()
-        );
-
         Self {
-            gpa: gpa.align_down(S::SIZE),
+            gpa: align_down(gpa.as_usize(), S::SIZE).into(),
             size: PhantomData,
         }
     }
@@ -188,7 +173,7 @@ impl<S: PageSize> Iterator for PageIter<S> {
     fn next(&mut self) -> Option<Page<S>> {
         if self.current.gpa <= self.last.gpa {
             let p = self.current;
-            self.current.gpa += S::SIZE;
+            self.current.gpa += S::SIZE.into();
             Some(p)
         } else {
             None

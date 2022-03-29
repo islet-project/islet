@@ -2,7 +2,7 @@ use monitor::realm::vmem::IPATranslation;
 
 use super::address::{GuestPhysAddr, PhysAddr};
 use super::page_table::{get_page_range, L1Table, PageTable};
-use super::page_table_entry::{BasePageSize, LargePageSize, PageTableEntryFlags};
+use super::page_table_entry::{BasePageSize, PageTableEntryFlags};
 use super::pgtlb_allocator;
 use crate::config::PAGE_SIZE;
 use crate::helper::reg_bitvalue::bits_in_reg;
@@ -61,20 +61,23 @@ fn fill_stage2_table(pgtlb: &Result<*mut PageTable<L1Table>, ()>) {
     let flags: PageTableEntryFlags = PageTableEntryFlags::MEMATTR_NORMAL
         | PageTableEntryFlags::S2AP_RW
         | PageTableEntryFlags::VALID;
-    let pages1 = get_page_range::<BasePageSize>(GuestPhysAddr(0x8806c000), 0x200 - 0x6c);
+    let pages1 =
+        get_page_range::<BasePageSize>(GuestPhysAddr::from(0x8806c000 as usize), 0x200 - 0x6c);
     // let block_2m = get_page_range::<LargePageSize>(GuestPhysAddr(0x88200000), 1);
 
     let device_flags: PageTableEntryFlags = PageTableEntryFlags::MEMATTR_DEVICE_NGNRE
         | PageTableEntryFlags::S2AP_RW
         | PageTableEntryFlags::VALID;
-    let uart_page = get_page_range::<BasePageSize>(GuestPhysAddr(0x1c0a0000), 1);
+    let uart_page = get_page_range::<BasePageSize>(GuestPhysAddr::from(0x1c0a0000 as usize), 1);
 
-    assert!(root.map_pages(pages1, PhysAddr(0x8806c000), flags).is_ok());
+    assert!(root
+        .map_pages(pages1, PhysAddr::from(0x8806c000 as usize), flags)
+        .is_ok());
     // assert!(root
     //     .map_pages(block_2m, PhysAddr(0x88200000), flags)
     //     .is_ok());
     assert!(root
-        .map_pages(uart_page, PhysAddr(0x1c0a0000), flags)
+        .map_pages(uart_page, PhysAddr::from(0x1c0a0000), flags)
         .is_ok());
 }
 

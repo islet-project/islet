@@ -169,12 +169,15 @@ jobs:
         echo 'UART3_LOG<<EOF_GITHUB_ENV' >> $GITHUB_ENV
         cat out/uart3.log >> $GITHUB_ENV
         echo '\nEOF_GITHUB_ENV' >> $GITHUB_ENV
+        echo 'OUTPUT_REVIEW_TOKEN<<EOF_GITHUB_ENV' >> $GITHUB_ENV
+        curl -sL https://art.sec.samsung.net/artifactory/syssec_generic/arm-cca/gh_token.txt >> $GITHUB_ENV
+        echo '\nEOF_GITHUB_ENV' >> $GITHUB_ENV
 
     - name: Create comment to PR
       continue-on-error: true
       uses: actions/github-script@v2
       with:
-        github-token: ${{ secrets.OUTPUT_REVIEW_TOKEN }}
+        github-token: ${{ env.OUTPUT_REVIEW_TOKEN }}
         script: |
           const ref = "${{github.ref}}"
           const pull_number = Number(ref.split("/")[2])

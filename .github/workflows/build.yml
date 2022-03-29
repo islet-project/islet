@@ -115,9 +115,9 @@ jobs:
       run: |
         ls -lah .
         inkscape -e test.png test.svg
-        curl -H "X-JFrog-Art-Api:${ART_KEY}" -T test.png https://art.sec.samsung.net/artifactory/rs8-dsca-da_generic/status/arm-cca/test.png
+        curl -H "X-JFrog-Art-Api:${ART_KEY}" -T test.png https://art.sec.samsung.net/artifactory/syssec_generic/arm-cca/test.png
         inkscape -e coverage.png coverage.svg
-        curl -H "X-JFrog-Art-Api:${ART_KEY}" -T coverage.png https://art.sec.samsung.net/artifactory/rs8-dsca-da_generic/status/arm-cca/coverage.png
+        curl -H "X-JFrog-Art-Api:${ART_KEY}" -T coverage.png https://art.sec.samsung.net/artifactory/syssec_generic/arm-cca/coverage.png
 
   testhub:
     needs: test

@@ -7,6 +7,7 @@ pub enum ErrorKind {
     Other,
 }
 
+#[derive(Debug)]
 pub struct Error {
     kind: ErrorKind,
 }

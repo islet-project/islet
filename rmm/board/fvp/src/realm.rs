@@ -1,6 +1,6 @@
 use monitor::io::Write as IoWrite;
 use monitor::mainloop::Mainloop;
-use monitor::println;
+use monitor::{eprintln, println};
 
 use armv9a::helper;
 use armv9a::realm;
@@ -25,14 +25,21 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         println!("RMM: requested to create VM with {} vcpus", num_of_vcpu);
         let vm = realm::registry::new(num_of_vcpu);
         println!("RMM: create VM {}", vm.lock().id());
-        let _ = call.reply(vm.lock().id());
+        call.reply(vm.lock().id())
+            .err()
+            .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
     mainloop.set_event_handler(rmi::Code::VMSwitch, |call| {
         let vm = call.argument()[0];
         let vcpu = call.argument()[1];
         println!("RMM: requested to switch to VCPU {} on VM {}", vcpu, vm);
-        let _ = realm::registry::get(vm).unwrap().lock().switch_to(vcpu);
+        match realm::registry::get(vm).unwrap().lock().switch_to(vcpu) {
+            Ok(_) => call.reply(0),
+            Err(_) => call.reply(usize::MAX),
+        }
+        .err()
+        .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
     mainloop.set_event_handler(rmi::Code::VMResume, |_| { /* Intentionally emptied */ });
@@ -40,10 +47,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     mainloop.set_event_handler(rmi::Code::VMDestroy, |call| {
         let vm = call.argument()[0];
         println!("RMM: requested to destroy VM {}", vm);
-        let _ = match realm::registry::remove(vm) {
+        match realm::registry::remove(vm) {
             Ok(_) => call.reply(0),
             Err(_) => call.reply(usize::MAX),
-        };
+        }
+        .err()
+        .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
     mainloop.set_idle_handler(|| {

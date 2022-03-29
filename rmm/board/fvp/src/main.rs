@@ -36,7 +36,9 @@ pub unsafe fn main() -> ! {
 
     mainloop.set_event_handler(rmi::Code::Version, |call| {
         println!("RMM: requested version information");
-        let _ = call.reply(config::ABI_VERSION);
+        call.reply(config::ABI_VERSION)
+            .err()
+            .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
     mainloop.set_default_handler(|call| {

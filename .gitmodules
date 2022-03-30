@@ -13,3 +13,20 @@
 [submodule "vm-image"]
 	path = vm-image
 	url = https://github.sec.samsung.net/SYSSEC/arm-cca-vm-image.git
+[submodule "build-arm-cca"]
+	path = build
+	url = https://github.sec.samsung.net/SYSSEC/build-arm-cca.git
+	branch = main
+[submodule "edk2-platforms"]
+	path = third-party/edk2-platforms
+	url = https://github.com/tianocore/edk2-platforms.git
+[submodule "edk2"]
+	path = third-party/edk2
+	url = https://github.com/tianocore/edk2.git
+[submodule "grub"]
+	path = third-party/grub
+	url = https://git.savannah.gnu.org/git/grub.git
+[submodule "linux"]
+	path = linux
+	url = https://github.sec.samsung.net/SYSSEC/linux-arm-cca.git
+	branch = main

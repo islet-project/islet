@@ -17,8 +17,11 @@ jobs:
     container: art.sec.samsung.net/syssec_docker/cca_build:latest
     steps:
     - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
+
+    - name: Checkout submodules
+      run: |
+        sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
+        git submodule update --init assets build trusted-firmware-a tf-a-tests vm-image
 
     - name: Run scripts/build.sh
       run: ./scripts/build.sh
@@ -35,8 +38,11 @@ jobs:
     container: art.sec.samsung.net/syssec_docker/cca_build:latest
     steps:
     - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
+
+    - name: Checkout submodules
+      run: |
+        sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
+        git submodule update --init assets
 
     - name: Install rustfmt
       run: rustup component add rustfmt
@@ -55,11 +61,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
 
-    - name: Run scripts/test.sh --unit-test
-      run: ./scripts/test.sh --unit-test
+    - name: Checkout submodules
+      run: |
+        sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
+        git submodule update --init assets
 
     - name: Publish unit test results
       uses: code-actions/EnricoMi-publish-unit-test-result-action@v1
@@ -145,8 +151,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
+
+
+    - name: Checkout submodules
+      run: |
+        sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
+        git submodule update --init assets
 
     - uses: actions/download-artifact@v2
       with:
@@ -155,7 +165,7 @@ jobs:
 
     - name: Run on FVP
       run: |
-        ./scripts/run.sh &
+        ./scripts/run.sh --tf-a-tests &
         sleep 20
         echo 'UART0_LOG<<EOF_GITHUB_ENV' >> $GITHUB_ENV
         cat out/uart0.log >> $GITHUB_ENV
@@ -212,8 +222,11 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
+
+    - name: Checkout submodules
+      run: |
+        sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
+        git submodule update --init assets
 
     - name: Make documentation
       run: |
@@ -266,8 +279,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-      with:
-        submodules: 'true'
 
     - name : Preparing jfrog
       run: curl -XGET https://art.sec.samsung.net/artifactory/tools/art/jfrog -L -k > jfrog && chmod u+x jfrog

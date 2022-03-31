@@ -29,7 +29,7 @@ source ${HERE}/env.sh
 			./FVP_Base_RevC-2xAEMvA \
 				-C bp.flashloader0.fname=${ROOT}/out/fip.bin \
 				-C bp.secureflashloader.fname=${ROOT}/out/bl1.bin \
-				-C bp.virtioblockdevice.image_path=${ROOT}/out/boot-fat.uefi.img \
+				-C bp.virtioblockdevice.image_path=${ROOT}/out/boot.img \
 				-f ${HERE}/.config \
 				-Q 1000 "$@"
 			;;

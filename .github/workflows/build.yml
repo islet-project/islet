@@ -67,6 +67,9 @@ jobs:
         sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
         git submodule update --init assets
 
+    - name: Run scripts/test.sh --unit-test
+      run: ./scripts/test.sh --unit-test
+
     - name: Publish unit test results
       uses: code-actions/EnricoMi-publish-unit-test-result-action@v1
       if: always()
@@ -254,6 +257,7 @@ jobs:
     - name: Add files to the commit
       run: |
         git fetch origin
+        git checkout -- .gitmodules
         git checkout origin/gh-pages
         git clean -f -d
         rm -Rf assets tf-a-tests trusted-firmware-a

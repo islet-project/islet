@@ -20,8 +20,10 @@ jobs:
 
     - name: Checkout submodules
       run: |
+        rm -Rf assets
+        ln -sf /root/assets assets
         sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
-        git submodule update --init assets build trusted-firmware-a tf-a-tests vm-image
+        git submodule update --init build trusted-firmware-a tf-a-tests vm-image
 
     - name: Run scripts/build.sh
       run: ./scripts/build.sh
@@ -41,11 +43,8 @@ jobs:
 
     - name: Checkout submodules
       run: |
-        sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
-        git submodule update --init assets
-
-    - name: Install rustfmt
-      run: rustup component add rustfmt
+        rm -Rf assets
+        ln -sf /root/assets assets
 
     - name: Check bash scripts
       run: ./assets/formatter/shfmt -d -ci -bn -fn `find scripts/. -name *.sh`
@@ -64,8 +63,8 @@ jobs:
 
     - name: Checkout submodules
       run: |
-        sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
-        git submodule update --init assets
+        rm -Rf assets
+        ln -sf /root/assets assets
 
     - name: Run scripts/test.sh --unit-test
       run: ./scripts/test.sh --unit-test
@@ -155,11 +154,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-
     - name: Checkout submodules
       run: |
-        sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
-        git submodule update --init assets
+        rm -Rf assets
+        ln -sf /root/assets assets
 
     - uses: actions/download-artifact@v2
       with:
@@ -228,8 +226,8 @@ jobs:
 
     - name: Checkout submodules
       run: |
-        sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
-        git submodule update --init assets
+        mv assets assets-backup
+        ln -sf /root/assets assets
 
     - name: Make documentation
       run: |
@@ -256,6 +254,8 @@ jobs:
 
     - name: Add files to the commit
       run: |
+        rm -Rf assets
+        mv assets-backup assets
         git fetch origin
         git checkout -- .gitmodules
         git checkout origin/gh-pages
@@ -284,12 +284,17 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Checkout submodules
+      run: |
+        git lfs install assets
+        sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
+        git submodule update --init assets
+
     - name : Preparing jfrog
       run: curl -XGET https://art.sec.samsung.net/artifactory/tools/art/jfrog -L -k > jfrog && chmod u+x jfrog
 
     - name: Building docker image
       run: |
-        export
         docker build -t ${ART_DOMAIN}/${ART_DOCKER_REPO}/${ART_DOCKER_SUBTAG} .
 
     - name: Pushing docker image to artifactory

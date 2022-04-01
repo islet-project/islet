@@ -11,6 +11,8 @@ COPY . .
 
 RUN ./scripts/init.sh
 
-RUN cd /root
+RUN mv assets ..
+
+WORKDIR /root
 
 RUN rm -rf source

@@ -166,6 +166,7 @@ jobs:
 
     - name: Run on FVP
       run: |
+        sed -i "s/..\/..\/..\/..\/../$(pwd | sed "s/\//\\\\\//g")/" scripts/.config
         ./scripts/run.sh --tf-a-tests &
         sleep 20
         echo 'UART0_LOG<<EOF_GITHUB_ENV' >> $GITHUB_ENV

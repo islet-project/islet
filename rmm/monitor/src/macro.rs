@@ -165,9 +165,8 @@ mod test {
 
     #[test]
     fn set_of_const_assert() {
-        const_assert!(1 == 2);
+        const_assert!(1 != 2);
         const_assert!(true);
-        const_assert!(1);
 
         const_assert_eq!(1, 1);
         const_assert_eq!(false, false);

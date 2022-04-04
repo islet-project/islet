@@ -105,6 +105,9 @@ function fn_build()
 		--rmm-fw ${ROOT}/out/aarch64-unknown-none-softfloat/release/rmm.bin \
 		--nt-fw ${ROOT}/out/FVP_AARCH64_EFI.fd \
 		${ROOT}/out/fip.bin
+
+	cd ${BUILD_SCRIPT} \
+		&& make -j$(nproc) -f fvp.mk boot-img
 }
 
 function fn_build_thirdparty()
@@ -124,7 +127,16 @@ function fn_prepare_prebuilt_thirdparty
 function fn_build_linux()
 {
 	cd ${BUILD_SCRIPT} \
-		&& make -j$(nproc) -f fvp.mk boot-img
+		&& make -j$(nproc) -f fvp.mk linux
+
+	cp ${ROOT}/linux/arch/arm64/boot/Image ${ROOT}/out/.
+	cp ${ROOT}/linux/arch/arm64/boot/dts/arm/fvp-base-revc.dtb ${ROOT}/out/.
+}
+
+function fn_prepare_prebuilt_linux
+{
+	cp ${PREBUILT}/Image ${ROOT}/out/.
+	cp ${PREBUILT}/fvp-base-revc.dtb ${ROOT}/out/.
 }
 
 function fn_usage()
@@ -174,6 +186,8 @@ if ${BUILD_LINUX}; then
 		echo "[!] linux build failed "
 		exit 1
 	fi
+else
+	fn_prepare_prebuilt_linux
 fi
 
 fn_build

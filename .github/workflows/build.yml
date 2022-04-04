@@ -14,7 +14,9 @@ env:
 jobs:
   build:
     runs-on: [ code-default ]
-    container: art.sec.samsung.net/syssec_docker/cca_build:latest
+    container:
+      image: art.sec.samsung.net/syssec_docker/cca_build:latest
+      options: -v /dev:/dev --privileged=true
     steps:
     - uses: actions/checkout@v2
 

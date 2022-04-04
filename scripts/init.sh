@@ -6,7 +6,8 @@ source ${ROOT}/scripts/env.sh
 
 sudo apt install -y -qq --no-install-recommends \
 	git-lfs \
-	device-tree-compiler xterm fakeroot mtools fdisk \
+	device-tree-compiler xterm fakeroot mtools fdisk cpio \
+	dosfstools e2fsprogs \
 	libxml-libxml-perl \
 	jq lcov graphviz inkscape \
 	openjdk-11-jre

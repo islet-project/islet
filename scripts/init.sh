@@ -11,7 +11,7 @@ sudo apt install -y -qq --no-install-recommends \
 	jq lcov graphviz inkscape \
 	openjdk-11-jre
 
-if [[ ${1} == "--no-submodule" ]]; then
+if [[ ${1} != "--no-submodule" ]]; then
 	cd ${ROOT} \
 		&& git lfs install assets \
 		&& git submodule update --init --recursive

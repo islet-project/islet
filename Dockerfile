@@ -9,7 +9,7 @@ WORKDIR /root/source
 
 COPY . .
 
-RUN ./scripts/init.sh
+RUN ./scripts/init.sh --no-submodule
 
 RUN mv assets ..
 

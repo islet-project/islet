@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import os
 import subprocess
 
@@ -150,6 +151,7 @@ def run_fvp():
     global ROOT
     global OUT
 
+    print("[!] Running fvp...")
     run(["./FVP_Base_RevC-2xAEMvA",
          "-C", "bp.flashloader0.fname=%s/fip-tf-a-tests.bin" % OUT,
          "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
@@ -158,9 +160,22 @@ def run_fvp():
          "-Q", "1000"], cwd=FASTMODEL)
 
 if __name__ == "__main__":
-    prepare_tftf()
-    prepare_tfa()
-    prepare_vm_image()
-    prepare_rmm()
-    prepare_fip()
-    run_fvp()
+    parser = argparse.ArgumentParser(description="FVP launcher for CCA")
+    parser.add_argument("--normal-world", "-nw", help="A normal world component")
+    args = parser.parse_args()
+
+    nw_list = ["linux", "tf-a-tests"];
+    if not args.normal_world in nw_list:
+        print("Please select one of the normal components:")
+        print("  " + "\n  ".join(nw_list))
+        exit(1)
+
+    if args.normal_world == "tf-a-tests":
+        prepare_tftf()
+        prepare_tfa()
+        prepare_vm_image()
+        prepare_rmm()
+        prepare_fip()
+        run_fvp()
+    else:
+        assert False, "Not implemented"

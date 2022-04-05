@@ -77,6 +77,8 @@ pub extern "C" fn handle_lower_exception(info: Info, esr: u32, vcpu: &mut VCPU<C
     match info.kind {
         Kind::Synchronous => match Syndrome::from(esr) {
             Syndrome::HVC => 1,
+            Syndrome::InstructionAbort(_) => 1,
+            Syndrome::DataAbort(_) => 1,
             undefined => {
                 eprintln!("{:?} and {:X?} on CPU {:?}", info, esr, cpu::id());
                 eprintln!("{:#X?}", vcpu);

@@ -124,8 +124,8 @@ pub mod mair_attr {
     pub const MT_DEVICE_NGNRNE: u64 = 0b0000; // 0x0
     pub const MT_DEVICE_NGNRE: u64 = 0b0100; // 0x4
     pub const MT_DEVICE_GRE: u64 = 0b1100; // 0xc
-    pub const MT_NORMAL_NC: u64 = 0b01000100; // 0x44, normal memory, non-cacheable
-    pub const MT_NORMAL: u64 = 0b11111111; // 0xff, nomral memory, inner read-alloc, write-alloc,wb, non-transient
+    pub const MT_NORMAL_NC: u64 = 0b0100_0100; // 0x44, normal memory, non-cacheable
+    pub const MT_NORMAL: u64 = 0b1111_1111; // 0xff, nomral memory, inner read-alloc, write-alloc,wb, non-transient
 }
 
 define_sys_register!(

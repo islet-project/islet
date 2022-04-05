@@ -15,7 +15,7 @@ pub struct Context {
 impl monitor::realm::vcpu::Context for Context {
     fn new() -> Self {
         let mut context: Self = Default::default();
-        context.elr = 0x8806c000 as u64;
+        context.elr = 0x8806_c000 as u64;
 
         // Set appropriate sys registers
         context.spsr =

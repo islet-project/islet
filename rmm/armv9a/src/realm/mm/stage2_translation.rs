@@ -30,9 +30,7 @@ impl<'a> Stage2Translation<'a> {
 
         fill_stage2_table(root_pgtlb);
 
-        Self {
-            root_pgtlb: root_pgtlb,
-        }
+        Self { root_pgtlb }
     }
 }
 
@@ -54,15 +52,15 @@ fn fill_stage2_table(root: &mut PageTable<L1Table>) {
     let flags = bits_in_reg(RawPTE::ATTR, pte_mem_attr::NORMAL)
         | bits_in_reg(RawPTE::AP, pte_access_perm::RW);
     let pages1 =
-        get_page_range::<BasePageSize>(GuestPhysAddr::from(0x8806c000 as usize), 0x200 - 0x6c);
+        get_page_range::<BasePageSize>(GuestPhysAddr::from(0x8806_c000 as usize), 0x200 - 0x6c);
 
-    root.map_multiple_pages(pages1, PhysAddr::from(0x8806c000 as usize), flags);
+    root.map_multiple_pages(pages1, PhysAddr::from(0x8806_c000 as usize), flags);
 
     // page for uart
     let device_flags = bits_in_reg(RawPTE::ATTR, pte_mem_attr::DEVICE_NGNRE)
         | bits_in_reg(RawPTE::AP, pte_access_perm::RW);
 
     let uart_page =
-        Page::<BasePageSize>::including_address(GuestPhysAddr::from(0x1c0a0000 as usize));
-    root.map_page(uart_page, PhysAddr::from(0x1c0a0000), device_flags);
+        Page::<BasePageSize>::including_address(GuestPhysAddr::from(0x1c0a_0000 as usize));
+    root.map_page(uart_page, PhysAddr::from(0x1c0a_0000), device_flags);
 }

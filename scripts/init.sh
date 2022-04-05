@@ -10,7 +10,8 @@ sudo apt install -y -qq --no-install-recommends \
 	dosfstools e2fsprogs \
 	libxml-libxml-perl \
 	jq lcov graphviz inkscape \
-	openjdk-11-jre
+	openjdk-11-jre \
+	flex bison
 
 if [[ ${1} != "--no-submodule" ]]; then
 	cd ${ROOT} \

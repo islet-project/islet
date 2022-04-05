@@ -1,4 +1,5 @@
-use super::address::PhysAddr;
+use monitor::realm::mm::address::PhysAddr;
+
 use super::translation_granule_4k::RawPTE;
 
 pub mod pte_shareable {

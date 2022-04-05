@@ -1,4 +1,5 @@
-use super::address::PhysAddr;
+use monitor::realm::mm::address::PhysAddr;
+
 use super::page::{Page, PageIter, PageSize};
 use super::page_table_entry::{pte_mem_attr, pte_type, PageTableEntry};
 use super::pgtlb_allocator;

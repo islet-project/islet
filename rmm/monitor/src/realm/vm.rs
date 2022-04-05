@@ -1,5 +1,5 @@
+use super::mm::IPATranslation;
 use super::vcpu::{Context, VCPU};
-use super::vmem::IPATranslation;
 
 use crate::error::{Error, ErrorKind};
 use alloc::boxed::Box;

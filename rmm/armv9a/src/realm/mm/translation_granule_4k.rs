@@ -1,5 +1,5 @@
-use super::address::GuestPhysAddr;
 use crate::{define_bitfield, define_bits, define_mask};
+use monitor::realm::mm::address::GuestPhysAddr;
 
 /// Number of bits of the index in each table level.
 pub const PAGE_MAP_BITS: usize = 9;

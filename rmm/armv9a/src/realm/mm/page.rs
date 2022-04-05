@@ -1,4 +1,5 @@
-use super::address::{align_down, GuestPhysAddr};
+use monitor::realm::mm::address::{align_down, GuestPhysAddr};
+
 use super::page_table::PageTableLevel;
 use super::page_table_entry::pte_type;
 use super::translation_granule_4k::{RawGPA, RawPTE};

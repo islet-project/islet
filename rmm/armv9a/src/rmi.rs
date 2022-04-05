@@ -16,6 +16,10 @@ const RMM_VM_CREATE: usize = 0xc000_0003;
 const RMM_VM_SWITCH: usize = 0xc000_0004;
 const RMM_VM_RESUME: usize = 0xc000_0005;
 const RMM_VM_DESTROY: usize = 0xc000_0006;
+const RMM_VM_MAP_MEMORY: usize = 0xc000_0007;
+const RMM_VM_UNMAP_MEMORY: usize = 0xc000_0008;
+const RMM_VM_SET_REG: usize = 0xc000_0009;
+const RMM_VM_GET_REG: usize = 0xc000_00011;
 const RMM_REQ_COMPLETE: usize = 0xc000_0010;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -28,6 +32,10 @@ pub enum Code {
     VMSwitch,
     VMResume,
     VMDestroy,
+    VMMapMemory,
+    VMUnmapMemory,
+    VMSetReg,
+    VMGetReg,
     Unknown(usize),
 }
 
@@ -42,6 +50,10 @@ impl From<Code> for usize {
             Code::VMSwitch => RMM_VM_SWITCH,
             Code::VMResume => RMM_VM_RESUME,
             Code::VMDestroy => RMM_VM_DESTROY,
+            Code::VMMapMemory => RMM_VM_MAP_MEMORY,
+            Code::VMUnmapMemory => RMM_VM_UNMAP_MEMORY,
+            Code::VMSetReg => RMM_VM_SET_REG,
+            Code::VMGetReg => RMM_VM_GET_REG,
             Code::Unknown(remain) => remain,
         }
     }
@@ -58,6 +70,10 @@ impl From<usize> for Code {
             RMM_VM_SWITCH => Code::VMSwitch,
             RMM_VM_RESUME => Code::VMResume,
             RMM_VM_DESTROY => Code::VMDestroy,
+            RMM_VM_MAP_MEMORY => Code::VMMapMemory,
+            RMM_VM_UNMAP_MEMORY => Code::VMUnmapMemory,
+            RMM_VM_SET_REG => Code::VMSetReg,
+            RMM_VM_GET_REG => Code::VMGetReg,
             remain => Code::Unknown(remain),
         }
     }

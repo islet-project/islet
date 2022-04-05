@@ -1,7 +1,7 @@
 use monitor::error::{Error, ErrorKind};
+use monitor::realm::mm::IPATranslation;
 use monitor::realm::vcpu::VCPU;
 use monitor::realm::vm::VM;
-use monitor::realm::vmem::IPATranslation;
 
 use super::context::Context;
 use super::mm::stage2_translation::Stage2Translation;

@@ -27,8 +27,8 @@ define_bits!(
     ADDR_BLK_L2[47 - 21],      // block descriptor; level 2
     ADDR_TBL_OR_PAGE[47 - 12], // table descriptor(level 0-2) || page descriptor(level3)
     AF[10 - 10],
-    SH[9 - 8], // pte_shareable
-    AP[7 - 6], // pte_access_perm
+    SH[9 - 8],   // pte_shareable
+    S2AP[7 - 6], // pte_access_perm
     NS[5 - 5],
     ATTR[4 - 2], // pte_mem_attr
     TYPE[1 - 1], // pte_type

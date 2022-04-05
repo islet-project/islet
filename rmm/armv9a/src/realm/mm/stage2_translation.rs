@@ -50,7 +50,7 @@ impl<'a> fmt::Debug for Stage2Translation<'a> {
 fn fill_stage2_table(root: &mut PageTable<L1Table>) {
     // page for vm
     let flags = bits_in_reg(RawPTE::ATTR, pte_mem_attr::NORMAL)
-        | bits_in_reg(RawPTE::AP, pte_access_perm::RW);
+        | bits_in_reg(RawPTE::S2AP, pte_access_perm::RW);
     let pages1 =
         get_page_range::<BasePageSize>(GuestPhysAddr::from(0x8806_c000 as usize), 0x200 - 0x6c);
 
@@ -58,7 +58,7 @@ fn fill_stage2_table(root: &mut PageTable<L1Table>) {
 
     // page for uart
     let device_flags = bits_in_reg(RawPTE::ATTR, pte_mem_attr::DEVICE_NGNRE)
-        | bits_in_reg(RawPTE::AP, pte_access_perm::RW);
+        | bits_in_reg(RawPTE::S2AP, pte_access_perm::RW);
 
     let uart_page =
         Page::<BasePageSize>::including_address(GuestPhysAddr::from(0x1c0a_0000 as usize));

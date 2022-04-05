@@ -4,6 +4,8 @@ members = [
     "rmm/armv9a",
     "rmm/board/fvp",
     "rmm/monitor",
+    "sdk",
+    "sdk/bootstrap",
 ]
 
 [profile.dev]

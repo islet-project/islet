@@ -11,3 +11,4 @@ FIPTOOL=${TRUSTED_FIRMWARE_A}/tools/fiptool/fiptool
 FASTMODEL=${ROOT}/assets/fastmodel/
 PREBUILT=${ROOT}/assets/prebuilt/
 RMM=${ROOT}/rmm/board/fvp/
+SDK=${ROOT}/sdk/

@@ -28,6 +28,17 @@ function fn_build()
 		exit 1
 	fi
 
+	(
+		cd ${SDK}/bootstrap
+		cargo build --release
+		${CROSS_COMPILE}objcopy -O binary ${ROOT}/out/aarch64-unknown-none-softfloat/release/bootstrap ${ROOT}/out/aarch64-unknown-none-softfloat/release/bootstrap.bin
+	)
+
+	if [ $? -ne 0 ]; then
+		echo "[!] ${RMM} build failed "
+		exit 1
+	fi
+
 	fn_prepare_fiptool
 	if [ ! -f "${FIPTOOL}" ]; then
 		echo "[!] ${FIPTOOL} build failed "
@@ -115,6 +126,10 @@ function fn_build_thirdparty()
 	cd ${BUILD_SCRIPT} \
 		&& make -j$(nproc) -f fvp.mk grub edk2
 
+	if [ $? -ne 0 ]; then
+		exit 1
+	fi
+
 	cp ${THIRD_PARTY}/edk2-platforms/Build/ArmVExpress-FVP-AArch64/RELEASE_GCC49/FV/FVP_AARCH64_EFI.fd ${ROOT}/out/.
 }
 
@@ -128,6 +143,10 @@ function fn_build_linux()
 {
 	cd ${BUILD_SCRIPT} \
 		&& make -j$(nproc) -f fvp.mk linux
+
+	if [ $? -ne 0 ]; then
+		exit 1
+	fi
 
 	cp ${ROOT}/linux/arch/arm64/boot/Image ${ROOT}/out/.
 	cp ${ROOT}/linux/arch/arm64/boot/dts/arm/fvp-base-revc.dtb ${ROOT}/out/.

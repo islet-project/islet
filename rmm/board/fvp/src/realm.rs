@@ -59,9 +59,15 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
-    mainloop.set_idle_handler(|| {
+    mainloop.set_event_handler(rmi::Code::VMRun, |call| {
+        println!("RMM: requested to jump to EL1");
         rmm_exit();
+        call.reply(0)
+            .err()
+            .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
+
+    mainloop.set_idle_handler(|| {});
 
     mainloop.set_event_handler(rmi::Code::VMMapMemory, |call| {
         let vm = call.argument()[0];

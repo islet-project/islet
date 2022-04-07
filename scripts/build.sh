@@ -18,6 +18,8 @@ function fn_build()
 {
 	### TODO Refactor this to use ./build
 	(
+		rm ${ROOT}/out/aarch64-unknown-none-softfloat/release/fvp
+
 		cd ${RMM}
 		cargo build --release
 		${CROSS_COMPILE}objcopy -O binary ${ROOT}/out/aarch64-unknown-none-softfloat/release/fvp ${ROOT}/out/aarch64-unknown-none-softfloat/release/rmm.bin
@@ -29,13 +31,15 @@ function fn_build()
 	fi
 
 	(
+		rm ${ROOT}/out/aarch64-unknown-none-softfloat/release/bootstrap
+
 		cd ${SDK}/bootstrap
 		cargo build --release
 		${CROSS_COMPILE}objcopy -O binary ${ROOT}/out/aarch64-unknown-none-softfloat/release/bootstrap ${ROOT}/out/aarch64-unknown-none-softfloat/release/bootstrap.bin
 	)
 
 	if [ $? -ne 0 ]; then
-		echo "[!] ${RMM} build failed "
+		echo "[!] bootstrap build failed "
 		exit 1
 	fi
 
@@ -57,6 +61,8 @@ function fn_build()
 	fi
 
 	(
+		rm ${TF_A_TESTS}/build/fvp/debug/tftf.bin
+
 		cd ${TF_A_TESTS}
 		make CROSS_COMPILE=${CROSS_COMPILE} PLAT=fvp DEBUG=1
 
@@ -79,13 +85,11 @@ function fn_build()
 	fi
 
 	(
+		rm ${VM_IMAGE}/build/fvp/debug/tftf.bin ${ROOT}/out/vm-image.bin
+
 		cd ${VM_IMAGE}
 		make CROSS_COMPILE=${CROSS_COMPILE} PLAT=fvp DEBUG=1 tftf
 		cp ${VM_IMAGE}/build/fvp/debug/tftf.bin ${ROOT}/out/vm-image.bin
-
-		if [ $? -ne 0 ]; then
-			exit 1
-		fi
 
 		${FIPTOOL} create \
 			--fw-config ${TRUSTED_FIRMWARE_A}/build/fvp/debug/fdts/fvp_fw_config.dtb \

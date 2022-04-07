@@ -86,17 +86,12 @@ pub extern "C" fn handle_lower_exception(
     match info.kind {
         Kind::Synchronous => match Syndrome::from(esr) {
             Syndrome::HVC => 1,
-            Syndrome::InstructionAbort(_) => {
+            Syndrome::InstructionAbort(_) | Syndrome::DataAbort(_) => {
                 tf.regs[0] = rmi::RET_PAGE_FAULT as u64;
                 tf.regs[1] = unsafe {
                     HPFAR_EL2.get_masked_value(HPFAR_EL2::FIPA) << 12
                         | FAR_EL2.get_masked(FAR_EL2::OFFSET)
                 };
-                1
-            }
-            Syndrome::DataAbort(_) => {
-                tf.regs[0] = rmi::RET_PAGE_FAULT as u64;
-                tf.regs[1] = unsafe { HPFAR_EL2.get_masked_value(HPFAR_EL2::FIPA) << 12 };
                 1
             }
             undefined => {

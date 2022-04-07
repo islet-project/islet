@@ -6,6 +6,9 @@ use monitor::realm::vm::VM;
 use super::context::Context;
 use super::mm::stage2_translation::Stage2Translation;
 
+use crate::helper::bits_in_reg;
+use crate::helper::VTTBR_EL2;
+
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
@@ -25,7 +28,8 @@ pub fn new(num_vcpu: usize) -> Arc<Mutex<VM<Context>>> {
         Box::new(Stage2Translation::new()) as Box<dyn IPATranslation>
     ));
 
-    let vttbr = s2_table.lock().get_vttbr(id);
+    let vttbr = bits_in_reg(VTTBR_EL2::VMID, id as u64)
+        | bits_in_reg(VTTBR_EL2::BADDR, s2_table.lock().get_base_address() as u64);
     let vm = VM::new(id, num_vcpu, s2_table);
 
     vm.lock()

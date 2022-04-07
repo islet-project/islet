@@ -2,9 +2,8 @@ use super::page::{get_page_range, BasePageSize};
 use super::page_table::{L1Table, PageTable, PageTableMethods};
 use super::pgtlb_allocator;
 use crate::config::PAGE_SIZE;
-use crate::helper::bits_in_reg;
-use crate::helper::VTTBR_EL2;
 
+use core::ffi::c_void;
 use core::fmt;
 
 use monitor::realm::mm::address::{GuestPhysAddr, PhysAddr};
@@ -32,9 +31,8 @@ impl<'a> Stage2Translation<'a> {
 }
 
 impl<'a> IPATranslation for Stage2Translation<'a> {
-    fn get_vttbr(&self, vmid: usize) -> u64 {
-        bits_in_reg(VTTBR_EL2::VMID, vmid as u64)
-            | bits_in_reg(VTTBR_EL2::BADDR, self.root_pgtlb as *const _ as u64)
+    fn get_base_address(&self) -> *const c_void {
+        self.root_pgtlb as *const _ as *const c_void
     }
 
     fn set_pages(&mut self, guest: GuestPhysAddr, phys: PhysAddr, size: usize, flags: usize) {

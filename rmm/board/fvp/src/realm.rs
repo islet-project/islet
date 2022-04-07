@@ -4,10 +4,12 @@ use monitor::mainloop::Mainloop;
 use monitor::realm::mm::address::{GuestPhysAddr, PhysAddr};
 use monitor::{eprintln, println};
 
+use armv9a::config::PAGE_SIZE;
 use armv9a::helper;
 use armv9a::realm;
 use armv9a::realm::mm::page_table_entry::{pte_access_perm, pte_mem_attr};
 use armv9a::realm::mm::translation_granule_4k::RawPTE;
+use armv9a::smc;
 
 use crate::rmi;
 
@@ -101,6 +103,26 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                 size,
                 flags as usize,
             );
+
+        let cmd = usize::from(smc::Code::MarkRealm);
+        let mut arg = [phys, 0, 0, 0];
+        let mut remain = size;
+        while remain > 0 {
+            //TODO change to use dtb
+            if arg[0] >= 0x4000_0000 {
+                let ret = smc::call(cmd, arg)[0];
+                if ret != 0 {
+                    //Just show a warn message not return fail
+                    eprintln!("RMM: failed to set GPT {:X}", arg[0]);
+                }
+            }
+            arg[0] += PAGE_SIZE;
+            remain -= PAGE_SIZE;
+        }
+
+        call.reply(rmi::RET_SUCCESS)
+            .err()
+            .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
     mainloop.set_event_handler(rmi::Code::VMUnmapMemory, |call| {
@@ -115,6 +137,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             .page_table
             .lock()
             .unset_pages(GuestPhysAddr::from(guest), size);
+
+        //TODO change GPT to nonsecure
+        //TODO zeroize memory
+
+        call.reply(rmi::RET_SUCCESS)
+            .err()
+            .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
     mainloop.set_event_handler(rmi::Code::VMSetReg, |call| {

@@ -28,6 +28,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         println!("RMM: requested to create VM with {} vcpus", num_of_vcpu);
         let vm = realm::registry::new(num_of_vcpu);
         println!("RMM: create VM {}", vm.lock().id());
+        call.reply(rmi::RET_SUCCESS).unwrap();
         call.reply(vm.lock().id())
             .err()
             .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
@@ -39,8 +40,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         println!("RMM: requested to switch to VCPU {} on VM {}", vcpu, vm);
         //TODO remove unwrap
         match realm::registry::get(vm).unwrap().lock().switch_to(vcpu) {
-            Ok(_) => call.reply(0),
-            Err(_) => call.reply(usize::MAX),
+            Ok(_) => call.reply(rmi::RET_SUCCESS),
+            Err(_) => call.reply(rmi::RET_FAIL),
         }
         .err()
         .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
@@ -52,8 +53,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         let vm = call.argument()[0];
         println!("RMM: requested to destroy VM {}", vm);
         match realm::registry::remove(vm) {
-            Ok(_) => call.reply(0),
-            Err(_) => call.reply(usize::MAX),
+            Ok(_) => call.reply(rmi::RET_SUCCESS),
+            Err(_) => call.reply(rmi::RET_FAIL),
         }
         .err()
         .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
@@ -62,7 +63,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     mainloop.set_event_handler(rmi::Code::VMRun, |call| {
         println!("RMM: requested to jump to EL1");
         rmm_exit();
-        call.reply(0)
+        call.reply(rmi::RET_SUCCESS)
             .err()
             .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
@@ -123,7 +124,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                     .lock()
                     .context
                     .gp_regs[register] = value as u64;
-                call.reply(0)
+                call.reply(rmi::RET_SUCCESS)
             }
             31 => {
                 //TODO remove unwrap
@@ -136,9 +137,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                     .lock()
                     .context
                     .elr = value as u64;
-                call.reply(0)
+                call.reply(rmi::RET_SUCCESS)
             }
-            _ => call.reply(usize::MAX),
+            _ => call.reply(rmi::RET_FAIL),
         }
         .err()
         .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
@@ -160,6 +161,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                     .lock()
                     .context
                     .gp_regs[register];
+                call.reply(rmi::RET_SUCCESS).unwrap();
                 call.reply(value as usize)
             }
             31 => {
@@ -173,9 +175,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                     .lock()
                     .context
                     .elr;
+                call.reply(rmi::RET_SUCCESS).unwrap();
                 call.reply(value as usize)
             }
-            _ => call.reply(usize::MAX),
+            _ => call.reply(rmi::RET_FAIL),
         }
         .err()
         .map(|e| eprintln!("RMM: failed to reply - {:?}", e));

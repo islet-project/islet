@@ -23,6 +23,10 @@ const RMM_VM_GET_REG: usize = 0xc000_000a;
 const RMM_VM_RUN: usize = 0xc000_000b;
 const RMM_REQ_COMPLETE: usize = 0xc000_0010;
 
+pub const RET_SUCCESS: usize = 0x0;
+pub const RET_PAGE_FAULT: usize = 0x1;
+pub const RET_FAIL: usize = 0x100;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Code {
     Version,

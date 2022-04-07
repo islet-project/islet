@@ -191,3 +191,8 @@ define_sys_register!(
     NS[63 - 63],
     FIPA[43 - 4] //
 );
+
+define_sys_register!(
+    FAR_EL2, // Ref. D13.2.55
+    OFFSET[11 - 0]
+);

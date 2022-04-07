@@ -6,7 +6,7 @@ mod syndrome;
 use self::frame::TrapFrame;
 use self::syndrome::Syndrome;
 use crate::cpu;
-use crate::helper::HPFAR_EL2;
+use crate::helper::{FAR_EL2, HPFAR_EL2};
 use crate::realm::context::Context;
 use crate::rmi;
 use monitor::realm::vcpu::VCPU;
@@ -88,7 +88,10 @@ pub extern "C" fn handle_lower_exception(
             Syndrome::HVC => 1,
             Syndrome::InstructionAbort(_) => {
                 tf.regs[0] = rmi::RET_PAGE_FAULT as u64;
-                tf.regs[1] = unsafe { HPFAR_EL2.get_masked_value(HPFAR_EL2::FIPA) << 12 };
+                tf.regs[1] = unsafe {
+                    HPFAR_EL2.get_masked_value(HPFAR_EL2::FIPA) << 12
+                        | FAR_EL2.get_masked(FAR_EL2::OFFSET)
+                };
                 1
             }
             Syndrome::DataAbort(_) => {

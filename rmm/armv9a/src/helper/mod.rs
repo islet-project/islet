@@ -19,8 +19,8 @@ fn activate_stage2_mmu() {
     let vtcr_el2: u64 = bits_in_reg(VTCR_EL2::PS, tcr_paddr_size::PS_1T)
         | bits_in_reg(VTCR_EL2::TG0, tcr_granule::G_4K)
         | bits_in_reg(VTCR_EL2::SH0, tcr_shareable::INNER)
-        | bits_in_reg(VTCR_EL2::ORGN0, tcr_cacheable::WBWA)
-        | bits_in_reg(VTCR_EL2::IRGN0, tcr_cacheable::WBWA)
+        | bits_in_reg(VTCR_EL2::ORGN0, tcr_cacheable::NONE)
+        | bits_in_reg(VTCR_EL2::IRGN0, tcr_cacheable::NONE)
         | bits_in_reg(VTCR_EL2::SL0, tcr_start_level::L1)
         | bits_in_reg(VTCR_EL2::T0SZ, 24); // T0SZ, input address is 2^40 bytes
 

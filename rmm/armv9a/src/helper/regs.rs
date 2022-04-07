@@ -185,3 +185,9 @@ define_sys_register!(
     VMID[63 - 48], // The VMID for the translation table
     BADDR[47 - 0]  // Translation table base address
 );
+
+define_sys_register!(
+    HPFAR_EL2, // Ref. D13.2.55
+    NS[63 - 63],
+    FIPA[43 - 4] //
+);

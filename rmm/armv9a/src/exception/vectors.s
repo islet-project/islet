@@ -184,6 +184,7 @@ restore_volatile_from_stack_and_return:
 	movk x0, \kind, LSL #16
 	mrs x1, ESR_EL2
 	mrs x2, TPIDR_EL2
+	mov x3, SP
 
 	bl handle_lower_exception
 
@@ -263,6 +264,11 @@ rmm_enter:
 
 	/* TODO: FP_REGS */
 
+	/* load three more registers to match with TrapFrame */
+	ldr xzr, [SP], #8
+	ldr xzr, [SP], #8
+	ldr xzr, [SP], #8
+
 	ldr x0, [SP], #8
 	ldp x1, x2, [SP], #16
 	ldp x3, x4, [SP], #16
@@ -299,6 +305,11 @@ rmm_exit:
 	stp x3, x4, [SP, #-16]!
 	stp x1, x2, [SP, #-16]!
 	str x0, [SP, #-8]!
+
+	/* store three more registers to match with TrapFrame */
+	str xzr, [SP, #-8]!
+	str xzr, [SP, #-8]!
+	str xzr, [SP, #-8]!
 
 	b restore_all_from_vcpu_and_run
 

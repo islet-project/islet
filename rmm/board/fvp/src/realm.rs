@@ -1,3 +1,4 @@
+use monitor::communication::{Error, ErrorKind};
 use monitor::io::Write as IoWrite;
 use monitor::mainloop::Mainloop;
 use monitor::realm::mm::address::{GuestPhysAddr, PhysAddr};
@@ -10,15 +11,16 @@ use armv9a::realm::mm::translation_granule_4k::RawPTE;
 
 use crate::rmi;
 
-pub fn rmm_exit() {
+pub fn rmm_exit() -> [usize; 3] {
     unsafe {
         if let Some(vcpu) = realm::vcpu::current() {
             if vcpu.is_vm_dead() {
-                vcpu.from_current()
+                vcpu.from_current();
             } else {
-                helper::rmm_exit();
+                return helper::rmm_exit([0; 3]);
             }
         }
+        [0, 0, 0]
     }
 }
 
@@ -62,10 +64,18 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
 
     mainloop.set_event_handler(rmi::Code::VMRun, |call| {
         println!("RMM: requested to jump to EL1");
-        rmm_exit();
-        call.reply(rmi::RET_SUCCESS)
-            .err()
-            .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
+        let ret = rmm_exit();
+
+        match ret[0] {
+            rmi::RET_SUCCESS => call.reply(rmi::RET_SUCCESS),
+            rmi::RET_PAGE_FAULT => {
+                call.reply(rmi::RET_PAGE_FAULT).unwrap();
+                call.reply(ret[1])
+            }
+            _ => Err(Error::new(ErrorKind::Unsupported)),
+        }
+        .err()
+        .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
     mainloop.set_idle_handler(|| {});

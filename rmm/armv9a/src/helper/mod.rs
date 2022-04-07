@@ -64,6 +64,18 @@ pub unsafe fn init() {
     // asm::brk(10);
 }
 
-extern "C" {
-    pub fn rmm_exit();
+pub unsafe fn rmm_exit(args: [usize; 3]) -> [usize; 3] {
+    let mut ret: [usize; 3] = [0usize; 3];
+
+    llvm_asm! {
+        "bl rmm_exit"
+        : "={x0}"(ret[0]), "={x1}"(ret[1]), "={x2}"(ret[2])
+        : "{x0}"(args[0]), "{x1}"(args[1]), "{x2}"(args[2])
+        : : "volatile"
+    }
+    ret
 }
+
+// extern "C" {
+//     pub fn rmm_exit(arg0: usize, arg1: usize, arg2: usize) -> [u64; 3];
+// }

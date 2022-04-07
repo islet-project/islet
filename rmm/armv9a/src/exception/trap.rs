@@ -6,7 +6,9 @@ mod syndrome;
 use self::frame::TrapFrame;
 use self::syndrome::Syndrome;
 use crate::cpu;
+use crate::helper::HPFAR_EL2;
 use crate::realm::context::Context;
+use crate::rmi;
 use monitor::realm::vcpu::VCPU;
 
 #[repr(u16)]
@@ -51,7 +53,7 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
                 tf.elr += 4; //continue
             }
             undefined => {
-                panic!("{:?} and {:?} on CPU {:?}", info, undefined, cpu::id());
+                panic!("{:?} and {:?} on CPU {:?}", info, esr, cpu::id());
             }
         },
         _ => {
@@ -66,19 +68,34 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
 }
 
 /// This function is called when an exception occurs from LowerAArch64.
+/// To enter RMM (EL2), return 1. Otherwise, return 0 to go back to EL1.
 /// The `info` parameter specifies source (first 16 bits) and kind (following 16
 /// bits) of the exception.
 /// The `esr` has the value of a syndrome register (ESR_ELx) holding the cause
 /// of the Synchronous and SError exception.
 /// The `vcpu` has the VCPU context.
+/// The `tf` has the TrapFrame of current context.
 #[no_mangle]
 #[allow(unused_variables)]
-pub extern "C" fn handle_lower_exception(info: Info, esr: u32, vcpu: &mut VCPU<Context>) -> u64 {
+pub extern "C" fn handle_lower_exception(
+    info: Info,
+    esr: u32,
+    vcpu: &mut VCPU<Context>,
+    tf: &mut TrapFrame,
+) -> u64 {
     match info.kind {
         Kind::Synchronous => match Syndrome::from(esr) {
             Syndrome::HVC => 1,
-            Syndrome::InstructionAbort(_) => 1,
-            Syndrome::DataAbort(_) => 1,
+            Syndrome::InstructionAbort(_) => {
+                tf.regs[0] = rmi::RET_PAGE_FAULT as u64;
+                tf.regs[1] = unsafe { HPFAR_EL2.get_masked_value(HPFAR_EL2::FIPA) << 12 };
+                1
+            }
+            Syndrome::DataAbort(_) => {
+                tf.regs[0] = rmi::RET_PAGE_FAULT as u64;
+                tf.regs[1] = unsafe { HPFAR_EL2.get_masked_value(HPFAR_EL2::FIPA) << 12 };
+                1
+            }
             undefined => {
                 eprintln!("{:?} and {:X?} on CPU {:?}", info, esr, cpu::id());
                 eprintln!("{:#X?}", vcpu);

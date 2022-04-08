@@ -2,7 +2,7 @@ PAGE_SIZE_4K = 4096;
 ENTRY(bootstrap_entry)
 
 MEMORY {
- RAM (rwx): ORIGIN = (0x0), LENGTH = (PAGE_SIZE_4K)
+ RAM (rwx): ORIGIN = (0x0), LENGTH = (PAGE_SIZE_4K * 2)
 }
 
 SECTIONS
@@ -10,7 +10,7 @@ SECTIONS
  . = (0x0);
  .text : {
   KEEP(*(.head.text))
-  . = ALIGN(16);
+  . = ALIGN(PAGE_SIZE_4K);
   *(.text*)
  } >RAM
  .rodata : {

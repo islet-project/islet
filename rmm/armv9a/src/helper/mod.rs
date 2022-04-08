@@ -64,6 +64,15 @@ pub unsafe fn init() {
     // asm::brk(10);
 }
 
+/// Call `rmm_exit` within `exception/vectors.s` and jumps to EL1.
+///
+/// Currently, this function gets [0usize; 3] as an argument to initialize
+/// x0, x1 and x2 registers.
+///
+/// When an exception occurs and the flow comes back to EL2 through `rmm_enter`,
+/// x0, x1 and x2 registers might contains additional information set within
+/// `handle_lower_exception`.
+/// These are the return values of this function.
 pub unsafe fn rmm_exit(args: [usize; 3]) -> [usize; 3] {
     let mut ret: [usize; 3] = [0usize; 3];
 
@@ -75,7 +84,3 @@ pub unsafe fn rmm_exit(args: [usize; 3]) -> [usize; 3] {
     }
     ret
 }
-
-// extern "C" {
-//     pub fn rmm_exit(arg0: usize, arg1: usize, arg2: usize) -> [u64; 3];
-// }

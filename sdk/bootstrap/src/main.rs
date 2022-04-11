@@ -33,6 +33,15 @@ unsafe extern "C" fn bootstrap_entry() {
         : : "{x0}"(0xc000_0004 as usize), "{x1}"(0), "{x2}"(0) : : "volatile"
     }
 
+    //vm_map_memory
+    llvm_asm! {
+        "
+        smc 0x0
+        "
+        : : "{x0}"(0xc000_0007 as usize),
+            "{x1}"(0), "{x2}"(0x1c0a_0000), "{x3}"(0x1c0a_0000), "{x4}"(0x1000) : : "volatile"
+    }
+
     loop {
         let ret0: usize;
         let ret1: usize;
@@ -52,7 +61,7 @@ unsafe extern "C" fn bootstrap_entry() {
                 smc 0x0
                 "
                 : : "{x0}"(0xc000_0007 as usize),
-                    "{x1}"(0), "{x2}"(ret1) : : "volatile"
+                    "{x1}"(0), "{x2}"(ret1 & !(0xfffusize)) : : "volatile"
             }
         } else if ret0 != 0 {
             break;

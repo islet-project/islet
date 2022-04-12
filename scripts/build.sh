@@ -14,6 +14,35 @@ function fn_prepare_fiptool()
 	fi
 }
 
+function fn_build_sdk()
+{
+	(
+		rm ${ROOT}/out/aarch64-unknown-none-softfloat/release/bootstrap
+
+		cd ${SDK}/bootstrap
+		cargo build --release
+		${CROSS_COMPILE}objcopy -O binary ${ROOT}/out/aarch64-unknown-none-softfloat/release/bootstrap ${ROOT}/out/aarch64-unknown-none-softfloat/release/bootstrap.bin
+	)
+
+	if [ $? -ne 0 ]; then
+		echo "[!] ${SDK}/bootstrap build failed "
+		exit 1
+	fi
+
+	(
+		rm ${ROOT}/out/release
+
+		cd ${SDK}
+		cargo build --release
+		objcopy --update-section .bootstrap=${ROOT}/out/aarch64-unknown-none-softfloat/release/bootstrap.bin ${ROOT}/out/release/enclave-gen
+	)
+
+	if [ $? -ne 0 ]; then
+		echo "[!] ${SDK} build failed "
+		exit 1
+	fi
+}
+
 function fn_build()
 {
 	### TODO Refactor this to use ./build
@@ -27,19 +56,6 @@ function fn_build()
 
 	if [ $? -ne 0 ]; then
 		echo "[!] ${RMM} build failed "
-		exit 1
-	fi
-
-	(
-		rm ${ROOT}/out/aarch64-unknown-none-softfloat/release/bootstrap
-
-		cd ${SDK}/bootstrap
-		cargo build --release
-		${CROSS_COMPILE}objcopy -O binary ${ROOT}/out/aarch64-unknown-none-softfloat/release/bootstrap ${ROOT}/out/aarch64-unknown-none-softfloat/release/bootstrap.bin
-	)
-
-	if [ $? -ne 0 ]; then
-		echo "[!] bootstrap build failed "
 		exit 1
 	fi
 
@@ -90,6 +106,8 @@ function fn_build()
 		cd ${VM_IMAGE}
 		make CROSS_COMPILE=${CROSS_COMPILE} PLAT=fvp DEBUG=1 tftf
 		cp ${VM_IMAGE}/build/fvp/debug/tftf.bin ${ROOT}/out/vm-image.bin
+
+		${ROOT}/out/release/enclave-gen ${ROOT}/out/vm-image.bin ${ROOT}/out/realm.bin
 	)
 
 	if [ $? -ne 0 ]; then
@@ -189,6 +207,12 @@ if ${BUILD_THIRDPARTY}; then
 	fi
 else
 	fn_prepare_prebuilt_thirdparty
+fi
+
+fn_build_sdk
+if [ $? -ne 0 ]; then
+	echo "[!] sdk build failed "
+	exit 1
 fi
 
 if ${BUILD_LINUX}; then

@@ -4,6 +4,7 @@ import argparse
 import multiprocessing
 import os
 import subprocess
+import sys
 
 ROOT = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
 OUT = os.path.join(ROOT, "out")
@@ -24,14 +25,15 @@ FIPTOOL = os.path.join(TRUSTED_FIRMWARE_A, "tools/fiptool")
 os.makedirs(OUT, exist_ok=True)
 
 def run(cmd, cwd):
-    p = subprocess.run(cmd, cwd=cwd,
+    process = subprocess.run(cmd, cwd=cwd,
                        stderr=subprocess.STDOUT,
                        stdout=subprocess.PIPE,
-                       universal_newlines=True)
-    if p.returncode != 0:
+                       universal_newlines=True,
+                       check=True)
+    if process.returncode != 0:
         print("[!] Failed to run: %s @ %s" % (cmd, cwd))
-        print(p.stdout)
-        exit(1)
+        print(process.stdout)
+        sys.exit(1)
 
 def make(srcdir, extra=None):
     args = ["make"]
@@ -40,10 +42,6 @@ def make(srcdir, extra=None):
     run(args, cwd=srcdir)
 
 def prepare_tf_a_tests():
-    global CROSS_COMPILE
-    global OUT
-    global TF_A_TESTS
-
     srcdir = TF_A_TESTS
     outbin = os.path.join(TF_A_TESTS, "build/fvp/debug/tftf.bin")
 
@@ -58,16 +56,12 @@ def prepare_tf_a_tests():
 
     if not os.path.exists(outbin):
         print("[!] Failed to build: %s" % outbin)
-        exit(1)
+        sys.exit(1)
 
     rename = os.path.join(OUT, "fip-tf-a-tests.bin")
     run(["cp", outbin, rename], cwd=ROOT)
 
 def prepare_vm_image():
-    global CROSS_COMPILE
-    global VM_IMAGE
-    global OUT
-
     srcdir = VM_IMAGE
     outbin = os.path.join(VM_IMAGE, "build/fvp/debug/tftf.bin")
 
@@ -83,26 +77,18 @@ def prepare_vm_image():
 
     if not os.path.exists(outbin):
         print("[!] Failed to build: %s" % outbin)
-        exit(1)
+        sys.exit(1)
 
     rename = os.path.join(OUT, "vm-image.bin")
     run(["cp", outbin, rename], cwd=ROOT)
 
 def prepare_realm():
-    global CROSS_COMPILE
-    global VM_IMAGE
-    global OUT
-
     print("[!] Generating realm...")
     run(["%s/enclave-gen" % OUT,
          "%s/vm-image.bin" % OUT,
          "%s/realm.bin" % OUT], cwd=ROOT)
 
 def prepare_bootloaders():
-    global CROSS_COMPILE
-    global OUT
-    global TRUSTED_FIRMWARE_A
-
     args = [
         "CROSS_COMPILE=%s" % CROSS_COMPILE,
         "PLAT=fvp",
@@ -117,30 +103,23 @@ def prepare_bootloaders():
     make(TRUSTED_FIRMWARE_A, args)
 
     outdir = os.path.join(TRUSTED_FIRMWARE_A, "build/fvp/debug")
-    for bl in bl_list:
-        outbin = os.path.join(outdir, bl)
+    for bootloader in bl_list:
+        outbin = os.path.join(outdir, bootloader)
         if not os.path.exists(outbin):
             print("[!] Failed to build: %s" % outbin)
-            exit(1)
+            sys.exit(1)
 
         run(["cp", outbin, OUT], cwd=ROOT)
 
 def prepare_rmm():
-    global CROSS_COMPILE
-    global OUT
-    global RMM
-
     print("[!] Building realm management monitor...")
     run(["cargo", "build", "--release"], cwd=RMM)
     run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
          "%s/aarch64-unknown-none-softfloat/release/fvp" % OUT,
-         "%s/rmm.bin" % OUT], cwd=ROOT) 
+         "%s/rmm.bin" % OUT],
+         cwd=ROOT)
 
 def prepare_sdk():
-    global CROSS_COMPILE
-    global OUT
-    global SDK
-
     print("[!] Building realm sdk...")
     bootstrap = os.path.join(SDK, "bootstrap")
     run(["cargo", "build", "--release"], cwd=bootstrap)
@@ -157,8 +136,6 @@ def prepare_sdk():
          "%s/enclave-gen" % OUT], cwd=ROOT)
 
 def prepare_fiptool():
-    global FIPTOOL
-
     print("[!] Building firmware image package tool...")
     make(FIPTOOL)
 
@@ -168,11 +145,6 @@ def prepare_fiptool():
 
 
 def prepare_fip_tf_a_tests():
-    global FIPTOOL
-    global OUT
-    global TRUSTED_FIRMWARE_A
-    global TF_A_TESTS
-
     print("[!] Building fip for tf-a-tests...")
     fiptool = os.path.join(FIPTOOL, "fiptool")
     fdtsdir = os.path.join(TRUSTED_FIRMWARE_A, "build/fvp/debug/fdts")
@@ -183,26 +155,17 @@ def prepare_fip_tf_a_tests():
          "--soc-fw-config", "%s/fvp_soc_fw_config.dtb" % fdtsdir,
          "--nt-fw-config", "%s/fvp_nt_fw_config.dtb" % fdtsdir,
          "--hw-config", "%s/fvp-base-gicv3-psci-1t.dtb" % fdtsdir,
-         "--tb-fw", "%s/bl2.bin" % OUT, 
+         "--tb-fw", "%s/bl2.bin" % OUT,
          "--soc-fw", "%s/bl31.bin" % OUT,
          "--rmm-fw", "%s/rmm.bin" % OUT,
          "--nt-fw", "%s/build/fvp/debug/tftf.bin" % TF_A_TESTS,
          "%s/fip-tf-a-tests.bin" % OUT], cwd=ROOT)
 
 def prepare_prebuilt():
-    global PREBUILT
-    global ROOT
-
     run(["cp", "%s/FVP_AARCH64_EFI.fd" % PREBUILT, OUT], cwd=ROOT)
     run(["cp", "%s/bootaa64.efi" % PREBUILT, OUT], cwd=ROOT)
 
 def prepare_fip_linux():
-    global FIPTOOL
-    global OUT
-    global ROOT
-    global TF_A_TESTS
-    global TRUSTED_FIRMWARE_A
-
     print("[!] Building fip for linux...")
 
     fiptool = os.path.join(FIPTOOL, "fiptool")
@@ -214,17 +177,13 @@ def prepare_fip_linux():
          "--soc-fw-config", "%s/fvp_soc_fw_config.dtb" % fdtsdir,
          "--nt-fw-config", "%s/fvp_nt_fw_config.dtb" % fdtsdir,
          "--hw-config", "%s/fvp-base-gicv3-psci-1t.dtb" % fdtsdir,
-         "--tb-fw", "%s/bl2.bin" % OUT, 
+         "--tb-fw", "%s/bl2.bin" % OUT,
          "--soc-fw", "%s/bl31.bin" % OUT,
          "--rmm-fw", "%s/rmm.bin" % OUT,
          "--nt-fw", "%s/FVP_AARCH64_EFI.fd" % OUT,
          "%s/fip.bin" % OUT], cwd=ROOT)
 
 def prepare_linux():
-    global BUILD_SCRIPT
-    global OUT
-    global ROOT
-
     args = [
         "-j%d" % multiprocessing.cpu_count(), "-f",
         "fvp.mk",
@@ -246,11 +205,6 @@ def prepare_linux():
     make(BUILD_SCRIPT, args)
 
 def run_fvp_tf_a_tests():
-    global CONFIG
-    global FASTMODEL
-    global ROOT
-    global OUT
-
     print("[!] Running fvp for tf-a-tests...")
     run(["./FVP_Base_RevC-2xAEMvA",
          "-C", "bp.flashloader0.fname=%s/fip-tf-a-tests.bin" % OUT,
@@ -260,11 +214,6 @@ def run_fvp_tf_a_tests():
          "-Q", "1000"], cwd=FASTMODEL)
 
 def run_fvp_linux():
-    global CONFIG
-    global FASTMODEL
-    global ROOT
-    global OUT
-
     print("[!] Running fvp for linux...")
     run(["./FVP_Base_RevC-2xAEMvA",
          "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
@@ -278,11 +227,11 @@ if __name__ == "__main__":
     parser.add_argument("--normal-world", "-nw", help="A normal world component")
     args = parser.parse_args()
 
-    nw_list = ["linux", "tf-a-tests"];
+    nw_list = ["linux", "tf-a-tests"]
     if not args.normal_world in nw_list:
         print("Please select one of the normal components:")
         print("  " + "\n  ".join(nw_list))
-        exit(1)
+        sys.exit(1)
 
     prepare_fiptool()
     prepare_bootloaders()

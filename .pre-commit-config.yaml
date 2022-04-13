@@ -7,6 +7,12 @@ repos:
         entry: assets/formatter/shfmt -w -ci -bn -fn
         args: ['-w', '-ci', '-bn', '-fn']
         files: \.sh$
+    -   id: pylint
+        name: pylint
+        entry: pylint
+        language: system
+        types: [python]
+        args: ["-rn", "-sn"]
 
 -   repo: https://github.com/doublify/pre-commit-rust
     rev: v1.0

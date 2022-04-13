@@ -27,8 +27,8 @@ jobs:
         sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
         git submodule update --init build trusted-firmware-a tf-a-tests vm-image
 
-    - name: Run scripts/build.sh
-      run: ./scripts/build.sh
+    - name: Build components
+      run: ./scripts/fvp-cca --build-only -nw=tf-a-tests
 
     - name: Archive binaries
       uses: actions/upload-artifact@v2
@@ -160,16 +160,17 @@ jobs:
       run: |
         rm -Rf assets
         ln -sf /root/assets assets
+        sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
+        git submodule update --init trusted-firmware-a tf-a-tests vm-image
 
     - uses: actions/download-artifact@v2
       with:
         name: binaries
         path: out
 
-    - name: Run on FVP
+    - name: Run tf-a-tests on FVP
       run: |
-        sed -i "s/..\/..\/..\/..\/../$(pwd | sed "s/\//\\\\\//g")/" scripts/.config
-        ./scripts/run.sh --tf-a-tests &
+        ./scripts/fvp-cca -nw=tf-a-tests &
         sleep 20
         echo 'UART0_LOG<<EOF_GITHUB_ENV' >> $GITHUB_ENV
         cat out/uart0.log >> $GITHUB_ENV

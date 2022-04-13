@@ -11,6 +11,7 @@ CONFIG = os.path.join(ROOT, "scripts/.config")
 PREBUILT = os.path.join(ROOT, "assets/prebuilt")
 
 RMM = os.path.join(ROOT, "rmm/board/fvp")
+SDK = os.path.join(ROOT, "sdk/")
 TF_A_TESTS = os.path.join(ROOT, "tf-a-tests")
 TRUSTED_FIRMWARE_A = os.path.join(ROOT, "trusted-firmware-a")
 VM_IMAGE = os.path.join(ROOT, "vm-image")
@@ -77,7 +78,7 @@ def prepare_vm_image():
         "tftf"
     ]
 
-    print("[!] Building vm-image...")
+    print("[!] Building vm image...")
     make(srcdir, args)
 
     if not os.path.exists(outbin):
@@ -86,6 +87,16 @@ def prepare_vm_image():
 
     rename = os.path.join(OUT, "vm-image.bin")
     run(["cp", outbin, rename], cwd=ROOT)
+
+def prepare_realm():
+    global CROSS_COMPILE
+    global VM_IMAGE
+    global OUT
+
+    print("[!] Generating realm...")
+    run(["%s/enclave-gen" % OUT,
+         "%s/vm-image.bin" % OUT,
+         "%s/realm.bin" % OUT], cwd=ROOT)
 
 def prepare_bootloaders():
     global CROSS_COMPILE
@@ -124,6 +135,26 @@ def prepare_rmm():
     run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
          "%s/aarch64-unknown-none-softfloat/release/fvp" % OUT,
          "%s/rmm.bin" % OUT], cwd=ROOT) 
+
+def prepare_sdk():
+    global CROSS_COMPILE
+    global OUT
+    global SDK
+
+    print("[!] Building realm sdk...")
+    bootstrap = os.path.join(SDK, "bootstrap")
+    run(["cargo", "build", "--release"], cwd=bootstrap)
+    run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
+         "%s/aarch64-unknown-none-softfloat/release/bootstrap" % OUT,
+         "%s/bootstrap.bin" % OUT], cwd=ROOT)
+
+    run(["cargo", "build", "--release"], cwd=SDK)
+    run(["cp",
+         "%s/release/enclave-gen" % OUT,
+         "%s/enclave-gen" % OUT], cwd=ROOT)
+    run(["objcopy", "--update-section",
+         ".bootstrap=%s/bootstrap.bin" % OUT,
+         "%s/enclave-gen" % OUT], cwd=ROOT)
 
 def prepare_fiptool():
     global FIPTOOL
@@ -206,7 +237,7 @@ def prepare_linux():
     run(["cp", "%s/linux/arch/arm64/boot/Image" % ROOT, OUT], cwd=ROOT)
     run(["cp", "%s/linux/arch/arm64/boot/dts/arm/fvp-base-revc.dtb" % ROOT, OUT], cwd=ROOT)
 
-    print("[!] Building boot-img...")
+    print("[!] Building boot image...")
     args = [
         "-j%d" % multiprocessing.cpu_count(), "-f",
         "fvp.mk",
@@ -256,13 +287,15 @@ if __name__ == "__main__":
     prepare_fiptool()
     prepare_bootloaders()
     prepare_rmm()
+    prepare_vm_image()
 
     if args.normal_world == "tf-a-tests":
         prepare_tf_a_tests()
-        prepare_vm_image()
         prepare_fip_tf_a_tests()
         run_fvp_tf_a_tests()
     else:
+        prepare_sdk()
+        prepare_realm()
         prepare_prebuilt()
         prepare_linux()
         prepare_fip_linux()

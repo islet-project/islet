@@ -225,6 +225,8 @@ def run_fvp_linux():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FVP launcher for CCA")
     parser.add_argument("--normal-world", "-nw", help="A normal world component")
+    parser.add_argument("--build-only", "-bo",
+                        help="Building components without running", action="store_true")
     args = parser.parse_args()
 
     nw_list = ["linux", "tf-a-tests"]
@@ -241,11 +243,13 @@ if __name__ == "__main__":
     if args.normal_world == "tf-a-tests":
         prepare_tf_a_tests()
         prepare_fip_tf_a_tests()
-        run_fvp_tf_a_tests()
+        if not args.build_only:
+            run_fvp_tf_a_tests()
     else:
         prepare_sdk()
         prepare_realm()
         prepare_prebuilt()
         prepare_linux()
         prepare_fip_linux()
-        run_fvp_linux()
+        if not args.build_only:
+            run_fvp_linux()

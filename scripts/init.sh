@@ -34,3 +34,6 @@ cd ${ROOT} \
 	rustup target add aarch64-unknown-none-softfloat
 	rustup component add rust-src
 )
+
+pip3 install pre-commit
+pre-commit install

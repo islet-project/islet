@@ -18,14 +18,10 @@ sudo docker run --rm -it art.sec.samsung.net/syssec_docker/cca_build /bin/bash
 
 ```
 
-## How to build
-```bash
-./scripts/build.sh
-```
-
 ## How to run
 ```bash
-./scripts/run.sh
+./scripts/fvp-cca --normal-world=linux
+./scripts/fvp-cca --normal-world=tf-a-tests
 ```
 
 ## How to do unit-tests
@@ -39,9 +35,7 @@ sudo docker run --rm -it art.sec.samsung.net/syssec_docker/cca_build /bin/bash
 ```
 
 ## How to connect T32
-```bash
-./scripts/run.sh --cadi-server
-```
+// TODO: Support T32
 
 Then, execute the t32 application (e.g., ./t32marm-qt)
 and run the script ./debug/t32.cmm via "File -> Run Script".
@@ -57,16 +51,6 @@ For rust,
 cargo fmt
 ```
 
-Pre-commit script is ready for convenience.
-
-After installing pre-commit, every commit will be checked automatically
-before creation.
-
-```bash
-pip3 install pre-commit
-pre-commit install
-```
-
 .editorconfig is also ready as well.
 
 This file helps use proper indentation when you use editor (e.g., vim, vscode).
@@ -78,13 +62,11 @@ You can set the editor configuration like the below if you use vim.
 ## See also
 [Detailed Description](https://pages.github.sec.samsung.net/SYSSEC/arm-cca/)
 
-
 ## List of Maintainers
 - Beomheyn Kim (beomheyn.kim@samsung.com)
 - Bokdeuk Jeong (bd.jeong@samsung.com)
 - Sangwan Kwon (sangwan.kwon@samsung.com)
 - Sungbae Yoo (sungbae.yoo@samsung.com)
-
 
 ## Governance
 All decisions in this project are made by consensus, respecting the principles and rules of the community.  Please refer to the [Samsung Inner Source Governance](docs/Governance.md) in more detail.

@@ -5,7 +5,7 @@ ROOT=$(git rev-parse --show-toplevel)
 source ${ROOT}/scripts/env.sh
 
 sudo apt install -y -qq --no-install-recommends \
-	git-lfs binutils \
+	git-lfs binutils python3-pip \
 	device-tree-compiler xterm fakeroot mtools fdisk cpio \
 	dosfstools e2fsprogs \
 	libxml-libxml-perl \

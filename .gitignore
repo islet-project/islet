@@ -2,3 +2,4 @@
 *.swo
 /out/
 Cargo.lock
+__pycache__

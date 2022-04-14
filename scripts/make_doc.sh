@@ -2,8 +2,6 @@
 
 ROOT=$(git rev-parse --show-toplevel)
 
-source ${ROOT}/scripts/env.sh
-
 (
 	cd ${ROOT}/docs
 	mdbook build

@@ -2,8 +2,6 @@
 
 ROOT=$(git rev-parse --show-toplevel)
 
-source ${ROOT}/scripts/env.sh
-
 sudo apt install -y -qq --no-install-recommends \
 	git-lfs binutils python3-pip \
 	device-tree-compiler xterm fakeroot mtools fdisk cpio \
@@ -29,7 +27,7 @@ cd ${ROOT} \
 	&& rustup component add rustfmt
 
 (
-	cd ${RMM}
+	cd ${ROOT}/rmm/board/fvp
 	rustup toolchain install $(cat ${ROOT}/rmm/rust-toolchain)
 	rustup target add aarch64-unknown-none-softfloat
 	rustup component add rust-src

@@ -204,27 +204,34 @@ def prepare_linux():
     ]
     make(BUILD_SCRIPT, args)
 
-def run_fvp_tf_a_tests():
+def run_fvp_tf_a_tests(debug):
     print("[!] Running fvp for tf-a-tests...")
-    run(["./FVP_Base_RevC-2xAEMvA",
-         "-C", "bp.flashloader0.fname=%s/fip-tf-a-tests.bin" % OUT,
-         "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
-         "--data=%s/vm-image.bin@0x8806c000" % OUT,
-         "-f", CONFIG,
-         "-Q", "1000"], cwd=FASTMODEL)
+    args = ["./FVP_Base_RevC-2xAEMvA",
+            "-C", "bp.flashloader0.fname=%s/fip-tf-a-tests.bin" % OUT,
+            "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
+            "--data=%s/vm-image.bin@0x8806c000" % OUT,
+            "-f", CONFIG,
+            "-Q", "1000"]
+    if debug:
+        args += ["--cadi-server"]
+    run(args, cwd=FASTMODEL)
 
-def run_fvp_linux():
+def run_fvp_linux(debug):
     print("[!] Running fvp for linux...")
-    run(["./FVP_Base_RevC-2xAEMvA",
-         "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
-         "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
-         "-C", "bp.virtioblockdevice.image_path=%s/boot.img" % OUT,
-         "-f", CONFIG,
-         "-Q", "1000"], cwd=FASTMODEL)
+    args = ["./FVP_Base_RevC-2xAEMvA",
+            "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
+            "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
+            "-C", "bp.virtioblockdevice.image_path=%s/boot.img" % OUT,
+            "-f", CONFIG,
+            "-Q", "1000"]
+    if debug:
+        args += ["--cadi-server"]
+    run(args, cwd=FASTMODEL)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FVP launcher for CCA")
     parser.add_argument("--normal-world", "-nw", help="A normal world component")
+    parser.add_argument("--debug", "-d", help="Using debug component", action="store_true")
     parser.add_argument("--build-only", "-bo",
                         help="Building components without running", action="store_true")
     args = parser.parse_args()
@@ -244,7 +251,7 @@ if __name__ == "__main__":
         prepare_tf_a_tests()
         prepare_fip_tf_a_tests()
         if not args.build_only:
-            run_fvp_tf_a_tests()
+            run_fvp_tf_a_tests(args.debug)
     else:
         prepare_sdk()
         prepare_realm()
@@ -252,4 +259,4 @@ if __name__ == "__main__":
         prepare_linux()
         prepare_fip_linux()
         if not args.build_only:
-            run_fvp_linux()
+            run_fvp_linux(args.debug)

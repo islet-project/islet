@@ -35,7 +35,9 @@ sudo docker run --rm -it art.sec.samsung.net/syssec_docker/cca_build /bin/bash
 ```
 
 ## How to connect T32
-// TODO: Support T32
+```bash
+./scripts/fvp-cca --normal-world=tf-a-tests --debug
+```
 
 Then, execute the t32 application (e.g., ./t32marm-qt)
 and run the script ./debug/t32.cmm via "File -> Run Script".

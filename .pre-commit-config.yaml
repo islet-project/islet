@@ -12,7 +12,7 @@ repos:
         entry: pylint
         language: system
         types: [python]
-        args: ['-d C0111,C0209,W0621,C0103']
+        args: ['-d C0111,C0209,W0621,C0103,W0401']
 
 -   repo: https://github.com/doublify/pre-commit-rust
     rev: v1.0

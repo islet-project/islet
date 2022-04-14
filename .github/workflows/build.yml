@@ -160,8 +160,6 @@ jobs:
       run: |
         rm -Rf assets
         ln -sf /root/assets assets
-        sed -i 's/github.sec.samsung/${{secrets.GITHUB_TOKEN}}:${{secrets.GITHUB_TOKEN}}@github.sec.samsung/' .gitmodules
-        git submodule update --init trusted-firmware-a tf-a-tests vm-image
 
     - uses: actions/download-artifact@v2
       with:
@@ -170,7 +168,8 @@ jobs:
 
     - name: Run tf-a-tests on FVP
       run: |
-        ./scripts/fvp-cca -nw=tf-a-tests &
+        sed -i "s/..\/..\/..\/..\/../$(pwd | sed "s/\//\\\\\//g")/" scripts/.config
+        ./scripts/fvp-cca -nw=tf-a-tests -ro &
         sleep 20
         echo 'UART0_LOG<<EOF_GITHUB_ENV' >> $GITHUB_ENV
         cat out/uart0.log >> $GITHUB_ENV

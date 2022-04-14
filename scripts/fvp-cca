@@ -218,6 +218,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FVP launcher for CCA")
     parser.add_argument("--normal-world", "-nw", help="A normal world component")
     parser.add_argument("--debug", "-d", help="Using debug component", action="store_true")
+    parser.add_argument("--run-only", "-ro",
+                        help="Running fvp without building", action="store_true")
     parser.add_argument("--build-only", "-bo",
                         help="Building components without running", action="store_true")
     args = parser.parse_args()
@@ -228,21 +230,24 @@ if __name__ == "__main__":
         print("  " + "\n  ".join(nw_list))
         sys.exit(1)
 
-    prepare_fiptool()
-    prepare_bootloaders()
-    prepare_rmm()
-    prepare_vm_image()
+    if not args.run_only:
+        prepare_fiptool()
+        prepare_bootloaders()
+        prepare_rmm()
+        prepare_vm_image()
 
-    if args.normal_world == "tf-a-tests":
-        prepare_tf_a_tests()
-        prepare_fip_tf_a_tests()
-        if not args.build_only:
-            run_fvp_tf_a_tests(args.debug)
-    else:
-        prepare_sdk()
-        prepare_realm()
-        prepare_prebuilt()
-        prepare_linux()
-        prepare_fip_linux()
-        if not args.build_only:
-            run_fvp_linux(args.debug)
+        if args.normal_world == "tf-a-tests":
+            prepare_tf_a_tests()
+            prepare_fip_tf_a_tests()
+        else:
+            prepare_sdk()
+            prepare_realm()
+            prepare_prebuilt()
+            prepare_linux()
+            prepare_fip_linux()
+
+    if not args.build_only and args.normal_world == "tf-a-tests":
+        run_fvp_tf_a_tests(args.debug)
+
+    if not args.build_only and args.normal_world == "linux":
+        run_fvp_linux(args.debug)

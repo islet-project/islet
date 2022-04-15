@@ -51,8 +51,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
-    mainloop.set_event_handler(rmi::Code::VMResume, |_| { /* Intentionally emptied */ });
-
     mainloop.set_event_handler(rmi::Code::VMDestroy, |call| {
         let vm = call.argument()[0];
         println!("RMM: requested to destroy VM {}", vm);
@@ -79,8 +77,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         .err()
         .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
-
-    mainloop.set_idle_handler(|| {});
 
     mainloop.set_event_handler(rmi::Code::VMMapMemory, |call| {
         let vm = call.argument()[0];

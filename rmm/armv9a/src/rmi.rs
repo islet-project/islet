@@ -14,7 +14,6 @@ const RMM_GRANULE_DELEGATE: usize = 0xc000_0001;
 const RMM_GRANULE_UNDELEGATE: usize = 0xc000_0002;
 const RMM_VM_CREATE: usize = 0xc000_0003;
 const RMM_VM_SWITCH: usize = 0xc000_0004;
-const RMM_VM_RESUME: usize = 0xc000_0005;
 const RMM_VM_DESTROY: usize = 0xc000_0006;
 const RMM_VM_MAP_MEMORY: usize = 0xc000_0007;
 const RMM_VM_UNMAP_MEMORY: usize = 0xc000_0008;
@@ -35,7 +34,6 @@ pub enum Code {
     GranuleUndelegate,
     VMCreate,
     VMSwitch,
-    VMResume,
     VMDestroy,
     VMMapMemory,
     VMUnmapMemory,
@@ -54,7 +52,6 @@ impl From<Code> for usize {
             Code::GranuleUndelegate => RMM_GRANULE_UNDELEGATE,
             Code::VMCreate => RMM_VM_CREATE,
             Code::VMSwitch => RMM_VM_SWITCH,
-            Code::VMResume => RMM_VM_RESUME,
             Code::VMDestroy => RMM_VM_DESTROY,
             Code::VMMapMemory => RMM_VM_MAP_MEMORY,
             Code::VMUnmapMemory => RMM_VM_UNMAP_MEMORY,
@@ -75,7 +72,6 @@ impl From<usize> for Code {
             RMM_GRANULE_UNDELEGATE => Code::GranuleUndelegate,
             RMM_VM_CREATE => Code::VMCreate,
             RMM_VM_SWITCH => Code::VMSwitch,
-            RMM_VM_RESUME => Code::VMResume,
             RMM_VM_DESTROY => Code::VMDestroy,
             RMM_VM_MAP_MEMORY => Code::VMMapMemory,
             RMM_VM_UNMAP_MEMORY => Code::VMUnmapMemory,

@@ -18,6 +18,7 @@ pub struct Stage2Translation<'a> {
     // To reduce the level of page lookup, initial lookup will start from L1.
     // We allocate two single page table initial lookup table, addresing up 1TB.
     root_pgtlb: &'a mut PageTable<L1Table>,
+    dirty: bool,
 }
 
 impl<'a> Stage2Translation<'a> {
@@ -26,7 +27,10 @@ impl<'a> Stage2Translation<'a> {
             &mut *(pgtlb_allocator::allocate_tables(NUM_ROOT_PAGE, ROOT_PGTLB_ALIGNMENT).unwrap())
         };
 
-        Self { root_pgtlb }
+        Self {
+            root_pgtlb,
+            dirty: false,
+        }
     }
 }
 
@@ -40,9 +44,29 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
 
         self.root_pgtlb
             .map_multiple_pages(pages, phys, flags as u64);
+
+        //TODO Set dirty only if pages are updated, not added
+        self.dirty = true;
     }
     fn unset_pages(&mut self, _guest: GuestPhysAddr, _size: usize) {
         //TODO implement
+    }
+
+    fn clean(&mut self) {
+        if self.dirty {
+            unsafe {
+                llvm_asm! {
+                    "
+                    dsb ishst
+                    tlbi vmalle1
+                    dsb ish
+                    isb
+                    "
+                }
+            }
+
+            self.dirty = false;
+        }
     }
 }
 

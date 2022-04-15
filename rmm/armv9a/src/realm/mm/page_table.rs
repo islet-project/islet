@@ -128,8 +128,6 @@ impl<L: PageTableLevel> PageTableMethods<L> for PageTable<L> {
 
         // Map page in this level page table
         self.entries[index].set_pte(paddr, flags | S::MAP_EXTRA_FLAG);
-
-        // TODO: Flush from TLB?
     }
 }
 
@@ -186,7 +184,6 @@ where
         } else if L::THIS_LEVEL == S::MAP_TABLE_LEVEL {
             // Map page in this level page table
             self.entries[index].set_pte(paddr, flags | S::MAP_EXTRA_FLAG);
-            // TODO: Flush from TLB?
         }
     }
 }

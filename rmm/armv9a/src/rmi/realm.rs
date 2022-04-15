@@ -19,6 +19,9 @@ pub fn rmm_exit() -> [usize; 3] {
             if vcpu.is_vm_dead() {
                 vcpu.from_current();
             } else {
+                vcpu.vm.upgrade().map(|vm| {
+                    vm.lock().page_table.lock().clean();
+                });
                 return helper::rmm_exit([0; 3]);
             }
         }

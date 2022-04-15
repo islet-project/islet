@@ -22,6 +22,7 @@ static VMS: Spinlock<(usize, VMMap)> = Spinlock::new((0, BTreeMap::new()));
 pub fn new(num_vcpu: usize) -> Arc<Mutex<VM<Context>>> {
     let mut vms = VMS.lock();
 
+    //TODO limit id to fit in VMID (16 bits)
     let id = vms.0;
 
     let s2_table = Arc::new(Mutex::new(

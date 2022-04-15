@@ -69,5 +69,14 @@ impl PageTableEntry {
             .set_masked_value(RawPTE::SH, pte_shareable::INNER)
             .set_bits(RawPTE::AF)
             .set_bits(RawPTE::VALID);
+
+        unsafe {
+            llvm_asm! {"
+            dsb ishst
+            dc civac, $0
+            dsb ish
+            isb
+            " : : "r"(&self.0 as *const _ as usize)};
+        }
     }
 }

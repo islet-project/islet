@@ -7,8 +7,6 @@ extern crate alloc;
 
 mod driver;
 mod entry;
-mod gpt;
-mod realm;
 
 use armv9a::allocator;
 use armv9a::config;
@@ -31,15 +29,9 @@ pub unsafe fn main() -> ! {
 
     let mut mainloop = Mainloop::new(rmi::Receiver::new());
 
-    gpt::set_event_handler(&mut mainloop);
-    realm::set_event_handler(&mut mainloop);
-
-    mainloop.set_event_handler(rmi::Code::Version, |call| {
-        println!("RMM: requested version information");
-        call.reply(config::ABI_VERSION)
-            .err()
-            .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
-    });
+    rmi::gpt::set_event_handler(&mut mainloop);
+    rmi::realm::set_event_handler(&mut mainloop);
+    rmi::version::set_event_handler(&mut mainloop);
 
     mainloop.set_default_handler(|call| {
         eprintln!("RMM: no proper rmi handler - code:{:?}", call.code());

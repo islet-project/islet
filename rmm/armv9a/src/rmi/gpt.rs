@@ -2,9 +2,8 @@ use monitor::eprintln;
 use monitor::io::Write;
 use monitor::mainloop::Mainloop;
 
-use armv9a::smc;
-
 use crate::rmi;
+use crate::smc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     mainloop.set_event_handler(rmi::Code::GranuleDelegate, |call| {

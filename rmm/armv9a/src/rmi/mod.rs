@@ -9,6 +9,10 @@ use monitor::communication::{self, Error, ErrorKind};
 
 extern crate alloc;
 
+pub mod gpt;
+pub mod realm;
+pub mod version;
+
 const RMM_VERSION: usize = 0xc000_0000;
 const RMM_GRANULE_DELEGATE: usize = 0xc000_0001;
 const RMM_GRANULE_UNDELEGATE: usize = 0xc000_0002;

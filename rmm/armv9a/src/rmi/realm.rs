@@ -4,12 +4,12 @@ use monitor::mainloop::Mainloop;
 use monitor::realm::mm::address::{GuestPhysAddr, PhysAddr};
 use monitor::{eprintln, println};
 
-use armv9a::config::PAGE_SIZE;
-use armv9a::helper;
-use armv9a::realm;
-use armv9a::realm::mm::page_table_entry::{pte_access_perm, pte_mem_attr};
-use armv9a::realm::mm::translation_granule_4k::RawPTE;
-use armv9a::smc;
+use crate::config::PAGE_SIZE;
+use crate::helper;
+use crate::realm;
+use crate::realm::mm::page_table_entry::{pte_access_perm, pte_mem_attr};
+use crate::realm::mm::translation_granule_4k::RawPTE;
+use crate::smc;
 
 use crate::rmi;
 

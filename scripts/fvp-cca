@@ -15,7 +15,7 @@ def run(cmd, cwd):
                        stderr=subprocess.STDOUT,
                        stdout=subprocess.PIPE,
                        universal_newlines=True,
-                       check=True)
+                       check=False)
     if process.returncode != 0:
         print("[!] Failed to run: %s @ %s" % (cmd, cwd))
         print(process.stdout)

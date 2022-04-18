@@ -1,4 +1,4 @@
-use monitor::mm::page_table::{self, HasSubtable};
+use monitor::mm::page_table::{self, Entry as PTEntry, HasSubtable};
 use monitor::realm::mm::address::PhysAddr;
 
 use super::page::{Page, PageIter, PageSize};
@@ -53,21 +53,21 @@ impl page_table::Level for L3Table {
 
 const_assert_size!(PageTable<L0Table, Entry>, PAGE_SIZE);
 
-pub trait PageTableMethods<L> {
-    fn new(size: usize) -> Result<*mut PageTable<L, Entry>, ()>;
+pub trait PageTableMethods<L, E> {
+    fn new(size: usize) -> Result<*mut PageTable<L, E>, ()>;
     fn map_multiple_pages<S: PageSize>(&mut self, range: PageIter<S>, paddr: PhysAddr, flags: u64);
 
     // will be specialized
-    fn get_page_table_entry<S: PageSize>(&self, page: Page<S>) -> Option<Entry>;
+    fn get_page_table_entry<S: PageSize>(&self, page: Page<S>) -> Option<E>;
     fn map_page<S: PageSize>(&mut self, page: Page<S>, paddr: PhysAddr, flags: u64);
 }
 
-impl<L: page_table::Level> PageTableMethods<L> for PageTable<L, Entry> {
-    fn new(size: usize) -> Result<*mut PageTable<L, Entry>, ()> {
+impl<L: page_table::Level, E: PTEntry + Copy> PageTableMethods<L, E> for PageTable<L, E> {
+    fn new(size: usize) -> Result<*mut PageTable<L, E>, ()> {
         let table = allocator::alloc(size)?;
 
         unsafe {
-            (*table).entries = [Entry::new(); 1 << PAGE_MAP_BITS];
+            (*table).entries = [E::new(); 1 << PAGE_MAP_BITS];
         }
 
         Ok(table)
@@ -95,7 +95,7 @@ impl<L: page_table::Level> PageTableMethods<L> for PageTable<L, Entry> {
     ///
     /// This is the default implementation called only for L3Table.
     /// It is overridden by a specialized implementation for all tables with subtables.
-    default fn get_page_table_entry<S: PageSize>(&self, page: Page<S>) -> Option<Entry> {
+    default fn get_page_table_entry<S: PageSize>(&self, page: Page<S>) -> Option<E> {
         assert!(L::THIS_LEVEL == S::MAP_TABLE_LEVEL);
 
         let index = page.table_index::<L>();
@@ -115,18 +115,18 @@ impl<L: page_table::Level> PageTableMethods<L> for PageTable<L, Entry> {
         let index = page.table_index::<L>();
 
         // Map page in this level page table
-        self.entries[index].set_pte(paddr, flags | S::MAP_EXTRA_FLAG);
+        self.entries[index].set(paddr, flags | S::MAP_EXTRA_FLAG);
     }
 }
 
 /// This overrides default PageTableMethods for PageTables with subtable.
 /// (L0Table, L1Table, L2Table)
 /// PageTableMethods for L3 Table remains unmodified.
-impl<L: HasSubtable> PageTableMethods<L> for PageTable<L, Entry>
+impl<L: HasSubtable, E: PTEntry + Copy> PageTableMethods<L, E> for PageTable<L, E>
 where
     L::NextLevel: page_table::Level,
 {
-    fn get_page_table_entry<S: PageSize>(&self, page: Page<S>) -> Option<Entry> {
+    fn get_page_table_entry<S: PageSize>(&self, page: Page<S>) -> Option<E> {
         assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
         let index = page.table_index::<L>();
 
@@ -158,7 +158,7 @@ where
                 let subtable = PageTable::<L::NextLevel, Entry>::new(1).unwrap();
                 let subtable_paddr = PhysAddr::from(subtable);
 
-                self.entries[index].set_pte(
+                self.entries[index].set(
                     subtable_paddr,
                     bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL)
                         | bits_in_reg(RawPTE::TYPE, pte::page_type::TABLE_OR_PAGE),
@@ -170,21 +170,21 @@ where
             subtable.map_page::<S>(page, paddr, flags);
         } else if L::THIS_LEVEL == S::MAP_TABLE_LEVEL {
             // Map page in this level page table
-            self.entries[index].set_pte(paddr, flags | S::MAP_EXTRA_FLAG);
+            self.entries[index].set(paddr, flags | S::MAP_EXTRA_FLAG);
         }
     }
 }
 
-impl<L: HasSubtable> PageTable<L, Entry>
+impl<L: HasSubtable, E: PTEntry> PageTable<L, E>
 where
     L::NextLevel: page_table::Level,
 {
     /// Returns the next subtable for the given page in the page table hierarchy.
-    fn subtable<S: PageSize>(&self, page: Page<S>) -> &mut PageTable<L::NextLevel, Entry> {
+    fn subtable<S: PageSize>(&self, page: Page<S>) -> &mut PageTable<L::NextLevel, E> {
         assert!(L::THIS_LEVEL < S::MAP_TABLE_LEVEL);
 
         let index = page.table_index::<L>();
-        let subtable_addr = self.entries[index].get_page_addr(L::THIS_LEVEL).unwrap();
-        unsafe { &mut *(subtable_addr.as_usize() as *mut PageTable<L::NextLevel, Entry>) }
+        let subtable_addr = self.entries[index].address(L::THIS_LEVEL).unwrap();
+        unsafe { &mut *(subtable_addr.as_usize() as *mut PageTable<L::NextLevel, E>) }
     }
 }

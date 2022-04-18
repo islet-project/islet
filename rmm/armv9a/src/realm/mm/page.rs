@@ -1,8 +1,8 @@
 use monitor::mm::address::align_down;
+use monitor::mm::page_table;
 use monitor::realm::mm::address::GuestPhysAddr;
 
 use super::page_table::pte;
-use super::page_table::PageTableLevel;
 use super::translation_granule_4k::{RawGPA, RawPTE};
 use crate::config::{HUGE_PAGE_SIZE, LARGE_PAGE_SIZE, PAGE_SIZE};
 use crate::helper::bits_in_reg;
@@ -63,7 +63,7 @@ impl<S: PageSize> Page<S> {
         }
     }
 
-    pub fn table_index<L: PageTableLevel>(&self) -> usize {
+    pub fn table_index<L: page_table::Level>(&self) -> usize {
         assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
         match L::THIS_LEVEL {
             0 => RawGPA::from(self.gpa).get_masked_value(RawGPA::L0Index) as usize,

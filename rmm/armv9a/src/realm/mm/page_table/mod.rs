@@ -1,3 +1,4 @@
+use monitor::mm::page_table::{self, HasSubtable};
 use monitor::realm::mm::address::PhysAddr;
 
 use super::page::{Page, PageIter, PageSize};
@@ -12,24 +13,14 @@ mod allocator;
 pub mod entry;
 pub mod pte;
 
-pub trait PageTableLevel {
-    const THIS_LEVEL: usize;
-}
-
 pub struct PageTable<L, E> {
     entries: [E; 1 << PAGE_MAP_BITS],
     level: PhantomData<L>,
 }
 
-/// Leverages Rust's typing system to provide a subtable method only for those that have sub page
-/// tables.
-pub trait HasSubtable: PageTableLevel {
-    type NextLevel;
-}
-
 /// The Level 0 Table
 pub enum L0Table {}
-impl PageTableLevel for L0Table {
+impl page_table::Level for L0Table {
     const THIS_LEVEL: usize = 0;
 }
 impl HasSubtable for L0Table {
@@ -38,7 +29,7 @@ impl HasSubtable for L0Table {
 
 /// The Level 1 Table
 pub enum L1Table {}
-impl PageTableLevel for L1Table {
+impl page_table::Level for L1Table {
     const THIS_LEVEL: usize = 1;
 }
 impl HasSubtable for L1Table {
@@ -47,7 +38,7 @@ impl HasSubtable for L1Table {
 
 /// The Level 2 Table
 pub enum L2Table {}
-impl PageTableLevel for L2Table {
+impl page_table::Level for L2Table {
     const THIS_LEVEL: usize = 2;
 }
 impl HasSubtable for L2Table {
@@ -56,7 +47,7 @@ impl HasSubtable for L2Table {
 
 /// The Level 3 Table (Doesn't have Subtable!)
 pub enum L3Table {}
-impl PageTableLevel for L3Table {
+impl page_table::Level for L3Table {
     const THIS_LEVEL: usize = 3;
 }
 
@@ -71,7 +62,7 @@ pub trait PageTableMethods<L> {
     fn map_page<S: PageSize>(&mut self, page: Page<S>, paddr: PhysAddr, flags: u64);
 }
 
-impl<L: PageTableLevel> PageTableMethods<L> for PageTable<L, Entry> {
+impl<L: page_table::Level> PageTableMethods<L> for PageTable<L, Entry> {
     fn new(size: usize) -> Result<*mut PageTable<L, Entry>, ()> {
         let table = allocator::alloc(size)?;
 
@@ -133,7 +124,7 @@ impl<L: PageTableLevel> PageTableMethods<L> for PageTable<L, Entry> {
 /// PageTableMethods for L3 Table remains unmodified.
 impl<L: HasSubtable> PageTableMethods<L> for PageTable<L, Entry>
 where
-    L::NextLevel: PageTableLevel,
+    L::NextLevel: page_table::Level,
 {
     fn get_page_table_entry<S: PageSize>(&self, page: Page<S>) -> Option<Entry> {
         assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
@@ -186,7 +177,7 @@ where
 
 impl<L: HasSubtable> PageTable<L, Entry>
 where
-    L::NextLevel: PageTableLevel,
+    L::NextLevel: page_table::Level,
 {
     /// Returns the next subtable for the given page in the page table hierarchy.
     fn subtable<S: PageSize>(&self, page: Page<S>) -> &mut PageTable<L::NextLevel, Entry> {

@@ -35,10 +35,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         println!("RMM: requested to create VM with {} vcpus", num_of_vcpu);
         let vm = realm::registry::new(num_of_vcpu);
         println!("RMM: create VM {}", vm.lock().id());
-        call.reply(rmi::RET_SUCCESS)
-            .or(Err("RMM: failed to reply."))?;
-        call.reply(vm.lock().id())
-            .or(Err("RMM: failed to reply."))?;
+        call.reply(rmi::RET_SUCCESS)?;
+        call.reply(vm.lock().id())?;
         Ok(())
     });
 
@@ -53,8 +51,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         {
             Ok(_) => call.reply(rmi::RET_SUCCESS),
             Err(_) => call.reply(rmi::RET_FAIL),
-        }
-        .or(Err("RMM: failed to reply."))?;
+        }?;
         Ok(())
     });
 
@@ -64,8 +61,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         match realm::registry::remove(vm) {
             Ok(_) => call.reply(rmi::RET_SUCCESS),
             Err(_) => call.reply(rmi::RET_FAIL),
-        }
-        .or(Err("RMM: failed to reply."))?;
+        }?;
         Ok(())
     });
 
@@ -81,8 +77,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                 call.reply(ret[1])
             }
             _ => Err(Error::new(ErrorKind::Unsupported)),
-        }
-        .or(Err("RMM: failed to reply."))?;
+        }?;
         Ok(())
     });
 
@@ -123,8 +118,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             remain -= PAGE_SIZE;
         }
 
-        call.reply(rmi::RET_SUCCESS)
-            .or(Err("RMM: failed to reply."))?;
+        call.reply(rmi::RET_SUCCESS)?;
         Ok(())
     });
 
@@ -143,8 +137,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         //TODO change GPT to nonsecure
         //TODO zeroize memory
 
-        call.reply(rmi::RET_SUCCESS)
-            .or(Err("RMM: failed to reply."))?;
+        call.reply(rmi::RET_SUCCESS)?;
         Ok(())
     });
 
@@ -179,8 +172,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                 call.reply(rmi::RET_SUCCESS)
             }
             _ => call.reply(rmi::RET_FAIL),
-        }
-        .or(Err("RMM: failed to reply."))?;
+        }?;
         Ok(())
     });
 
@@ -213,13 +205,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                     .lock()
                     .context
                     .elr;
-                call.reply(rmi::RET_SUCCESS)
-                    .or(Err("RMM: failed to reply."))?;
+                call.reply(rmi::RET_SUCCESS)?;
                 call.reply(value as usize)
             }
             _ => call.reply(rmi::RET_FAIL),
-        }
-        .or(Err("RMM: failed to reply."))?;
+        }?;
         Ok(())
     });
 }

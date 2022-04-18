@@ -8,15 +8,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         let cmd = usize::from(smc::Code::MarkRealm);
         let arg = [call.argument()[0], 0, 0, 0];
         let ret = smc::call(cmd, arg);
-        call.reply(ret[0]).or(Err("RMM: failed to reply."))?;
-        Ok(())
+        Ok(call.reply(ret[0])?)
     });
 
     listen!(mainloop, rmi::Code::GranuleUndelegate, |call| {
         let cmd = usize::from(smc::Code::MarkNonSecure);
         let arg = [call.argument()[0], 0, 0, 0];
         let ret = smc::call(cmd, arg);
-        call.reply(ret[0]).or(Err("RMM: failed to reply."))?;
-        Ok(())
+        Ok(call.reply(ret[0])?)
     });
 }

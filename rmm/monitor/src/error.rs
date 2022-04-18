@@ -21,3 +21,15 @@ impl Error {
         self.kind
     }
 }
+
+impl From<Error> for &'static str {
+    fn from(error: Error) -> Self {
+        match error.kind() {
+            ErrorKind::NotConnected => "Communication error: NotConnected",
+            ErrorKind::AlreadyExists => "Communication error: AlreadyExists",
+            ErrorKind::StorageFull => "Communication error: StorageFull",
+            ErrorKind::Unsupported => "Communication error: Unsupported",
+            ErrorKind::Other => "Communication error: Other",
+        }
+    }
+}

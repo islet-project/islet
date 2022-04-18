@@ -54,10 +54,14 @@ where
         use crate::io::Write;
         for event in self.receiver.iter() {
             if self.on_event.is_empty() {
-                self.on_idle.as_mut().map(|f| f());
+                self.on_idle.as_mut().map(|handler| handler());
             } else {
                 match self.on_event.get_mut(&event.code()) {
-                    Some(f) => f(event),
+                    Some(handler) => {
+                        if let Err(msg) = handler(event) {
+                            crate::eprintln!("Failed on event handler: {}", msg);
+                        };
+                    }
                     None => {
                         crate::eprintln!("Not registered event.");
                     }
@@ -136,10 +140,12 @@ pub mod test {
         listen!(mainloop, 1234usize, move |event| {
             r.replace(true);
             assert_eq!(event.code(), 1234usize);
+            Ok(())
         });
 
         listen!(mainloop, 91011usize, |_| {
             assert!(false);
+            Ok(())
         });
 
         mainloop.run();

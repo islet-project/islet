@@ -20,7 +20,7 @@ pub trait Event {
     fn code(&self) -> Self::Code;
 }
 
-pub type Handler<T> = Box<dyn FnMut(T)>;
+pub type Handler<T> = Box<dyn FnMut(T) -> Result<(), &'static str>>;
 
 pub type IdleHandler = Box<dyn FnMut()>;
 

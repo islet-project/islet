@@ -35,23 +35,27 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         println!("RMM: requested to create VM with {} vcpus", num_of_vcpu);
         let vm = realm::registry::new(num_of_vcpu);
         println!("RMM: create VM {}", vm.lock().id());
-        call.reply(rmi::RET_SUCCESS).unwrap();
+        call.reply(rmi::RET_SUCCESS)
+            .or(Err("RMM: failed to reply."))?;
         call.reply(vm.lock().id())
-            .err()
-            .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
+            .or(Err("RMM: failed to reply."))?;
+        Ok(())
     });
 
     listen!(mainloop, rmi::Code::VMSwitch, |call| {
         let vm = call.argument()[0];
         let vcpu = call.argument()[1];
         println!("RMM: requested to switch to VCPU {} on VM {}", vcpu, vm);
-        //TODO remove unwrap
-        match realm::registry::get(vm).unwrap().lock().switch_to(vcpu) {
+        match realm::registry::get(vm)
+            .ok_or("Not exist VM")?
+            .lock()
+            .switch_to(vcpu)
+        {
             Ok(_) => call.reply(rmi::RET_SUCCESS),
             Err(_) => call.reply(rmi::RET_FAIL),
         }
-        .err()
-        .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
+        .or(Err("RMM: failed to reply."))?;
+        Ok(())
     });
 
     listen!(mainloop, rmi::Code::VMDestroy, |call| {
@@ -61,8 +65,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             Ok(_) => call.reply(rmi::RET_SUCCESS),
             Err(_) => call.reply(rmi::RET_FAIL),
         }
-        .err()
-        .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
+        .or(Err("RMM: failed to reply."))?;
+        Ok(())
     });
 
     listen!(mainloop, rmi::Code::VMRun, |call| {
@@ -72,13 +76,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         match ret[0] {
             rmi::RET_SUCCESS => call.reply(rmi::RET_SUCCESS),
             rmi::RET_PAGE_FAULT => {
-                call.reply(rmi::RET_PAGE_FAULT).unwrap();
+                call.reply(rmi::RET_PAGE_FAULT)
+                    .or(Err("RMM: failed to reply."))?;
                 call.reply(ret[1])
             }
             _ => Err(Error::new(ErrorKind::Unsupported)),
         }
-        .err()
-        .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
+        .or(Err("RMM: failed to reply."))?;
+        Ok(())
     });
 
     listen!(mainloop, rmi::Code::VMMapMemory, |call| {
@@ -90,9 +95,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         let flags = helper::bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL)
             | helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);
 
-        //TODO remove unwrap
         realm::registry::get(vm)
-            .unwrap()
+            .ok_or("Not exist VM")?
             .lock()
             .page_table
             .lock()
@@ -120,8 +124,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         }
 
         call.reply(rmi::RET_SUCCESS)
-            .err()
-            .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
+            .or(Err("RMM: failed to reply."))?;
+        Ok(())
     });
 
     listen!(mainloop, rmi::Code::VMUnmapMemory, |call| {
@@ -129,9 +133,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         let guest = call.argument()[1];
         let size = call.argument()[2];
 
-        //TODO remove unwrap
         realm::registry::get(vm)
-            .unwrap()
+            .ok_or("Not exist VM")?
             .lock()
             .page_table
             .lock()
@@ -141,8 +144,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         //TODO zeroize memory
 
         call.reply(rmi::RET_SUCCESS)
-            .err()
-            .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
+            .or(Err("RMM: failed to reply."))?;
+        Ok(())
     });
 
     listen!(mainloop, rmi::Code::VMSetReg, |call| {
@@ -152,26 +155,24 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         let value = call.argument()[3];
         match register {
             0..=30 => {
-                //TODO remove unwrap
                 realm::registry::get(vm)
-                    .unwrap()
+                    .ok_or("Not exist VM")?
                     .lock()
                     .vcpus
                     .get(vcpu)
-                    .unwrap()
+                    .ok_or("Not exist VCPU")?
                     .lock()
                     .context
                     .gp_regs[register] = value as u64;
                 call.reply(rmi::RET_SUCCESS)
             }
             31 => {
-                //TODO remove unwrap
                 realm::registry::get(vm)
-                    .unwrap()
+                    .ok_or("Not exist VM")?
                     .lock()
                     .vcpus
                     .get(vcpu)
-                    .unwrap()
+                    .ok_or("Not exist VCPU")?
                     .lock()
                     .context
                     .elr = value as u64;
@@ -179,8 +180,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             }
             _ => call.reply(rmi::RET_FAIL),
         }
-        .err()
-        .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
+        .or(Err("RMM: failed to reply."))?;
+        Ok(())
     });
 
     listen!(mainloop, rmi::Code::VMGetReg, |call| {
@@ -189,36 +190,36 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         let register = call.argument()[2];
         match register {
             0..=30 => {
-                //TODO remove unwrap
                 let value = realm::registry::get(vm)
-                    .unwrap()
+                    .ok_or("Not exist VM")?
                     .lock()
                     .vcpus
                     .get(vcpu)
-                    .unwrap()
+                    .ok_or("Not exist VCPU")?
                     .lock()
                     .context
                     .gp_regs[register];
-                call.reply(rmi::RET_SUCCESS).unwrap();
+                call.reply(rmi::RET_SUCCESS)
+                    .or(Err("RMM: failed to reply."))?;
                 call.reply(value as usize)
             }
             31 => {
-                //TODO remove unwrap
                 let value = realm::registry::get(vm)
-                    .unwrap()
+                    .ok_or("Not exist VM")?
                     .lock()
                     .vcpus
                     .get(vcpu)
-                    .unwrap()
+                    .ok_or("Not exist VCPU")?
                     .lock()
                     .context
                     .elr;
-                call.reply(rmi::RET_SUCCESS).unwrap();
+                call.reply(rmi::RET_SUCCESS)
+                    .or(Err("RMM: failed to reply."))?;
                 call.reply(value as usize)
             }
             _ => call.reply(rmi::RET_FAIL),
         }
-        .err()
-        .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
+        .or(Err("RMM: failed to reply."))?;
+        Ok(())
     });
 }

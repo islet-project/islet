@@ -14,10 +14,10 @@ use armv9a::cpu;
 use armv9a::helper;
 use armv9a::rmi;
 
-use monitor::communication::Event;
 use monitor::io::Write as IoWrite;
+use monitor::listen;
 use monitor::mainloop::Mainloop;
-use monitor::{eprintln, println};
+use monitor::println;
 
 #[no_mangle]
 pub unsafe fn main() -> ! {
@@ -33,8 +33,8 @@ pub unsafe fn main() -> ! {
     rmi::realm::set_event_handler(&mut mainloop);
     rmi::version::set_event_handler(&mut mainloop);
 
-    mainloop.set_default_handler(|call| {
-        eprintln!("RMM: no proper rmi handler - code:{:?}", call.code());
+    listen!(mainloop, || {
+        println!("RMM: idle handler called.");
     });
 
     mainloop.run();

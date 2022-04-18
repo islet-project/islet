@@ -1,9 +1,18 @@
-use alloc::boxed::Box;
+extern crate alloc;
+
 use alloc::collections::btree_map::BTreeMap;
 
-use crate::communication::{Event, Receiver};
+use crate::communication::{Event, Handler, IdleHandler, Receiver};
 
-extern crate alloc;
+#[macro_export]
+macro_rules! listen {
+    ($mainloop:expr, $handler:expr) => {{
+        $mainloop.set_idle_handler(alloc::boxed::Box::new($handler))
+    }};
+    ($mainloop:expr, $code:expr, $handler:expr) => {{
+        $mainloop.set_event_handler($code, alloc::boxed::Box::new($handler))
+    }};
+}
 
 pub struct Mainloop<T: Receiver>
 where
@@ -11,9 +20,8 @@ where
     <T::Event as Event>::Code: Ord,
 {
     receiver: T,
-    on_event: BTreeMap<<T::Event as Event>::Code, Box<dyn FnMut(T::Event)>>,
-    on_default: Option<Box<dyn FnMut(T::Event)>>,
-    on_idle: Option<Box<dyn FnMut()>>,
+    on_event: BTreeMap<<T::Event as Event>::Code, Handler<T::Event>>,
+    on_idle: Option<IdleHandler>,
 }
 
 impl<T> Mainloop<T>
@@ -26,36 +34,35 @@ where
         Self {
             receiver,
             on_event: BTreeMap::new(),
-            on_default: None,
             on_idle: None,
         }
     }
 
-    pub fn set_event_handler<F: 'static + FnMut(T::Event)>(
+    pub fn set_event_handler(
         &mut self,
         code: <T::Event as Event>::Code,
-        f: F,
+        handler: Handler<T::Event>,
     ) {
-        self.on_event.insert(code, Box::new(f));
+        self.on_event.insert(code, handler);
     }
 
-    pub fn set_default_handler<F: 'static + FnMut(T::Event)>(&mut self, f: F) {
-        self.on_default.replace(Box::new(f));
-    }
-
-    pub fn set_idle_handler<F: 'static + FnMut()>(&mut self, f: F) {
-        self.on_idle.replace(Box::new(f));
+    pub fn set_idle_handler(&mut self, handler: IdleHandler) {
+        self.on_idle.replace(handler);
     }
 
     pub fn run(&mut self) {
+        use crate::io::Write;
         for event in self.receiver.iter() {
-            match self.on_event.get_mut(&event.code()) {
-                Some(f) => f(event),
-                _ => {
-                    self.on_default.as_mut().map(|f| f(event));
+            if self.on_event.is_empty() {
+                self.on_idle.as_mut().map(|f| f());
+            } else {
+                match self.on_event.get_mut(&event.code()) {
+                    Some(f) => f(event),
+                    None => {
+                        crate::eprintln!("Not registered event.");
+                    }
                 }
             }
-            self.on_idle.as_mut().map(|f| f());
         }
     }
 }
@@ -126,32 +133,13 @@ pub mod test {
         let result = Rc::new(RefCell::new(false));
         let r = result.clone();
 
-        mainloop.set_event_handler(1234usize, move |event| {
+        listen!(mainloop, 1234usize, move |event| {
             r.replace(true);
             assert_eq!(event.code(), 1234usize);
         });
 
-        mainloop.set_event_handler(91011usize, |_| {
+        listen!(mainloop, 91011usize, |_| {
             assert!(false);
-        });
-
-        mainloop.run();
-
-        assert!(*result.borrow());
-    }
-
-    #[test]
-    fn default_handler() {
-        let receiver = MockReceiver::new(&[1234usize, 5678usize]);
-        let mut mainloop = Mainloop::new(receiver);
-        let result = Rc::new(RefCell::new(false));
-        let r = result.clone();
-
-        mainloop.set_event_handler(1234usize, |_| {});
-
-        mainloop.set_default_handler(move |event| {
-            r.replace(true);
-            assert_eq!(event.code(), 5678usize);
         });
 
         mainloop.run();
@@ -166,9 +154,10 @@ pub mod test {
         let result = Rc::new(RefCell::new(0usize));
         let r = result.clone();
 
-        mainloop.set_event_handler(5678usize, |_| {});
+        // If there is no registered event_handler, idle handler is called
+        // mainloop.set_event_handler(5678usize, |_| {});
 
-        mainloop.set_idle_handler(move || (*r.borrow_mut()) += 1);
+        listen!(mainloop, move || (*r.borrow_mut()) += 1);
 
         mainloop.run();
 

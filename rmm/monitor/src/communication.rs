@@ -1,3 +1,7 @@
+extern crate alloc;
+
+use alloc::boxed::Box;
+
 pub use crate::error::{Error, ErrorKind};
 
 pub struct Iter<'a, T> {
@@ -15,6 +19,10 @@ pub trait Event {
     type Code;
     fn code(&self) -> Self::Code;
 }
+
+pub type Handler<T> = Box<dyn FnMut(T)>;
+
+pub type IdleHandler = Box<dyn FnMut()>;
 
 pub trait Receiver {
     type Event;

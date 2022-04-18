@@ -1,8 +1,8 @@
 use monitor::communication::{Error, ErrorKind};
 use monitor::io::Write as IoWrite;
-use monitor::mainloop::Mainloop;
 use monitor::realm::mm::address::{GuestPhysAddr, PhysAddr};
 use monitor::{eprintln, println};
+use monitor::{listen, mainloop::Mainloop};
 
 use crate::config::PAGE_SIZE;
 use crate::helper;
@@ -30,7 +30,7 @@ pub fn rmm_exit() -> [usize; 3] {
 }
 
 pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
-    mainloop.set_event_handler(rmi::Code::VMCreate, |call| {
+    listen!(mainloop, rmi::Code::VMCreate, |call| {
         let num_of_vcpu = call.argument()[0];
         println!("RMM: requested to create VM with {} vcpus", num_of_vcpu);
         let vm = realm::registry::new(num_of_vcpu);
@@ -41,7 +41,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
-    mainloop.set_event_handler(rmi::Code::VMSwitch, |call| {
+    listen!(mainloop, rmi::Code::VMSwitch, |call| {
         let vm = call.argument()[0];
         let vcpu = call.argument()[1];
         println!("RMM: requested to switch to VCPU {} on VM {}", vcpu, vm);
@@ -54,7 +54,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
-    mainloop.set_event_handler(rmi::Code::VMDestroy, |call| {
+    listen!(mainloop, rmi::Code::VMDestroy, |call| {
         let vm = call.argument()[0];
         println!("RMM: requested to destroy VM {}", vm);
         match realm::registry::remove(vm) {
@@ -65,7 +65,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
-    mainloop.set_event_handler(rmi::Code::VMRun, |call| {
+    listen!(mainloop, rmi::Code::VMRun, |call| {
         println!("RMM: requested to jump to EL1");
         let ret = rmm_exit();
 
@@ -81,7 +81,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
-    mainloop.set_event_handler(rmi::Code::VMMapMemory, |call| {
+    listen!(mainloop, rmi::Code::VMMapMemory, |call| {
         let vm = call.argument()[0];
         let guest = call.argument()[1];
         let phys = call.argument()[2];
@@ -124,7 +124,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
-    mainloop.set_event_handler(rmi::Code::VMUnmapMemory, |call| {
+    listen!(mainloop, rmi::Code::VMUnmapMemory, |call| {
         let vm = call.argument()[0];
         let guest = call.argument()[1];
         let size = call.argument()[2];
@@ -145,7 +145,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
-    mainloop.set_event_handler(rmi::Code::VMSetReg, |call| {
+    listen!(mainloop, rmi::Code::VMSetReg, |call| {
         let vm = call.argument()[0];
         let vcpu = call.argument()[1];
         let register = call.argument()[2];
@@ -183,7 +183,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         .map(|e| eprintln!("RMM: failed to reply - {:?}", e));
     });
 
-    mainloop.set_event_handler(rmi::Code::VMGetReg, |call| {
+    listen!(mainloop, rmi::Code::VMGetReg, |call| {
         let vm = call.argument()[0];
         let vcpu = call.argument()[1];
         let register = call.argument()[2];

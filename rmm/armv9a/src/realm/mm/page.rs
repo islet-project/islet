@@ -1,4 +1,5 @@
-use monitor::realm::mm::address::{align_down, GuestPhysAddr};
+use monitor::mm::address::align_down;
+use monitor::realm::mm::address::GuestPhysAddr;
 
 use super::page_table::pte;
 use super::page_table::PageTableLevel;

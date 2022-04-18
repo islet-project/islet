@@ -12,4 +12,5 @@ pub mod error;
 pub mod io;
 pub mod r#macro;
 pub mod mainloop;
+pub mod mm;
 pub mod realm;

@@ -1,5 +1,5 @@
 use super::page::{get_page_range, BasePageSize};
-use super::page_table::{L1Table, PageTable, PageTableMethods, entry::Entry};
+use super::page_table::{entry::Entry, L1Table, PageTable, PageTableMethods};
 use crate::config::PAGE_SIZE;
 
 use core::ffi::c_void;

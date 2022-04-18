@@ -7,8 +7,6 @@
 #![feature(alloc_error_handler)]
 #![feature(naked_functions)]
 #![feature(global_asm)]
-#![feature(specialization)]
-#![allow(incomplete_features)]
 #![warn(rust_2018_idioms)]
 
 pub mod allocator;

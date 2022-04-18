@@ -1,8 +1,10 @@
 use monitor::mm::address::PhysAddr;
-use monitor::mm::page_table;
+use monitor::mm::page_table::{self, Level};
 
-use super::super::translation_granule_4k::RawPTE;
+use super::super::translation_granule_4k::{RawGPA, RawPTE};
 use super::pte;
+
+use crate::helper::bits_in_reg;
 
 #[derive(Clone, Copy)]
 pub struct Entry(RawPTE);
@@ -51,6 +53,24 @@ impl page_table::Entry for Entry {
             dsb ish
             isb
             " : : "r"(&self.0 as *const _ as usize)};
+        }
+    }
+
+    fn set_with_page_table_flags(&mut self, addr: PhysAddr) {
+        self.set(
+            addr,
+            bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL)
+                | bits_in_reg(RawPTE::TYPE, pte::page_type::TABLE_OR_PAGE),
+        )
+    }
+
+    fn index<L: Level>(addr: usize) -> usize {
+        match L::THIS_LEVEL {
+            0 => RawGPA::from(addr).get_masked_value(RawGPA::L0Index) as usize,
+            1 => RawGPA::from(addr).get_masked_value(RawGPA::L1Index) as usize,
+            2 => RawGPA::from(addr).get_masked_value(RawGPA::L2Index) as usize,
+            3 => RawGPA::from(addr).get_masked_value(RawGPA::L3Index) as usize,
+            _ => panic!(),
         }
     }
 }

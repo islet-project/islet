@@ -4,6 +4,8 @@
 #![feature(const_mut_refs)]
 #![feature(const_btree_new)]
 #![feature(arc_new_cyclic)]
+#![feature(specialization)]
+#![allow(incomplete_features)]
 #![warn(rust_2018_idioms)]
 
 pub mod call;

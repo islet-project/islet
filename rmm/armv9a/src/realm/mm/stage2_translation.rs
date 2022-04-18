@@ -1,16 +1,18 @@
 use super::page::BasePageSize;
-use super::page_table::{entry::Entry, L1Table, PageTable, PageTableMethods};
+use super::page_table::{entry::Entry, L1Table};
 
 use core::ffi::c_void;
 use core::fmt;
 
 use monitor::mm::address::PhysAddr;
 use monitor::mm::page::Page;
+use monitor::mm::page_table::{PageTable, PageTableMethods};
 use monitor::realm::mm::address::GuestPhysAddr;
 use monitor::realm::mm::IPATranslation;
 
 // initial lookup starts at level 1 with 2 page tables concatenated
 pub const NUM_ROOT_PAGE: usize = 2;
+pub const ALIGN_ROOT_PAGE: usize = 2;
 
 pub struct Stage2Translation<'a> {
     // We will set the translation granule with 4KB.
@@ -23,7 +25,11 @@ pub struct Stage2Translation<'a> {
 impl<'a> Stage2Translation<'a> {
     pub fn new() -> Self {
         let root_pgtlb = unsafe {
-            &mut *PageTable::<GuestPhysAddr, L1Table, Entry>::new(NUM_ROOT_PAGE).unwrap()
+            &mut *PageTable::<GuestPhysAddr, L1Table, Entry>::new_with_align::<BasePageSize>(
+                NUM_ROOT_PAGE,
+                ALIGN_ROOT_PAGE,
+            )
+            .unwrap()
         };
 
         Self {
@@ -71,6 +77,6 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
 
 impl<'a> fmt::Debug for Stage2Translation<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Stage2Translation").finish()
+        f.debug_struct(stringify!(Self)).finish()
     }
 }

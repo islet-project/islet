@@ -1,8 +1,5 @@
 use crate::{define_bitfield, define_bits, define_mask};
 
-/// Number of bits of the index in each table level.
-pub const PAGE_MAP_BITS: usize = 9;
-
 define_bits!(
     RawGPA, // ref. K6.1.2
     L0Index[47 - 39],

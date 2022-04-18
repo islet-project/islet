@@ -1,11 +1,12 @@
-use super::page::{get_page_range, BasePageSize};
+use super::page::BasePageSize;
 use super::page_table::{entry::Entry, L1Table, PageTable, PageTableMethods};
-use crate::config::PAGE_SIZE;
 
 use core::ffi::c_void;
 use core::fmt;
 
-use monitor::realm::mm::address::{GuestPhysAddr, PhysAddr};
+use monitor::mm::address::PhysAddr;
+use monitor::mm::page::Page;
+use monitor::realm::mm::address::GuestPhysAddr;
 use monitor::realm::mm::IPATranslation;
 
 // initial lookup starts at level 1 with 2 page tables concatenated
@@ -15,13 +16,15 @@ pub struct Stage2Translation<'a> {
     // We will set the translation granule with 4KB.
     // To reduce the level of page lookup, initial lookup will start from L1.
     // We allocate two single page table initial lookup table, addresing up 1TB.
-    root_pgtlb: &'a mut PageTable<L1Table, Entry>,
+    root_pgtlb: &'a mut PageTable<GuestPhysAddr, L1Table, Entry>,
     dirty: bool,
 }
 
 impl<'a> Stage2Translation<'a> {
     pub fn new() -> Self {
-        let root_pgtlb = unsafe { &mut *PageTable::<L1Table, Entry>::new(NUM_ROOT_PAGE).unwrap() };
+        let root_pgtlb = unsafe {
+            &mut *PageTable::<GuestPhysAddr, L1Table, Entry>::new(NUM_ROOT_PAGE).unwrap()
+        };
 
         Self {
             root_pgtlb,
@@ -36,10 +39,10 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
     }
 
     fn set_pages(&mut self, guest: GuestPhysAddr, phys: PhysAddr, size: usize, flags: usize) {
-        let pages = get_page_range::<BasePageSize>(guest, size / PAGE_SIZE);
+        let guest = Page::<BasePageSize, GuestPhysAddr>::range_with_size(guest, size);
+        let phys = Page::<BasePageSize, PhysAddr>::range_with_size(phys, size);
 
-        self.root_pgtlb
-            .map_multiple_pages(pages, phys, flags as u64);
+        self.root_pgtlb.set_pages(guest, phys, flags as u64);
 
         //TODO Set dirty only if pages are updated, not added
         self.dirty = true;

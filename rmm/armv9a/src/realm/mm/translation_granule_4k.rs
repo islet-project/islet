@@ -1,5 +1,4 @@
 use crate::{define_bitfield, define_bits, define_mask};
-use monitor::realm::mm::address::GuestPhysAddr;
 
 /// Number of bits of the index in each table level.
 pub const PAGE_MAP_BITS: usize = 9;
@@ -12,9 +11,9 @@ define_bits!(
     L3Index[20 - 12]
 );
 
-impl From<GuestPhysAddr> for RawGPA {
-    fn from(gpa: GuestPhysAddr) -> Self {
-        Self(gpa.as_u64())
+impl From<usize> for RawGPA {
+    fn from(addr: usize) -> Self {
+        Self(addr as u64)
     }
 }
 

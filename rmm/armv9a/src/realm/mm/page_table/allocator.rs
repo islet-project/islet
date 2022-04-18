@@ -3,7 +3,7 @@ extern crate alloc;
 use super::PageTable;
 use crate::config::PAGE_SIZE;
 
-pub fn alloc<L, E>(num: usize) -> Result<*mut PageTable<L, E>, ()> {
+pub fn alloc<A, L, E>(num: usize) -> Result<*mut PageTable<A, L, E>, ()> {
     let ptr = unsafe {
         alloc::alloc::alloc_zeroed(
             alloc::alloc::Layout::from_size_align(PAGE_SIZE * num, PAGE_SIZE * num).unwrap(),
@@ -16,5 +16,5 @@ pub fn alloc<L, E>(num: usize) -> Result<*mut PageTable<L, E>, ()> {
         PAGE_SIZE,
         ptr as usize
     );
-    Ok(ptr as *mut PageTable<L, E>)
+    Ok(ptr as *mut PageTable<A, L, E>)
 }

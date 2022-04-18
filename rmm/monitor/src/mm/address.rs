@@ -86,15 +86,21 @@ macro_rules! impl_addr {
             }
         }
 
+        impl Into<usize> for $T {
+            fn into(self) -> usize {
+                self.0
+            }
+        }
+
         impl From<u64> for $T {
             fn from(raw_ptr: u64) -> Self {
                 $T(raw_ptr as usize)
             }
         }
 
-        impl From<i32> for $T {
-            fn from(raw_ptr: i32) -> Self {
-                $T(raw_ptr as usize)
+        impl Into<u64> for $T {
+            fn into(self) -> u64 {
+                self.0 as u64
             }
         }
 

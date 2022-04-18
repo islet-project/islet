@@ -1,7 +1,7 @@
 use monitor::realm::mm::address::{align_down, GuestPhysAddr};
 
+use super::page_table::pte;
 use super::page_table::PageTableLevel;
-use super::page_table_entry::pte_type;
 use super::translation_granule_4k::{RawGPA, RawPTE};
 use crate::config::{HUGE_PAGE_SIZE, LARGE_PAGE_SIZE, PAGE_SIZE};
 use crate::helper::bits_in_reg;
@@ -107,7 +107,7 @@ pub enum BasePageSize {}
 impl PageSize for BasePageSize {
     const SIZE: usize = PAGE_SIZE;
     const MAP_TABLE_LEVEL: usize = 3;
-    const MAP_EXTRA_FLAG: u64 = bits_in_reg(RawPTE::TYPE, pte_type::TABLE_OR_PAGE);
+    const MAP_EXTRA_FLAG: u64 = bits_in_reg(RawPTE::TYPE, pte::page_type::TABLE_OR_PAGE);
 }
 
 #[derive(Clone, Copy)]

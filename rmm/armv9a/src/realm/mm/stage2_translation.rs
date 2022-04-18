@@ -1,5 +1,5 @@
 use super::page::{get_page_range, BasePageSize};
-use super::page_table::{L1Table, PageTable, PageTableMethods};
+use super::page_table::{L1Table, PageTable, PageTableMethods, entry::Entry};
 use crate::config::PAGE_SIZE;
 
 use core::ffi::c_void;
@@ -15,13 +15,13 @@ pub struct Stage2Translation<'a> {
     // We will set the translation granule with 4KB.
     // To reduce the level of page lookup, initial lookup will start from L1.
     // We allocate two single page table initial lookup table, addresing up 1TB.
-    root_pgtlb: &'a mut PageTable<L1Table>,
+    root_pgtlb: &'a mut PageTable<L1Table, Entry>,
     dirty: bool,
 }
 
 impl<'a> Stage2Translation<'a> {
     pub fn new() -> Self {
-        let root_pgtlb = unsafe { &mut *PageTable::<L1Table>::new(NUM_ROOT_PAGE).unwrap() };
+        let root_pgtlb = unsafe { &mut *PageTable::<L1Table, Entry>::new(NUM_ROOT_PAGE).unwrap() };
 
         Self {
             root_pgtlb,

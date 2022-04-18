@@ -7,7 +7,7 @@ use monitor::{eprintln, println};
 use crate::config::PAGE_SIZE;
 use crate::helper;
 use crate::realm;
-use crate::realm::mm::page_table_entry::{pte_access_perm, pte_mem_attr};
+use crate::realm::mm::page_table::pte;
 use crate::realm::mm::translation_granule_4k::RawPTE;
 use crate::smc;
 
@@ -87,8 +87,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         let phys = call.argument()[2];
         let size = call.argument()[3];
 
-        let flags = helper::bits_in_reg(RawPTE::ATTR, pte_mem_attr::NORMAL)
-            | helper::bits_in_reg(RawPTE::S2AP, pte_access_perm::RW);
+        let flags = helper::bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL)
+            | helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);
 
         //TODO remove unwrap
         realm::registry::get(vm)

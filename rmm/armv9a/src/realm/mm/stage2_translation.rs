@@ -1,6 +1,5 @@
 use super::page::{get_page_range, BasePageSize};
 use super::page_table::{L1Table, PageTable, PageTableMethods};
-use super::pgtlb_allocator;
 use crate::config::PAGE_SIZE;
 
 use core::ffi::c_void;
@@ -11,7 +10,6 @@ use monitor::realm::mm::IPATranslation;
 
 // initial lookup starts at level 1 with 2 page tables concatenated
 pub const NUM_ROOT_PAGE: usize = 2;
-pub const ROOT_PGTLB_ALIGNMENT: usize = PAGE_SIZE * NUM_ROOT_PAGE;
 
 pub struct Stage2Translation<'a> {
     // We will set the translation granule with 4KB.
@@ -23,9 +21,7 @@ pub struct Stage2Translation<'a> {
 
 impl<'a> Stage2Translation<'a> {
     pub fn new() -> Self {
-        let root_pgtlb = unsafe {
-            &mut *(pgtlb_allocator::allocate_tables(NUM_ROOT_PAGE, ROOT_PGTLB_ALIGNMENT).unwrap())
-        };
+        let root_pgtlb = unsafe { &mut *PageTable::<L1Table>::new(NUM_ROOT_PAGE).unwrap() };
 
         Self {
             root_pgtlb,

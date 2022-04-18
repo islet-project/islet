@@ -1,19 +1,19 @@
 extern crate alloc;
 
-use super::page_table::PageTable;
+use super::PageTable;
 use crate::config::PAGE_SIZE;
 
-pub fn allocate_tables<T>(num: usize, align: usize) -> Result<*mut PageTable<T>, ()> {
+pub fn alloc<T>(num: usize) -> Result<*mut PageTable<T>, ()> {
     let ptr = unsafe {
         alloc::alloc::alloc_zeroed(
-            alloc::alloc::Layout::from_size_align(PAGE_SIZE * num, align).unwrap(),
+            alloc::alloc::Layout::from_size_align(PAGE_SIZE * num, PAGE_SIZE * num).unwrap(),
         )
     };
     assert_eq!(
-        (ptr as usize) % align,
+        (ptr as usize) % PAGE_SIZE,
         0,
         "Physical address is not on a {:#X} boundary (paddr = {:#X})",
-        align,
+        PAGE_SIZE,
         ptr as usize
     );
     Ok(ptr as *mut PageTable<T>)

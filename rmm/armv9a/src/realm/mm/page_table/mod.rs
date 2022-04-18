@@ -2,12 +2,13 @@ use monitor::realm::mm::address::PhysAddr;
 
 use super::page::{Page, PageIter, PageSize};
 use super::page_table_entry::{pte_mem_attr, pte_type, PageTableEntry};
-use super::pgtlb_allocator;
 use super::translation_granule_4k::{RawPTE, PAGE_MAP_BITS};
 use crate::config::PAGE_SIZE;
 use crate::helper::bits_in_reg;
 use core::marker::PhantomData;
 use monitor::const_assert_size;
+
+mod allocator;
 
 /// An interface to allow for a generic implementation of struct PageTable
 /// for all 4 levels.
@@ -68,8 +69,7 @@ pub struct PageTable<L> {
 const_assert_size!(PageTable<L0Table>, PAGE_SIZE);
 
 pub trait PageTableMethods<L> {
-    // common methods
-    fn new() -> PageTable<L>;
+    fn new(size: usize) -> Result<*mut PageTable<L>, ()>;
     fn map_multiple_pages<S: PageSize>(&mut self, range: PageIter<S>, paddr: PhysAddr, flags: u64);
 
     // will be specialized
@@ -78,11 +78,14 @@ pub trait PageTableMethods<L> {
 }
 
 impl<L: PageTableLevel> PageTableMethods<L> for PageTable<L> {
-    fn new() -> PageTable<L> {
-        Self {
-            entries: [PageTableEntry::new(); 1 << PAGE_MAP_BITS],
-            level: PhantomData,
+    fn new(size: usize) -> Result<*mut PageTable<L>, ()> {
+        let table = allocator::alloc(size)?;
+
+        unsafe {
+            (*table).entries = [PageTableEntry::new(); 1 << PAGE_MAP_BITS];
         }
+
+        Ok(table)
     }
 
     /// Maps a continuous range of pages.
@@ -167,8 +170,7 @@ where
             if !self.entries[index].is_valid() {
                 // The subtable is not yet there. Let's create one
 
-                let subtable: *mut PageTable<L::NextLevel> =
-                    pgtlb_allocator::allocate_tables(1, PAGE_SIZE).unwrap();
+                let subtable = PageTable::<L::NextLevel>::new(1).unwrap();
                 let subtable_paddr = PhysAddr::from(subtable);
 
                 self.entries[index].set_pte(

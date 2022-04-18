@@ -1,6 +1,6 @@
 use monitor::const_assert_size;
 use monitor::mm::address::PhysAddr;
-use monitor::mm::page::{Page, PageIter, PageSize};
+use monitor::mm::page::{Address, Page, PageIter, PageSize};
 use monitor::mm::page_table::{self, Entry as PTEntry, HasSubtable};
 use monitor::realm::mm::address::GuestPhysAddr;
 
@@ -11,7 +11,6 @@ use crate::helper::bits_in_reg;
 use entry::Entry;
 
 use core::marker::PhantomData;
-use core::ops::{Add, AddAssign};
 
 mod allocator;
 pub mod entry;
@@ -58,8 +57,7 @@ pub struct PageTable<A, L, E> {
     address: PhantomData<A>,
 }
 
-pub trait PageTableMethods<A: Add + AddAssign + Copy + From<usize> + Into<usize> + PartialOrd, L, E>
-{
+pub trait PageTableMethods<A: Address, L, E> {
     fn new(size: usize) -> Result<*mut PageTable<A, L, E>, ()>;
     fn set_pages<S: PageSize>(
         &mut self,
@@ -72,11 +70,8 @@ pub trait PageTableMethods<A: Add + AddAssign + Copy + From<usize> + Into<usize>
     fn entry<S: PageSize>(&self, guest: Page<S, A>) -> Option<E>;
 }
 
-impl<
-        A: Add + AddAssign + Copy + From<usize> + Into<usize> + PartialOrd,
-        L: page_table::Level,
-        E: PTEntry + Copy,
-    > PageTableMethods<A, L, E> for PageTable<A, L, E>
+impl<A: Address, L: page_table::Level, E: PTEntry + Copy> PageTableMethods<A, L, E>
+    for PageTable<A, L, E>
 {
     fn new(size: usize) -> Result<*mut PageTable<A, L, E>, ()> {
         let table = allocator::alloc(size)?;
@@ -129,11 +124,7 @@ impl<
 /// This overrides default PageTableMethods for PageTables with subtable.
 /// (L0Table, L1Table, L2Table)
 /// PageTableMethods for L3 Table remains unmodified.
-impl<
-        A: Add + AddAssign + Copy + From<usize> + Into<usize> + PartialOrd,
-        L: HasSubtable,
-        E: PTEntry + Copy,
-    > PageTableMethods<A, L, E> for PageTable<A, L, E>
+impl<A: Address, L: HasSubtable, E: PTEntry + Copy> PageTableMethods<A, L, E> for PageTable<A, L, E>
 where
     L::NextLevel: page_table::Level,
 {
@@ -186,11 +177,7 @@ where
     }
 }
 
-impl<
-        A: Add + AddAssign + Copy + From<usize> + Into<usize> + PartialOrd,
-        L: HasSubtable,
-        E: PTEntry,
-    > PageTable<A, L, E>
+impl<A: Address, L: HasSubtable, E: PTEntry> PageTable<A, L, E>
 where
     L::NextLevel: page_table::Level,
 {

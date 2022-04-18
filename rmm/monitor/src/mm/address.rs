@@ -1,3 +1,5 @@
+use super::page::Address;
+
 use core::fmt;
 use core::ops::{Add, AddAssign, BitAnd, BitOr, Sub, SubAssign};
 
@@ -125,6 +127,8 @@ macro_rules! impl_addr {
                     .finish()
             }
         }
+
+        impl Address for $T {}
     };
 }
 

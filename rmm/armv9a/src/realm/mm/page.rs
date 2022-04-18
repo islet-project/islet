@@ -1,4 +1,4 @@
-use monitor::mm::page::{Page, PageSize};
+use monitor::mm::page::{Address, Page, PageSize};
 use monitor::mm::page_table;
 
 use super::page_table::pte;
@@ -6,15 +6,7 @@ use super::translation_granule_4k::{RawGPA, RawPTE};
 use crate::config::{HUGE_PAGE_SIZE, LARGE_PAGE_SIZE, PAGE_SIZE};
 use crate::helper::bits_in_reg;
 
-use core::ops::{Add, AddAssign};
-
-pub fn table_index<
-    S: PageSize,
-    A: Add + AddAssign + Copy + From<usize> + Into<usize> + PartialOrd,
-    L: page_table::Level,
->(
-    page: Page<S, A>,
-) -> usize {
+pub fn table_index<S: PageSize, A: Address, L: page_table::Level>(page: Page<S, A>) -> usize {
     assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
     match L::THIS_LEVEL {
         0 => RawGPA::from(page.address().into()).get_masked_value(RawGPA::L0Index) as usize,

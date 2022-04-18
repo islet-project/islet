@@ -3,6 +3,8 @@ use super::address::align_down;
 use core::marker::PhantomData;
 use core::ops::{Add, AddAssign};
 
+pub trait Address: Add + AddAssign + Copy + From<usize> + Into<usize> + PartialOrd {}
+
 /// A generic interface to support all possible page sizes.
 //
 /// This is defined as a subtrait of Copy to enable #[derive(Clone, Copy)] for Page.
@@ -20,12 +22,12 @@ pub trait PageSize: Copy {
 
 /// A memory page of the size given by S.
 #[derive(Clone, Copy)]
-pub struct Page<S: PageSize, A: Add + AddAssign + Copy + From<usize> + Into<usize> + PartialOrd> {
+pub struct Page<S: PageSize, A: Address> {
     addr: A,
     size: PhantomData<S>,
 }
 
-impl<S: PageSize, A: Add + AddAssign + Copy + From<usize> + Into<usize> + PartialOrd> Page<S, A> {
+impl<S: PageSize, A: Address> Page<S, A> {
     /// Return the stored virtual address.
     pub fn address(&self) -> A {
         self.addr
@@ -62,15 +64,12 @@ impl<S: PageSize, A: Add + AddAssign + Copy + From<usize> + Into<usize> + Partia
 }
 
 /// An iterator to walk through a range of pages of size S.
-pub struct PageIter<S: PageSize, A: Add + AddAssign + Copy + From<usize> + Into<usize> + PartialOrd>
-{
+pub struct PageIter<S: PageSize, A: Address> {
     current: Page<S, A>,
     last: Page<S, A>,
 }
 
-impl<S: PageSize, A: Add + AddAssign + Copy + From<usize> + Into<usize> + PartialOrd> Iterator
-    for PageIter<S, A>
-{
+impl<S: PageSize, A: Address> Iterator for PageIter<S, A> {
     type Item = Page<S, A>;
 
     fn next(&mut self) -> Option<Page<S, A>> {

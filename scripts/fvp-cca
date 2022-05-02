@@ -214,6 +214,18 @@ def run_fvp_linux(debug):
         args += ["--cadi-server"]
     run(args, cwd=FASTMODEL)
 
+def clean_repo():
+    run(["make", "clean"], cwd=FIPTOOL)
+    run(["make", "distclean"], cwd=TRUSTED_FIRMWARE_A)
+    run(["make", "distclean"], cwd=VM_IMAGE)
+    run(["make", "distclean"], cwd=TF_A_TESTS)
+
+    args = ["-f", "fvp.mk", "linux-clean", "boot-img-clean"]
+    make(BUILD_SCRIPT, args)
+
+    run(["rm", "-rf", "out"], cwd=ROOT)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FVP launcher for CCA")
     parser.add_argument("--normal-world", "-nw", help="A normal world component")
@@ -222,7 +234,12 @@ if __name__ == "__main__":
                         help="Running fvp without building", action="store_true")
     parser.add_argument("--build-only", "-bo",
                         help="Building components without running", action="store_true")
+    parser.add_argument("--clean", "-c", help="Clean the repo", action="store_true")
     args = parser.parse_args()
+
+    if args.clean:
+        clean_repo()
+        sys.exit(1)
 
     nw_list = ["linux", "tf-a-tests"]
     if not args.normal_world in nw_list:

@@ -55,8 +55,7 @@ impl<T: Context + Default> VM<T> {
 
 impl<T: Context> Drop for VM<T> {
     fn drop(&mut self) {
-        use crate::io::Write;
-        crate::println!("VM #{} was destroyed!", self.id);
+        info!("VM #{} was destroyed!", self.id);
     }
 }
 

@@ -51,7 +51,6 @@ where
     }
 
     pub fn run(&mut self) {
-        use crate::io::Write;
         for event in self.receiver.iter() {
             if self.on_event.is_empty() {
                 self.on_idle.as_mut().map(|handler| handler());
@@ -59,11 +58,11 @@ where
                 match self.on_event.get_mut(&event.code()) {
                     Some(handler) => {
                         if let Err(msg) = handler(event) {
-                            crate::eprintln!("Failed on event handler: {}", msg);
+                            error!("Failed on event handler: {}", msg);
                         };
                     }
                     None => {
-                        crate::eprintln!("Not registered event.");
+                        error!("Not registered event.");
                     }
                 }
             }

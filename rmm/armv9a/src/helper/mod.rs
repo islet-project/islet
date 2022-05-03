@@ -4,10 +4,8 @@ pub mod r#macro;
 pub mod asm;
 pub mod regs;
 
-use monitor::{io::Write as IoWrite, println};
 pub use regs::*;
 
-use crate::cpu;
 use crate::exception::vectors;
 
 pub const fn bits_in_reg(mask: u64, val: u64) -> u64 {
@@ -48,12 +46,6 @@ fn activate_stage2_mmu() {
 }
 
 pub unsafe fn init() {
-    println!(
-        "[Core{:2}] CurrentEL is {}",
-        cpu::get_cpu_id(),
-        regs::current_el()
-    );
-
     HCR_EL2.set(HCR_EL2::RW | HCR_EL2::TSC | HCR_EL2::VM);
     VBAR_EL2.set(&vectors as *const u64 as u64);
     SCTLR_EL2.set(SCTLR_EL2::I | SCTLR_EL2::C);
@@ -68,9 +60,12 @@ pub unsafe fn init() {
 /// x0, x1 and x2 registers.
 ///
 /// When an exception occurs and the flow comes back to EL2 through `rmm_enter`,
-/// x0, x1 and x2 registers might contains additional information set within
-/// `handle_lower_exception`.
+/// x0, x1 and x2 registers might be changed to contain additional information
+/// set from `handle_lower_exception`.
 /// These are the return values of this function.
+/// The return value encodes: [rmi::RET_XXX, ret_val1, ret_val2]
+/// In most cases, the function returns [rmi::RET_SUCCESS, _, _]
+/// pagefault returns [rmi::RET_PAGE_FAULT, faulted address, _]
 pub unsafe fn rmm_exit(args: [usize; 3]) -> [usize; 3] {
     let mut ret: [usize; 3] = [0usize; 3];
 

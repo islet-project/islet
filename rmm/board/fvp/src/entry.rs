@@ -1,10 +1,11 @@
-use monitor::io::{stdout, Write as IoWrite};
-use monitor::println;
-
 use crate::allocator;
 use crate::config::{NUM_OF_CPU, RMM_STACK_SIZE};
 use crate::helper;
 use crate::helper::ID_AA64MMFR0_EL1;
+use crate::log::LevelFilter;
+
+use monitor::io::stdout;
+use monitor::logger;
 
 extern crate alloc;
 
@@ -53,8 +54,8 @@ unsafe fn clear_bss() {
 
 fn init_console() {
     let _ = stdout().attach(crate::driver::uart::pl011::device());
-
-    println!("RMM: initialized the console!");
+    logger::register_global_logger(LevelFilter::Info); // Control log level
+    info!("Initialized the console!");
 }
 
 /// Initialize the memory management configuration.
@@ -71,7 +72,7 @@ unsafe fn init_mm() {
     let pa_bits_table = [32, 36, 40, 42, 44, 48, 52];
     let pa = ID_AA64MMFR0_EL1.get_masked_value(ID_AA64MMFR0_EL1::PARange) as usize;
     let pa_range = pa_bits_table[pa]; // Panic if pa > 6
-    println!("pa range is {}", pa_range);
+    info!("pa range is {}", pa_range);
 }
 
 #[no_mangle]

@@ -1,7 +1,5 @@
 use monitor::communication::{Error, ErrorKind};
-use monitor::io::Write as IoWrite;
 use monitor::realm::mm::address::{GuestPhysAddr, PhysAddr};
-use monitor::{eprintln, println};
 use monitor::{listen, mainloop::Mainloop};
 
 use crate::config::PAGE_SIZE;
@@ -32,9 +30,9 @@ pub fn rmm_exit() -> [usize; 3] {
 pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     listen!(mainloop, rmi::Code::VMCreate, |call| {
         let num_of_vcpu = call.argument()[0];
-        println!("RMM: requested to create VM with {} vcpus", num_of_vcpu);
+        info!("requested to create VM with {} vcpus", num_of_vcpu);
         let vm = realm::registry::new(num_of_vcpu);
-        println!("RMM: create VM {}", vm.lock().id());
+        info!("create VM {}", vm.lock().id());
         call.reply(rmi::RET_SUCCESS)?;
         call.reply(vm.lock().id())?;
         Ok(())
@@ -43,7 +41,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     listen!(mainloop, rmi::Code::VMSwitch, |call| {
         let vm = call.argument()[0];
         let vcpu = call.argument()[1];
-        println!("RMM: requested to switch to VCPU {} on VM {}", vcpu, vm);
+        debug!("requested to switch to VCPU {} on VM {}", vcpu, vm);
         match realm::registry::get(vm)
             .ok_or("Not exist VM")?
             .lock()
@@ -57,7 +55,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
 
     listen!(mainloop, rmi::Code::VMDestroy, |call| {
         let vm = call.argument()[0];
-        println!("RMM: requested to destroy VM {}", vm);
+        info!("requested to destroy VM {}", vm);
         match realm::registry::remove(vm) {
             Ok(_) => call.reply(rmi::RET_SUCCESS),
             Err(_) => call.reply(rmi::RET_FAIL),
@@ -66,14 +64,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     });
 
     listen!(mainloop, rmi::Code::VMRun, |call| {
-        println!("RMM: requested to jump to EL1");
+        trace!("requested to jump to EL1");
         let ret = rmm_exit();
 
         match ret[0] {
             rmi::RET_SUCCESS => call.reply(rmi::RET_SUCCESS),
             rmi::RET_PAGE_FAULT => {
                 call.reply(rmi::RET_PAGE_FAULT)
-                    .or(Err("RMM: failed to reply."))?;
+                    .or(Err("RMM failed to reply."))?;
                 call.reply(ret[1])
             }
             _ => Err(Error::new(ErrorKind::Unsupported)),
@@ -111,7 +109,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                 let ret = smc::call(cmd, arg)[0];
                 if ret != 0 {
                     //Just show a warn message not return fail
-                    eprintln!("RMM: failed to set GPT {:X}", arg[0]);
+                    warn!("failed to set GPT {:X}", arg[0]);
                 }
             }
             arg[0] += PAGE_SIZE;

@@ -12,7 +12,11 @@ pub mod call;
 pub mod communication;
 pub mod error;
 pub mod io;
+pub mod logger;
 pub mod r#macro;
 pub mod mainloop;
 pub mod mm;
 pub mod realm;
+
+#[macro_use]
+extern crate log;

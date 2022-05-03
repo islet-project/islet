@@ -5,6 +5,9 @@
 
 extern crate alloc;
 
+#[macro_use]
+extern crate log;
+
 mod driver;
 mod entry;
 
@@ -14,15 +17,13 @@ use armv9a::cpu;
 use armv9a::helper;
 use armv9a::rmi;
 
-use monitor::io::Write as IoWrite;
 use monitor::listen;
 use monitor::mainloop::Mainloop;
-use monitor::println;
 
 #[no_mangle]
 pub unsafe fn main() -> ! {
-    println!(
-        "RMM: booted on core {:2} with EL{}!",
+    info!(
+        "booted on core {:2} with EL{}!",
         cpu::get_cpu_id(),
         helper::regs::current_el()
     );
@@ -34,7 +35,7 @@ pub unsafe fn main() -> ! {
     rmi::version::set_event_handler(&mut mainloop);
 
     listen!(mainloop, || {
-        println!("RMM: idle handler called.");
+        warn!("RMM: idle handler called.");
     });
 
     mainloop.run();

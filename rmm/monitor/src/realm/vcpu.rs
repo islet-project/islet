@@ -69,8 +69,7 @@ impl<T: Context + Default> VCPU<T> {
 
 impl<T: Context> Drop for VCPU<T> {
     fn drop(&mut self) {
-        use crate::io::Write;
-        crate::println!("VCPU dropeed!");
+        info!("VCPU dropeed!");
     }
 }
 

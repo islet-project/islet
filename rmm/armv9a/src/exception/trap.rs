@@ -1,5 +1,3 @@
-use monitor::{eprintln, io::Write as IoWrite};
-
 mod frame;
 mod syndrome;
 
@@ -48,8 +46,8 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
     match info.kind {
         Kind::Synchronous => match Syndrome::from(esr) {
             Syndrome::Brk(b) => {
-                eprintln!("brk #{}", b);
-                eprintln!("{:?}\nESR: {:X}\n{:#X?}", info, esr, tf);
+                debug!("brk #{}", b);
+                debug!("{:?}\nESR: {:X}\n{:#X?}", info, esr, tf);
                 tf.elr += 4; //continue
             }
             undefined => {
@@ -95,13 +93,13 @@ pub extern "C" fn handle_lower_exception(
                 1
             }
             undefined => {
-                eprintln!("{:?} and {:X?} on CPU {:?}", info, esr, cpu::id());
-                eprintln!("{:#X?}", vcpu);
+                debug!("{:?} and {:X?} on CPU {:?}", info, esr, cpu::id());
+                debug!("{:#X?}", vcpu);
                 0
             }
         },
         _ => {
-            eprintln!(
+            warn!(
                 "Unknown exception! Info={:?}, ESR={:x} on CPU {:?}",
                 info,
                 esr,

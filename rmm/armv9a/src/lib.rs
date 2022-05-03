@@ -20,3 +20,6 @@ pub mod rmi;
 pub mod smc;
 
 extern crate alloc;
+
+#[macro_use]
+extern crate log;

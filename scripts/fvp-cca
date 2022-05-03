@@ -208,11 +208,17 @@ def run_fvp_linux(debug):
             "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
             "-C", "bp.virtioblockdevice.image_path=%s/boot.img" % OUT,
+            "-C", "bp.virtiop9device.root_path=%s" % PC_SHARE_DIR,
             "-f", CONFIG,
             "-Q", "1000"]
     if debug:
         args += ["--cadi-server"]
     run(args, cwd=FASTMODEL)
+
+def place_vm_image_at_shared():
+    os.makedirs("%s" % PC_SHARE_DIR, exist_ok=True)
+    run(["cp", "-R", "%s/qemu/." % PREBUILT, PC_SHARE_DIR], cwd=ROOT)
+    run(["cp", "%s/realm.bin" % OUT, "%s/guest/" % PC_SHARE_DIR], cwd=ROOT)
 
 def clean_repo():
     run(["make", "clean"], cwd=FIPTOOL)
@@ -262,6 +268,7 @@ if __name__ == "__main__":
             prepare_prebuilt()
             prepare_linux()
             prepare_fip_linux()
+            place_vm_image_at_shared()
 
     if not args.build_only and args.normal_world == "tf-a-tests":
         run_fvp_tf_a_tests(args.debug)

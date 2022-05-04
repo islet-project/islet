@@ -18,5 +18,6 @@ BUILD_SCRIPT = os.path.join(ROOT, "build")
 PC_SHARE_DIR = os.path.join(OUT, "pc_share_dir")
 
 CROSS_COMPILE = os.path.join(ROOT, "assets/toolchains/aarch64/bin/aarch64-none-linux-gnu-")
+LINUX_CROSS_COMPILE = os.path.join(ROOT, "assets/toolchains/aarch64/bin/aarch64-linux-gnu-")
 FASTMODEL = os.path.join(ROOT, "assets/fastmodel/Base_RevC_AEMvA_pkg/models/Linux64_GCC-6.4")
 FIPTOOL = os.path.join(TRUSTED_FIRMWARE_A, "tools/fiptool")

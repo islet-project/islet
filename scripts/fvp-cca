@@ -47,7 +47,13 @@ def prepare_tf_a_tests():
     rename = os.path.join(OUT, "fip-tf-a-tests.bin")
     run(["cp", outbin, rename], cwd=ROOT)
 
-def prepare_vm_image():
+def prepare_vm_image(vm_type):
+    if vm_type == "linux":
+        prepare_guest_linux()
+    else:
+        prepare_guest_tftf()
+
+def prepare_guest_tftf():
     srcdir = VM_IMAGE
     outbin = os.path.join(VM_IMAGE, "build/fvp/debug/tftf.bin")
 
@@ -58,7 +64,7 @@ def prepare_vm_image():
         "tftf"
     ]
 
-    print("[!] Building vm image...")
+    print("[!] Building tftf vm image...")
     make(srcdir, args)
 
     if not os.path.exists(outbin):
@@ -67,6 +73,28 @@ def prepare_vm_image():
 
     rename = os.path.join(OUT, "vm-image.bin")
     run(["cp", outbin, rename], cwd=ROOT)
+
+def prepare_guest_linux():
+    GUEST_LINUX = os.path.join(ROOT, "guest-linux")
+    config_args = [
+        "defconfig",
+        "ARCH=arm64",
+        "KBUILD_DEFCONFIG=realmvm_defconfig",
+        "CROSS_COMPILE=%s" % LINUX_CROSS_COMPILE
+    ]
+    build_args = [
+        "-j%d" % multiprocessing.cpu_count(),
+        "ARCH=arm64",
+        "CROSS_COMPILE=%s" % LINUX_CROSS_COMPILE
+    ]
+
+    print("[!] Building guest linux vm image...")
+    make(GUEST_LINUX, config_args)
+    make(GUEST_LINUX, build_args)
+
+    os.chdir(ROOT)
+    run(["cp", "%s/arch/arm64/boot/Image" % GUEST_LINUX, "%s/Image_realmvm" % OUT], cwd=ROOT)
+    run(["cp", "%s/arch/arm64/boot/Image" % GUEST_LINUX, "%s/vm-image.bin" % OUT], cwd=ROOT)
 
 def prepare_realm():
     print("[!] Generating realm...")
@@ -169,7 +197,7 @@ def prepare_fip_linux():
          "--nt-fw", "%s/FVP_AARCH64_EFI.fd" % OUT,
          "%s/fip.bin" % OUT], cwd=ROOT)
 
-def prepare_linux():
+def prepare_nw_linux():
     args = [
         "-j%d" % multiprocessing.cpu_count(), "-f",
         "fvp.mk",
@@ -219,6 +247,7 @@ def place_vm_image_at_shared():
     os.makedirs("%s" % PC_SHARE_DIR, exist_ok=True)
     run(["cp", "-R", "%s/qemu/." % PREBUILT, PC_SHARE_DIR], cwd=ROOT)
     run(["cp", "%s/realm.bin" % OUT, "%s/guest/" % PC_SHARE_DIR], cwd=ROOT)
+    run(["cp", "%s/Image_realmvm" % OUT, "%s/guest/" % PC_SHARE_DIR], cwd=ROOT)
 
 def clean_repo():
     run(["make", "clean"], cwd=FIPTOOL)
@@ -241,6 +270,7 @@ if __name__ == "__main__":
     parser.add_argument("--build-only", "-bo",
                         help="Building components without running", action="store_true")
     parser.add_argument("--clean", "-c", help="Clean the repo", action="store_true")
+    parser.add_argument("--realm-vm", "-vm", help="VM for realm world", default="tftf")
     args = parser.parse_args()
 
     if args.clean:
@@ -257,7 +287,7 @@ if __name__ == "__main__":
         prepare_fiptool()
         prepare_bootloaders()
         prepare_rmm()
-        prepare_vm_image()
+        prepare_vm_image(args.realm_vm)
 
         if args.normal_world == "tf-a-tests":
             prepare_tf_a_tests()
@@ -266,7 +296,7 @@ if __name__ == "__main__":
             prepare_sdk()
             prepare_realm()
             prepare_prebuilt()
-            prepare_linux()
+            prepare_nw_linux()
             prepare_fip_linux()
             place_vm_image_at_shared()
 

@@ -33,3 +33,4 @@
 [submodule "guest-linux"]
 	path = guest-linux
 	url = https://github.sec.samsung.net/SYSSEC/linux-arm-cca.git
+	branch = realm_vm

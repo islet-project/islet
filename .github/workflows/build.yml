@@ -187,37 +187,37 @@ jobs:
         curl -sL https://art.sec.samsung.net/artifactory/syssec_generic/arm-cca/gh_token.txt >> $GITHUB_ENV
         echo '\nEOF_GITHUB_ENV' >> $GITHUB_ENV
 
-    - name: Create comment to PR
-      continue-on-error: true
-      uses: actions/github-script@v2
-      with:
-        github-token: ${{ env.OUTPUT_REVIEW_TOKEN }}
-        script: |
-          const ref = "${{github.ref}}"
-          const pull_number = Number(ref.split("/")[2])
-
-          await github.pulls.createReview({
-            ...context.repo,
-            pull_number,
-            body: "## Outputs\n" +
-              "### UART0\n" +
-              "<details><summary>접기/펼치기</summary><div markdown='1'>\n" +
-              "\n```\n" + process.env.UART0_LOG + "\n```\n" +
-              "</div></details>\n\n" +
-              "### UART1\n" +
-              "<details><summary>접기/펼치기</summary><div markdown='1'>\n" +
-              "\n```\n" + process.env.UART1_LOG + "\n```\n" +
-              "</div></details>\n\n" +
-              "### UART2\n" +
-              "<details><summary>접기/펼치기</summary><div markdown='1'>\n" +
-              "\n```\n" + process.env.UART2_LOG + "\n```\n" +
-              "</div></details>\n\n" +
-              "### UART3\n" +
-              "<details><summary>접기/펼치기</summary><div markdown='1'>\n" +
-              "\n```\n" + process.env.UART3_LOG + "\n````\n" +
-              "</div></details>\n\n",
-            event: "COMMENT"
-          })
+#    - name: Create comment to PR
+#      continue-on-error: true
+#      uses: actions/github-script@v2
+#      with:
+#        github-token: ${{ env.OUTPUT_REVIEW_TOKEN }}
+#        script: |
+#          const ref = "${{github.ref}}"
+#          const pull_number = Number(ref.split("/")[2])
+#
+#          await github.pulls.createReview({
+#            ...context.repo,
+#            pull_number,
+#            body: "## Outputs\n" +
+#              "### UART0\n" +
+#              "<details><summary>접기/펼치기</summary><div markdown='1'>\n" +
+#              "\n```\n" + process.env.UART0_LOG + "\n```\n" +
+#              "</div></details>\n\n" +
+#              "### UART1\n" +
+#              "<details><summary>접기/펼치기</summary><div markdown='1'>\n" +
+#              "\n```\n" + process.env.UART1_LOG + "\n```\n" +
+#              "</div></details>\n\n" +
+#              "### UART2\n" +
+#              "<details><summary>접기/펼치기</summary><div markdown='1'>\n" +
+#              "\n```\n" + process.env.UART2_LOG + "\n```\n" +
+#              "</div></details>\n\n" +
+#              "### UART3\n" +
+#              "<details><summary>접기/펼치기</summary><div markdown='1'>\n" +
+#              "\n```\n" + process.env.UART3_LOG + "\n````\n" +
+#              "</div></details>\n\n",
+#            event: "COMMENT"
+#          })
 
   documentation:
     if: always() && github.event_name == 'push'

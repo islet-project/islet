@@ -1,21 +1,21 @@
 [submodule "trusted-firmware-a"]
 	path = trusted-firmware-a
-	url = https://github.sec.samsung.net/SYSSEC/trusted-firmware-a.git
+	url = https://github.ecodesamsung.com/ON-DEVICE-CC/trusted-firmware-a.git
 	branch = main
 [submodule "tf-a-tests"]
 	path = tf-a-tests
-	url = https://github.sec.samsung.net/SYSSEC/tf-a-tests.git
+	url = https://github.ecodesamsung.com/ON-DEVICE-CC/tf-a-tests.git
 	branch = main
 [submodule "assets-arm-cca"]
 	path = assets
-	url = https://github.sec.samsung.net/SYSSEC/assets-arm-cca.git
+	url = https://github.ecodesamsung.com/ON-DEVICE-CC/assets-arm-cca.git
 	branch = main
 [submodule "vm-image"]
 	path = vm-image
-	url = https://github.sec.samsung.net/SYSSEC/arm-cca-vm-image.git
+	url = https://github.ecodesamsung.com/ON-DEVICE-CC/vm-image.git
 [submodule "build-arm-cca"]
 	path = build
-	url = https://github.sec.samsung.net/SYSSEC/build-arm-cca.git
+	url = https://github.ecodesamsung.com/ON-DEVICE-CC/build-arm-cca.git
 	branch = main
 [submodule "edk2-platforms"]
 	path = third-party/edk2-platforms
@@ -28,9 +28,9 @@
 	url = https://git.savannah.gnu.org/git/grub.git
 [submodule "linux"]
 	path = linux
-	url = https://github.sec.samsung.net/SYSSEC/linux-arm-cca.git
+	url = https://github.ecodesamsung.com/ON-DEVICE-CC/linux-arm-cca.git
 	branch = main
 [submodule "guest-linux"]
 	path = guest-linux
-	url = https://github.sec.samsung.net/SYSSEC/linux-arm-cca.git
+	url = https://github.ecodesamsung.com/ON-DEVICE-CC/linux-arm-cca.git
 	branch = realm_vm

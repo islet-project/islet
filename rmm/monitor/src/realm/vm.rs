@@ -1,7 +1,6 @@
 use super::mm::IPATranslation;
 use super::vcpu::{Context, VCPU};
 
-use crate::config::MAX_VCPUS;
 use crate::error::{Error, ErrorKind};
 use alloc::boxed::Box;
 use alloc::sync::{Arc, Weak};
@@ -17,13 +16,12 @@ pub struct VM<T: Context> {
     pub state: State,
     pub vcpus: Vec<Arc<Mutex<VCPU<T>>>>,
     pub page_table: Arc<Mutex<Box<dyn IPATranslation>>>,
-    // TODO: add pagetable
 }
 
 impl<T: Context + Default> VM<T> {
     pub fn new(id: usize, page_table: Arc<Mutex<Box<dyn IPATranslation>>>) -> Arc<Mutex<Self>> {
         Arc::<Mutex<Self>>::new_cyclic(|me| {
-            let vcpus = Vec::with_capacity(MAX_VCPUS);
+            let vcpus = Vec::new();
 
             let vm = Mutex::new(Self {
                 id: id,
@@ -51,15 +49,17 @@ impl<T: Context + Default> VM<T> {
     }
 
     pub fn create_vcpu(&mut self, vcpu: usize) -> Result<(), Error> {
-        if vcpu < MAX_VCPUS {
-            self.vcpus.insert(vcpu, VCPU::new(self.me.clone()));
-            self.vcpus
-                .get(vcpu)
-                .ok_or(Error::new(ErrorKind::NotConnected))?;
-            Ok(())
-        } else {
-            Err(Error::new(ErrorKind::NotConnected))
-        }
+        let _me = &self.me;
+        self.vcpus.resize_with(vcpu, move || VCPU::new(_me.clone()));
+
+        self.vcpus.iter().for_each(|vcpu: &Arc<Mutex<VCPU<T>>>| {
+            vcpu.lock().set_vttbr(
+                self.id as u64,
+                self.page_table.lock().get_base_address() as u64,
+            );
+        });
+
+        Ok(())
     }
 }
 

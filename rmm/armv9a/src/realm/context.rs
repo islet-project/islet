@@ -21,10 +21,6 @@ impl monitor::realm::vcpu::Context for Context {
         context.spsr =
             SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M & 0b0101);
 
-        //        let vttbr = bits_in_reg(VTTBR_EL2::VMID, id as u64)
-        //            | bits_in_reg(VTTBR_EL2::BADDR, pgtlb_addr as u64);
-        //        context.sys_regs.vttbr = vttbr;
-
         // TODO: enable floating point
         // CPTR_EL2, CPACR_EL1, update vectors.s, etc..
 
@@ -47,6 +43,12 @@ impl monitor::realm::vcpu::Context for Context {
         vcpu.pcpu = None;
         vcpu.context.sys_regs.vmpidr = 0u64;
         TPIDR_EL2.set(0u64);
+    }
+
+    fn set_vttbr(vcpu: &mut VCPU<Self>, vmid: u64, pgtlb_baddr: u64) {
+        let vttbr = bits_in_reg(VTTBR_EL2::VMID, vmid as u64)
+            | bits_in_reg(VTTBR_EL2::BADDR, pgtlb_baddr as u64);
+        vcpu.context.sys_regs.vttbr = vttbr;
     }
 }
 

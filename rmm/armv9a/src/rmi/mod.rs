@@ -24,6 +24,7 @@ const RMM_VM_UNMAP_MEMORY: usize = 0xc000_0008;
 const RMM_VM_SET_REG: usize = 0xc000_0009;
 const RMM_VM_GET_REG: usize = 0xc000_000a;
 const RMM_VM_RUN: usize = 0xc000_000b;
+const RMM_VCPU_CREATE: usize = 0xc000_000c;
 const RMM_REQ_COMPLETE: usize = 0xc000_0010;
 
 pub const RET_SUCCESS: usize = 0x0;
@@ -44,6 +45,7 @@ pub enum Code {
     VMSetReg,
     VMGetReg,
     VMRun,
+    VCPUCreate,
     Unknown(usize),
 }
 
@@ -62,6 +64,7 @@ impl From<Code> for usize {
             Code::VMSetReg => RMM_VM_SET_REG,
             Code::VMGetReg => RMM_VM_GET_REG,
             Code::VMRun => RMM_VM_RUN,
+            Code::VCPUCreate => RMM_VCPU_CREATE,
             Code::Unknown(remain) => remain,
         }
     }
@@ -82,6 +85,7 @@ impl From<usize> for Code {
             RMM_VM_SET_REG => Code::VMSetReg,
             RMM_VM_GET_REG => Code::VMGetReg,
             RMM_VM_RUN => Code::VMRun,
+            RMM_VCPU_CREATE => Code::VCPUCreate,
             remain => Code::Unknown(remain),
         }
     }

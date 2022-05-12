@@ -10,6 +10,7 @@
 
 pub mod call;
 pub mod communication;
+pub mod config;
 pub mod error;
 pub mod io;
 pub mod logger;

@@ -19,7 +19,7 @@ type VMMap = BTreeMap<usize, Arc<Mutex<VM<Context>>>>;
 
 static VMS: Spinlock<(usize, VMMap)> = Spinlock::new((0, BTreeMap::new()));
 
-pub fn new(num_vcpu: usize) -> Arc<Mutex<VM<Context>>> {
+pub fn new() -> Arc<Mutex<VM<Context>>> {
     let mut vms = VMS.lock();
 
     //TODO limit id to fit in VMID (16 bits)
@@ -31,7 +31,7 @@ pub fn new(num_vcpu: usize) -> Arc<Mutex<VM<Context>>> {
 
     let vttbr = bits_in_reg(VTTBR_EL2::VMID, id as u64)
         | bits_in_reg(VTTBR_EL2::BADDR, s2_table.lock().get_base_address() as u64);
-    let vm = VM::new(id, num_vcpu, s2_table);
+    let vm = VM::new(id, s2_table);
 
     vm.lock()
         .vcpus

@@ -1,5 +1,6 @@
 use crate::cpu::get_cpu_id;
-use crate::helper::{SPSR_EL2, TPIDR_EL2};
+use crate::helper::bits_in_reg;
+use crate::helper::{SPSR_EL2, TPIDR_EL2, VTTBR_EL2};
 use monitor::realm::vcpu::VCPU;
 
 #[repr(C)]
@@ -19,6 +20,10 @@ impl monitor::realm::vcpu::Context for Context {
         // Set appropriate sys registers
         context.spsr =
             SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M & 0b0101);
+
+        //        let vttbr = bits_in_reg(VTTBR_EL2::VMID, id as u64)
+        //            | bits_in_reg(VTTBR_EL2::BADDR, pgtlb_addr as u64);
+        //        context.sys_regs.vttbr = vttbr;
 
         // TODO: enable floating point
         // CPTR_EL2, CPACR_EL1, update vectors.s, etc..

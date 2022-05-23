@@ -48,18 +48,25 @@ impl<T: Context + Default> VM<T> {
         Ok(())
     }
 
-    pub fn create_vcpu(&mut self, vcpu: usize) -> Result<(), Error> {
-        let _me = &self.me;
-        self.vcpus.resize_with(vcpu, move || VCPU::new(_me.clone()));
+    pub fn create_vcpu(&mut self) -> Result<usize, Error> {
+        // let _me = &self.me;
+        let _vcpu = VCPU::new(self.me.clone());
+        _vcpu.lock().set_vttbr(
+            self.id as u64,
+            self.page_table.lock().get_base_address() as u64,
+        );
 
-        self.vcpus.iter().for_each(|vcpu: &Arc<Mutex<VCPU<T>>>| {
-            vcpu.lock().set_vttbr(
-                self.id as u64,
-                self.page_table.lock().get_base_address() as u64,
-            );
-        });
+        self.vcpus.push(_vcpu);
+        // self.vcpus.resize_with(vcpu, move || VCPU::new(_me.clone()));
 
-        Ok(())
+        //         self.vcpus.iter().for_each(|vcpu: &Arc<Mutex<VCPU<T>>>| {
+        //             vcpu.lock().set_vttbr(
+        //                 self.id as u64,
+        //                 self.page_table.lock().get_base_address() as u64,
+        //             );
+        //         });
+
+        Ok(self.vcpus.len() - 1)
     }
 }
 

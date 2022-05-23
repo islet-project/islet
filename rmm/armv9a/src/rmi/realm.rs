@@ -39,14 +39,17 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
 
     listen!(mainloop, rmi::Code::VCPUCreate, |call| {
         let vm = call.argument()[0];
-        let vcpu = call.argument()[1];
-        debug!("requested to create VCPU {} in VM {}", vcpu, vm);
+        // let vcpu = call.argument()[1];
+        debug!("requested to create VCPU in VM {}", vm);
         match realm::registry::get(vm)
             .ok_or("Not exist VM")?
             .lock()
-            .create_vcpu(vcpu)
+            .create_vcpu()
         {
-            Ok(_) => call.reply(rmi::RET_SUCCESS),
+            Ok(vcpuid) => {
+                call.reply(rmi::RET_SUCCESS)?;
+                call.reply(vcpuid)
+            }
             Err(_) => call.reply(rmi::RET_FAIL),
         }?;
         Ok(())

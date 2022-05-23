@@ -17,6 +17,10 @@ pub trait Context {
     unsafe fn from_current(vcpu: &mut VCPU<Self>)
     where
         Self: Sized;
+
+    fn set_vttbr(vcpu: &mut VCPU<Self>, vmid: u64, pgtlb_baddr: u64)
+    where
+        Self: Sized;
 }
 
 #[repr(C)]
@@ -60,6 +64,10 @@ impl<T: Context + Default> VCPU<T> {
             Arc::from_raw(ptr);
         }
         self.state = State::Stopped;
+    }
+
+    pub fn set_vttbr(&mut self, vmid: u64, pgtlb_baddr: u64) {
+        T::set_vttbr(self, vmid, pgtlb_baddr);
     }
 
     pub fn is_vm_dead(&self) -> bool {

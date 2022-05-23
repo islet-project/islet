@@ -29,25 +29,27 @@ pub fn rmm_exit() -> [usize; 3] {
 
 pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     listen!(mainloop, rmi::Code::VMCreate, |call| {
-        let num_of_vcpu = call.argument()[0];
-        info!("requested to create VM with {} vcpus", num_of_vcpu);
-        let vm = realm::registry::new(num_of_vcpu);
+        info!("requested to create a VM");
+        let vm = realm::registry::new();
         info!("create VM {}", vm.lock().id());
         call.reply(rmi::RET_SUCCESS)?;
         call.reply(vm.lock().id())?;
         Ok(())
     });
 
-    listen!(mainloop, rmi::Code::VMSwitch, |call| {
+    listen!(mainloop, rmi::Code::VCPUCreate, |call| {
         let vm = call.argument()[0];
-        let vcpu = call.argument()[1];
-        debug!("requested to switch to VCPU {} on VM {}", vcpu, vm);
+        // let vcpu = call.argument()[1];
+        debug!("requested to create VCPU in VM {}", vm);
         match realm::registry::get(vm)
             .ok_or("Not exist VM")?
             .lock()
-            .switch_to(vcpu)
+            .create_vcpu()
         {
-            Ok(_) => call.reply(rmi::RET_SUCCESS),
+            Ok(vcpuid) => {
+                call.reply(rmi::RET_SUCCESS)?;
+                call.reply(vcpuid)
+            }
             Err(_) => call.reply(rmi::RET_FAIL),
         }?;
         Ok(())
@@ -64,6 +66,15 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     });
 
     listen!(mainloop, rmi::Code::VMRun, |call| {
+        let vm = call.argument()[0];
+        let vcpu = call.argument()[1];
+        debug!("requested to Run to VCPU {} on VM {}", vcpu, vm);
+        realm::registry::get(vm)
+            .ok_or("Not exist VM")?
+            .lock()
+            .switch_to(vcpu)?;
+
+        trace!("Switched to VCPU {} on VM {}", vcpu, vm);
         trace!("requested to jump to EL1");
         let ret = rmm_exit();
 

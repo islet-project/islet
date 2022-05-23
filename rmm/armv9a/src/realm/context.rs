@@ -1,5 +1,6 @@
 use crate::cpu::get_cpu_id;
-use crate::helper::{SPSR_EL2, TPIDR_EL2};
+use crate::helper::bits_in_reg;
+use crate::helper::{SPSR_EL2, TPIDR_EL2, VTTBR_EL2};
 use monitor::realm::vcpu::VCPU;
 
 #[repr(C)]
@@ -42,6 +43,12 @@ impl monitor::realm::vcpu::Context for Context {
         vcpu.pcpu = None;
         vcpu.context.sys_regs.vmpidr = 0u64;
         TPIDR_EL2.set(0u64);
+    }
+
+    fn set_vttbr(vcpu: &mut VCPU<Self>, vmid: u64, pgtlb_baddr: u64) {
+        let vttbr = bits_in_reg(VTTBR_EL2::VMID, vmid as u64)
+            | bits_in_reg(VTTBR_EL2::BADDR, pgtlb_baddr as u64);
+        vcpu.context.sys_regs.vttbr = vttbr;
     }
 }
 

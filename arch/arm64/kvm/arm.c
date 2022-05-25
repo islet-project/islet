@@ -373,6 +373,7 @@ int kvm_arch_vcpu_create(struct kvm_vcpu *vcpu)
 	/* Force users to call KVM_ARM_VCPU_INIT */
 	vcpu->arch.target = -1;
 	bitmap_zero(vcpu->arch.features, KVM_VCPU_MAX_FEATURES);
+	vcpu->arch.rec.mpidr = INVALID_HWID;
 
 	vcpu->arch.mmu_page_cache.gfp_zero = __GFP_ZERO;
 

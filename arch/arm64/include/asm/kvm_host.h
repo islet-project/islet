@@ -505,6 +505,9 @@ struct kvm_vcpu_arch {
 		u64 last_steal;
 		gpa_t base;
 	} steal;
+
+	/* Realm meta data */
+	struct rec rec;
 };
 
 /*

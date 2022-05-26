@@ -47,6 +47,9 @@ void kvm_realm_destroy_rtts(struct realm *realm, u32 ia_bits, u32 start_level);
 int kvm_create_rec(struct kvm_vcpu *vcpu);
 void kvm_destroy_rec(struct kvm_vcpu *vcpu);
 
+int kvm_rec_enter(struct kvm_vcpu *vcpu);
+int handle_rme_exit(struct kvm_vcpu *vcpu, int rec_run_status);
+
 int realm_set_ipa_state(struct kvm_vcpu *vcpu,
 			unsigned long addr, unsigned long end,
 			unsigned long ripas);
@@ -67,6 +70,14 @@ static inline unsigned long rme_rtt_level_mapsize(int level)
 		return RME_PAGE_SIZE;
 
 	return (1UL << RME_RTT_LEVEL_SHIFT(level));
+}
+
+static inline bool realm_is_addr_protected(struct realm *realm,
+					   unsigned long addr)
+{
+	unsigned int ia_bits = realm->ia_bits;
+
+	return !(addr & ~(BIT(ia_bits - 1) - 1));
 }
 
 #endif

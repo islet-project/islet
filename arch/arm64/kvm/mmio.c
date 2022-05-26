@@ -6,6 +6,7 @@
 
 #include <linux/kvm_host.h>
 #include <asm/kvm_emulate.h>
+#include <asm/rmi_smc.h>
 #include <trace/events/kvm.h>
 
 #include "trace.h"
@@ -109,6 +110,9 @@ int kvm_handle_mmio_return(struct kvm_vcpu *vcpu)
 			       &data);
 		data = vcpu_data_host_to_guest(vcpu, data, len);
 		vcpu_set_reg(vcpu, kvm_vcpu_dabt_get_rd(vcpu), data);
+
+		if (vcpu_is_rec(vcpu))
+			vcpu->arch.rec.run->entry.gprs[0] = data;
 	}
 
 	/*
@@ -178,6 +182,9 @@ int io_mem_abort(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa)
 	run->mmio.phys_addr	= fault_ipa;
 	run->mmio.len		= len;
 	vcpu->mmio_needed	= 1;
+
+	if (vcpu_is_rec(vcpu))
+		vcpu->arch.rec.run->entry.flags |= RMI_EMULATED_MMIO;
 
 	if (!ret) {
 		/* We handled the access successfully in the kernel. */

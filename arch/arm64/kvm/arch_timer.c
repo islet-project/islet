@@ -130,6 +130,11 @@ static void timer_set_offset(struct arch_timer_context *ctxt, u64 offset)
 {
 	struct kvm_vcpu *vcpu = ctxt->vcpu;
 
+	if (kvm_is_realm(vcpu->kvm)) {
+		WARN_ON(offset);
+		return;
+	}
+
 	switch(arch_timer_ctx_index(ctxt)) {
 	case TIMER_VTIMER:
 		__vcpu_sys_reg(vcpu, CNTVOFF_EL2) = offset;
@@ -411,6 +416,21 @@ static void kvm_timer_update_irq(struct kvm_vcpu *vcpu, bool new_level,
 	}
 }
 
+void kvm_realm_timers_update(struct kvm_vcpu *vcpu)
+{
+	struct arch_timer_cpu *arch_timer = &vcpu->arch.timer_cpu;
+	int i;
+
+	for (i = 0; i < NR_KVM_TIMERS; i++) {
+		struct arch_timer_context *timer = &arch_timer->timers[i];
+		bool status = timer_get_ctl(timer) & ARCH_TIMER_CTRL_IT_STAT;
+		bool level = kvm_timer_irq_can_fire(timer) && status;
+
+		if (level != timer->irq.level)
+			kvm_timer_update_irq(vcpu, level, timer);
+	}
+}
+
 /* Only called for a fully emulated timer */
 static void timer_emulate(struct arch_timer_context *ctx)
 {
@@ -621,6 +641,11 @@ void kvm_timer_vcpu_load(struct kvm_vcpu *vcpu)
 	if (unlikely(!timer->enabled))
 		return;
 
+	kvm_timer_unblocking(vcpu);
+
+	if (vcpu_is_rec(vcpu))
+		return;
+
 	get_timer_map(vcpu, &map);
 
 	if (static_branch_likely(&has_gic_active_state)) {
@@ -632,8 +657,6 @@ void kvm_timer_vcpu_load(struct kvm_vcpu *vcpu)
 	}
 
 	set_cntvoff(timer_get_offset(map.direct_vtimer));
-
-	kvm_timer_unblocking(vcpu);
 
 	timer_restore_state(map.direct_vtimer);
 	if (map.direct_ptimer)
@@ -668,6 +691,9 @@ void kvm_timer_vcpu_put(struct kvm_vcpu *vcpu)
 	if (unlikely(!timer->enabled))
 		return;
 
+	if (vcpu_is_rec(vcpu))
+		goto out;
+
 	get_timer_map(vcpu, &map);
 
 	timer_save_state(map.direct_vtimer);
@@ -686,9 +712,6 @@ void kvm_timer_vcpu_put(struct kvm_vcpu *vcpu)
 	if (map.emul_ptimer)
 		soft_timer_cancel(&map.emul_ptimer->hrtimer);
 
-	if (kvm_vcpu_is_blocking(vcpu))
-		kvm_timer_blocking(vcpu);
-
 	/*
 	 * The kernel may decide to run userspace after calling vcpu_put, so
 	 * we reset cntvoff to 0 to ensure a consistent read between user
@@ -697,6 +720,11 @@ void kvm_timer_vcpu_put(struct kvm_vcpu *vcpu)
 	 * virtual offset of zero, so no need to zero CNTVOFF_EL2 register.
 	 */
 	set_cntvoff(0);
+
+out:
+	if (kvm_vcpu_is_blocking(vcpu))
+		kvm_timer_blocking(vcpu);
+
 }
 
 /*
@@ -785,12 +813,18 @@ void kvm_timer_vcpu_init(struct kvm_vcpu *vcpu)
 	struct arch_timer_cpu *timer = vcpu_timer(vcpu);
 	struct arch_timer_context *vtimer = vcpu_vtimer(vcpu);
 	struct arch_timer_context *ptimer = vcpu_ptimer(vcpu);
+	u64 cntvoff;
 
 	vtimer->vcpu = vcpu;
 	ptimer->vcpu = vcpu;
 
+	if (kvm_is_realm(vcpu->kvm))
+		cntvoff = 0;
+	else
+		cntvoff = kvm_phys_timer_read();
+
 	/* Synchronize cntvoff across all vtimers of a VM. */
-	update_vtimer_cntvoff(vcpu, kvm_phys_timer_read());
+	update_vtimer_cntvoff(vcpu, cntvoff);
 	timer_set_offset(ptimer, 0);
 
 	hrtimer_init(&timer->bg_timer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS_HARD);
@@ -1264,6 +1298,13 @@ int kvm_timer_enable(struct kvm_vcpu *vcpu)
 		kvm_debug("incorrectly configured timer irqs\n");
 		return -EINVAL;
 	}
+
+	/*
+	 * We don't use mapped IRQs for Realms because the RMI doesn't allow
+	 * us setting the LR.HW bit in the VGIC.
+	 */
+	if (vcpu_is_rec(vcpu))
+		return 0;
 
 	get_timer_map(vcpu, &map);
 

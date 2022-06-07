@@ -82,22 +82,38 @@ pub extern "C" fn handle_lower_exception(
     tf: &mut TrapFrame,
 ) -> u64 {
     match info.kind {
+        // TODO: adjust elr according to the decision that kvm made
         Kind::Synchronous => match Syndrome::from(esr) {
-            Syndrome::HVC => 1,
+            Syndrome::HVC => {
+                debug!("Synchronous: HVC");
+                vcpu.context.elr += 4; // continue
+                0 // for now, do nothing
+            }
+            Syndrome::SMC => {
+                debug!("Synchronous: SMC");
+                vcpu.context.elr += 4; // continue
+                0 // for now, trap to el2 to check the realm progress
+            }
             Syndrome::InstructionAbort(_) | Syndrome::DataAbort(_) => {
-                tf.regs[0] = rmi::RET_PAGE_FAULT as u64;
-                tf.regs[1] = unsafe {
-                    HPFAR_EL2.get_masked_value(HPFAR_EL2::FIPA) << 12
-                        | FAR_EL2.get_masked(FAR_EL2::OFFSET)
-                };
+                tf.regs[0] = rmi::RET_EXCEPTION_TRAP as u64;
+                tf.regs[1] = esr as u64;
+                tf.regs[2] = unsafe { HPFAR_EL2.get() };
                 1
             }
             undefined => {
-                debug!("{:?} and {:X?} on CPU {:?}", info, esr, cpu::id());
-                debug!("{:#X?}", vcpu);
-                0
+                tf.regs[0] = rmi::RET_EXCEPTION_TRAP as u64;
+                tf.regs[1] = esr as u64;
+                tf.regs[2] = unsafe { HPFAR_EL2.get() };
+                vcpu.context.elr += 4; // continue
+                1
             }
         },
+        Kind::Irq => {
+            tf.regs[0] = rmi::RET_EXCEPTION_IRQ as u64;
+            tf.regs[1] = esr as u64;
+            tf.regs[0] = 0;
+            1
+        }
         _ => {
             warn!(
                 "Unknown exception! Info={:?}, ESR={:x} on CPU {:?}",

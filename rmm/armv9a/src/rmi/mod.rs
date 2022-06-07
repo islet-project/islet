@@ -29,8 +29,11 @@ const RMM_VM_GET_REG: usize = 0xc400_0173;
 const RMM_REQ_COMPLETE: usize = 0xc400_018f;
 
 pub const RET_SUCCESS: usize = 0x101;
-pub const RET_PAGE_FAULT: usize = 0x1;
 pub const RET_FAIL: usize = 0x100;
+pub const RET_EXCEPTION_IRQ: usize = 0x0;
+pub const RET_EXCEPTION_SERROR: usize = 0x1;
+pub const RET_EXCEPTION_TRAP: usize = 0x2;
+pub const RET_EXCEPTION_IL: usize = 0x3;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Code {

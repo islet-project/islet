@@ -80,10 +80,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
 
         match ret[0] {
             rmi::RET_SUCCESS => call.reply(rmi::RET_SUCCESS),
-            rmi::RET_PAGE_FAULT => {
-                call.reply(rmi::RET_PAGE_FAULT)
-                    .or(Err("RMM failed to reply."))?;
-                call.reply(ret[1])
+            rmi::RET_EXCEPTION_TRAP | rmi::RET_EXCEPTION_IRQ => {
+                call.reply(ret[0]).or(Err("RMM failed to reply."))?;
+                call.reply(ret[1]);
+                call.reply(ret[2])
             }
             _ => Err(Error::new(ErrorKind::Unsupported)),
         }?;

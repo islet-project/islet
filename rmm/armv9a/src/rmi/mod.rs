@@ -13,20 +13,22 @@ pub mod gpt;
 pub mod realm;
 pub mod version;
 
-const RMM_VERSION: usize = 0xc000_0000;
-const RMM_GRANULE_DELEGATE: usize = 0xc000_0001;
-const RMM_GRANULE_UNDELEGATE: usize = 0xc000_0002;
-const RMM_VM_CREATE: usize = 0xc000_0003;
-const RMM_VM_DESTROY: usize = 0xc000_0006;
-const RMM_VM_MAP_MEMORY: usize = 0xc000_0007;
-const RMM_VM_UNMAP_MEMORY: usize = 0xc000_0008;
-const RMM_VM_SET_REG: usize = 0xc000_0009;
-const RMM_VM_GET_REG: usize = 0xc000_000a;
-const RMM_VM_RUN: usize = 0xc000_000b;
-const RMM_VCPU_CREATE: usize = 0xc000_000c;
-const RMM_REQ_COMPLETE: usize = 0xc000_0010;
+/* requested defined in tf-a-tests: realm_payload_test.h */
+/* RMI_FNUM_VERSION_REQ ~ RMI_FNUM_REALM_DESTROY */
+const RMM_VERSION: usize = 0xc400_0150;
+const RMM_GRANULE_DELEGATE: usize = 0xc400_0151;
+const RMM_GRANULE_UNDELEGATE: usize = 0xc400_0152;
+const RMM_VM_CREATE: usize = 0xc400_0158;
+const RMM_VM_DESTROY: usize = 0xc400_0159;
+const RMM_VM_RUN: usize = 0xc400_0160;
+const RMM_VCPU_CREATE: usize = 0xc400_0161;
+const RMM_VM_MAP_MEMORY: usize = 0xc400_0170;
+const RMM_VM_UNMAP_MEMORY: usize = 0xc400_0171;
+const RMM_VM_SET_REG: usize = 0xc400_0172;
+const RMM_VM_GET_REG: usize = 0xc400_0173;
+const RMM_REQ_COMPLETE: usize = 0xc400_018f;
 
-pub const RET_SUCCESS: usize = 0x0;
+pub const RET_SUCCESS: usize = 0x101;
 pub const RET_PAGE_FAULT: usize = 0x1;
 pub const RET_FAIL: usize = 0x100;
 
@@ -105,7 +107,7 @@ impl Ord for Code {
     }
 }
 
-pub type Argument = [usize; 4];
+pub type Argument = [usize; 7];
 pub type Return = usize;
 pub type Call = call::Context<Code, Argument, Return>;
 
@@ -130,8 +132,8 @@ impl communication::Receiver for Receiver {
         let ret = smc::call(cmd, arg);
 
         let cmd = ret[0];
-        let mut arg = [0usize; 4];
-        arg.clone_from_slice(&ret[1..5]);
+        let mut arg = [0usize; 7];
+        arg.clone_from_slice(&ret[1..8]);
         Ok(Call::new(Code::from(cmd), arg, self.sender.clone()))
     }
 }

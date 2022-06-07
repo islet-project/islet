@@ -180,6 +180,18 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                     .elr = value as u64;
                 call.reply(rmi::RET_SUCCESS)
             }
+            32 => {
+                realm::registry::get(vm)
+                    .ok_or("Not exist VM")?
+                    .lock()
+                    .vcpus
+                    .get(vcpu)
+                    .ok_or("Not exist VCPU")?
+                    .lock()
+                    .context
+                    .spsr = value as u64;
+                call.reply(rmi::RET_SUCCESS)
+            }
             _ => call.reply(rmi::RET_FAIL),
         }?;
         Ok(())

@@ -47,7 +47,12 @@ pub unsafe fn current_vcpu() -> Option<&'static mut VCPU<Context>> {
 }
 
 define_sys_register!(
-    HCR_EL2,        // ref. D13.2.46
+    HCR_EL2, // ref. D13.2.46\
+    FWB[46 - 46],
+    TEA[37 - 37],
+    TERR[36 - 36],
+    TLOR[35 - 35],
+    E2H[34 - 34],
     ID[33 - 33],    // Disables stage 2 instruction cache
     CD[32 - 32],    // Disables stage 2 data cache
     RW[31 - 31],    // Execution state control for lower Exception level
@@ -78,9 +83,9 @@ define_sys_register!(
     IMO[04 - 04], // Physical IRQ routing
     FMO[03 - 03], // Physical FIQ routing
     PTW[02 - 02], // Protected Table Walk
-    VM[00 - 00],  // Virtualization enable
-    RES0[63 - 34 | 29 - 29],
-    RES1[01 - 01]
+    SWIO[01 - 01],
+    VM[00 - 00],             // Virtualization enable
+    RES0[63 - 34 | 29 - 29]  //RES1[01 - 01]
 );
 
 define_sys_register!(
@@ -88,6 +93,7 @@ define_sys_register!(
     EE[25 - 25],  // Endianness of data accesses at EL2
     WXN[19 - 19], // Write permission implies Execute-never
     I[12 - 12],   // Instruction access Cacheability at EL2
+    EOS[11 - 11], // Exception exit is a context synchronization event
     SA[3 - 3],    // SP Alignment check enable
     C[2 - 2],     // Data access Cacheability  at EL2
     A[1 - 1],     // Alignment check enable
@@ -196,3 +202,5 @@ define_sys_register!(
     FAR_EL2, // Ref. D13.2.55
     OFFSET[11 - 0]
 );
+
+define_sys_register!(CPTR_EL2, TAM[30 - 30]);

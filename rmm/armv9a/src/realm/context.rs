@@ -11,6 +11,7 @@ pub struct Context {
     pub spsr: u64,
     pub sys_regs: SystemRegister,
     pub fp_regs: [u128; 32],
+    pub elr_stored: u64,
 }
 
 impl monitor::realm::vcpu::Context for Context {
@@ -80,4 +81,5 @@ pub struct SystemRegister {
     pub vttbr: u64,
     pub esr_el2: u64,
     pub hpfar: u64,
+    pub sctlr: u64,
 }

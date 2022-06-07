@@ -46,9 +46,28 @@ fn activate_stage2_mmu() {
 }
 
 pub unsafe fn init() {
-    HCR_EL2.set(HCR_EL2::RW | HCR_EL2::TSC | HCR_EL2::VM);
+    HCR_EL2.set(
+        HCR_EL2::FWB
+            | HCR_EL2::TEA
+            | HCR_EL2::TERR
+            | HCR_EL2::TLOR
+            | HCR_EL2::RW
+            | HCR_EL2::TSW
+            | HCR_EL2::TACR
+            | HCR_EL2::TIDCP
+            | HCR_EL2::TSC
+            | HCR_EL2::TID3
+            | (HCR_EL2::BSU & 0b11)
+            | HCR_EL2::TWI
+            | HCR_EL2::FB
+            | HCR_EL2::AMO
+            | HCR_EL2::IMO
+            | HCR_EL2::FMO
+            | HCR_EL2::VM,
+    );
     VBAR_EL2.set(&vectors as *const u64 as u64);
-    SCTLR_EL2.set(SCTLR_EL2::I | SCTLR_EL2::C);
+    SCTLR_EL2.set(SCTLR_EL2::I | SCTLR_EL2::C | SCTLR_EL2::EOS);
+    CPTR_EL2.set(CPTR_EL2::TAM);
     activate_stage2_mmu();
 
     // asm::brk(10);

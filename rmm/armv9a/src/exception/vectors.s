@@ -107,6 +107,8 @@ restore_all_from_vcpu_and_run:
 	msr esr_el2, x2
 	msr hpfar_el2, x3
 
+	ldr x3, [x28], #8
+	msr sctlr_el1, x3
 	/* TODO: invalidate TLB */
 
 	/* Intentional fallthrough */
@@ -262,6 +264,8 @@ rmm_enter:
 	mrs x3, hpfar_el2
 	stp x2, x3, [x28], #16
 
+	mrs x3, sctlr_el1
+	str x3, [x28], #8
 	/* TODO: FP_REGS */
 
 	/* load three more registers to match with TrapFrame */

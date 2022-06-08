@@ -95,6 +95,24 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         let guest = call.argument()[1];
         let phys = call.argument()[2];
         let size = call.argument()[3];
+        // prot: bits[0] : writable, bits[1] : fault on exec, bits[2] : device
+        let prot = call.argument()[3]; // bits[3]
+
+        let mut flags = 0;
+        // TODO:  define bit mask
+        if prot & 0b1 == 0b1 {
+            flags |= helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);
+        } else {
+            flags |= helper::bits_in_reg(RawPTE::S2AP, pte::permission::RO);
+        }
+        if prot & 0b10 == 0b10 {
+            flags |= helper::bits_in_reg(RawPTE::XN, 0b1);
+        }
+        if prot & 0b100 == 0b100 {
+            flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::DEVICE_NGNRE)
+        } else {
+            flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL)
+        }
 
         let flags = helper::bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL)
             | helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);

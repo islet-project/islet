@@ -5,14 +5,25 @@ use core::ffi::c_void;
 use core::fmt;
 
 use monitor::mm::address::PhysAddr;
-use monitor::mm::page::Page;
+use monitor::mm::page::{Page, PageIter, PageSize};
 use monitor::mm::page_table::{PageTable, PageTableMethods};
 use monitor::realm::mm::address::GuestPhysAddr;
 use monitor::realm::mm::IPATranslation;
 
+use crate::helper::bits_in_reg;
+use crate::helper::regs::tcr_granule;
+use crate::{define_bitfield, define_bits, define_mask};
+
 // initial lookup starts at level 1 with 2 page tables concatenated
 pub const NUM_ROOT_PAGE: usize = 2;
 pub const ALIGN_ROOT_PAGE: usize = 2;
+
+pub mod tlbi_ns {
+    pub const IPAS_S: u64 = 0b0;
+    pub const IPAS_NS: u64 = 0b1;
+}
+
+define_bits!(TLBI_OP, NS[63 - 63], TTL[47 - 44], IPA[35 - 0]);
 
 pub struct Stage2Translation<'a> {
     // We will set the translation granule with 4KB.
@@ -37,6 +48,30 @@ impl<'a> Stage2Translation<'a> {
             dirty: false,
         }
     }
+
+    // According to DDI0608A E1.2.1.11 Cache and TLB operations
+    // 'TLBI IPAS2E1, Xt; DSB; TLBI VMALLE1'
+    // or TLBI ALL or TLBI VMALLS1S2
+    fn tlb_flush_by_vmid_ipa<S: PageSize>(&mut self, guest_iter: PageIter<S, GuestPhysAddr>) {
+        for guest in guest_iter {
+            let _level: u64 = S::MAP_TABLE_LEVEL as u64;
+            let mut ipa: u64 = guest.address().as_u64() >> 12;
+            unsafe {
+                ipa = bits_in_reg(TLBI_OP::NS, tlbi_ns::IPAS_NS)
+                    | bits_in_reg(TLBI_OP::TTL, tcr_granule::G_4K | _level)
+                    | bits_in_reg(TLBI_OP::IPA, ipa);
+                // corresponds to __kvm_tlb_flush_vmid_ipa()
+                llvm_asm! {
+                    "
+                    dsb ishst
+                    tlbi ipas2e1, $0
+                    dsb sy
+                    isb
+                    " : : "r"(ipa)
+                };
+            }
+        }
+    }
 }
 
 impl<'a> IPATranslation for Stage2Translation<'a> {
@@ -45,14 +80,17 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
     }
 
     fn set_pages(&mut self, guest: GuestPhysAddr, phys: PhysAddr, size: usize, flags: usize) {
-        let guest = Page::<BasePageSize, GuestPhysAddr>::range_with_size(guest, size);
+        let _guest = Page::<BasePageSize, GuestPhysAddr>::range_with_size(guest, size);
+        let _guest_copy = Page::<BasePageSize, GuestPhysAddr>::range_with_size(guest, size);
         let phys = Page::<BasePageSize, PhysAddr>::range_with_size(phys, size);
 
-        self.root_pgtlb.set_pages(guest, phys, flags as u64);
+        self.root_pgtlb.set_pages(_guest, phys, flags as u64);
+        self.tlb_flush_by_vmid_ipa::<BasePageSize>(_guest_copy);
 
         //TODO Set dirty only if pages are updated, not added
         self.dirty = true;
     }
+
     fn unset_pages(&mut self, _guest: GuestPhysAddr, _size: usize) {
         //TODO implement
     }
@@ -60,6 +98,8 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
     fn clean(&mut self) {
         if self.dirty {
             unsafe {
+                // According to DDI0608A E1.2.1.11 Cache and TLB operations
+                // second half part
                 llvm_asm! {
                     "
                     dsb ishst

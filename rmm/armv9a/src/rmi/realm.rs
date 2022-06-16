@@ -11,7 +11,7 @@ use crate::smc;
 
 use crate::rmi;
 
-pub fn rmm_exit() -> [usize; 3] {
+pub fn rmm_exit() -> [usize; 4] {
     unsafe {
         if let Some(vcpu) = realm::vcpu::current() {
             if vcpu.is_vm_dead() {
@@ -20,10 +20,10 @@ pub fn rmm_exit() -> [usize; 3] {
                 vcpu.vm.upgrade().map(|vm| {
                     vm.lock().page_table.lock().clean();
                 });
-                return helper::rmm_exit([0; 3]);
+                return helper::rmm_exit([0; 4]);
             }
         }
-        [0, 0, 0]
+        [0, 0, 0, 0]
     }
 }
 
@@ -82,7 +82,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             rmi::RET_EXCEPTION_TRAP | rmi::RET_EXCEPTION_IRQ => {
                 call.reply(ret[0]).or(Err("RMM failed to reply."))?;
                 call.reply(ret[1]);
-                call.reply(ret[2])
+                call.reply(ret[2]);
+                call.reply(ret[3])
             }
             _ => Err(Error::new(ErrorKind::Unsupported)),
         }?;

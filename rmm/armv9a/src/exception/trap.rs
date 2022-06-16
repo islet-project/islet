@@ -86,8 +86,10 @@ pub extern "C" fn handle_lower_exception(
         Kind::Synchronous => match Syndrome::from(esr) {
             Syndrome::HVC => {
                 debug!("Synchronous: HVC");
-                vcpu.context.elr += 4; // continue
-                0 // for now, do nothing
+                tf.regs[0] = rmi::RET_EXCEPTION_TRAP as u64;
+                tf.regs[1] = esr as u64;
+                tf.regs[2] = 0;
+                1 // forward to nw w/o increasing elr
             }
             Syndrome::SMC => {
                 debug!("Synchronous: SMC");
@@ -101,6 +103,7 @@ pub extern "C" fn handle_lower_exception(
                 1
             }
             undefined => {
+                debug!("Synchronous: Other");
                 tf.regs[0] = rmi::RET_EXCEPTION_TRAP as u64;
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = unsafe { HPFAR_EL2.get() };

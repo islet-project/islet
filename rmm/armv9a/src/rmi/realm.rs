@@ -95,7 +95,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         let phys = call.argument()[2];
         let size = call.argument()[3];
         // prot: bits[0] : writable, bits[1] : fault on exec, bits[2] : device
-        let prot = call.argument()[3]; // bits[3]
+        let prot = call.argument()[4]; // bits[3]
         debug!(
             "received MapMemory to VM {} {:#X} -> {:#X} size:{:#X} prot:{:#X}",
             vm, guest, phys, size, prot

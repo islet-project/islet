@@ -29,7 +29,7 @@ pub fn rmm_exit() -> [usize; 3] {
 
 pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     listen!(mainloop, rmi::Code::VMCreate, |call| {
-        info!("requested to create a VM");
+        info!("received VMCreate");
         let vm = realm::registry::new();
         info!("create VM {}", vm.lock().id());
         call.reply(rmi::RET_SUCCESS)?;
@@ -40,7 +40,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     listen!(mainloop, rmi::Code::VCPUCreate, |call| {
         let vm = call.argument()[0];
         // let vcpu = call.argument()[1];
-        debug!("requested to create VCPU in VM {}", vm);
+        debug!("received VCPUCreate for VM {}", vm);
         match realm::registry::get(vm)
             .ok_or("Not exist VM")?
             .lock()
@@ -57,7 +57,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
 
     listen!(mainloop, rmi::Code::VMDestroy, |call| {
         let vm = call.argument()[0];
-        info!("requested to destroy VM {}", vm);
+        info!("received VMDestroy VM {}", vm);
         match realm::registry::remove(vm) {
             Ok(_) => call.reply(rmi::RET_SUCCESS),
             Err(_) => call.reply(rmi::RET_FAIL),
@@ -68,14 +68,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     listen!(mainloop, rmi::Code::VMRun, |call| {
         let vm = call.argument()[0];
         let vcpu = call.argument()[1];
-        debug!("requested to Run to VCPU {} on VM {}", vcpu, vm);
+        debug!("received VMRun VCPU {} on VM {}", vcpu, vm);
         realm::registry::get(vm)
             .ok_or("Not exist VM")?
             .lock()
             .switch_to(vcpu)?;
 
         trace!("Switched to VCPU {} on VM {}", vcpu, vm);
-        trace!("requested to jump to EL1");
         let ret = rmm_exit();
 
         match ret[0] {
@@ -97,6 +96,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         let size = call.argument()[3];
         // prot: bits[0] : writable, bits[1] : fault on exec, bits[2] : device
         let prot = call.argument()[3]; // bits[3]
+        debug!(
+            "received MapMemory to VM {} {:#X} -> {:#X} size:{:#X} prot:{:#X}",
+            vm, guest, phys, size, prot
+        );
 
         let mut flags = 0;
         // TODO:  define bit mask
@@ -173,6 +176,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         let vcpu = call.argument()[1];
         let register = call.argument()[2];
         let value = call.argument()[3];
+        debug!(
+            "received VMSetReg Reg[{}]={:#X} to VCPU {} on VM {}",
+            register, value, vcpu, vm
+        );
         match register {
             0..=30 => {
                 realm::registry::get(vm)
@@ -219,6 +226,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         let vm = call.argument()[0];
         let vcpu = call.argument()[1];
         let register = call.argument()[2];
+        debug!(
+            "received VMGetReg Reg[{}] of VCPU {} on VM {}",
+            register, vcpu, vm
+        );
         match register {
             0..=30 => {
                 let value = realm::registry::get(vm)

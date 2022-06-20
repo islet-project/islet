@@ -21,6 +21,9 @@ struct realm {
 	void *rd;
 	struct realm_params *params;
 
+	/* A spare already delegated page */
+	phys_addr_t spare_page;
+
 	unsigned long num_aux;
 	unsigned int vmid;
 	unsigned int ia_bits;

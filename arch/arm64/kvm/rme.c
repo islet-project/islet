@@ -148,6 +148,7 @@ static int realm_create_rd(struct kvm *kvm)
 	}
 
 	realm->rd = rd;
+	realm->spare_page = PHYS_ADDR_MAX;
 	realm->ia_bits = VTCR_EL2_IPA(kvm->arch.vtcr);
 
 	if (WARN_ON(rmi_rec_aux_count(rd_phys, &realm->num_aux))) {
@@ -356,6 +357,11 @@ void kvm_destroy_realm(struct kvm *kvm)
 			return;
 		free_page((unsigned long)realm->rd);
 		realm->rd = NULL;
+	}
+	if (realm->spare_page != PHYS_ADDR_MAX) {
+		if (!WARN_ON(rmi_granule_undelegate(realm->spare_page)))
+			free_page((unsigned long)phys_to_virt(realm->spare_page));
+		realm->spare_page = PHYS_ADDR_MAX;
 	}
 
 	pgd_sz = kvm_pgd_pages(pgt->ia_bits, pgt->start_level);

@@ -126,6 +126,19 @@ static void free_delegated_page(struct realm *realm, phys_addr_t phys)
 	free_page((unsigned long)phys_to_virt(phys));
 }
 
+int realm_psci_complete(struct kvm_vcpu *calling, struct kvm_vcpu *target)
+{
+	int ret;
+
+	ret = rmi_psci_complete(virt_to_phys(calling->arch.rec.rec_page),
+				virt_to_phys(target->arch.rec.rec_page));
+
+	if (ret)
+		return -EINVAL;
+
+	return 0;
+}
+
 static void realm_destroy_undelegate_range(struct realm *realm,
 					   unsigned long ipa,
 					   unsigned long addr,

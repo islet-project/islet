@@ -1,0 +1,14 @@
+[package]
+name = "realm-bootstrap"
+version = "0.0.1"
+authors = ["CCA Contributors"]
+edition = "2018"
+
+[[bin]]
+name = "bootstrap"
+path = "src/main.rs"
+
+[dependencies]
+
+[build-dependencies]
+cc = "1.0"

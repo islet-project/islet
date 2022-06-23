@@ -1,0 +1,17 @@
+[package]
+name = "realm-sdk"
+version = "0.0.1"
+authors = ["CCA Contributors"]
+edition = "2018"
+
+[[bin]]
+name = "enclave-gen"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { version = "1.6.2", features = ["io-std", "io-util", "rt", "rt-multi-thread", "macros", "fs", "sync", "net"]}
+structopt = { version = "0.3" }
+
+
+[build-dependencies]
+cc = "1.0"

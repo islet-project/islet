@@ -1,21 +1,9 @@
-![Build](https://github.sec.samsung.net/SYSSEC/arm-cca/actions/workflows/build.yml/badge.svg?branch=main)
-![License](https://img.shields.io/badge/license-Samsung%20Inner%20Source-informational.svg)
-![Test](https://art.sec.samsung.net/artifactory/syssec_generic/arm-cca/test.png)
-![Coverage](https://art.sec.samsung.net/artifactory/syssec_generic/arm-cca/coverage.png)
-
-# arm-cca
-This repository contains code for confidential computing on the ARM CCA architecture.
+# islet
+ISLET is a project to enable on-device confidential computing for end users by leveraging ARMv9 CCA that is the newly emerging confidential computing hardware on ARM devices. Using the hardware support, ISLET enables a Trusted Execution Environment (TEE) on user’s devices within which users can securely process, store, communicate and manage their private data. The protection provided by ISLET applies not only to data-at-rest but also to data-in-use even in the presence of malicious privileged software on devices.  We develop components enabling Realm Virtual Machines (VMs), which are secure VM-level TEE provided by ARMv9 CCA. To manage Realm VMs, Realm Management Monitor (RMM) is needed to be running at EL2 in the Realm world. Although the Monitor firmware is available as an open source, there is no functional Realm Management Monitor (RMM) code available yet. ISLET provides the implementation of RMM that is written in Rust. 
 
 ## How to prepare build
 ```bash
 ./scripts/init.sh
-```
-
-Or, use a docker image as the below
-
-```bash
-sudo docker run --rm -it art.sec.samsung.net/syssec_docker/cca_build /bin/bash
-
 ```
 
 ## How to run
@@ -60,15 +48,3 @@ This file helps use proper indentation when you use editor (e.g., vim, vscode).
 You can set the editor configuration like the below if you use vim.
 
 [How to use .editorconfig for vim](https://github.com/editorconfig/editorconfig-vim)
-
-## See also
-[Detailed Description](https://pages.github.sec.samsung.net/SYSSEC/arm-cca/)
-
-## List of Maintainers
-- Beomheyn Kim (beomheyn.kim@samsung.com)
-- Bokdeuk Jeong (bd.jeong@samsung.com)
-- Sangwan Kwon (sangwan.kwon@samsung.com)
-- Sungbae Yoo (sungbae.yoo@samsung.com)
-
-## Governance
-All decisions in this project are made by consensus, respecting the principles and rules of the community.  Please refer to the [Samsung Inner Source Governance](docs/Governance.md) in more detail.

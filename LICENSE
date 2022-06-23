@@ -414,38 +414,3 @@ licenses. This section summarizes those components and their licenses.
 
 
 
-MIT License
-
------------
-
-
-
-spdlog v1.10.0
-
-- external/spdlog
-
-
-
-jsoncpp 1.8.4
-
-- include/ftg/utils/json.h
-
-- include/ftg/utils/json-forwards.h
-
-- lib/utils/jsoncpp.cpp
-
-
-
-
-
-Apache License v2.0 with LLVM Exceptions
-
-----------------------------------------
-
-
-
-llvm 10.0.0
-
-- include/ftg/indcallsolver/CustomCVPPass.h
-
-- lib/indcallsolver/CustomCVPPass.cpp

@@ -1,0 +1,307 @@
+#!/usr/bin/env python3
+
+import argparse
+import multiprocessing
+import os
+import subprocess
+import sys
+
+from config import *
+
+os.makedirs(OUT, exist_ok=True)
+
+def run(cmd, cwd):
+    process = subprocess.run(cmd, cwd=cwd,
+                       stderr=subprocess.STDOUT,
+                       stdout=subprocess.PIPE,
+                       universal_newlines=True,
+                       check=False)
+    if process.returncode != 0:
+        print("[!] Failed to run: %s @ %s" % (cmd, cwd))
+        print(process.stdout)
+        sys.exit(1)
+
+def make(srcdir, extra=None):
+    args = ["make"]
+    if extra:
+        args += extra
+    run(args, cwd=srcdir)
+
+def prepare_tf_a_tests():
+    srcdir = TF_A_TESTS
+    outbin = os.path.join(TF_A_TESTS, "build/fvp/debug/tftf.bin")
+
+    args = [
+        "CROSS_COMPILE=%s" % CROSS_COMPILE,
+        "PLAT=fvp",
+        "DEBUG=1"
+    ]
+
+    print("[!] Building tf-a-tests...")
+    make(srcdir, args)
+
+    if not os.path.exists(outbin):
+        print("[!] Failed to build: %s" % outbin)
+        sys.exit(1)
+
+    rename = os.path.join(OUT, "fip-tf-a-tests.bin")
+    run(["cp", outbin, rename], cwd=ROOT)
+
+def prepare_vm_image(vm_type):
+    if vm_type == "linux":
+        prepare_guest_linux()
+    else:
+        prepare_guest_tftf()
+
+def prepare_guest_tftf():
+    srcdir = VM_IMAGE
+    outbin = os.path.join(VM_IMAGE, "build/fvp/debug/tftf.bin")
+
+    args = [
+        "CROSS_COMPILE=%s" % CROSS_COMPILE,
+        "PLAT=fvp",
+        "DEBUG=1",
+        "tftf"
+    ]
+
+    print("[!] Building tftf vm image...")
+    make(srcdir, args)
+
+    if not os.path.exists(outbin):
+        print("[!] Failed to build: %s" % outbin)
+        sys.exit(1)
+
+    rename = os.path.join(OUT, "vm-image.bin")
+    run(["cp", outbin, rename], cwd=ROOT)
+
+def prepare_guest_linux():
+    GUEST_LINUX = os.path.join(ROOT, "guest-linux")
+    config_args = [
+        "defconfig",
+        "ARCH=arm64",
+        "KBUILD_DEFCONFIG=realmvm_defconfig",
+        "CROSS_COMPILE=%s" % LINUX_CROSS_COMPILE
+    ]
+    build_args = [
+        "-j%d" % multiprocessing.cpu_count(),
+        "ARCH=arm64",
+        "CROSS_COMPILE=%s" % LINUX_CROSS_COMPILE
+    ]
+
+    print("[!] Building guest linux vm image...")
+    make(GUEST_LINUX, config_args)
+    make(GUEST_LINUX, build_args)
+
+    os.chdir(ROOT)
+    run(["cp", "%s/arch/arm64/boot/Image" % GUEST_LINUX, "%s/Image_realmvm" % OUT], cwd=ROOT)
+    run(["cp", "%s/arch/arm64/boot/Image" % GUEST_LINUX, "%s/vm-image.bin" % OUT], cwd=ROOT)
+
+def prepare_realm():
+    print("[!] Generating realm...")
+    run(["%s/enclave-gen" % OUT,
+         "%s/vm-image.bin" % OUT,
+         "%s/realm.bin" % OUT], cwd=ROOT)
+
+def prepare_bootloaders():
+    args = [
+        "CROSS_COMPILE=%s" % CROSS_COMPILE,
+        "PLAT=fvp",
+        "ENABLE_RME=1",
+        "FVP_HW_CONFIG_DTS=%s/fdts/fvp-base-gicv3-psci-1t.dts" % TRUSTED_FIRMWARE_A,
+        "DEBUG=1",
+        "all"
+    ]
+
+    bl_list = ["bl1.bin", "bl2.bin", "bl31.bin"]
+    print("[!] Building bootloaders(%s)... " % ', '.join(bl_list))
+    make(TRUSTED_FIRMWARE_A, args)
+
+    outdir = os.path.join(TRUSTED_FIRMWARE_A, "build/fvp/debug")
+    for bootloader in bl_list:
+        outbin = os.path.join(outdir, bootloader)
+        if not os.path.exists(outbin):
+            print("[!] Failed to build: %s" % outbin)
+            sys.exit(1)
+
+        run(["cp", outbin, OUT], cwd=ROOT)
+
+def prepare_rmm():
+    print("[!] Building realm management monitor...")
+    run(["cargo", "build", "--release"], cwd=RMM)
+    run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
+         "%s/aarch64-unknown-none-softfloat/release/fvp" % OUT,
+         "%s/rmm.bin" % OUT],
+         cwd=ROOT)
+
+def prepare_sdk():
+    print("[!] Building realm sdk...")
+    bootstrap = os.path.join(SDK, "bootstrap")
+    run(["cargo", "build", "--release"], cwd=bootstrap)
+    run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
+         "%s/aarch64-unknown-none-softfloat/release/bootstrap" % OUT,
+         "%s/bootstrap.bin" % OUT], cwd=ROOT)
+
+    run(["cargo", "build", "--release"], cwd=SDK)
+    run(["cp",
+         "%s/release/enclave-gen" % OUT,
+         "%s/enclave-gen" % OUT], cwd=ROOT)
+    run(["objcopy", "--update-section",
+         ".bootstrap=%s/bootstrap.bin" % OUT,
+         "%s/enclave-gen" % OUT], cwd=ROOT)
+
+def prepare_fiptool():
+    print("[!] Building firmware image package tool...")
+    make(FIPTOOL)
+
+    outbin = os.path.join(FIPTOOL, "fiptool")
+    if not os.path.exists(outbin):
+        print("[!] Failed to build: %s" % outbin)
+
+
+def prepare_fip_tf_a_tests():
+    print("[!] Building fip for tf-a-tests...")
+    fiptool = os.path.join(FIPTOOL, "fiptool")
+    fdtsdir = os.path.join(TRUSTED_FIRMWARE_A, "build/fvp/debug/fdts")
+    run(["%s" % fiptool,
+         "create",
+         "--fw-config", "%s/fvp_fw_config.dtb" % fdtsdir,
+         "--tb-fw-config", "%s/fvp_tb_fw_config.dtb" % fdtsdir,
+         "--soc-fw-config", "%s/fvp_soc_fw_config.dtb" % fdtsdir,
+         "--nt-fw-config", "%s/fvp_nt_fw_config.dtb" % fdtsdir,
+         "--hw-config", "%s/fvp-base-gicv3-psci-1t.dtb" % fdtsdir,
+         "--tb-fw", "%s/bl2.bin" % OUT,
+         "--soc-fw", "%s/bl31.bin" % OUT,
+         "--rmm-fw", "%s/rmm.bin" % OUT,
+         "--nt-fw", "%s/build/fvp/debug/tftf.bin" % TF_A_TESTS,
+         "%s/fip-tf-a-tests.bin" % OUT], cwd=ROOT)
+
+def prepare_prebuilt():
+    run(["cp", "%s/FVP_AARCH64_EFI.fd" % PREBUILT, OUT], cwd=ROOT)
+    run(["cp", "%s/bootaa64.efi" % PREBUILT, OUT], cwd=ROOT)
+
+def prepare_fip_linux():
+    print("[!] Building fip for linux...")
+
+    fiptool = os.path.join(FIPTOOL, "fiptool")
+    fdtsdir = os.path.join(TRUSTED_FIRMWARE_A, "build/fvp/debug/fdts")
+    run(["%s" % fiptool,
+         "create",
+         "--fw-config", "%s/fvp_fw_config.dtb" % fdtsdir,
+         "--tb-fw-config", "%s/fvp_tb_fw_config.dtb" % fdtsdir,
+         "--soc-fw-config", "%s/fvp_soc_fw_config.dtb" % fdtsdir,
+         "--nt-fw-config", "%s/fvp_nt_fw_config.dtb" % fdtsdir,
+         "--hw-config", "%s/fvp-base-gicv3-psci-1t.dtb" % fdtsdir,
+         "--tb-fw", "%s/bl2.bin" % OUT,
+         "--soc-fw", "%s/bl31.bin" % OUT,
+         "--rmm-fw", "%s/rmm.bin" % OUT,
+         "--nt-fw", "%s/FVP_AARCH64_EFI.fd" % OUT,
+         "%s/fip.bin" % OUT], cwd=ROOT)
+
+def prepare_nw_linux():
+    args = [
+        "-j%d" % multiprocessing.cpu_count(), "-f",
+        "fvp.mk",
+        "linux"
+    ]
+
+    print("[!] Building linux...")
+    make(BUILD_SCRIPT, args)
+
+    run(["cp", "%s/linux/arch/arm64/boot/Image" % ROOT, OUT], cwd=ROOT)
+    run(["cp", "%s/linux/arch/arm64/boot/dts/arm/fvp-base-revc.dtb" % ROOT, OUT], cwd=ROOT)
+
+    print("[!] Building boot image...")
+    args = [
+        "-j%d" % multiprocessing.cpu_count(), "-f",
+        "fvp.mk",
+        "boot-img"
+    ]
+    make(BUILD_SCRIPT, args)
+
+def run_fvp_tf_a_tests(debug):
+    print("[!] Running fvp for tf-a-tests...")
+    args = ["./FVP_Base_RevC-2xAEMvA",
+            "-C", "bp.flashloader0.fname=%s/fip-tf-a-tests.bin" % OUT,
+            "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
+            "--data=%s/vm-image.bin@0x8806c000" % OUT,
+            "-f", CONFIG,
+            "-Q", "1000"]
+    if debug:
+        args += ["--cadi-server"]
+    run(args, cwd=FASTMODEL)
+
+def run_fvp_linux(debug):
+    print("[!] Running fvp for linux...")
+    args = ["./FVP_Base_RevC-2xAEMvA",
+            "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
+            "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
+            "-C", "bp.virtioblockdevice.image_path=%s/boot.img" % OUT,
+            "-C", "bp.virtiop9device.root_path=%s" % PC_SHARE_DIR,
+            "-f", CONFIG,
+            "-Q", "1000"]
+    if debug:
+        args += ["--cadi-server"]
+    run(args, cwd=FASTMODEL)
+
+def place_vm_image_at_shared():
+    os.makedirs("%s" % PC_SHARE_DIR, exist_ok=True)
+    run(["cp", "-R", "%s/qemu/." % PREBUILT, PC_SHARE_DIR], cwd=ROOT)
+    run(["cp", "%s/realm.bin" % OUT, "%s/guest/" % PC_SHARE_DIR], cwd=ROOT)
+    run(["cp", "%s/Image_realmvm" % OUT, "%s/guest/" % PC_SHARE_DIR], cwd=ROOT)
+
+def clean_repo():
+    run(["make", "clean"], cwd=FIPTOOL)
+    run(["make", "distclean"], cwd=TRUSTED_FIRMWARE_A)
+    run(["make", "distclean"], cwd=VM_IMAGE)
+    run(["make", "distclean"], cwd=TF_A_TESTS)
+
+    args = ["-f", "fvp.mk", "linux-clean", "boot-img-clean"]
+    make(BUILD_SCRIPT, args)
+
+    run(["rm", "-rf", "out"], cwd=ROOT)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="FVP launcher for CCA")
+    parser.add_argument("--normal-world", "-nw", help="A normal world component")
+    parser.add_argument("--debug", "-d", help="Using debug component", action="store_true")
+    parser.add_argument("--run-only", "-ro",
+                        help="Running fvp without building", action="store_true")
+    parser.add_argument("--build-only", "-bo",
+                        help="Building components without running", action="store_true")
+    parser.add_argument("--clean", "-c", help="Clean the repo", action="store_true")
+    parser.add_argument("--realm-vm", "-vm", help="VM for realm world", default="tftf")
+    args = parser.parse_args()
+
+    if args.clean:
+        clean_repo()
+        sys.exit(1)
+
+    nw_list = ["linux", "tf-a-tests"]
+    if not args.normal_world in nw_list:
+        print("Please select one of the normal components:")
+        print("  " + "\n  ".join(nw_list))
+        sys.exit(1)
+
+    if not args.run_only:
+        prepare_fiptool()
+        prepare_bootloaders()
+        prepare_rmm()
+        prepare_vm_image(args.realm_vm)
+
+        if args.normal_world == "tf-a-tests":
+            prepare_tf_a_tests()
+            prepare_fip_tf_a_tests()
+        else:
+            prepare_sdk()
+            prepare_realm()
+            prepare_prebuilt()
+            prepare_nw_linux()
+            prepare_fip_linux()
+            place_vm_image_at_shared()
+
+    if not args.build_only and args.normal_world == "tf-a-tests":
+        run_fvp_tf_a_tests(args.debug)
+
+    if not args.build_only and args.normal_world == "linux":
+        run_fvp_linux(args.debug)

@@ -1,3 +1,6 @@
 [submodule "trusted-firmware-a"]
 	path = trusted-firmware-a
 	url = https://github.com/ARM-software/arm-trusted-firmware
+[submodule "guest-linux"]
+	path = guest-linux
+	url = https://github.com/torvalds/linux.git

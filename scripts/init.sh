@@ -13,7 +13,6 @@ sudo apt install -y -qq --no-install-recommends \
 
 if [[ ${1} != "--no-submodule" ]]; then
 	cd ${ROOT} \
-		&& git lfs install assets \
 		&& git submodule update --init --recursive
 fi
 

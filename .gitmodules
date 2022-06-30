@@ -4,15 +4,6 @@
 [submodule "guest-linux"]
 	path = guest-linux
 	url = https://github.com/torvalds/linux.git
-[submodule "third-party/edk2-platforms"]
-	path = third-party/edk2-platforms
-	url = https://github.com/tianocore/edk2-platforms.git
-[submodule "third-party/edk2"]
-	path = third-party/edk2
-	url = https://github.com/tianocore/edk2.git
-[submodule "third-party/grub"]
-	path = third-party/grub
-	url = https://git.savannah.gnu.org/git/grub.git
 [submodule "linux"]
 	path = linux
 	url = https://github.com/Samsung/islet-linux.git

@@ -54,6 +54,8 @@ def prepare_vm_image(vm_type):
         prepare_guest_tftf()
 
 def prepare_guest_tftf():
+    run(["cp", "%s/tftf-realm.elf" % PREBUILT, OUT], cwd=ROOT)
+    """
     srcdir = VM_IMAGE
     outbin = os.path.join(VM_IMAGE, "build/fvp/debug/tftf.bin")
 
@@ -73,6 +75,7 @@ def prepare_guest_tftf():
 
     rename = os.path.join(OUT, "vm-image.bin")
     run(["cp", outbin, rename], cwd=ROOT)
+    """
 
 def prepare_guest_linux():
     GUEST_LINUX = os.path.join(ROOT, "guest-linux")
@@ -93,14 +96,7 @@ def prepare_guest_linux():
     make(GUEST_LINUX, build_args)
 
     os.chdir(ROOT)
-    run(["cp", "%s/arch/arm64/boot/Image" % GUEST_LINUX, "%s/Image_realmvm" % OUT], cwd=ROOT)
-    run(["cp", "%s/arch/arm64/boot/Image" % GUEST_LINUX, "%s/vm-image.bin" % OUT], cwd=ROOT)
-
-def prepare_realm():
-    print("[!] Generating realm...")
-    run(["%s/enclave-gen" % OUT,
-         "%s/vm-image.bin" % OUT,
-         "%s/realm.bin" % OUT], cwd=ROOT)
+    run(["cp", "%s/arch/arm64/boot/Image" % GUEST_LINUX, "%s/Image_realmvm" % OUT], cwd=ROOT)    
 
 def prepare_bootloaders():
     args = [
@@ -132,22 +128,6 @@ def prepare_rmm():
          "%s/aarch64-unknown-none-softfloat/release/fvp" % OUT,
          "%s/rmm.bin" % OUT],
          cwd=ROOT)
-
-def prepare_sdk():
-    print("[!] Building realm sdk...")
-    bootstrap = os.path.join(SDK, "bootstrap")
-    run(["cargo", "build", "--release"], cwd=bootstrap)
-    run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
-         "%s/aarch64-unknown-none-softfloat/release/bootstrap" % OUT,
-         "%s/bootstrap.bin" % OUT], cwd=ROOT)
-
-    run(["cargo", "build", "--release"], cwd=SDK)
-    run(["cp",
-         "%s/release/enclave-gen" % OUT,
-         "%s/enclave-gen" % OUT], cwd=ROOT)
-    run(["objcopy", "--update-section",
-         ".bootstrap=%s/bootstrap.bin" % OUT,
-         "%s/enclave-gen" % OUT], cwd=ROOT)
 
 def prepare_fiptool():
     print("[!] Building firmware image package tool...")
@@ -246,7 +226,7 @@ def run_fvp_linux(debug):
 def place_vm_image_at_shared():
     os.makedirs("%s" % PC_SHARE_DIR, exist_ok=True)
     run(["cp", "-R", "%s/qemu/." % PREBUILT, PC_SHARE_DIR], cwd=ROOT)
-    run(["cp", "%s/realm.bin" % OUT, "%s/guest/" % PC_SHARE_DIR], cwd=ROOT)
+    run(["cp", "%s/tftf-realm.elf" % OUT, "%s/guest/" % PC_SHARE_DIR], cwd=ROOT)
     run(["cp", "%s/Image_realmvm" % OUT, "%s/guest/" % PC_SHARE_DIR], cwd=ROOT)
 
 def clean_repo():
@@ -293,8 +273,6 @@ if __name__ == "__main__":
             prepare_tf_a_tests()
             prepare_fip_tf_a_tests()
         else:
-            prepare_sdk()
-            prepare_realm()
             prepare_prebuilt()
             prepare_nw_linux()
             prepare_fip_linux()

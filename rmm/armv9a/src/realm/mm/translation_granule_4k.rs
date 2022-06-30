@@ -16,6 +16,7 @@ impl From<usize> for RawGPA {
 
 define_bits!(
     RawPTE,
+    NS[55 - 55], // DDI0615A: For a Block or Page descriptor fetched for stage 2 in the Realm Security state, bit 55 is the NS field. if set, it means output address is in NS PAS.
     XN[54 - 54],
     CONT[52 - 52],
     // https://armv8-ref.codingbelief.com/en/chapter_d4/d43_1_vmsav8-64_translation_table_descriptor_formats.html
@@ -25,7 +26,6 @@ define_bits!(
     AF[10 - 10],
     SH[9 - 8],   // pte_shareable
     S2AP[7 - 6], // pte_access_perm
-    NS[5 - 5],
     ATTR[4 - 2], // pte_mem_attr
     TYPE[1 - 1], // pte_type
     VALID[0 - 0]

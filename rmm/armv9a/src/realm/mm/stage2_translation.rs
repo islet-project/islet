@@ -13,6 +13,9 @@ use monitor::realm::mm::IPATranslation;
 use crate::helper::bits_in_reg;
 use crate::helper::regs::tcr_granule;
 use crate::{define_bitfield, define_bits, define_mask};
+use crate::helper;
+use crate::realm::mm::page_table::pte;
+use crate::realm::mm::translation_granule_4k::RawPTE;
 
 // initial lookup starts at level 1 with 2 page tables concatenated
 pub const NUM_ROOT_PAGE: usize = 2;
@@ -42,6 +45,7 @@ impl<'a> Stage2Translation<'a> {
             )
             .unwrap()
         };
+        fill_stage2_table(root_pgtlb);
 
         Self {
             root_pgtlb,
@@ -119,4 +123,14 @@ impl<'a> fmt::Debug for Stage2Translation<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(stringify!(Self)).finish()
     }
+}
+
+fn fill_stage2_table(root: &mut PageTable<GuestPhysAddr, L1Table, Entry>) {
+
+    let device_flags = helper::bits_in_reg(RawPTE::ATTR, pte::attribute::DEVICE_NGNRE)
+        | helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);
+    let uart_guest = Page::<BasePageSize, GuestPhysAddr>::range_with_size(GuestPhysAddr::from(0x1c0a0000 as u64), 1);
+    let uart_phys = Page::<BasePageSize, PhysAddr>::range_with_size(PhysAddr::from(0x1c0a0000 as u64), 1);
+
+    root.set_pages(uart_guest, uart_phys, device_flags as u64);
 }

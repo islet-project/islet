@@ -4,3 +4,9 @@
 [submodule "guest-linux"]
 	path = guest-linux
 	url = https://github.com/torvalds/linux.git
+[submodule "linux"]
+	path = linux
+	url = https://github.com/Samsung/islet-linux.git
+[submodule "assets"]
+	path = assets
+	url = https://github.com/Samsung/islet-asset.git

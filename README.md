@@ -4,9 +4,9 @@ ISLET is a project to enable on-device confidential computing for end users by l
 ## How to get prerequisites for build
 
 ```bash
-scripts/prepare_qemu.sh
-scripts/prepare_fastmodel.sh
-scripts/prepare_toolchains.sh
+./scripts/prepare_qemu.sh
+./scripts/prepare_fastmodel.sh
+./scripts/prepare_toolchains.sh
 ```
 
 <!---

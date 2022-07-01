@@ -20,9 +20,14 @@ cd -
 ```bash
 mkdir -p assets/toolchains
 cd assets/toolchains
-wget https://developer.arm.com/-/media/Files/downloads/gnu-a/10.3-2021.07/binrel/gcc-arm-10.3-2021.07-x86_64-aarch64-none-linux-gnu.tar.xz
-wget https://developer.arm.com/-/media/Files/downloads/gnu-a/10.3-2021.07/binrel/gcc-arm-10.3-2021.07-aarch64-arm-none-linux-gnueabihf.tar.xz
-
+wget https://developer.arm.com/-/media/Files/downloads/gnu-a/10.2-2020.11/binrel/gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz
+wget https://developer.arm.com/-/media/Files/downloads/gnu-a/10.2-2020.11/binrel/gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf.tar.xz
+tar -xf gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz
+tar -xf gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf.tar.xz
+ln -sf gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu aarch64
+ln -sf gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf aarch32
+cd -
+scripts/prepare_toolchains.sh
 ```
 
 ## How to prepare build

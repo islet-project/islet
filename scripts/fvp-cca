@@ -54,6 +54,7 @@ def prepare_vm_image(vm_type):
         prepare_guest_tftf()
 
 def prepare_guest_tftf():
+    print("[!] Building tftf vm image...")
     run(["cp", "%s/tftf-realm.elf" % PREBUILT, OUT], cwd=ROOT)
     """
     srcdir = VM_IMAGE

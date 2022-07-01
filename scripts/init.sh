@@ -35,11 +35,13 @@ cd ${ROOT} \
 #pip3 install pre-commit
 #pre-commit install
 
+echo "preparing prerequisites for build"
 cd ${ROOT} \
     && ./scripts/prepare_qemu.sh \
     && ./scripts/prepare_fastmodel.sh \
     && ./scripts/prepare_toolchains.sh
 
+echo "applying patch to monitor"
 cd ${ROOT}/trusted-firmware-a \
    && git am -3 ../assets/trusted-firmware-a/0001-add-0x8_8000_0000-dram-for-nw.patch
 

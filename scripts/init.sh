@@ -32,8 +32,14 @@ cd ${ROOT} \
 	rustup component add rust-src
 )
 
-pip3 install pre-commit
-pre-commit install
+#pip3 install pre-commit
+#pre-commit install
+
+cd ${ROOT} \
+    && ./scripts/prepare_qemu.sh \
+    && ./scripts/prepare_fastmodel.sh \
+    && ./scripts/prepare_toolchains.sh
 
 cd ${ROOT}/trusted-firmware-a \
    && git am -3 ../assets/trusted-firmware-a/0001-add-0x8_8000_0000-dram-for-nw.patch
+

@@ -224,11 +224,13 @@ def run_fvp_linux(debug):
         args += ["--cadi-server"]
     run(args, cwd=FASTMODEL)
 
-def place_vm_image_at_shared():
+def place_vm_image_at_shared(vm_type):
     os.makedirs("%s" % PC_SHARE_DIR, exist_ok=True)
     run(["cp", "-R", "%s/qemu/." % PREBUILT, PC_SHARE_DIR], cwd=ROOT)
-    run(["cp", "%s/tftf-realm.elf" % OUT, "%s/guest/" % PC_SHARE_DIR], cwd=ROOT)
-    run(["cp", "%s/Image_realmvm" % OUT, "%s/guest/" % PC_SHARE_DIR], cwd=ROOT)
+    if vm_type == "linux":
+        run(["cp", "%s/Image_realmvm" % OUT, "%s/guest/" % PC_SHARE_DIR], cwd=ROOT)
+    else:
+        run(["cp", "%s/tftf-realm.elf" % OUT, "%s/guest/" % PC_SHARE_DIR], cwd=ROOT)
 
 def clean_repo():
     run(["make", "clean"], cwd=FIPTOOL)
@@ -277,7 +279,7 @@ if __name__ == "__main__":
             prepare_prebuilt()
             prepare_nw_linux()
             prepare_fip_linux()
-            place_vm_image_at_shared()
+            place_vm_image_at_shared(args.realm_vm)
 
     if not args.build_only and args.normal_world == "tf-a-tests":
         run_fvp_tf_a_tests(args.debug)

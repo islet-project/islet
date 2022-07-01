@@ -68,7 +68,23 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     listen!(mainloop, rmi::Code::VMRun, |call| {
         let vm = call.argument()[0];
         let vcpu = call.argument()[1];
-        debug!("received VMRun VCPU {} on VM {}", vcpu, vm);
+        let incr_pc = call.argument()[2];
+        debug!(
+            "received VMRun VCPU {} on VM {} PC_INCR {}",
+            vcpu, vm, incr_pc
+        );
+        if incr_pc == 1 {
+            realm::registry::get(vm)
+                .ok_or("Not exist VM")?
+                .lock()
+                .vcpus
+                .get(vcpu)
+                .ok_or("Not exist VCPU")?
+                .lock()
+                .context
+                .elr += 4;
+        }
+
         realm::registry::get(vm)
             .ok_or("Not exist VM")?
             .lock()

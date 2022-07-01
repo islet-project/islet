@@ -10,3 +10,6 @@
 [submodule "assets"]
 	path = assets
 	url = https://github.com/Samsung/islet-asset.git
+[submodule "build"]
+	path = build
+	url = https://github.com/Samsung/islet-build.git

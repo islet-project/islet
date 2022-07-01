@@ -30,6 +30,7 @@ else
     echo "gcc-arm-10.2-2020.11-x86_64-aarch64-none-linux-gnu.tar.xz already exists"
 fi
 
+cd ${ROOT}/assets/toolchains
 if [ ! -f gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf.tar.xz ]; then
     echo "gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf.tar.xz does NOT exist"
     wget https://developer.arm.com/-/media/Files/downloads/gnu-a/10.2-2020.11/binrel/gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf.tar.xz

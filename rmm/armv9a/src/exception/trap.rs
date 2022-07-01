@@ -110,11 +110,11 @@ pub extern "C" fn handle_lower_exception(
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = unsafe { HPFAR_EL2.get() };
                 tf.regs[3] = unsafe { FAR_EL2.get() };
-                vcpu.context.elr += 4; // continue
                 1
             }
         },
         Kind::Irq => {
+            debug!("IRQ");
             tf.regs[0] = rmi::RET_EXCEPTION_IRQ as u64;
             tf.regs[1] = esr as u64;
             tf.regs[2] = 0;

@@ -45,9 +45,42 @@ scripts/prepare_toolchains.sh
 ```
 
 ## How to run
+### Start FVP
 ```bash
-./scripts/fvp-cca --normal-world=linux
-./scripts/fvp-cca --normal-world=tf-a-tests
+./scripts/fvp-cca --normal-world={linux|tf-a-tests} --realm-vm={tftf|linux}
+./scripts/fvp-cca --nw={linux|tf-a-tests| -vm={tftf|linux}
+```
+### Login with root in the normal world linux
+```bash
+Welcome to Buildroot, type root or test to login
+buildroot login: root
+```
+
+### Run a tftf realm
+```bash
+# cd /qemu/guest/
+# ../qemu-system-aarch64 \
+    -kernel tftf-realm.elf \
+    --enable-kvm \
+    -cpu host \
+    -smp 1 \
+    -m 256M \
+    -M virt,gic-version=3 \
+    -nographic
+```
+
+### Run a linux realm
+```bash
+../qemu-system-aarch64 \
+        -kernel Image_realmvm \
+        -initrd initramfs-busybox-aarch64.cpio.gz \
+        -append "earlycon=pl011,mmio,0x1c0a0000 console=ttyAMA0" \
+        --enable-kvm \
+        -cpu host \
+        -smp 1 \
+        -M virt,gic-version=3 \
+        -m 256M \
+        -nographic
 ```
 
 ## How to do unit-tests

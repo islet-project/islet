@@ -125,17 +125,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         } else {
             flags |= helper::bits_in_reg(RawPTE::S2AP, pte::permission::RO);
         }
-        if prot & 0b10 == 0b10 {
-            flags |= helper::bits_in_reg(RawPTE::XN, 0b1);
-        }
         if prot & 0b100 == 0b100 {
             flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::DEVICE_NGNRE)
         } else {
             flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL)
         }
-
-        let mut flags = helper::bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL)
-            | helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);
 
         // TODO: shared between NS and Linux Ream for GITS_CBASER
         if guest >= 0x40C2_0000 && guest < 0x40C3_0000 {

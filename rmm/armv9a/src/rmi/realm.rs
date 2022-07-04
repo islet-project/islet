@@ -134,8 +134,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL)
         }
 
-        let flags = helper::bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL)
+        let mut flags = helper::bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL)
             | helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);
+
+        // TODO: shared between NS and Linux Ream for GITS_CBASER
+        if guest >= 0x40C2_0000 && guest < 0x40C3_0000 {
+            flags |= helper::bits_in_reg(RawPTE::NS, 0b1);
+        }
 
         realm::registry::get(vm)
             .ok_or("Not exist VM")?
@@ -148,6 +153,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                 size,
                 flags as usize,
             );
+
+        // TODO: shared between NS and Linux Ream for GITS_CBASER
+        if guest >= 0x40C2_0000 && guest < 0x40C3_0000 {
+            return Ok(());
+        }
 
         let cmd = usize::from(smc::Code::MarkRealm);
         let mut arg = [phys, 0, 0, 0];

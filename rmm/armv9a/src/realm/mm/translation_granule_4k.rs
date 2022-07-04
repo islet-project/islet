@@ -26,7 +26,7 @@ define_bits!(
     AF[10 - 10],
     SH[9 - 8],   // pte_shareable
     S2AP[7 - 6], // pte_access_perm
-    ATTR[4 - 2], // pte_mem_attr
+    ATTR[5 - 2], // pte_mem_attr
     TYPE[1 - 1], // pte_type
     VALID[0 - 0]
 );

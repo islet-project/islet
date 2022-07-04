@@ -84,7 +84,7 @@ restore_all_from_vcpu_and_run:
 	msr actlr_el1, x3
 
 	ldp x2, x3, [x28], #16
-	msr vmpidr_el2, x2
+	//msr vmpidr_el2, x2
 	msr csselr_el1, x3
 
 	ldp x2, x3, [x28], #16

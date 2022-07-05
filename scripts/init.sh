@@ -37,13 +37,16 @@ cd ${ROOT} \
 
 echo "preparing prerequisites for build"
 cd ${ROOT}
-./scripts/prepare_qemu.sh 
-./scripts/prepare_fastmodel.sh 
+./scripts/prepare_qemu.sh
+./scripts/prepare_fastmodel.sh
 ./scripts/prepare_toolchains.sh
 
 echo "applying patch to monitor"
 cp -r ${ROOT}/upstream-trusted-firmware-a ${ROOT}/trusted-firmware-a
-cd ${ROOT}/trusted-firmware-a 
+cd ${ROOT}/trusted-firmware-a
 if [ -f ../assets/trusted-firmware-a/0001-add-0x8_8000_0000-dram-for-nw.patch ]; then
     git am -3 ../assets/trusted-firmware-a/0001-add-0x8_8000_0000-dram-for-nw.patch
+fi
+if [ -f ../assets/trusted-firmware-a/0002-temporal-context-do-not-save-restore-some-sysregs.patch ]; then
+    git am -3 ../assets/trusted-firmware-a/0002-temporal-context-do-not-save-restore-some-sysregs.patch
 fi

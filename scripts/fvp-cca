@@ -80,6 +80,7 @@ def prepare_guest_tftf():
 
 def prepare_guest_linux():
     GUEST_LINUX = os.path.join(ROOT, "guest-linux")
+    run(["cp", "%s/realmvm_defconfig" % GUEST_DEFCONFIG_DIR, "%s/arch/arm64/configs/" % GUEST_LINUX], cwd=ROOT)
     config_args = [
         "defconfig",
         "ARCH=arm64",
@@ -242,7 +243,6 @@ def clean_repo():
     make(BUILD_SCRIPT, args)
 
     run(["rm", "-rf", "out"], cwd=ROOT)
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FVP launcher for CCA")

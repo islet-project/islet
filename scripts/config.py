@@ -6,6 +6,7 @@ ROOT = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
 OUT = os.path.join(ROOT, "out")
 CONFIG = os.path.join(ROOT, "scripts/.config")
 PREBUILT = os.path.join(ROOT, "assets/prebuilt")
+GUEST_DEFCONFIG_DIR = os.path.join(ROOT, "assets/guest-linux")
 
 RMM = os.path.join(ROOT, "rmm/board/fvp")
 SDK = os.path.join(ROOT, "sdk/")

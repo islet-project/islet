@@ -42,7 +42,7 @@ cd ${ROOT}
 ./scripts/prepare_toolchains.sh
 
 echo "applying patch to monitor"
-cp -r ${ROOT}/upstream-trusted-firmware-a ${ROOT}/trusted-firmware-a
+git clone --reference ./upstream-trusted-firmware-a ./upstream-trusted-firmware-a ./trusted-firmware-a
 cd ${ROOT}/trusted-firmware-a
 if [ -f ../assets/trusted-firmware-a/0001-add-0x8_8000_0000-dram-for-nw.patch ]; then
     git am -3 ../assets/trusted-firmware-a/0001-add-0x8_8000_0000-dram-for-nw.patch

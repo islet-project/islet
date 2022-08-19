@@ -12,7 +12,6 @@ RMM = os.path.join(ROOT, "rmm/board/fvp")
 SDK = os.path.join(ROOT, "sdk/")
 TF_A_TESTS = os.path.join(ROOT, "tf-a-tests")
 TRUSTED_FIRMWARE_A = os.path.join(ROOT, "trusted-firmware-a")
-VM_IMAGE = os.path.join(ROOT, "vm-image")
 BUILD_SCRIPT = os.path.join(ROOT, "build")
 
 # directory shared between the pc desktop and the host OS on fvp using 9p filesystem

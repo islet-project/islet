@@ -56,27 +56,6 @@ def prepare_vm_image(vm_type):
 def prepare_guest_tftf():
     print("[!] Building tftf vm image...")
     run(["cp", "%s/tftf-realm.elf" % PREBUILT, OUT], cwd=ROOT)
-    """
-    srcdir = VM_IMAGE
-    outbin = os.path.join(VM_IMAGE, "build/fvp/debug/tftf.bin")
-
-    args = [
-        "CROSS_COMPILE=%s" % CROSS_COMPILE,
-        "PLAT=fvp",
-        "DEBUG=1",
-        "tftf"
-    ]
-
-    print("[!] Building tftf vm image...")
-    make(srcdir, args)
-
-    if not os.path.exists(outbin):
-        print("[!] Failed to build: %s" % outbin)
-        sys.exit(1)
-
-    rename = os.path.join(OUT, "vm-image.bin")
-    run(["cp", outbin, rename], cwd=ROOT)
-    """
 
 def prepare_guest_linux():
     GUEST_LINUX = os.path.join(ROOT, "guest-linux")
@@ -236,8 +215,7 @@ def place_vm_image_at_shared(vm_type):
 def clean_repo():
     run(["make", "clean"], cwd=FIPTOOL)
     run(["make", "distclean"], cwd=TRUSTED_FIRMWARE_A)
-    run(["make", "distclean"], cwd=VM_IMAGE)
-    run(["make", "distclean"], cwd=TF_A_TESTS)
+    #run(["make", "distclean"], cwd=TF_A_TESTS)
 
     args = ["-f", "fvp.mk", "linux-clean", "boot-img-clean"]
     make(BUILD_SCRIPT, args)

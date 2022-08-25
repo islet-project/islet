@@ -132,7 +132,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         }
 
         // TODO: shared between NS and Linux Ream for GITS_CBASER
-        if guest >= 0x40C2_0000 && guest < 0x40C3_0000 {
+        if guest >= 0x40C2_0000 && guest < 0x40C4_0000 {
             flags |= helper::bits_in_reg(RawPTE::NS, 0b1);
         }
 
@@ -149,7 +149,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             );
 
         // TODO: shared between NS and Linux Ream for GITS_CBASER
-        if guest >= 0x40C2_0000 && guest < 0x40C3_0000 {
+        if guest >= 0x40C2_0000 && guest < 0x40C4_0000 {
             return Ok(());
         }
 

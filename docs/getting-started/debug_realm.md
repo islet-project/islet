@@ -91,7 +91,7 @@ into the instruction in the address.
             -nographic
     ```
 
-    2.2 Enter <Ctrl-a c> to switch from the serial console to the qemu monitor.
+    2.2 Enter \<Ctrl-a c\> to switch from the serial console to the qemu monitor.
     Then dump the code with the IPA to inspect.
 
     ```

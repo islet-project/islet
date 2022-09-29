@@ -1,6 +1,6 @@
 // defined in trusted-firmware-a/include/services/rmmd_svc.h
 const SMC_ASC_MARK_REALM: usize = 0xc400_01b0;
-const SMC_ASC_MARK_NONSECURE: usize = 0xc400_01b2;
+const SMC_ASC_MARK_NONSECURE: usize = 0xc400_01b1;
 
 pub enum Code {
     MarkRealm,

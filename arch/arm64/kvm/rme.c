@@ -49,6 +49,11 @@ static bool rme_supports(unsigned long feature)
 	return !!u64_get_bits(rmm_feat_reg0, feature);
 }
 
+bool kvm_rme_supports_sve(void)
+{
+	return rme_supports(RMI_FEATURE_REGISTER_0_SVE_EN);
+}
+
 static int rmi_check_version(void)
 {
 	struct arm_smccc_res res;
@@ -1104,7 +1109,7 @@ static int config_realm_sve(struct realm *realm,
 	int max_sve_vq = u64_get_bits(rmm_feat_reg0,
 				      RMI_FEATURE_REGISTER_0_SVE_VL);
 
-	if (!rme_supports(RMI_FEATURE_REGISTER_0_SVE_EN))
+	if (!kvm_rme_supports_sve())
 		return -EINVAL;
 
 	if (cfg->sve_vq > max_sve_vq)

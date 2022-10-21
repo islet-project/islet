@@ -730,7 +730,9 @@ static int populate_par_region(struct kvm *kvm,
 			break;
 		}
 
-		if (is_vm_hugetlb_page(vma))
+		// FIXME: To avoid the overmapping issue (see below comment)
+		// force the use of 4k pages
+		if (is_vm_hugetlb_page(vma) && 0)
 			vma_shift = huge_page_shift(hstate_vma(vma));
 		else
 			vma_shift = PAGE_SHIFT;

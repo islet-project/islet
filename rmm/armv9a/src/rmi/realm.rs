@@ -11,7 +11,7 @@ use crate::smc;
 
 use crate::rmi;
 
-pub fn rmm_exit() -> [usize; 4] {
+pub fn realm_enter() -> [usize; 4] {
     unsafe {
         if let Some(vcpu) = realm::vcpu::current() {
             if vcpu.is_vm_dead() {
@@ -24,6 +24,14 @@ pub fn rmm_exit() -> [usize; 4] {
             }
         }
         [0, 0, 0, 0]
+    }
+}
+
+pub fn realm_exit() {
+    unsafe {
+        if let Some(vcpu) = realm::vcpu::current() {
+            vcpu.from_current();
+        }
     }
 }
 
@@ -91,7 +99,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             .switch_to(vcpu)?;
 
         trace!("Switched to VCPU {} on VM {}", vcpu, vm);
-        let ret = rmm_exit();
+        let ret = realm_enter();
+
+        realm_exit();
 
         match ret[0] {
             rmi::RET_SUCCESS => call.reply(rmi::RET_SUCCESS),

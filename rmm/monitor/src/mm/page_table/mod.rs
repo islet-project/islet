@@ -27,6 +27,8 @@ pub trait Entry {
     fn set_with_page_table_flags(&mut self, addr: PhysAddr);
 
     fn index<L: Level>(addr: usize) -> usize;
+
+    fn points_to_table_or_page(&self) -> bool;
 }
 
 pub struct PageTable<A, L, E> {
@@ -49,6 +51,7 @@ pub trait PageTableMethods<A: Address, L, E> {
     );
     fn set_page<S: PageSize>(&mut self, guest: Page<S, A>, phys: Page<S, PhysAddr>, flags: u64);
     fn entry<S: PageSize>(&self, guest: Page<S, A>) -> Option<E>;
+    fn drop<S: PageSize>(&mut self);
 }
 
 impl<A: Address, L: Level, E: Entry + Copy> PageTableMethods<A, L, E> for PageTable<A, L, E> {
@@ -113,6 +116,14 @@ impl<A: Address, L: Level, E: Entry + Copy> PageTableMethods<A, L, E> for PageTa
             false => None,
         }
     }
+    default fn drop<S: PageSize>(&mut self) {
+        unsafe {
+            alloc::alloc::dealloc(
+                self as *mut PageTable<A, L, E> as *mut u8,
+                alloc::alloc::Layout::from_size_align(S::TABLE_SIZE, S::TABLE_SIZE).unwrap(),
+            );
+        }
+    }
 }
 
 /// This overrides default PageTableMethods for PageTables with subtable.
@@ -164,6 +175,24 @@ where
         } else if L::THIS_LEVEL == S::MAP_TABLE_LEVEL {
             // Map page in this level page table
             self.entries[index].set(phys.address(), flags | S::MAP_EXTRA_FLAG);
+        }
+    }
+
+    fn drop<S: PageSize>(&mut self) {
+        for entry in self.entries.iter() {
+            if L::THIS_LEVEL < S::MAP_TABLE_LEVEL && entry.points_to_table_or_page() {
+                let subtable_addr = entry.address(L::THIS_LEVEL).unwrap();
+                let subtable: &mut PageTable<A, L::NextLevel, E> = unsafe {
+                    &mut *(subtable_addr.as_usize() as *mut PageTable<A, L::NextLevel, E>)
+                };
+                subtable.drop::<S>();
+            }
+        }
+        unsafe {
+            alloc::alloc::dealloc(
+                self as *mut PageTable<A, L, E> as *mut u8,
+                alloc::alloc::Layout::from_size_align(S::TABLE_SIZE, S::TABLE_SIZE).unwrap(),
+            );
         }
     }
 }

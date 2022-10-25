@@ -73,4 +73,15 @@ impl page_table::Entry for Entry {
             _ => panic!(),
         }
     }
+
+    fn points_to_table_or_page(&self) -> bool {
+        match self.is_valid() {
+            true => match self.0.get_masked_value(RawPTE::TYPE) {
+                pte::page_type::TABLE_OR_PAGE => true,
+                pte::page_type::BLOCK => false,
+                _ => false,
+            },
+            false => false,
+        }
+    }
 }

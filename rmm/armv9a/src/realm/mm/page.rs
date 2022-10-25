@@ -12,7 +12,6 @@ impl PageSize for BasePageSize {
     const SIZE: usize = PAGE_SIZE;
     const MAP_TABLE_LEVEL: usize = 3;
     const MAP_EXTRA_FLAG: u64 = bits_in_reg(RawPTE::TYPE, pte::page_type::TABLE_OR_PAGE);
-    const TABLE_SIZE: usize = PAGE_SIZE;
 }
 
 #[derive(Clone, Copy)]
@@ -22,7 +21,6 @@ impl PageSize for LargePageSize {
     const SIZE: usize = LARGE_PAGE_SIZE;
     const MAP_TABLE_LEVEL: usize = 2;
     const MAP_EXTRA_FLAG: u64 = 0;
-    const TABLE_SIZE: usize = PAGE_SIZE;
 }
 
 #[derive(Clone, Copy)]
@@ -32,5 +30,4 @@ impl PageSize for HugePageSize {
     const SIZE: usize = HUGE_PAGE_SIZE;
     const MAP_TABLE_LEVEL: usize = 1;
     const MAP_EXTRA_FLAG: u64 = 0;
-    const TABLE_SIZE: usize = PAGE_SIZE;
 }

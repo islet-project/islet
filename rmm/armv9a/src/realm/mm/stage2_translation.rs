@@ -39,7 +39,7 @@ pub struct Stage2Translation<'a> {
 impl<'a> Stage2Translation<'a> {
     pub fn new() -> Self {
         let root_pgtlb = unsafe {
-            &mut *PageTable::<GuestPhysAddr, L1Table, Entry>::new_with_align::<BasePageSize>(
+            &mut *PageTable::<GuestPhysAddr, L1Table, Entry>::new_with_align(
                 NUM_ROOT_PAGE,
                 ALIGN_ROOT_PAGE,
             )
@@ -128,7 +128,7 @@ impl<'a> fmt::Debug for Stage2Translation<'a> {
 impl<'a> Drop for Stage2Translation<'a> {
     fn drop(&mut self) {
         info!("drop Stage2Translation");
-        self.root_pgtlb.drop::<BasePageSize>();
+        self.root_pgtlb.drop();
     }
 }
 

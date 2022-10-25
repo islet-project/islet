@@ -12,6 +12,8 @@ pub mod pte;
 pub enum L0Table {}
 impl Level for L0Table {
     const THIS_LEVEL: usize = 0;
+    const TABLE_SIZE: usize = PAGE_SIZE;
+    const NUM_ENTRIES: usize = (Self::TABLE_SIZE / core::mem::size_of::<Entry>());
 }
 impl HasSubtable for L0Table {
     type NextLevel = L1Table;
@@ -21,6 +23,8 @@ impl HasSubtable for L0Table {
 pub enum L1Table {}
 impl Level for L1Table {
     const THIS_LEVEL: usize = 1;
+    const TABLE_SIZE: usize = PAGE_SIZE;
+    const NUM_ENTRIES: usize = (Self::TABLE_SIZE / core::mem::size_of::<Entry>());
 }
 impl HasSubtable for L1Table {
     type NextLevel = L2Table;
@@ -30,6 +34,8 @@ impl HasSubtable for L1Table {
 pub enum L2Table {}
 impl Level for L2Table {
     const THIS_LEVEL: usize = 2;
+    const TABLE_SIZE: usize = PAGE_SIZE;
+    const NUM_ENTRIES: usize = (Self::TABLE_SIZE / core::mem::size_of::<Entry>());
 }
 impl HasSubtable for L2Table {
     type NextLevel = L3Table;
@@ -39,6 +45,8 @@ impl HasSubtable for L2Table {
 pub enum L3Table {}
 impl Level for L3Table {
     const THIS_LEVEL: usize = 3;
+    const TABLE_SIZE: usize = PAGE_SIZE;
+    const NUM_ENTRIES: usize = (Self::TABLE_SIZE / core::mem::size_of::<Entry>());
 }
 
 const_assert_size!(PageTable<GuestPhysAddr, L0Table, Entry>, PAGE_SIZE);

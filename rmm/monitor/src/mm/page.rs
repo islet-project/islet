@@ -18,9 +18,6 @@ pub trait PageSize: Copy {
 
     /// Any extra flag that needs to be set to map a page of this size.
     const MAP_EXTRA_FLAG: u64;
-
-    /// The page size in bytes.
-    const TABLE_SIZE: usize;
 }
 
 /// A memory page of the size given by S.

@@ -10,6 +10,8 @@ pub const NUM_OF_ENTRIES: usize = 1 << 9;
 
 pub trait Level {
     const THIS_LEVEL: usize;
+    const TABLE_SIZE: usize;
+    const NUM_ENTRIES: usize;
 }
 
 pub trait HasSubtable: Level {
@@ -38,11 +40,8 @@ pub struct PageTable<A, L, E> {
 }
 
 pub trait PageTableMethods<A: Address, L, E> {
-    fn new<S: PageSize>(size: usize) -> Result<*mut PageTable<A, L, E>, ()>;
-    fn new_with_align<S: PageSize>(
-        size: usize,
-        align: usize,
-    ) -> Result<*mut PageTable<A, L, E>, ()>;
+    fn new(size: usize) -> Result<*mut PageTable<A, L, E>, ()>;
+    fn new_with_align(size: usize, align: usize) -> Result<*mut PageTable<A, L, E>, ()>;
     fn set_pages<S: PageSize>(
         &mut self,
         guest: PageIter<S, A>,
@@ -51,21 +50,19 @@ pub trait PageTableMethods<A: Address, L, E> {
     );
     fn set_page<S: PageSize>(&mut self, guest: Page<S, A>, phys: Page<S, PhysAddr>, flags: u64);
     fn entry<S: PageSize>(&self, guest: Page<S, A>) -> Option<E>;
-    fn drop<S: PageSize>(&mut self);
+    fn drop(&mut self);
 }
 
 impl<A: Address, L: Level, E: Entry + Copy> PageTableMethods<A, L, E> for PageTable<A, L, E> {
-    fn new<S: PageSize>(size: usize) -> Result<*mut PageTable<A, L, E>, ()> {
-        Self::new_with_align::<S>(size, 1)
+    fn new(size: usize) -> Result<*mut PageTable<A, L, E>, ()> {
+        Self::new_with_align(size, 1)
     }
 
-    fn new_with_align<S: PageSize>(
-        size: usize,
-        align: usize,
-    ) -> Result<*mut PageTable<A, L, E>, ()> {
+    fn new_with_align(size: usize, align: usize) -> Result<*mut PageTable<A, L, E>, ()> {
         let table = unsafe {
             alloc::alloc::alloc_zeroed(
-                alloc::alloc::Layout::from_size_align(S::SIZE * size, S::SIZE * align).unwrap(),
+                alloc::alloc::Layout::from_size_align(L::TABLE_SIZE * size, L::TABLE_SIZE * align)
+                    .unwrap(),
             )
         };
 
@@ -116,11 +113,12 @@ impl<A: Address, L: Level, E: Entry + Copy> PageTableMethods<A, L, E> for PageTa
             false => None,
         }
     }
-    default fn drop<S: PageSize>(&mut self) {
+
+    default fn drop(&mut self) {
         unsafe {
             alloc::alloc::dealloc(
                 self as *mut PageTable<A, L, E> as *mut u8,
-                alloc::alloc::Layout::from_size_align(S::TABLE_SIZE, S::TABLE_SIZE).unwrap(),
+                alloc::alloc::Layout::from_size_align(L::TABLE_SIZE, L::TABLE_SIZE).unwrap(),
             );
         }
     }
@@ -161,7 +159,7 @@ where
             if !self.entries[index].is_valid() {
                 let subtable = unsafe {
                     alloc::alloc::alloc_zeroed(
-                        alloc::alloc::Layout::from_size_align(S::TABLE_SIZE, S::TABLE_SIZE)
+                        alloc::alloc::Layout::from_size_align(L::TABLE_SIZE, L::TABLE_SIZE)
                             .unwrap(),
                     )
                 } as *mut PageTable<A, L, E>;
@@ -178,20 +176,22 @@ where
         }
     }
 
-    fn drop<S: PageSize>(&mut self) {
+    fn drop(&mut self) {
         for entry in self.entries.iter() {
-            if L::THIS_LEVEL < S::MAP_TABLE_LEVEL && entry.points_to_table_or_page() {
+            //if L::THIS_LEVEL < S::MAP_TABLE_LEVEL && entry.points_to_table_or_page() {
+            // if a table which can have subtables points to a table or a page, it should be a table.
+            if entry.points_to_table_or_page() {
                 let subtable_addr = entry.address(L::THIS_LEVEL).unwrap();
                 let subtable: &mut PageTable<A, L::NextLevel, E> = unsafe {
                     &mut *(subtable_addr.as_usize() as *mut PageTable<A, L::NextLevel, E>)
                 };
-                subtable.drop::<S>();
+                subtable.drop();
             }
         }
         unsafe {
             alloc::alloc::dealloc(
                 self as *mut PageTable<A, L, E> as *mut u8,
-                alloc::alloc::Layout::from_size_align(S::TABLE_SIZE, S::TABLE_SIZE).unwrap(),
+                alloc::alloc::Layout::from_size_align(L::TABLE_SIZE, L::TABLE_SIZE).unwrap(),
             );
         }
     }

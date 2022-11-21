@@ -1,5 +1,5 @@
 mod frame;
-mod syndrome;
+pub mod syndrome;
 
 use self::frame::TrapFrame;
 use self::syndrome::Syndrome;

@@ -3,7 +3,9 @@ use monitor::realm::mm::address::{GuestPhysAddr, PhysAddr};
 use monitor::{listen, mainloop::Mainloop};
 
 use crate::config::PAGE_SIZE;
+use crate::exception::trap::syndrome::Syndrome;
 use crate::helper;
+use crate::helper::ESR_EL2;
 use crate::realm;
 use crate::realm::mm::page_table::pte;
 use crate::realm::mm::translation_granule_4k::RawPTE;
@@ -129,21 +131,29 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         );
 
         let mut flags = 0;
+        //FIXME: temporary
+        unsafe {
+            if let Some(vcpu) = realm::vcpu::current() {
+                let esr = vcpu.context.sys_regs.esr_el2 as u32;
+                // share all data pages except those had s2 page fault with s1ptw is set
+                match Syndrome::from(esr) {
+                    Syndrome::DataAbort(_) => {
+                        if esr & ESR_EL2::S1PTW as u32 == 0 {
+                            flags |= helper::bits_in_reg(RawPTE::NS, 0b1);
+                        }
+                    }
+                    _ => (),
+                }
+            }
+        }
         // TODO:  define bit mask
-        if prot & 0b1 == 0b1 {
-            flags |= helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);
-        } else {
-            flags |= helper::bits_in_reg(RawPTE::S2AP, pte::permission::RO);
-        }
-        if prot & 0b100 == 0b100 {
-            flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::DEVICE_NGNRE)
-        } else {
-            flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL)
-        }
+        flags |= helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);
 
-        // TODO: shared between NS and Linux Ream for GITS_CBASER
-        if guest >= 0x40C2_0000 && guest < 0x40C4_0000 {
+        if prot & 0b100 == 0b100 {
+            flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::DEVICE_NGNRE);
             flags |= helper::bits_in_reg(RawPTE::NS, 0b1);
+        } else {
+            flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL);
         }
 
         realm::registry::get(vm)
@@ -158,17 +168,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                 flags as usize,
             );
 
-        // TODO: shared between NS and Linux Ream for GITS_CBASER
-        if guest >= 0x40C2_0000 && guest < 0x40C4_0000 {
-            return Ok(());
-        }
-
         let cmd = usize::from(smc::Code::MarkRealm);
         let mut arg = [phys, 0, 0, 0];
         let mut remain = size;
         while remain > 0 {
-            //TODO change to use dtb
-            if arg[0] >= 0x4000_0000 {
+            if (flags & helper::bits_in_reg(RawPTE::NS, 0b1)) == 0 {
                 let ret = smc::call(cmd, arg)[0];
                 if ret != 0 {
                     //Just show a warn message not return fail
@@ -178,7 +182,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             arg[0] += PAGE_SIZE;
             remain -= PAGE_SIZE;
         }
-
         call.reply(rmi::RET_SUCCESS)?;
         Ok(())
     });

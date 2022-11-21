@@ -17,6 +17,7 @@ define_sys_register!(
     IL[25 - 25],
     ISS[24 - 00],
     ISS_BRK_CMT[15 - 00],
+    S1PTW[7 - 7],
     DFSC[5 - 0]
 );
 

@@ -35,8 +35,8 @@ impl monitor::realm::vcpu::Context for Context {
 
     unsafe fn from_current(vcpu: &mut VCPU<Self>) {
         vcpu.pcpu = None;
-        vcpu.context.sys_regs.vmpidr = 0u64;
-        TPIDR_EL2.set(0u64);
+        //vcpu.context.sys_regs.vmpidr = 0u64;
+        //TPIDR_EL2.set(0u64);
     }
 
     fn set_vttbr(vcpu: &mut VCPU<Self>, vmid: u64, pgtlb_baddr: u64) {

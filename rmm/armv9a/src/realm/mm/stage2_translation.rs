@@ -61,15 +61,14 @@ impl<'a> Stage2Translation<'a> {
             let _level: u64 = S::MAP_TABLE_LEVEL as u64;
             let mut ipa: u64 = guest.address().as_u64() >> 12;
             unsafe {
-                ipa = bits_in_reg(TLBI_OP::NS, tlbi_ns::IPAS_NS)
-                    | bits_in_reg(TLBI_OP::TTL, tcr_granule::G_4K | _level)
+                ipa = bits_in_reg(TLBI_OP::NS, tlbi_ns::IPAS_S)
+                    | bits_in_reg(TLBI_OP::TTL, 0b0100 | _level)
                     | bits_in_reg(TLBI_OP::IPA, ipa);
                 // corresponds to __kvm_tlb_flush_vmid_ipa()
                 llvm_asm! {
                     "
                     dsb ishst
                     tlbi ipas2e1, $0
-                    dsb sy
                     isb
                     " : : "r"(ipa)
                 };

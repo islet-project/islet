@@ -47,7 +47,7 @@ pub unsafe fn init() {
             | HCR_EL2::TIDCP
             | HCR_EL2::TSC
             | HCR_EL2::TID3
-            | (HCR_EL2::BSU & 0b11)
+            | (HCR_EL2::BSU & 0b01)
             | HCR_EL2::TWI
             | HCR_EL2::FB
             | HCR_EL2::AMO

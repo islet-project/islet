@@ -23,7 +23,8 @@ pub mod permission {
 //      0b10 - Device-nGRE
 //      0b11 - Device-GRE
 pub mod attribute {
-    pub const NORMAL: u64 = 0b1111;
+    pub const NORMAL_FWB: u64 = 0b0110;
+    pub const NORMAL: u64 = 0b0111;
     pub const NORMAL_NC: u64 = 0b0101;
     pub const DEVICE_NGNRE: u64 = 0b0001;
 }

@@ -67,7 +67,7 @@ impl<'a> Stage2Translation<'a> {
                 // corresponds to __kvm_tlb_flush_vmid_ipa()
                 asm!(
                     "dsb ishst",
-                    "tlbi ipas2e1, {}",
+                    "tlbi ipas2e1is, {}",
                     "isb",
                     in(reg) ipa,
                 );
@@ -105,7 +105,7 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
                 asm! {
                     "
                     dsb ishst
-                    tlbi vmalle1
+                    tlbi vmalle1is
                     dsb ish
                     isb
                     "

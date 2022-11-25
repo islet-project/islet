@@ -3,7 +3,7 @@ use monitor::realm::mm::address::{GuestPhysAddr, PhysAddr};
 use monitor::{listen, mainloop::Mainloop};
 
 use crate::config::PAGE_SIZE;
-use crate::exception::trap::syndrome::Syndrome;
+use crate::exception::trap::syndrome::{Fault, Syndrome};
 use crate::helper;
 use crate::helper::ESR_EL2;
 use crate::realm;
@@ -94,6 +94,18 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                 .context
                 .elr += 4;
         }
+        debug!(
+            "resuming: {:#x}",
+            realm::registry::get(vm)
+                .ok_or("Not exist VM")?
+                .lock()
+                .vcpus
+                .get(vcpu)
+                .ok_or("Not exist VCPU")?
+                .lock()
+                .context
+                .elr
+        );
 
         realm::registry::get(vm)
             .ok_or("Not exist VM")?
@@ -131,24 +143,36 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         );
 
         let mut flags = 0;
+        let mut realm_pas = true;
         //FIXME: temporary
         unsafe {
             if let Some(vcpu) = realm::vcpu::current() {
                 let esr = vcpu.context.sys_regs.esr_el2 as u32;
-                // share all data pages except those had s2 page fault with s1ptw is set
+                // share all data pages except those had  ia permission fault with s1ptw set
                 match Syndrome::from(esr) {
-                    Syndrome::DataAbort(_) => {
-                        if esr & ESR_EL2::S1PTW as u32 == 0 {
-                            flags |= helper::bits_in_reg(RawPTE::NS, 0b1);
+                    Syndrome::DataAbort(fault) => {
+                        realm_pas = false;
+                        if esr & ESR_EL2::S1PTW as u32 != 0 {
+                            match fault {
+                                Fault::Permission { level } => {
+                                    realm_pas = true;
+                                    debug!("Data permission fault");
+                                }
+                                _ => (),
+                            }
                         }
                     }
                     _ => (),
                 }
             }
         }
+
+        if realm_pas == false {
+            flags |= helper::bits_in_reg(RawPTE::NS, 0b1);
+        }
+
         // TODO:  define bit mask
         flags |= helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);
-
         if prot & 0b100 == 0b100 {
             flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::DEVICE_NGNRE);
             flags |= helper::bits_in_reg(RawPTE::NS, 0b1);

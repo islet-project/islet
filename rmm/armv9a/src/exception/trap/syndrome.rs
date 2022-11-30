@@ -57,3 +57,29 @@ impl From<u32> for Syndrome {
         }
     }
 }
+
+impl Into<u64> for Syndrome {
+    fn into(self) -> u64 {
+        match self {
+            Syndrome::DataAbort(fault) => {
+                let ec: u64 = 0b10_0100 << ESR_EL2::EC.trailing_zeros();
+                let iss: u64 = fault.into();
+                ec | iss
+            }
+            _ => {
+                panic!("Not implemented yet!");
+            }
+        }
+    }
+}
+
+impl Into<u64> for Fault {
+    fn into(self) -> u64 {
+        match self {
+            Fault::Translation { level } => (0b000100 | level) as u64,
+            _ => {
+                panic!("Not implemented yet!");
+            }
+        }
+    }
+}

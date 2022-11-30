@@ -13,6 +13,7 @@ pub mod helper;
 pub mod panic;
 pub mod realm;
 pub mod rmi;
+pub mod rsi;
 pub mod smc;
 
 extern crate alloc;

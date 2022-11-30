@@ -148,7 +148,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         unsafe {
             if let Some(vcpu) = realm::vcpu::current() {
                 let esr = vcpu.context.sys_regs.esr_el2 as u32;
-                // share all data pages except those had  ia permission fault with s1ptw set
+                // share all data pages except those had s2 permission fault with s1ptw set
                 match Syndrome::from(esr) {
                     Syndrome::DataAbort(fault) => {
                         realm_pas = false;
@@ -156,7 +156,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                             match fault {
                                 Fault::Permission { level } => {
                                     realm_pas = true;
-                                    debug!("Data permission fault");
+                                    debug!("Data permission fault at {}", level);
                                 }
                                 _ => (),
                             }

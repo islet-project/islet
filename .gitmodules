@@ -10,3 +10,6 @@
 [submodule "guest-linux"]
 	path = guest-linux
 	url = https://github.com/Samsung/islet-linux
+[submodule "assets"]
+	path = assets
+	url = https://github.com/Samsung/islet-asset

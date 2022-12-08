@@ -11,7 +11,7 @@ GUEST_DEFCONFIG_DIR = os.path.join(ROOT, "assets/guest-linux")
 RMM = os.path.join(ROOT, "rmm/board/fvp")
 SDK = os.path.join(ROOT, "sdk/")
 TF_A_TESTS = os.path.join(ROOT, "tf-a-tests")
-TRUSTED_FIRMWARE_A = os.path.join(ROOT, "trusted-firmware-a")
+TRUSTED_FIRMWARE_A = os.path.join(ROOT, "third-party/tf-a")
 BUILD_SCRIPT = os.path.join(ROOT, "build")
 
 # directory shared between the pc desktop and the host OS on fvp using 9p filesystem

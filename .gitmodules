@@ -1,9 +1,6 @@
 [submodule "build"]
 	path = build
 	url = https://github.com/Samsung/islet-build.git
-[submodule "upstream-trusted-firmware-a"]
-	path = upstream-trusted-firmware-a
-	url = https://github.com/ARM-software/arm-trusted-firmware
 [submodule "linux"]
 	path = linux
 	url = https://github.com/Samsung/islet-linux

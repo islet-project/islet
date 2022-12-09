@@ -58,7 +58,6 @@ def prepare_guest_tftf():
     run(["cp", "%s/tftf-realm.elf" % PREBUILT, OUT], cwd=ROOT)
 
 def prepare_guest_linux():
-    GUEST_LINUX = os.path.join(ROOT, "guest-linux")
     run(["cp", "%s/realmvm_defconfig" % GUEST_DEFCONFIG_DIR, "%s/arch/arm64/configs/" % GUEST_LINUX], cwd=ROOT)
     config_args = [
         "defconfig",
@@ -168,8 +167,8 @@ def prepare_nw_linux():
     print("[!] Building linux...")
     make(BUILD_SCRIPT, args)
 
-    run(["cp", "%s/linux/arch/arm64/boot/Image" % ROOT, OUT], cwd=ROOT)
-    run(["cp", "%s/linux/arch/arm64/boot/dts/arm/fvp-base-revc.dtb" % ROOT, OUT], cwd=ROOT)
+    run(["cp", "%s/arch/arm64/boot/Image" % NW_LINUX, OUT], cwd=ROOT)
+    run(["cp", "%s/arch/arm64/boot/dts/arm/fvp-base-revc.dtb" % NW_LINUX, OUT], cwd=ROOT)
 
     print("[!] Building boot image...")
     args = [

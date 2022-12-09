@@ -12,7 +12,9 @@ RMM = os.path.join(ROOT, "rmm/board/fvp")
 SDK = os.path.join(ROOT, "sdk/")
 TF_A_TESTS = os.path.join(ROOT, "tf-a-tests")
 TRUSTED_FIRMWARE_A = os.path.join(ROOT, "third-party/tf-a")
-BUILD_SCRIPT = os.path.join(ROOT, "build")
+BUILD_SCRIPT = os.path.join(ROOT, "third-party/optee-build")
+GUEST_LINUX = os.path.join(ROOT, "third-party/realm-linux")
+NW_LINUX = os.path.join(ROOT, "third-party/nw-linux")
 
 # directory shared between the pc desktop and the host OS on fvp using 9p filesystem
 PC_SHARE_DIR = os.path.join(OUT, "pc_share_dir")

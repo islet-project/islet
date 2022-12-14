@@ -58,7 +58,6 @@ def prepare_guest_tftf():
     run(["cp", "%s/tftf-realm.elf" % PREBUILT, OUT], cwd=ROOT)
 
 def prepare_guest_linux():
-    run(["cp", "%s/realmvm_defconfig" % GUEST_DEFCONFIG_DIR, "%s/arch/arm64/configs/" % GUEST_LINUX], cwd=ROOT)
     config_args = [
         "defconfig",
         "ARCH=arm64",

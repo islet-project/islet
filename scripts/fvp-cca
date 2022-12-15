@@ -44,7 +44,7 @@ def prepare_tf_a_tests():
         print("[!] Failed to build: %s" % outbin)
         sys.exit(1)
 
-    rename = os.path.join(OUT, "fip-tf-a-tests.bin")
+    rename = os.path.join(OUT, "vm-tftf.bin")
     run(["cp", outbin, rename], cwd=ROOT)
 
 def prepare_vm_image(vm_type):
@@ -82,16 +82,16 @@ def prepare_bootloaders():
         "CROSS_COMPILE=%s" % CROSS_COMPILE,
         "PLAT=fvp",
         "ENABLE_RME=1",
-        "FVP_HW_CONFIG_DTS=%s/fdts/fvp-base-gicv3-psci-1t.dts" % TRUSTED_FIRMWARE_A,
+        "FVP_HW_CONFIG_DTS=%s/fdts/fvp-base-gicv3-psci-1t.dts" % TF_A,
         "DEBUG=1",
         "all"
     ]
 
     bl_list = ["bl1.bin", "bl2.bin", "bl31.bin"]
     print("[!] Building bootloaders(%s)... " % ', '.join(bl_list))
-    make(TRUSTED_FIRMWARE_A, args)
+    make(TF_A, args)
 
-    outdir = os.path.join(TRUSTED_FIRMWARE_A, "build/fvp/debug")
+    outdir = os.path.join(TF_A, "build/fvp/debug")
     for bootloader in bl_list:
         outbin = os.path.join(outdir, bootloader)
         if not os.path.exists(outbin):
@@ -120,7 +120,7 @@ def prepare_fiptool():
 def prepare_fip_tf_a_tests():
     print("[!] Building fip for tf-a-tests...")
     fiptool = os.path.join(FIPTOOL, "fiptool")
-    fdtsdir = os.path.join(TRUSTED_FIRMWARE_A, "build/fvp/debug/fdts")
+    fdtsdir = os.path.join(TF_A, "build/fvp/debug/fdts")
     run(["%s" % fiptool,
          "create",
          "--fw-config", "%s/fvp_fw_config.dtb" % fdtsdir,
@@ -142,7 +142,7 @@ def prepare_fip_linux():
     print("[!] Building fip for linux...")
 
     fiptool = os.path.join(FIPTOOL, "fiptool")
-    fdtsdir = os.path.join(TRUSTED_FIRMWARE_A, "build/fvp/debug/fdts")
+    fdtsdir = os.path.join(TF_A, "build/fvp/debug/fdts")
     run(["%s" % fiptool,
          "create",
          "--fw-config", "%s/fvp_fw_config.dtb" % fdtsdir,
@@ -182,7 +182,7 @@ def run_fvp_tf_a_tests(debug):
     args = ["./FVP_Base_RevC-2xAEMvA",
             "-C", "bp.flashloader0.fname=%s/fip-tf-a-tests.bin" % OUT,
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
-            "--data=%s/vm-image.bin@0x8806c000" % OUT,
+            "--data=%s/vm-tftf.bin@0x8806c000" % OUT,
             "-f", CONFIG,
             "-Q", "1000"]
     if debug:
@@ -212,8 +212,8 @@ def place_vm_image_at_shared(vm_type):
 
 def clean_repo():
     run(["make", "clean"], cwd=FIPTOOL)
-    run(["make", "distclean"], cwd=TRUSTED_FIRMWARE_A)
-    #run(["make", "distclean"], cwd=TF_A_TESTS)
+    run(["make", "distclean"], cwd=TF_A)
+    run(["make", "distclean"], cwd=TF_A_TESTS)
 
     args = ["-f", "fvp.mk", "linux-clean", "boot-img-clean"]
     make(BUILD_SCRIPT, args)

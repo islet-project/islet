@@ -44,9 +44,6 @@ def prepare_tf_a_tests():
         print("[!] Failed to build: %s" % outbin)
         sys.exit(1)
 
-    rename = os.path.join(OUT, "vm-tftf.bin")
-    run(["cp", outbin, rename], cwd=ROOT)
-
 def prepare_vm_image(vm_type):
     if vm_type == "linux":
         prepare_guest_linux()
@@ -182,7 +179,6 @@ def run_fvp_tf_a_tests(debug):
     args = ["./FVP_Base_RevC-2xAEMvA",
             "-C", "bp.flashloader0.fname=%s/fip-tf-a-tests.bin" % OUT,
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
-            "--data=%s/vm-tftf.bin@0x8806c000" % OUT,
             "-f", CONFIG,
             "-Q", "1000"]
     if debug:

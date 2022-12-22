@@ -16,6 +16,8 @@ if [[ ${1} != "--no-submodule" ]]; then
 		&& git submodule update --init --recursive
 fi
 
+$ROOT/scripts/sync-worktree.py
+
 rustup default nightly && rustup update
 cargo install \
 	mdbook mdbook-plantuml \

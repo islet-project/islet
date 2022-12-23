@@ -3,4 +3,6 @@
 /out/
 Cargo.lock
 __pycache__
+
 third-party/*
+!third-party/README.md

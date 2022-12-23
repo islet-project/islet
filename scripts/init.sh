@@ -11,12 +11,19 @@ sudo apt install -y -qq --no-install-recommends \
 	openjdk-11-jre \
 	flex bison
 
-if [[ ${1} != "--no-submodule" ]]; then
-	cd ${ROOT} \
-		&& git submodule update --init --recursive
+# Sync thirt-party projects as worktree
+$ROOT/scripts/sync-worktree.py
+if [ $? -ne 0 ]; then
+	echo "Failed to sync worktree."
+	exit 1
 fi
 
-$ROOT/scripts/sync-worktree.py
+# Sync islet-assets
+cd ${ROOT} && git submodule update --init --recursive
+if [ $? -ne 0 ]; then
+	echo "Failed to sync assets."
+	exit 1
+fi
 
 rustup default nightly && rustup update
 cargo install \

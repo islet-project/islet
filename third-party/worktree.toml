@@ -1,0 +1,18 @@
+[nw-linux]
+branch = "3rd-nw-linux"
+upstream = "upstream-linux-v5.17"
+
+[optee-build]
+branch = "3rd-optee-build"
+
+[realm-linux]
+branch = "3rd-realm-linux"
+upstream = "upstream-linux-v5.17"
+
+[tf-a-tests]
+branch = "3rd-tf-a-tests"
+upstream = "upstream-tf-a-tests-v2.7"
+
+[tf-a]
+branch = "3rd-tf-a"
+upstream = "upstream-tf-a-v2.7"

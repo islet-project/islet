@@ -6,3 +6,4 @@ __pycache__
 
 third-party/*
 !third-party/README.md
+!third-party/worktree.toml

@@ -15,7 +15,7 @@ is needed to be running at EL2 in the Realm world.
 ISLET provides the implementation of RMM that is written in Rust. 
 
 ## Getting started 
-### Installing prerequisites
+### Installing dependencies
 ```bash
 ./scripts/init.sh
 ```

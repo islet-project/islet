@@ -1,15 +1,18 @@
 #!/bin/bash
 
 ROOT=$(git rev-parse --show-toplevel)
+HERE=$ROOT/scripts
 
 sudo apt install -y -qq --no-install-recommends \
-	git-lfs binutils python3-pip \
+	binutils python3-pip \
 	device-tree-compiler xterm fakeroot mtools fdisk cpio \
 	dosfstools e2fsprogs \
 	libxml-libxml-perl \
 	jq lcov graphviz inkscape \
 	openjdk-11-jre \
 	flex bison
+
+pip3 install toml
 
 # Sync thirt-party projects as worktree
 $ROOT/scripts/sync-worktree.py
@@ -19,27 +22,14 @@ if [ $? -ne 0 ]; then
 fi
 
 # Sync islet-assets
-cd ${ROOT} && git submodule update --init --recursive
+$HERE/deps/assets.sh
 if [ $? -ne 0 ]; then
 	echo "Failed to sync assets."
 	exit 1
 fi
 
-rustup default nightly && rustup update
-cargo install \
-	mdbook mdbook-plantuml \
-	cargo2junit \
-	cargo-tarpaulin
-
-cd ${ROOT} \
-	&& rustup component add rustfmt
-
-(
-	cd ${ROOT}/rmm/board/fvp
-	rustup toolchain install $(cat ${ROOT}/rmm/rust-toolchain)
-	rustup target add aarch64-unknown-none-softfloat
-	rustup component add rust-src
-)
+# Install rust
+$HERE/deps/rust.sh
 
 #pip3 install pre-commit
 #pre-commit install

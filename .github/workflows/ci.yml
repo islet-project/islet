@@ -1,0 +1,59 @@
+name: islet-ci
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  fvp-cca:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # fetch all branch for worktree
+          submodules: true
+
+      - name: Install dependencies
+        run: ./scripts/init.sh
+
+      - name: Run tf-a-tests on normal-world
+        run: ./scripts/tests/tf-a-tests.sh
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: out/uart*.log
+
+  crates:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: ./scripts/deps/rust.sh
+
+    - name: Run crates test
+      run: ./scripts/tests/crates.sh
+
+  coding-style:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+
+    - name: Install dependencies
+      run: |
+        ./scripts/deps/assets.sh
+        ./scripts/deps/rust.sh
+
+    - name: Check bash scripts
+      run: ./assets/formatter/shfmt -d -ci -bn -fn `find scripts/. -name *.sh`
+
+    - name: Check rust code 
+      run: |
+        cd rmm
+        cd monitor && cargo fmt -- --check && cd -
+        cd armv9a && cargo fmt -- --check && cd -
+        cd board/fvp && cargo fmt -- --check

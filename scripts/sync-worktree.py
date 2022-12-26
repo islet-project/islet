@@ -19,18 +19,27 @@ def branch_name(path):
     proc = run(['git', 'rev-parse', '--abbrev-ref', 'HEAD'], cwd=path)
     return proc.stdout.strip()
 
-def add_worktree(project, branch):
+def commit(path):
+    proc = run(['git', 'rev-parse', '--short', 'HEAD'], cwd=path)
+    return proc.stdout.strip()
+
+def add_worktree(project, info):
+    branch = info["branch"]
     print(f"[!] Sync worktree to third-party/{project}: branch[{branch}]")
-    run(['git', 'rm', '--cached', f'third-party/{project}'], cwd=ROOT)
 
     proc = run(['git', 'worktree', 'add', '--guess-remote', f'third-party/{branch}'], cwd=ROOT)
+    print(proc)
     if proc.returncode != 0 and branch != branch_name(os.path.join(THIRD_PARTY, project)):
         print(f"[!] Please remove local branch [{branch}] to fetch it from remote.")
         sys.exit(1)
 
     run(['git', 'worktree', 'move', branch, f'third-party/{project}'], cwd=ROOT)
+ 
+    if info["commit"] != commit(os.path.join(THIRD_PARTY, project)):
+        print(f"[!] Mismatched [{project}] commit: {commit}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     tree = toml.load(os.path.join(THIRD_PARTY, "worktree.toml"))
     for project, info in tree.items():
-        add_worktree(project, info["branch"])
+        add_worktree(project, info)

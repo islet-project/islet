@@ -1,18 +1,23 @@
 [nw-linux]
 branch = "3rd-nw-linux"
+commit = "7550433fbcc7"
 upstream = "upstream-linux-v5.17"
 
 [optee-build]
 branch = "3rd-optee-build"
+commit = "f3760159a41e"
 
 [realm-linux]
 branch = "3rd-realm-linux"
+commit = "c3224f6355ad"
 upstream = "upstream-linux-v5.17"
 
 [tf-a-tests]
 branch = "3rd-tf-a-tests"
+commit = "1b20931058c3"
 upstream = "upstream-tf-a-tests-v2.7"
 
 [tf-a]
 branch = "3rd-tf-a"
+commit = "8ae28efc76a5"
 upstream = "upstream-tf-a-v2.7"

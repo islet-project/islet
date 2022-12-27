@@ -1,39 +1,29 @@
+use core::arch::asm;
+
 #[inline(always)]
-pub fn brk(b: u16) {
+pub fn brk<const IMM: u16>() {
     unsafe {
-        llvm_asm! {
-            "brk $0"
-            : : "i"(b) : : "volatile"
-        }
+        asm!("brk #{}", const IMM);
     }
 }
 
 #[inline(always)]
 pub fn eret() {
     unsafe {
-        llvm_asm! {
-            "eret"
-            : : : : "volatile"
-        }
+        asm!("eret");
     }
 }
 
 #[inline(always)]
-pub fn smc(b: u16) {
+pub fn smc<const IMM: u16>() {
     unsafe {
-        llvm_asm! {
-            "smc $0"
-            : : "i"(b) : : "volatile"
-        }
+        asm!("smc #{}", const IMM);
     }
 }
 
 #[inline(always)]
-pub fn hvc(b: u16) {
+pub fn hvc<const IMM: u16>() {
     unsafe {
-        llvm_asm! {
-            "hvc $0"
-            : : "i"(b) : : "volatile"
-        }
+        asm!("hvc #{}", const IMM);
     }
 }

@@ -1,7 +1,1 @@
-[build]
-target = "aarch64-unknown-none-softfloat"
 
-[target.aarch64-unknown-none-softfloat]
-rustflags = [
-  "-C", "link-args=-Trmm/board/fvp/memory.x",
-]

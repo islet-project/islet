@@ -13,3 +13,4 @@ fi
 rustup toolchain install $MSRV
 rustup target add aarch64-unknown-none-softfloat
 rustup component add rust-src rustfmt
+rustc --version --verbose

@@ -1,6 +1,6 @@
 #![no_std]
 #![no_main]
-#![feature(llvm_asm)]
+#![feature(asm_const)]
 #![feature(naked_functions)]
 
 extern crate alloc;

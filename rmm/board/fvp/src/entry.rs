@@ -16,15 +16,14 @@ static mut RMM_STACK: [u8; RMM_STACK_SIZE * NUM_OF_CPU] = [0; RMM_STACK_SIZE * N
 #[naked]
 #[link_section = ".head.text"]
 #[no_mangle]
-unsafe extern "C" fn rmm_entry() {
+unsafe extern "C" fn rmm_entry() -> ! {
     #![allow(unsupported_naked_functions)]
-    llvm_asm! {
-        "
+    core::arch::asm!("
         msr spsel, #1
         bl get_cpu_id
 
         ldr x1, =__RMM_STACK_END__
-        mov x2, $0
+        mov x2, {}
         mul x0, x0, x2
         sub x0, x1, x0
         mov sp, x0
@@ -33,10 +32,10 @@ unsafe extern "C" fn rmm_entry() {
 
         1:
         bl main
-        b 1b
-        "
-        : : "i"(RMM_STACK_SIZE): : "volatile"
-    }
+        b 1b",
+        const RMM_STACK_SIZE,
+        options(noreturn)
+    )
 }
 
 extern "C" {

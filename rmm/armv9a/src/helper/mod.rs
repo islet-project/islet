@@ -6,6 +6,8 @@ pub mod regs;
 
 pub use regs::*;
 
+use core::arch::asm;
+
 use crate::exception::vectors;
 
 pub const fn bits_in_reg(mask: u64, val: u64) -> u64 {
@@ -25,23 +27,11 @@ fn activate_stage2_mmu() {
     unsafe {
         // Invalidate the local I-cache so that any instructions fetched
         // speculatively are discarded.
-        llvm_asm! {
-            "
-            ic iallu
-            dsb nsh
-            isb
-            " : : : :
-        }
+        asm!("ic iallu", "dsb nsh", "isb",);
 
         VTCR_EL2.set(vtcr_el2);
 
-        llvm_asm! {
-            "
-            tlbi alle2
-            dsb ish
-            isb
-            " : : : :
-        }
+        asm!("tlbi alle2", "dsb ish", "isb",);
     }
 }
 
@@ -88,11 +78,13 @@ pub unsafe fn init() {
 pub unsafe fn rmm_exit(args: [usize; 4]) -> [usize; 4] {
     let mut ret: [usize; 4] = [0usize; 4];
 
-    llvm_asm! {
-        "bl rmm_exit"
-        : "={x0}"(ret[0]), "={x1}"(ret[1]), "={x2}"(ret[2]), "={x3}"(ret[3])
-        : "{x0}"(args[0]), "{x1}"(args[1]), "{x2}"(args[2]), "{x3}"(args[3])
-        : : "volatile"
-    }
+    asm!(
+        "bl rmm_exit",
+        inlateout("x0") args[0] => ret[0],
+        inlateout("x1") args[1] => ret[1],
+        inlateout("x2") args[2] => ret[2],
+        inlateout("x3") args[3] => ret[3],
+    );
+
     ret
 }

@@ -36,7 +36,7 @@ jobs:
     - name: Run crates test
       run: ./scripts/tests/crates.sh
 
-  coding-style:
+  rule-checker:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
@@ -48,12 +48,16 @@ jobs:
         ./scripts/deps/assets.sh
         ./scripts/deps/rust.sh
 
-    - name: Check bash scripts
+    - name: Check bash scripts coding-style
       run: ./assets/formatter/shfmt -d -ci -bn -fn `find scripts/. -name *.sh`
 
-    - name: Check rust code 
+    - name: Check rust coding-style
       run: |
         cd rmm
         cd monitor && cargo fmt -- --check && cd -
         cd armv9a && cargo fmt -- --check && cd -
         cd board/fvp && cargo fmt -- --check
+
+    - uses: actions-rs/audit-check@v1
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}

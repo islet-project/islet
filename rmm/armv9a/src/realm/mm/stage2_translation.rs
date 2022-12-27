@@ -1,6 +1,7 @@
 use super::page::BasePageSize;
 use super::page_table::{entry::Entry, L1Table};
 
+use core::arch::asm;
 use core::ffi::c_void;
 use core::fmt;
 
@@ -65,13 +66,12 @@ impl<'a> Stage2Translation<'a> {
                     | bits_in_reg(TLBI_OP::TTL, 0b0100 | _level)
                     | bits_in_reg(TLBI_OP::IPA, ipa);
                 // corresponds to __kvm_tlb_flush_vmid_ipa()
-                llvm_asm! {
-                    "
-                    dsb ishst
-                    tlbi ipas2e1, $0
-                    isb
-                    " : : "r"(ipa)
-                };
+                asm!(
+                    "dsb ishst",
+                    "tlbi ipas2e1, {}",
+                    "isb",
+                    in(reg) ipa,
+                );
             }
         }
     }
@@ -103,7 +103,7 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
             unsafe {
                 // According to DDI0608A E1.2.1.11 Cache and TLB operations
                 // second half part
-                llvm_asm! {
+                asm! {
                     "
                     dsb ishst
                     tlbi vmalle1

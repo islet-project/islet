@@ -1,12 +1,9 @@
 #![no_std]
-#![feature(const_fn)]
-#![feature(const_fn_fn_ptr_basics)]
-#![feature(const_mut_refs)]
-#![feature(const_btree_new)]
-#![feature(llvm_asm)]
 #![feature(alloc_error_handler)]
+#![feature(asm_const)]
+#![feature(const_btree_new)]
+#![feature(const_mut_refs)]
 #![feature(naked_functions)]
-#![feature(global_asm)]
 #![warn(rust_2018_idioms)]
 
 pub mod allocator;

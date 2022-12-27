@@ -24,9 +24,9 @@ macro_rules! define_sys_register {
                 #[inline(always)]
                 pub unsafe fn get(&self) -> u64 {
                     let rtn;
-                    llvm_asm! {
-                        concat!("mrs $0, ", stringify!($regname))
-                            : "=r"(rtn) : : : "volatile"
+                    core::arch::asm! {
+                        concat!("mrs {}, ", stringify!($regname)),
+                        out(reg) rtn
                     }
                     rtn
                 }
@@ -34,9 +34,9 @@ macro_rules! define_sys_register {
                 #[inline(always)]
                 pub unsafe fn get_masked(&self, mask: u64) -> u64 {
                     let rtn: u64;
-                    llvm_asm! {
-                        concat!("mrs $0, ", stringify!($regname))
-                            : "=r"(rtn) : : : "volatile"
+                    core::arch::asm! {
+                        concat!("mrs {}, ", stringify!($regname)),
+                        out(reg) rtn
                     }
                     rtn & mask
                 }
@@ -44,18 +44,18 @@ macro_rules! define_sys_register {
                 #[inline(always)]
                 pub unsafe fn get_masked_value(&self, mask: u64) -> u64 {
                     let rtn: u64;
-                    llvm_asm! {
-                        concat!("mrs $0, ", stringify!($regname))
-                            : "=r"(rtn) : : : "volatile"
+                    core::arch::asm! {
+                        concat!("mrs {}, ", stringify!($regname)),
+                        out(reg) rtn
                     }
                     (rtn & mask) >> (mask.trailing_zeros())
                 }
 
                 #[inline(always)]
                 pub unsafe fn set(&self, val: u64) {
-                    llvm_asm! {
-                        concat!("msr ", stringify!($regname), ", $0")
-                            : : "r"(val) : : "volatile"
+                    core::arch::asm! {
+                        concat!("msr ", stringify!($regname), ", {}"),
+                        in(reg) val
                     }
                 }
             }
@@ -79,9 +79,9 @@ macro_rules! define_register {
                 #[inline(always)]
                 pub unsafe fn get(&self) -> u64 {
                     let rtn;
-                    llvm_asm! {
-                        concat!("mov $0, ", stringify!($regname))
-                            : "=r"(rtn) : : : "volatile"
+                    core::arch::asm! {
+                        concat!("mov {}, ", stringify!($regname)),
+                        out(reg) rtn
                     }
                     rtn
                 }
@@ -89,9 +89,9 @@ macro_rules! define_register {
                 #[inline(always)]
                 pub unsafe fn get_masked(&self, mask: u64) -> u64 {
                     let rtn: u64;
-                    llvm_asm! {
-                        concat!("mov $0, ", stringify!($regname))
-                            : "=r"(rtn) : : : "volatile"
+                    core::arch::asm! {
+                        concat!("mov {}, ", stringify!($regname)),
+                        out(reg) rtn
                     }
                     rtn & mask
                 }
@@ -99,18 +99,18 @@ macro_rules! define_register {
                 #[inline(always)]
                 pub unsafe fn get_masked_value(&self, mask: u64) -> u64 {
                     let rtn: u64;
-                    llvm_asm! {
-                        concat!("mov $0, ", stringify!($regname))
-                            : "=r"(rtn) : : : "volatile"
+                    core::arch::asm! {
+                        concat!("mov {}, ", stringify!($regname)),
+                        out(reg) rtn
                     }
                     (rtn & mask) >> (mask.trailing_zeros())
                 }
 
                 #[inline(always)]
                 pub unsafe fn set(&self, val: u64) {
-                    llvm_asm! {
-                        concat!("mov ", stringify!($regname), ", $0")
-                            : : "r"(val) : : "volatile"
+                    core::arch::asm! {
+                        concat!("mov ", stringify!($regname), ", {}"),
+                        in(reg) val
                     }
                 }
             }

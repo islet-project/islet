@@ -10,7 +10,7 @@ path = "src/lib.rs"
 
 [dependencies]
 linked_list_allocator = "0.10.4"
-lock_api = "=0.4.3"
+lock_api = "0.4.9"
 log = "0.4.17"
 monitor = { path = "../monitor" }
 spin = "0.9.2"

@@ -24,5 +24,6 @@ FAILED="${FAILED//[$'\t\r\n ']/}"
 echo "[!] Tests result: $PASSED passed, $FAILED failed."
 
 if [ $FAILED -ne 0 ]; then
+	tail -10 $UART
 	exit $FAILED
 fi

@@ -36,11 +36,15 @@ SECTIONS
   __RMM_STACK_END__ = .;
  } >RAM
  __RW_END__ = .;
- /DISCARD/ : { *(.dynstr*) }
- /DISCARD/ : { *(.dynamic*) }
- /DISCARD/ : { *(.plt*) }
- /DISCARD/ : { *(.interp*) }
- /DISCARD/ : { *(.gnu*) }
- /DISCARD/ : { *(.note*) }
- /DISCARD/ : { *(.comment*) }
+
+ /DISCARD/ : {
+  *(.comment*)
+  *(.dynamic*)
+  *(.dynstr*)
+  *(.eh_frame*)
+  *(.gnu*)
+  *(.interp*)
+  *(.note*)
+  *(.plt*)
+ }
 }

@@ -2,6 +2,8 @@
 #![no_main]
 #![feature(asm_const)]
 #![feature(naked_functions)]
+#![warn(rust_2018_idioms)]
+#![deny(warnings)]
 
 extern crate alloc;
 

@@ -1,10 +1,9 @@
 #![no_std]
 #![feature(alloc_error_handler)]
 #![feature(asm_const)]
-#![feature(const_btree_new)]
 #![feature(const_mut_refs)]
-#![feature(naked_functions)]
 #![warn(rust_2018_idioms)]
+#![deny(warnings)]
 
 pub mod allocator;
 pub mod config;

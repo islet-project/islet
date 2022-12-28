@@ -1,11 +1,8 @@
 #![no_std]
-#![feature(const_fn_fn_ptr_basics)]
-#![feature(const_mut_refs)]
-#![feature(const_btree_new)]
-#![feature(arc_new_cyclic)]
-#![feature(specialization)]
 #![allow(incomplete_features)]
+#![feature(specialization)]
 #![warn(rust_2018_idioms)]
+#![deny(warnings)]
 
 pub mod call;
 pub mod communication;

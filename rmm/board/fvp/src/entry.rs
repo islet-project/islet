@@ -7,8 +7,6 @@ use crate::log::LevelFilter;
 use monitor::io::stdout;
 use monitor::logger;
 
-extern crate alloc;
-
 #[no_mangle]
 #[link_section = ".stack"]
 static mut RMM_STACK: [u8; RMM_STACK_SIZE * NUM_OF_CPU] = [0; RMM_STACK_SIZE * NUM_OF_CPU];
@@ -17,7 +15,6 @@ static mut RMM_STACK: [u8; RMM_STACK_SIZE * NUM_OF_CPU] = [0; RMM_STACK_SIZE * N
 #[link_section = ".head.text"]
 #[no_mangle]
 unsafe extern "C" fn rmm_entry() -> ! {
-    #![allow(unsupported_naked_functions)]
     core::arch::asm!("
         msr spsel, #1
         bl get_cpu_id

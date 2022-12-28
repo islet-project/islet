@@ -13,7 +13,6 @@ use monitor::realm::mm::IPATranslation;
 
 use crate::helper;
 use crate::helper::bits_in_reg;
-use crate::helper::regs::tcr_granule;
 use crate::realm::mm::page_table::pte;
 use crate::realm::mm::translation_granule_4k::RawPTE;
 use crate::{define_bitfield, define_bits, define_mask};

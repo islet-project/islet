@@ -51,6 +51,10 @@ jobs:
     - name: Check bash scripts coding-style
       run: ./assets/formatter/shfmt -d -ci -bn -fn `find scripts/. -name *.sh`
 
+    - name: Check local packages and all of its dependencies for errors
+      run:
+        cargo check
+
     - name: Check rust coding-style
       run: |
         cd rmm

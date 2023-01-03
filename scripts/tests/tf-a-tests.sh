@@ -21,6 +21,11 @@ FAILED=$(tail -10 $UART | grep "Tests Failed" | awk '{print $4}')
 PASSED="${PASSED//[$'\t\r\n ']/}"
 FAILED="${FAILED//[$'\t\r\n ']/}"
 
+if [ "$PASSED" == "" ]; then
+	echo "[-] Test failed! (There are no proper result logs)"
+	exit 1
+fi
+
 echo "[!] Tests result: $PASSED passed, $FAILED failed."
 
 if [ $FAILED -ne 0 ]; then

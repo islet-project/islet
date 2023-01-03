@@ -1,6 +1,6 @@
 [nw-linux]
 branch = "3rd-nw-linux"
-commit = "7550433fbcc7"
+commit = "e29efa98724a"
 upstream = "upstream-linux-v5.17"
 
 [optee-build]

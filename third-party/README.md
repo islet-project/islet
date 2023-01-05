@@ -11,9 +11,11 @@ You can check below after `scripts/init.sh` or `scripts/sync-worktree.sh`.
 .
 ├── assets # submodule
 ├── third-party
-│   ├── nw-linux # worktree
-│   ├── optee-build # worktree
-│   ├── realm-linux # worktree
-│   ├── tf-a # worktree
-│   └── tf-a-tests # worktree
+│   ├── android-kernel # worktree
+│   ├── gki-build      # worktree
+│   ├── nw-linux       # worktree
+│   ├── optee-build    # worktree
+│   ├── realm-linux    # worktree
+│   ├── tf-a           # worktree
+│   ├── tf-a-tests     # worktree
 ```

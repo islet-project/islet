@@ -6,9 +6,10 @@ use self::syndrome::{Fault, Syndrome};
 use crate::cpu;
 use crate::helper::{ESR_EL2, FAR_EL2, HPFAR_EL2};
 use crate::realm::context::Context;
-use crate::rmi;
 use crate::rsi::RSI_REMAP_PAGE;
+
 use monitor::realm::vcpu::VCPU;
+use monitor::rmi;
 
 #[repr(u16)]
 #[derive(Debug, Copy, Clone)]

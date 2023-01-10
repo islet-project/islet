@@ -2,7 +2,6 @@ use super::vm::VM;
 
 use alloc::sync::{Arc, Weak};
 use spin::Mutex;
-
 extern crate alloc;
 
 pub trait Context {

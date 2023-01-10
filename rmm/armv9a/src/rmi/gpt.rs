@@ -1,9 +1,8 @@
-use monitor::{listen, mainloop::Mainloop};
-
-use crate::rmi;
+use crate::rmi::Receiver;
 use crate::smc;
+use monitor::{listen, mainloop::Mainloop, rmi};
 
-pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
+pub fn set_event_handler(mainloop: &mut Mainloop<Receiver>) {
     listen!(mainloop, rmi::Code::GranuleDelegate, |call| {
         let cmd = usize::from(smc::Code::MarkRealm);
         let arg = [call.argument()[0], 0, 0, 0];

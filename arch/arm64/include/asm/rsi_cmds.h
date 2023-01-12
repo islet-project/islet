@@ -48,10 +48,16 @@ static inline void invoke_rsi_fn_smc_with_res(unsigned long function_id,
 
 static inline unsigned long rsi_set_addr_range_state(phys_addr_t start,
 						     phys_addr_t end,
-						     enum ripas state)
+						     enum ripas state,
+						     phys_addr_t *top)
 {
-	return invoke_rsi_fn_smc(SMC_RSI_IPA_STATE_SET,
-				 start, (end - start), state, 0);
+	struct arm_smccc_res res;
+
+	invoke_rsi_fn_smc_with_res(SMC_RSI_IPA_STATE_SET,
+				   start, (end - start), state, 0, &res);
+
+	*top = res.a1;
+	return res.a0;
 }
 
 #endif

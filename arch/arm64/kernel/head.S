@@ -321,7 +321,7 @@ SYM_FUNC_START_LOCAL(create_idmap)
 #error "Mismatch between VA_BITS and page size/number of translation levels"
 #endif
 #else
-#define IDMAP_PGD_ORDER	(PHYS_MASK_SHIFT - PGDIR_SHIFT)
+#define IDMAP_PGD_ORDER	(MAX_PHYS_MASK_SHIFT - PGDIR_SHIFT)
 #define EXTRA_SHIFT
 	/*
 	 * If VA_BITS == 48, we don't have to configure an additional

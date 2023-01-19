@@ -14,16 +14,29 @@ To manage Realm VMs, Realm Management Monitor (RMM)
 is needed to be running at EL2 in the Realm world.
 ISLET provides the implementation of RMM that is written in Rust. 
 
+## REALM
+ISLET provides sample realms running on fvp.
+You may run according to [Getting started](#getting-started)
+
+```
+realm/
+├── linux
+│   └── Makefile
+└── wasm
+    ├── Makefile
+    └── README.md
+```
+
 ## Getting started 
 ### Installing dependencies
 ```bash
 ./scripts/init.sh
 ```
 
-### Running linux as a realm
+### Running the linux realm
 ```bash
 // Start FVP
-$ ./scripts/fvp-cca --normal-world=linux --realm-vm=linux
+$ ./scripts/fvp-cca --normal-world=linux --realm=linux
 
 // Login with root in the normal world linux
 Welcome to Buildroot, type root or test to login
@@ -32,7 +45,7 @@ buildroot login: root
 // Run a linux realm
 # cd /qemu/guest/
 # ../qemu-system-aarch64 \
-        -kernel Image_realmvm \
+        -kernel linux.realm \
         -initrd initramfs-busybox-aarch64.cpio.gz \
         -append "earlycon=pl011,mmio,0x1c0a0000 console=ttyAMA0" \
         --enable-kvm \
@@ -41,6 +54,34 @@ buildroot login: root
         -M virt,gic-version=3 \
         -m 256M \
         -nographic
+```
+
+### Running the wasm realm
+```bash
+// Start FVP
+$ ./scripts/fvp-cca --normal-world=linux --realm=wasm
+
+// Login with root in the normal world linux
+Welcome to Buildroot, type root or test to login
+buildroot login: root
+
+// Run a wasm realm
+# cd /qemu/guest/
+# ../qemu-system-aarch64 \
+        -kernel linux.realm \
+        -initrd wasm-realm-initrd.cpio.gz \
+        -append "earlycon=pl011,mmio,0x1c0a0000 console=ttyAMA0" \
+        --enable-kvm \
+        -cpu host \
+        -smp 1 \
+        -M virt,gic-version=3 \
+        -m 256M \
+        -nographic
+
+// Run a wasm on realm
+Welcome to wasm realm!
+# wasmer ./app/hello.wasm
+hello, world!
 ```
 
 ### Testing islet-rmm with tf-a-tests

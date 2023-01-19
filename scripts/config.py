@@ -7,6 +7,7 @@ OUT = os.path.join(ROOT, "out")
 CONFIG = os.path.join(ROOT, "scripts/.config")
 PREBUILT = os.path.join(ROOT, "assets/prebuilt")
 
+REALM = os.path.join(ROOT, "realm")
 RMM = os.path.join(ROOT, "rmm/board/fvp")
 SDK = os.path.join(ROOT, "sdk/")
 

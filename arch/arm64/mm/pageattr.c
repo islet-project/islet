@@ -5,10 +5,12 @@
 #include <linux/kernel.h>
 #include <linux/mm.h>
 #include <linux/module.h>
+#include <linux/mem_encrypt.h>
 #include <linux/sched.h>
 #include <linux/vmalloc.h>
 
 #include <asm/cacheflush.h>
+#include <asm/pgtable-prot.h>
 #include <asm/set_memory.h>
 #include <asm/tlbflush.h>
 
@@ -22,12 +24,12 @@ bool rodata_full __ro_after_init = IS_ENABLED(CONFIG_RODATA_FULL_DEFAULT_ENABLED
 bool can_set_direct_map(void)
 {
 	/*
-	 * rodata_full, DEBUG_PAGEALLOC and KFENCE require linear map to be
-	 * mapped at page granularity, so that it is possible to
-	 * protect/unprotect single pages.
+	 * rodata_full, DEBUG_PAGEALLOC, KFENCE and a Realm guest all require
+	 * linear map to be mapped at page granularity, so that it is possible
+	 * to protect/unprotect single pages.
 	 */
 	return (rodata_enabled && rodata_full) || debug_pagealloc_enabled() ||
-		IS_ENABLED(CONFIG_KFENCE);
+		IS_ENABLED(CONFIG_KFENCE) || is_realm_world();
 }
 
 static int change_page_range(pte_t *ptep, unsigned long addr, void *data)
@@ -38,6 +40,7 @@ static int change_page_range(pte_t *ptep, unsigned long addr, void *data)
 	pte = clear_pte_bit(pte, cdata->clear_mask);
 	pte = set_pte_bit(pte, cdata->set_mask);
 
+	/* TODO: Break before make for PROT_NS_SHARED updates */
 	set_pte(ptep, pte);
 	return 0;
 }
@@ -188,6 +191,43 @@ int set_direct_map_default_noflush(struct page *page)
 	return apply_to_page_range(&init_mm,
 				   (unsigned long)page_address(page),
 				   PAGE_SIZE, change_page_range, &data);
+}
+
+static int __set_memory_encrypted(unsigned long addr,
+				  int numpages,
+				  bool encrypt)
+{
+	unsigned long set_prot = 0, clear_prot = 0;
+	phys_addr_t start, end;
+
+	if (!is_realm_world())
+		return 0;
+
+	WARN_ON(!__is_lm_address(addr));
+	start = __virt_to_phys(addr);
+	end = start + numpages * PAGE_SIZE;
+
+	if (encrypt) {
+		clear_prot = PROT_NS_SHARED;
+		set_memory_range_protected(start, end);
+	} else {
+		set_prot = PROT_NS_SHARED;
+		set_memory_range_shared(start, end);
+	}
+
+	return __change_memory_common(addr, PAGE_SIZE * numpages,
+				      __pgprot(set_prot),
+				      __pgprot(clear_prot));
+}
+
+int set_memory_encrypted(unsigned long addr, int numpages)
+{
+	return __set_memory_encrypted(addr, numpages, true);
+}
+
+int set_memory_decrypted(unsigned long addr, int numpages)
+{
+	return __set_memory_encrypted(addr, numpages, false);
 }
 
 #ifdef CONFIG_DEBUG_PAGEALLOC

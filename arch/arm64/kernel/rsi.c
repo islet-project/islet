@@ -6,6 +6,7 @@
 #include <linux/jump_label.h>
 #include <linux/memblock.h>
 #include <linux/swiotlb.h>
+#include <linux/cc_platform.h>
 
 #include <asm/rsi.h>
 
@@ -17,6 +18,17 @@ EXPORT_SYMBOL(prot_ns_shared);
 unsigned int phys_mask_shift = CONFIG_ARM64_PA_BITS;
 
 DEFINE_STATIC_KEY_FALSE_RO(rsi_present);
+
+bool cc_platform_has(enum cc_attr attr)
+{
+	switch (attr) {
+	case CC_ATTR_MEM_ENCRYPT:
+		return is_realm_world();
+	default:
+		return false;
+	}
+}
+EXPORT_SYMBOL_GPL(cc_platform_has);
 
 static bool rsi_version_matches(void)
 {

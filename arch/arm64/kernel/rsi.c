@@ -5,6 +5,8 @@
 
 #include <linux/jump_label.h>
 #include <linux/memblock.h>
+#include <linux/swiotlb.h>
+
 #include <asm/rsi.h>
 
 struct realm_config __attribute((aligned(PAGE_SIZE))) config;

@@ -21,6 +21,7 @@ use armv9a::rmi;
 
 use monitor::listen;
 use monitor::mainloop::Mainloop;
+use monitor::rmi::{realm, Receiver};
 
 #[no_mangle]
 pub unsafe fn main() -> ! {
@@ -30,10 +31,11 @@ pub unsafe fn main() -> ! {
         helper::regs::current_el()
     );
 
-    let mut mainloop = Mainloop::new(rmi::Receiver::new());
+    let mut mainloop = Mainloop::new(Receiver::new());
 
+    init_vm();
     rmi::gpt::set_event_handler(&mut mainloop);
-    rmi::realm::set_event_handler(&mut mainloop);
+    realm::set_event_handler(&mut mainloop);
     rmi::version::set_event_handler(&mut mainloop);
 
     listen!(mainloop, || {
@@ -43,4 +45,8 @@ pub unsafe fn main() -> ! {
     mainloop.run();
 
     panic!("failed to run the mainloop");
+}
+
+fn init_vm() {
+    realm::set_instance(armv9a::realm::vm::VMManager::new())
 }

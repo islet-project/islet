@@ -14,3 +14,21 @@ pub const RMM_HEAP_SIZE: usize = 8 * 1024 * 1024;
 
 pub const VM_STACK_SIZE: usize = 1 << 15;
 pub const STACK_ALIGN: usize = 16;
+
+// defined in trusted-firmware-a/include/services/rmmd_svc.h
+pub const SMC_ASC_MARK_REALM: usize = 0xc400_01b0;
+pub const SMC_ASC_MARK_NONSECURE: usize = 0xc400_01b1;
+
+pub enum Code {
+    MarkRealm,
+    MarkNonSecure,
+}
+
+impl From<Code> for usize {
+    fn from(origin: Code) -> Self {
+        match origin {
+            Code::MarkRealm => SMC_ASC_MARK_REALM,
+            Code::MarkNonSecure => SMC_ASC_MARK_NONSECURE,
+        }
+    }
+}

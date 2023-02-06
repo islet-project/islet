@@ -1,25 +1,44 @@
-use crate::realm::vm::{VMControl, VMManager, VMMemory, VMRegister};
-use crate::rmi::Receiver;
-use monitor::{listen, mainloop::Mainloop, rmi};
+use crate::mainloop::Mainloop;
+use crate::error::{Error, ErrorKind};
+use crate::listen;
+use crate::rmi;
 
-pub fn set_event_handler(mainloop: &mut Mainloop<Receiver>) {
+extern crate alloc;
+
+pub type VMManager = &'static dyn crate::realm::vm::VMControl;
+static mut VMM: Option<VMManager> = None;
+
+#[allow(unused_must_use)]
+pub fn set_instance(vm: VMManager) {
+    unsafe {
+        if VMM.is_none() {
+            VMM = Some(vm);
+        }
+    };
+}
+
+pub fn instance() -> Option<VMManager> {
+    unsafe { VMM }
+}
+
+pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     listen!(mainloop, rmi::Code::VMCreate, |call| {
         info!("received VMCreate");
-        let mut vm = VMManager { id: 0 };
-        vm.new();
-        info!("create VM {}", vm.id);
+        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+        let id = vmm.create().unwrap();
         call.reply(rmi::RET_SUCCESS)?;
-        call.reply(vm.id)?;
+        call.reply(id)?;
         Ok(())
     });
 
     listen!(mainloop, rmi::Code::VCPUCreate, |call| {
-        let vm = VMManager {
-            id: call.argument()[0],
-        };
+        let id = call.argument()[0];
         // let vcpu = call.argument()[1];
-        debug!("received VCPUCreate for VM {}", vm.id);
-        match vm.get().ok_or("Not exist VM")?.lock().create_vcpu() {
+        debug!("received VCPUCreate for VM {}", id);
+
+        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+
+        match vmm.create_vcpu(id) {
             Ok(vcpuid) => {
                 call.reply(rmi::RET_SUCCESS)?;
                 call.reply(vcpuid)
@@ -30,30 +49,25 @@ pub fn set_event_handler(mainloop: &mut Mainloop<Receiver>) {
     });
 
     listen!(mainloop, rmi::Code::VMDestroy, |call| {
-        let vm = VMManager {
-            id: call.argument()[0],
-        };
-        info!("received VMDestroy VM {}", vm.id);
-        match vm.remove() {
-            Ok(_) => call.reply(rmi::RET_SUCCESS),
-            Err(_) => call.reply(rmi::RET_FAIL),
-        }?;
+        let id = call.argument()[0];
+        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+
+        info!("received VMDestroy VM {}", id);
+        vmm.remove(id)?;
+        call.reply(rmi::RET_SUCCESS)?;
         Ok(())
     });
 
     listen!(mainloop, rmi::Code::VMRun, |call| {
-        let vm = VMManager {
-            id: call.argument()[0],
-        };
+        let id = call.argument()[0];
         let vcpu = call.argument()[1];
         let incr_pc = call.argument()[2];
         debug!(
             "received VMRun VCPU {} on VM {} PC_INCR {}",
-            vcpu, vm.id, incr_pc
+            vcpu, id, incr_pc
         );
-
-        let ret = vm.run(vcpu, incr_pc);
-        match ret {
+        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+        match vmm.run(id, vcpu, incr_pc) {
             Ok(val) => match val[0] {
                 rmi::RET_EXCEPTION_TRAP | rmi::RET_EXCEPTION_IRQ => {
                     call.reply(val[0]).or(Err("RMM failed to reply."))?;
@@ -63,15 +77,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop<Receiver>) {
                 }
                 _ => call.reply(rmi::RET_SUCCESS),
             },
-            Err(_) => call.reply(rmi::RET_FAIL),
+            _ => Err(Error::new(ErrorKind::Unsupported)),
         }?;
         Ok(())
     });
 
     listen!(mainloop, rmi::Code::VMMapMemory, |call| {
-        let vm = VMManager {
-            id: call.argument()[0],
-        };
+        let id = call.argument()[0];
         let guest = call.argument()[1];
         let phys = call.argument()[2];
         let size = call.argument()[3];
@@ -79,63 +91,65 @@ pub fn set_event_handler(mainloop: &mut Mainloop<Receiver>) {
         let prot = call.argument()[4]; // bits[3]
         debug!(
             "received MapMemory to VM {} {:#X} -> {:#X} size:{:#X} prot:{:#X}",
-            vm.id, guest, phys, size, prot
+            id, guest, phys, size, prot
         );
-
-        match vm.map(guest, phys, size, prot) {
+        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+        match vmm.map(id, guest, phys, size, prot) {
+            Ok(_) => call.reply(rmi::RET_SUCCESS)?,
             Err(_) => call.reply(rmi::RET_FAIL)?,
-            _ => call.reply(rmi::RET_SUCCESS)?,
         }
         Ok(())
     });
 
     listen!(mainloop, rmi::Code::VMUnmapMemory, |call| {
-        let vm = VMManager {
-            id: call.argument()[0],
-        };
+        let id = call.argument()[0];
         let guest = call.argument()[1];
         let size = call.argument()[2];
+        debug!(
+            "received UnmapMemory to VM {} {:#X}, size:{:#X}", id, guest, size);
 
-        match vm.unmap(guest, size) {
+        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+        match vmm.unmap(id, guest, size) {
+            Ok(_) => call.reply(rmi::RET_SUCCESS)?,
             Err(_) => call.reply(rmi::RET_FAIL)?,
-            _ => call.reply(rmi::RET_SUCCESS)?,
         }
         Ok(())
     });
 
     listen!(mainloop, rmi::Code::VMSetReg, |call| {
-        let vm = VMManager {
-            id: call.argument()[0],
-        };
+        let id = call.argument()[0];
         let vcpu = call.argument()[1];
         let register = call.argument()[2];
         let value = call.argument()[3];
         debug!(
             "received VMSetReg Reg[{}]={:#X} to VCPU {} on VM {}",
-            register, value, vcpu, vm.id
+            register, value, vcpu, id
         );
 
-        match vm.set_reg(vcpu, register, value) {
+        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+        match vmm.set_reg(id, vcpu, register, value) {
+            Ok(_) => call.reply(rmi::RET_SUCCESS)?,
             Err(_) => call.reply(rmi::RET_FAIL)?,
-            _ => call.reply(rmi::RET_SUCCESS)?,
         }
         Ok(())
     });
 
     listen!(mainloop, rmi::Code::VMGetReg, |call| {
-        let vm = VMManager {
-            id: call.argument()[0],
-        };
+        let id = call.argument()[0];
         let vcpu = call.argument()[1];
         let register = call.argument()[2];
         debug!(
             "received VMGetReg Reg[{}] of VCPU {} on VM {}",
-            register, vcpu, vm.id
+            register, vcpu, id
         );
 
-        match vm.get_reg(vcpu, register) {
+        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+        match vmm.get_reg(id, vcpu, register) {
+            Ok(value) => {
+                call.reply(rmi::RET_SUCCESS)?;
+                call.reply(value)?;
+            },
             Err(_) => call.reply(rmi::RET_FAIL)?,
-            _ => call.reply(rmi::RET_SUCCESS)?,
         }
         Ok(())
     });

@@ -14,6 +14,7 @@ pub mod mainloop;
 pub mod mm;
 pub mod realm;
 pub mod rmi;
+pub mod smc;
 
 #[macro_use]
 extern crate log;

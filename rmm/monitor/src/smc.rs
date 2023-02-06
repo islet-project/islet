@@ -1,23 +1,5 @@
 use core::arch::asm;
 
-// defined in trusted-firmware-a/include/services/rmmd_svc.h
-const SMC_ASC_MARK_REALM: usize = 0xc400_01b0;
-const SMC_ASC_MARK_NONSECURE: usize = 0xc400_01b1;
-
-pub enum Code {
-    MarkRealm,
-    MarkNonSecure,
-}
-
-impl From<Code> for usize {
-    fn from(origin: Code) -> Self {
-        match origin {
-            Code::MarkRealm => SMC_ASC_MARK_REALM,
-            Code::MarkNonSecure => SMC_ASC_MARK_NONSECURE,
-        }
-    }
-}
-
 pub fn call(command: usize, args: [usize; 4]) -> [usize; 8] {
     let mut ret: [usize; 8] = [0usize; 8];
 

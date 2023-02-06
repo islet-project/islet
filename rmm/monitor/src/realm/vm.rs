@@ -5,6 +5,7 @@ use crate::error::{Error, ErrorKind};
 use alloc::boxed::Box;
 use alloc::sync::{Arc, Weak};
 use alloc::vec::Vec;
+use core::fmt::Debug;
 use spin::mutex::Mutex;
 
 extern crate alloc;
@@ -19,7 +20,8 @@ pub struct VM<T: Context> {
 }
 
 impl<T: Context + Default> VM<T> {
-    pub fn new(id: usize, page_table: Arc<Mutex<Box<dyn IPATranslation>>>) -> Arc<Mutex<Self>> {
+    pub fn new(id: usize, 
+                page_table: Arc<Mutex<Box<dyn IPATranslation>>>) -> Arc<Mutex<Self>> {
         Arc::<Mutex<Self>>::new_cyclic(|me| {
             let vcpus = Vec::new();
 
@@ -82,4 +84,16 @@ pub enum State {
     Ready,
     Running,
     Destroy,
+}
+
+// static VM
+pub trait VMControl: Debug + Send + Sync  {
+    fn create(&self) -> Result<usize, &str>;
+    fn create_vcpu(&self, id: usize) -> Result<usize, Error>;
+    fn remove(&self, id: usize) -> Result<(), &str>;
+    fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<([usize; 4]), &str>;
+    fn map(&self, id: usize, guest: usize, phys: usize, size: usize, prot: usize) -> Result<(), &str>;
+    fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<(), &str>;
+    fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), &str>;
+    fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, &str>;
 }

@@ -5,7 +5,11 @@ import os
 ROOT = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
 OUT = os.path.join(ROOT, "out")
 CONFIG = os.path.join(ROOT, "scripts/.config")
+
 PREBUILT = os.path.join(ROOT, "assets/prebuilt")
+PREBUILT_EDK2 = os.path.join(PREBUILT, "FVP_AARCH64_EFI.fd")
+PREBUILT_GRUB = os.path.join(PREBUILT, "bootaa64.efi")
+PREBUILT_QEMU = os.path.join(PREBUILT, "qemu")
 
 REALM = os.path.join(ROOT, "realm")
 RMM = os.path.join(ROOT, "rmm/board/fvp")

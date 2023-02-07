@@ -108,10 +108,6 @@ def prepare_fip_tf_a_tests():
          "--nt-fw", "%s/build/fvp/debug/tftf.bin" % TF_A_TESTS,
          "%s/fip-tf-a-tests.bin" % OUT], cwd=ROOT)
 
-def prepare_prebuilt():
-    run(["cp", "%s/FVP_AARCH64_EFI.fd" % PREBUILT, OUT], cwd=ROOT)
-    run(["cp", "%s/bootaa64.efi" % PREBUILT, OUT], cwd=ROOT)
-
 def prepare_fip_linux():
     print("[!] Building fip for linux...")
 
@@ -127,7 +123,7 @@ def prepare_fip_linux():
          "--tb-fw", "%s/bl2.bin" % OUT,
          "--soc-fw", "%s/bl31.bin" % OUT,
          "--rmm-fw", "%s/rmm.bin" % OUT,
-         "--nt-fw", "%s/FVP_AARCH64_EFI.fd" % OUT,
+         "--nt-fw", PREBUILT_EDK2,
          "%s/fip.bin" % OUT], cwd=ROOT)
 
 def prepare_nw_linux():
@@ -140,14 +136,15 @@ def prepare_nw_linux():
     print("[!] Building linux...")
     make(BUILD_SCRIPT, args)
 
+    print("[!] Building boot image...")
     run(["cp", "%s/arch/arm64/boot/Image" % NW_LINUX, OUT], cwd=ROOT)
     run(["cp", "%s/arch/arm64/boot/dts/arm/fvp-base-revc.dtb" % NW_LINUX, OUT], cwd=ROOT)
+    run(["cp", PREBUILT_GRUB, OUT], cwd=ROOT)
 
-    print("[!] Building boot image...")
     args = [
         "-j%d" % multiprocessing.cpu_count(), "-f",
         "fvp.mk",
-        "boot-img"
+        "boot-img" # DEPS:  $(GRUB_BIN) ${LINUX_BIN} ${LINUX_DTB_BIN}
     ]
     make(BUILD_SCRIPT, args)
 
@@ -177,7 +174,7 @@ def run_fvp_linux(debug):
 
 def place_realm_at_shared():
     os.makedirs("%s" % PC_SHARE_DIR, exist_ok=True)
-    run(["cp", "-R", "%s/qemu/." % PREBUILT, PC_SHARE_DIR], cwd=ROOT)
+    run(["cp", "-R", PREBUILT_QEMU, PC_SHARE_DIR], cwd=ROOT)
     run(["cp", "-R", "%s/realm/." % OUT, "%s/guest/" % PC_SHARE_DIR], cwd=ROOT)
 
 def clean_repo():
@@ -236,7 +233,6 @@ if __name__ == "__main__":
             prepare_tf_a_tests()
             prepare_fip_tf_a_tests()
         else:
-            prepare_prebuilt()
             prepare_nw_linux()
             prepare_fip_linux()
 

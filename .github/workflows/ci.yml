@@ -53,6 +53,24 @@ jobs:
         with:
           path: out/uart*.log
 
+  normal-world-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # fetch all branch for worktree
+          submodules: true
+
+      - name: Install dependencies
+        run: ./scripts/init.sh
+
+      - name: Run linux on normal-world
+        run: ./scripts/tests/nw-linux.sh
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: out/uart*.log
+
   crates:
     runs-on: ubuntu-22.04
     steps:

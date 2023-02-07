@@ -5,7 +5,7 @@ upstream = "upstream-linux-v5.17"
 
 [optee-build]
 branch = "3rd-optee-build"
-commit = "f3760159a41e"
+commit = "977f2f228bf7"
 
 [realm-linux]
 branch = "3rd-realm-linux"

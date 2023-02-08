@@ -20,8 +20,7 @@ pub struct VM<T: Context> {
 }
 
 impl<T: Context + Default> VM<T> {
-    pub fn new(id: usize, 
-                page_table: Arc<Mutex<Box<dyn IPATranslation>>>) -> Arc<Mutex<Self>> {
+    pub fn new(id: usize, page_table: Arc<Mutex<Box<dyn IPATranslation>>>) -> Arc<Mutex<Self>> {
         Arc::<Mutex<Self>>::new_cyclic(|me| {
             let vcpus = Vec::new();
 
@@ -86,13 +85,36 @@ pub enum State {
     Destroy,
 }
 
+pub type VMManager = &'static dyn VMControl;
+static mut VMM: Option<VMManager> = None;
+
+#[allow(unused_must_use)]
+pub fn set_instance(vm: VMManager) {
+    unsafe {
+        if VMM.is_none() {
+            VMM = Some(vm);
+        }
+    };
+}
+
+pub fn instance() -> Option<VMManager> {
+    unsafe { VMM }
+}
+
 // static VM
-pub trait VMControl: Debug + Send + Sync  {
+pub trait VMControl: Debug + Send + Sync {
     fn create(&self) -> Result<usize, &str>;
     fn create_vcpu(&self, id: usize) -> Result<usize, Error>;
     fn remove(&self, id: usize) -> Result<(), &str>;
     fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<([usize; 4]), &str>;
-    fn map(&self, id: usize, guest: usize, phys: usize, size: usize, prot: usize) -> Result<(), &str>;
+    fn map(
+        &self,
+        id: usize,
+        guest: usize,
+        phys: usize,
+        size: usize,
+        prot: usize,
+    ) -> Result<(), &str>;
     fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<(), &str>;
     fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), &str>;
     fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, &str>;

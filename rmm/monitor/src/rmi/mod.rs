@@ -1,6 +1,6 @@
-use core::cmp::Ordering;
 use alloc::rc::Rc;
 use core::cell::RefCell;
+use core::cmp::Ordering;
 
 use crate::smc;
 
@@ -9,7 +9,9 @@ use crate::communication::{self, Error, ErrorKind};
 
 extern crate alloc;
 
+pub mod gpt;
 pub mod realm;
+pub mod version;
 
 /* requested defined in tf-a-tests: realm_payload_test.h */
 /* RMI_FNUM_VERSION_REQ ~ RMI_FNUM_REALM_DESTROY */
@@ -130,7 +132,10 @@ impl communication::Receiver for Receiver {
     fn recv(&self) -> Result<Call, Error> {
         let cmd = usize::from(Code::RequestComplete);
         let arg = self.sender.pop();
-        let ret = smc::call(cmd, arg);
+        let smc = smc::instance()
+            .ok_or(Error::new(ErrorKind::Unsupported))
+            .unwrap();
+        let ret = smc.call(cmd, arg);
 
         let cmd = ret[0];
         let mut arg = [0usize; 7];

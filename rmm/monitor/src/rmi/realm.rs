@@ -1,30 +1,18 @@
-use crate::mainloop::Mainloop;
 use crate::error::{Error, ErrorKind};
 use crate::listen;
+use crate::mainloop::Mainloop;
+use crate::realm::vm;
 use crate::rmi;
 
 extern crate alloc;
 
-pub type VMManager = &'static dyn crate::realm::vm::VMControl;
-static mut VMM: Option<VMManager> = None;
-
-#[allow(unused_must_use)]
-pub fn set_instance(vm: VMManager) {
-    unsafe {
-        if VMM.is_none() {
-            VMM = Some(vm);
-        }
-    };
-}
-
-pub fn instance() -> Option<VMManager> {
-    unsafe { VMM }
-}
-
 pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     listen!(mainloop, rmi::Code::VMCreate, |call| {
         info!("received VMCreate");
-        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+
+        let vmm = vm::instance()
+            .ok_or(Error::new(ErrorKind::Unsupported))
+            .unwrap();
         let id = vmm.create().unwrap();
         call.reply(rmi::RET_SUCCESS)?;
         call.reply(id)?;
@@ -36,8 +24,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         // let vcpu = call.argument()[1];
         debug!("received VCPUCreate for VM {}", id);
 
-        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
-
+        let vmm = vm::instance()
+            .ok_or(Error::new(ErrorKind::Unsupported))
+            .unwrap();
         match vmm.create_vcpu(id) {
             Ok(vcpuid) => {
                 call.reply(rmi::RET_SUCCESS)?;
@@ -50,7 +39,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
 
     listen!(mainloop, rmi::Code::VMDestroy, |call| {
         let id = call.argument()[0];
-        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+        let vmm = vm::instance()
+            .ok_or(Error::new(ErrorKind::Unsupported))
+            .unwrap();
 
         info!("received VMDestroy VM {}", id);
         vmm.remove(id)?;
@@ -66,7 +57,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             "received VMRun VCPU {} on VM {} PC_INCR {}",
             vcpu, id, incr_pc
         );
-        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+        let vmm = vm::instance()
+            .ok_or(Error::new(ErrorKind::Unsupported))
+            .unwrap();
         match vmm.run(id, vcpu, incr_pc) {
             Ok(val) => match val[0] {
                 rmi::RET_EXCEPTION_TRAP | rmi::RET_EXCEPTION_IRQ => {
@@ -77,7 +70,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
                 }
                 _ => call.reply(rmi::RET_SUCCESS),
             },
-            _ => Err(Error::new(ErrorKind::Unsupported)),
+            Err(_) => Err(Error::new(ErrorKind::Unsupported)),
         }?;
         Ok(())
     });
@@ -93,7 +86,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             "received MapMemory to VM {} {:#X} -> {:#X} size:{:#X} prot:{:#X}",
             id, guest, phys, size, prot
         );
-        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+        let vmm = vm::instance()
+            .ok_or(Error::new(ErrorKind::Unsupported))
+            .unwrap();
         match vmm.map(id, guest, phys, size, prot) {
             Ok(_) => call.reply(rmi::RET_SUCCESS)?,
             Err(_) => call.reply(rmi::RET_FAIL)?,
@@ -106,9 +101,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         let guest = call.argument()[1];
         let size = call.argument()[2];
         debug!(
-            "received UnmapMemory to VM {} {:#X}, size:{:#X}", id, guest, size);
+            "received UnmapMemory to VM {} {:#X}, size:{:#X}",
+            id, guest, size
+        );
 
-        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+        let vmm = vm::instance()
+            .ok_or(Error::new(ErrorKind::Unsupported))
+            .unwrap();
         match vmm.unmap(id, guest, size) {
             Ok(_) => call.reply(rmi::RET_SUCCESS)?,
             Err(_) => call.reply(rmi::RET_FAIL)?,
@@ -126,7 +125,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             register, value, vcpu, id
         );
 
-        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+        let vmm = vm::instance()
+            .ok_or(Error::new(ErrorKind::Unsupported))
+            .unwrap();
         match vmm.set_reg(id, vcpu, register, value) {
             Ok(_) => call.reply(rmi::RET_SUCCESS)?,
             Err(_) => call.reply(rmi::RET_FAIL)?,
@@ -143,12 +144,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             register, vcpu, id
         );
 
-        let vmm = instance().ok_or(Error::new(ErrorKind::Unsupported)).unwrap();
+        let vmm = vm::instance()
+            .ok_or(Error::new(ErrorKind::Unsupported))
+            .unwrap();
         match vmm.get_reg(id, vcpu, register) {
             Ok(value) => {
                 call.reply(rmi::RET_SUCCESS)?;
                 call.reply(value)?;
-            },
+            }
             Err(_) => call.reply(rmi::RET_FAIL)?,
         }
         Ok(())

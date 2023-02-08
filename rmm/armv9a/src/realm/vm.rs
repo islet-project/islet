@@ -1,22 +1,21 @@
+use monitor::error::{Error, ErrorKind};
 use monitor::realm::mm::address::{GuestPhysAddr, PhysAddr};
 use monitor::realm::mm::IPATranslation;
 use monitor::realm::vcpu::VCPU;
 use monitor::realm::vm::VM;
-use monitor::smc;
-use monitor::error::{Error, ErrorKind};
 
 use crate::config::PAGE_SIZE;
 use crate::exception::trap::syndrome::{Fault, Syndrome};
+use crate::helper;
+use crate::helper::bits_in_reg;
+use crate::helper::ESR_EL2;
+use crate::helper::VTTBR_EL2;
 use crate::realm;
 use crate::realm::context::Context;
 use crate::realm::mm::page_table::pte;
 use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::translation_granule_4k::RawPTE;
-use crate::helper;
-use crate::helper::bits_in_reg;
-use crate::helper::ESR_EL2;
-use crate::helper::VTTBR_EL2;
-use crate::config;
+use monitor::smc;
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
@@ -28,7 +27,7 @@ type MutexVM = Arc<Mutex<VM<Context>>>;
 type VMMap = BTreeMap<usize, MutexVM>;
 static VMS: Spinlock<(usize, VMMap)> = Spinlock::new((0, BTreeMap::new()));
 
-pub fn realm_enter() -> [usize; 4] {
+fn realm_enter() -> [usize; 4] {
     unsafe {
         if let Some(vcpu) = realm::vcpu::current() {
             if vcpu.is_vm_dead() {
@@ -44,7 +43,7 @@ pub fn realm_enter() -> [usize; 4] {
     }
 }
 
-pub fn realm_exit() {
+fn realm_exit() {
     unsafe {
         if let Some(vcpu) = realm::vcpu::current() {
             vcpu.from_current();
@@ -52,11 +51,15 @@ pub fn realm_exit() {
     }
 }
 
+fn get_vm(id: usize) -> Option<MutexVM> {
+    VMS.lock().1.get(&id).map(|vm| Arc::clone(vm))
+}
+
 #[derive(Debug)]
 pub struct VMManager;
 
 impl VMManager {
-    pub fn new() -> &'static VMManager{
+    pub fn new() -> &'static VMManager {
         &VMManager {}
     }
 }
@@ -86,7 +89,7 @@ impl monitor::realm::vm::VMControl for VMManager {
     }
 
     fn create_vcpu(&self, id: usize) -> Result<usize, Error> {
-        VMS.lock().1.get(&id).map(|vm| Arc::clone(vm))
+        get_vm(id)
             .ok_or(Error::new(ErrorKind::NotConnected))?
             .lock()
             .create_vcpu()
@@ -101,9 +104,9 @@ impl monitor::realm::vm::VMControl for VMManager {
     }
 
     fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<[usize; 4], &str> {
-        let get = |id: usize| VMS.lock().1.get(&id).map(|vm| Arc::clone(vm));
         if incr_pc == 1 {
-            get(id).ok_or("Not exist VM")?
+            get_vm(id)
+                .ok_or("Not exist VM")?
                 .lock()
                 .vcpus
                 .get(vcpu)
@@ -114,7 +117,8 @@ impl monitor::realm::vm::VMControl for VMManager {
         }
         debug!(
             "resuming: {:#x}",
-            get(id).ok_or("Not exist VM")?
+            get_vm(id)
+                .ok_or("Not exist VM")?
                 .lock()
                 .vcpus
                 .get(vcpu)
@@ -124,9 +128,7 @@ impl monitor::realm::vm::VMControl for VMManager {
                 .elr
         );
 
-        get(id).ok_or("Not exist VM")?
-            .lock()
-            .switch_to(vcpu)?;
+        get_vm(id).ok_or("Not exist VM")?.lock().switch_to(vcpu)?;
 
         trace!("Switched to VCPU {} on VM {}", vcpu, id);
         let ret = realm_enter();
@@ -135,14 +137,20 @@ impl monitor::realm::vm::VMControl for VMManager {
         Ok(ret)
     }
 
-    fn map(&self, id: usize, guest: usize, phys: usize, size: usize, prot: usize) -> Result<(), &str> {
+    fn map(
+        &self,
+        id: usize,
+        guest: usize,
+        phys: usize,
+        size: usize,
+        prot: usize,
+    ) -> Result<(), &str> {
         let mut flags = 0;
         let mut realm_pas = true;
         //FIXME: temporary
         unsafe {
             if let Some(vcpu) = realm::vcpu::current() {
                 let esr = vcpu.context.sys_regs.esr_el2 as u32;
-                info!("elr_el2 at {:#X}", vcpu.context.elr);
                 // share all data pages except those had s2 permission fault with s1ptw set
                 match Syndrome::from(esr) {
                     Syndrome::DataAbort(fault) => {
@@ -175,7 +183,7 @@ impl monitor::realm::vm::VMControl for VMManager {
             flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL);
         }
 
-        VMS.lock().1.get(&id).map(|vm| Arc::clone(vm))
+        get_vm(id)
             .ok_or("Not exist VM")?
             .lock()
             .page_table
@@ -187,12 +195,15 @@ impl monitor::realm::vm::VMControl for VMManager {
                 flags as usize,
             );
 
-        let cmd = usize::from(config::Code::MarkRealm);
+        let smc = monitor::smc::instance()
+            .ok_or(Error::new(ErrorKind::Unsupported))
+            .unwrap();
+        let cmd = smc.convert(smc::Code::MarkRealm);
         let mut arg = [phys, 0, 0, 0];
         let mut remain = size;
         while remain > 0 {
             if (flags & helper::bits_in_reg(RawPTE::NS, 0b1)) == 0 {
-                let ret = smc::call(cmd, arg)[0];
+                let ret = smc.call(cmd, arg)[0];
                 if ret != 0 {
                     //Just show a warn message not return fail
                     warn!("failed to set GPT {:X}", arg[0]);
@@ -205,7 +216,7 @@ impl monitor::realm::vm::VMControl for VMManager {
     }
 
     fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<(), &str> {
-        VMS.lock().1.get(&id).map(|vm| Arc::clone(vm))
+        get_vm(id)
             .ok_or("Not exist VM")?
             .lock()
             .page_table
@@ -218,10 +229,9 @@ impl monitor::realm::vm::VMControl for VMManager {
     }
 
     fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), &str> {
-        let get = |id: usize| VMS.lock().1.get(&id).map(|vm| Arc::clone(vm));
         match register {
             0..=30 => {
-                get(id)
+                get_vm(id)
                     .ok_or("Not exist VM")?
                     .lock()
                     .vcpus
@@ -233,7 +243,7 @@ impl monitor::realm::vm::VMControl for VMManager {
                 Ok(())
             }
             31 => {
-                get(id)
+                get_vm(id)
                     .ok_or("Not exist VM")?
                     .lock()
                     .vcpus
@@ -245,7 +255,7 @@ impl monitor::realm::vm::VMControl for VMManager {
                 Ok(())
             }
             32 => {
-                get(id)
+                get_vm(id)
                     .ok_or("Not exist VM")?
                     .lock()
                     .vcpus
@@ -262,10 +272,9 @@ impl monitor::realm::vm::VMControl for VMManager {
     }
 
     fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, &str> {
-        let get = |id: usize| VMS.lock().1.get(&id).map(|vm| Arc::clone(vm));
         match register {
             0..=30 => {
-                let value = get(id)
+                let value = get_vm(id)
                     .ok_or("Not exist VM")?
                     .lock()
                     .vcpus
@@ -277,7 +286,7 @@ impl monitor::realm::vm::VMControl for VMManager {
                 Ok(value as usize)
             }
             31 => {
-                let value = get(id)
+                let value = get_vm(id)
                     .ok_or("Not exist VM")?
                     .lock()
                     .vcpus

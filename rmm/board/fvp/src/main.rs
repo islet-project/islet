@@ -17,11 +17,10 @@ use armv9a::allocator;
 use armv9a::config;
 use armv9a::cpu;
 use armv9a::helper;
-use armv9a::rmi;
 
 use monitor::listen;
 use monitor::mainloop::Mainloop;
-use monitor::rmi::{realm, Receiver};
+use monitor::rmi::{self, Receiver};
 
 #[no_mangle]
 pub unsafe fn main() -> ! {
@@ -33,9 +32,9 @@ pub unsafe fn main() -> ! {
 
     let mut mainloop = Mainloop::new(Receiver::new());
 
-    init_vm();
+    init_instance();
     rmi::gpt::set_event_handler(&mut mainloop);
-    realm::set_event_handler(&mut mainloop);
+    rmi::realm::set_event_handler(&mut mainloop);
     rmi::version::set_event_handler(&mut mainloop);
 
     listen!(mainloop, || {
@@ -47,6 +46,8 @@ pub unsafe fn main() -> ! {
     panic!("failed to run the mainloop");
 }
 
-fn init_vm() {
-    realm::set_instance(armv9a::realm::vm::VMManager::new())
+fn init_instance() {
+    monitor::realm::vm::set_instance(armv9a::realm::vm::VMManager::new());
+    monitor::smc::set_instance(armv9a::smc::SMC::new());
+    monitor::config::set_instance(armv9a::config::RMMConfig::new());
 }

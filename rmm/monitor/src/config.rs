@@ -15,5 +15,5 @@ pub fn instance() -> Option<RMMConfig> {
 }
 
 pub trait Config {
-    fn get_abi_version(&self) -> usize;
+    fn abi_version(&self) -> usize;
 }

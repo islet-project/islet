@@ -25,7 +25,7 @@ impl RMMConfig {
 }
 
 impl monitor::config::Config for RMMConfig {
-    fn get_abi_version(&self) -> usize {
+    fn abi_version(&self) -> usize {
         ABI_VERSION
     }
 }

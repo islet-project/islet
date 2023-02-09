@@ -8,9 +8,7 @@ extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     listen!(mainloop, rmi::Code::GranuleDelegate, |call| {
-        let smc = smc::instance()
-            .ok_or(Error::new(ErrorKind::Unsupported))
-            .unwrap();
+        let smc = smc::instance().ok_or(Error::new(ErrorKind::Unsupported))?;
         let cmd = smc.convert(smc::Code::MarkRealm);
         let arg = [call.argument()[0], 0, 0, 0];
         let ret = smc.call(cmd, arg);
@@ -18,9 +16,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
     });
 
     listen!(mainloop, rmi::Code::GranuleUndelegate, |call| {
-        let smc = smc::instance()
-            .ok_or(Error::new(ErrorKind::Unsupported))
-            .unwrap();
+        let smc = smc::instance().ok_or(Error::new(ErrorKind::Unsupported))?;
         let cmd = smc.convert(smc::Code::MarkNonSecure);
         let arg = [call.argument()[0], 0, 0, 0];
         let ret = smc.call(cmd, arg);

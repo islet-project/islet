@@ -5,15 +5,6 @@ use monitor::smc::Code;
 pub const SMC_ASC_MARK_REALM: usize = 0xc400_01b0;
 pub const SMC_ASC_MARK_NONSECURE: usize = 0xc400_01b1;
 
-// impl From<Code> for usize {
-//     fn from(origin: Code) -> Self {
-//         match origin {
-//             Code::MarkRealm => SMC_ASC_MARK_REALM,
-//             Code::MarkNonSecure => SMC_ASC_MARK_NONSECURE,
-//         }
-//     }
-// }
-
 #[derive(Debug)]
 pub struct SMC;
 

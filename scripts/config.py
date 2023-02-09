@@ -27,7 +27,8 @@ TF_A_TESTS = os.path.join(THIRD_PARTY, "tf-a-tests")
 # directory shared between the pc desktop and the host OS on fvp using 9p filesystem
 PC_SHARE_DIR = os.path.join(OUT, "pc_share_dir")
 
-CROSS_COMPILE = os.path.join(ROOT, "assets/toolchains/aarch64/bin/aarch64-none-linux-gnu-")
+#CROSS_COMPILE = os.path.join(ROOT, "assets/toolchains/aarch64/bin/aarch64-none-linux-gnu-")
+CROSS_COMPILE = os.path.join(ROOT, "assets/gcc/arm-gnu-toolchain-11.3.rel1-x86_64-aarch64-none-elf/bin/aarch64-none-elf-")
 LINUX_CROSS_COMPILE = os.path.join(ROOT, "assets/toolchains/aarch64/bin/aarch64-linux-gnu-")
 FASTMODEL = os.path.join(ROOT, "assets/fastmodel/Base_RevC_AEMvA_pkg/models/Linux64_GCC-9.3")
 FIPTOOL = os.path.join(TF_A, "tools/fiptool")

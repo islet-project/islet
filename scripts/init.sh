@@ -21,6 +21,8 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
+# TODO: Sync 3rd-parties submodules
+
 # Sync islet-assets
 $HERE/deps/assets.sh
 if [ $? -ne 0 ]; then

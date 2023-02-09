@@ -14,13 +14,17 @@ upstream = "upstream-linux-v5.17"
 
 [tf-a-tests]
 branch = "3rd-tf-a-tests"
-commit = "1b20931058c3"
+commit = "f7b3be91ab95"
 upstream = "upstream-tf-a-tests-v2.7"
 
 [tf-a]
 branch = "3rd-tf-a"
-commit = "8ae28efc76a5"
+commit = "913627710563"
 upstream = "upstream-tf-a-v2.7"
+
+[tf-rmm]
+branch = "3rd-tf-rmm-v0.2.0"
+commit = "7d34f27fa9ff"
 
 [android-kernel]
 branch = "3rd-android-kernel"

@@ -39,6 +39,7 @@
 #include <asm/kvm_host.h>
 #include <asm/memory.h>
 #include <asm/numa.h>
+#include <asm/rsi.h>
 #include <asm/sections.h>
 #include <asm/setup.h>
 #include <linux/sizes.h>
@@ -412,6 +413,7 @@ void __init arm64_memblock_init(void)
 		reserve_crashkernel();
 
 	high_memory = __va(memblock_end_of_DRAM() - 1) + 1;
+	arm64_setup_memory();
 }
 
 void __init bootmem_init(void)
@@ -470,7 +472,13 @@ void __init bootmem_init(void)
  */
 void __init mem_init(void)
 {
-	swiotlb_init(max_pfn > PFN_DOWN(arm64_dma_phys_limit), SWIOTLB_VERBOSE);
+	if (is_realm_world()) {
+		swiotlb_init(true, SWIOTLB_VERBOSE | SWIOTLB_FORCE);
+		swiotlb_update_mem_attributes();
+	} else {
+		swiotlb_init(max_pfn > PFN_DOWN(arm64_dma_phys_limit),
+			     SWIOTLB_VERBOSE);
+	}
 
 	/* this will put all unused low memory onto the freelists */
 	memblock_free_all();

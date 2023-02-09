@@ -35,7 +35,9 @@ def prepare_tf_a_tests():
     args = [
         "CROSS_COMPILE=%s" % CROSS_COMPILE,
         "PLAT=fvp",
-        "DEBUG=1"
+        "DEBUG=1",
+        "all",
+        "pack_realm",
     ]
 
     print("[!] Building tf-a-tests...")
@@ -51,17 +53,25 @@ def prepare_realm(name):
     run(["make"], cwd=srcdir)
     run(["make", "install"], cwd=srcdir)
 
-def prepare_bootloaders():
+def prepare_bootloaders(rmm):
     args = [
         "CROSS_COMPILE=%s" % CROSS_COMPILE,
         "PLAT=fvp",
         "ENABLE_RME=1",
-        "FVP_HW_CONFIG_DTS=%s/fdts/fvp-base-gicv3-psci-1t.dts" % TF_A,
+        "FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts",
         "DEBUG=1",
-        "all"
+        "BL33=%s/build/fvp/debug/tftf.bin" % TF_A_TESTS,
     ]
 
-    bl_list = ["bl1.bin", "bl2.bin", "bl31.bin"]
+    if rmm == "islet":
+        args += "RMM=%s/rmm.bin" % OUT,
+
+    elif rmm == "tf-rmm":
+        args += "RMM=%s/tf-rmm.img" % OUT,
+
+    args += ["all", "fip"]
+
+    bl_list = ["bl1.bin", "fip.bin"]
     print("[!] Building bootloaders(%s)... " % ', '.join(bl_list))
     make(TF_A, args)
 
@@ -74,13 +84,17 @@ def prepare_bootloaders():
 
         run(["cp", outbin, OUT], cwd=ROOT)
 
-def prepare_rmm():
-    print("[!] Building realm management monitor...")
-    run(["cargo", "build", "--release"], cwd=RMM)
-    run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
-         "%s/aarch64-unknown-none-softfloat/release/fvp" % OUT,
-         "%s/rmm.bin" % OUT],
-         cwd=ROOT)
+def prepare_rmm(rmm):
+    print("[!] Building realm management monitor...: %s" % rmm)
+
+    if rmm == "islet":
+        run(["cargo", "build", "--release"], cwd=RMM)
+        run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
+             "%s/aarch64-unknown-none-softfloat/release/fvp" % OUT,
+             "%s/rmm.bin" % OUT],
+             cwd=ROOT)
+    elif rmm == "tf-rmm":
+        run(["./scripts/build_tf_rmm.sh", CROSS_COMPILE], cwd=ROOT)
 
 def prepare_fiptool():
     print("[!] Building firmware image package tool...")
@@ -89,7 +103,6 @@ def prepare_fiptool():
     outbin = os.path.join(FIPTOOL, "fiptool")
     if not os.path.exists(outbin):
         print("[!] Failed to build: %s" % outbin)
-
 
 def prepare_fip_tf_a_tests():
     print("[!] Building fip for tf-a-tests...")
@@ -104,7 +117,7 @@ def prepare_fip_tf_a_tests():
          "--hw-config", "%s/fvp-base-gicv3-psci-1t.dtb" % fdtsdir,
          "--tb-fw", "%s/bl2.bin" % OUT,
          "--soc-fw", "%s/bl31.bin" % OUT,
-         "--rmm-fw", "%s/rmm.bin" % OUT,
+#         "--rmm-fw", "%s/rmm.bin" % OUT,
          "--nt-fw", "%s/build/fvp/debug/tftf.bin" % TF_A_TESTS,
          "%s/fip-tf-a-tests.bin" % OUT], cwd=ROOT)
 
@@ -151,7 +164,7 @@ def prepare_nw_linux():
 def run_fvp_tf_a_tests(debug):
     print("[!] Running fvp for tf-a-tests...")
     args = ["./FVP_Base_RevC-2xAEMvA",
-            "-C", "bp.flashloader0.fname=%s/fip-tf-a-tests.bin" % OUT,
+            "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
             "-f", CONFIG,
             "-Q", "1000"]
@@ -201,6 +214,12 @@ def validate_args(args):
         print("  " + "\n  ".join(nw_list))
         sys.exit(1)
 
+    rmm_list = ["islet", "trp", "tf-rmm"]
+    if not args.rmm in rmm_list:
+        print("Please select one of the rmm components:")
+        print("  " + "\n  ".join(rmm_list))
+        sys.exit(1)
+
     if args.realm is not None:
         realms = get_all_realms()
         if not args.realm in realms:
@@ -218,22 +237,27 @@ if __name__ == "__main__":
                         help="Building components without running", action="store_true")
     parser.add_argument("--clean", "-c", help="Clean the repo", action="store_true")
     parser.add_argument("--realm", "-rm", help="A sample realm")
+    parser.add_argument("--rmm", "-rmm", help="A realm management monitor (islet, trp, tf-rmm)", default="islet")
     args = parser.parse_args()
-    validate_args(args)
 
     if args.clean:
         clean_repo()
+        exit(0)
+
+    validate_args(args)
 
     if not args.run_only:
         prepare_fiptool()
-        prepare_bootloaders()
-        prepare_rmm()
+        prepare_rmm(args.rmm)
 
         if args.normal_world == "tf-a-tests":
             prepare_tf_a_tests()
-            prepare_fip_tf_a_tests()
+            prepare_bootloaders(args.rmm)
+            #prepare_fip_tf_a_tests()
         else:
             prepare_nw_linux()
+
+            #check prepare_bootloaders()
             prepare_fip_linux()
 
             if args.realm is not None:

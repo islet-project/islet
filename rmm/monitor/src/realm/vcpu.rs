@@ -1,4 +1,4 @@
-use super::vm::VM;
+use super::Realm;
 
 use alloc::sync::{Arc, Weak};
 use spin::Mutex;
@@ -18,7 +18,7 @@ pub trait Context {
     where
         Self: Sized;
 
-    fn set_vttbr(vcpu: &mut VCPU<Self>, vmid: u64, pgtlb_baddr: u64)
+    fn set_vttbr(vcpu: &mut VCPU<Self>, realmid: u64, pgtlb_baddr: u64)
     where
         Self: Sized;
 }
@@ -29,15 +29,15 @@ pub struct VCPU<T: Context> {
     pub context: T,
     pub state: State,
     pub pcpu: Option<usize>,
-    pub vm: Weak<Mutex<VM<T>>>, // VM struct the VCPU belongs to
+    pub realm: Weak<Mutex<Realm<T>>>, // Realm struct the VCPU belongs to
     me: Weak<Mutex<Self>>,
 }
 
 impl<T: Context + Default> VCPU<T> {
-    pub fn new(vm: Weak<Mutex<VM<T>>>) -> Arc<Mutex<Self>> {
+    pub fn new(realm: Weak<Mutex<Realm<T>>>) -> Arc<Mutex<Self>> {
         Arc::<Mutex<Self>>::new_cyclic(|me| {
             Mutex::new(Self {
-                vm: vm,
+                realm: realm,
                 me: me.clone(),
                 state: State::Stopped,
                 context: T::new(),
@@ -70,8 +70,8 @@ impl<T: Context + Default> VCPU<T> {
         T::set_vttbr(self, vmid, pgtlb_baddr);
     }
 
-    pub fn is_vm_dead(&self) -> bool {
-        self.vm.strong_count() == 0
+    pub fn is_realm_dead(&self) -> bool {
+        self.realm.strong_count() == 0
     }
 }
 

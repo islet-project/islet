@@ -1,16 +1,16 @@
 use crate::error::{Error, ErrorKind};
 use crate::listen;
 use crate::mainloop::Mainloop;
-use crate::realm::vm;
+use crate::realm;
 use crate::rmi;
 
 extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
-    listen!(mainloop, rmi::Code::VMCreate, |call| {
-        info!("received VMCreate");
+    listen!(mainloop, rmi::Code::RealmCreate, |call| {
+        info!("received RealmCreate");
 
-        let id = vm::instance()
+        let id = realm::instance()
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .create()?;
         call.reply(rmi::RET_SUCCESS)?;
@@ -23,7 +23,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         // let vcpu = call.argument()[1];
         debug!("received VCPUCreate for VM {}", id);
 
-        let ret = vm::instance()
+        let ret = realm::instance()
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .create_vcpu(id);
         match ret {
@@ -36,26 +36,26 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::Code::VMDestroy, |call| {
+    listen!(mainloop, rmi::Code::RealmDestroy, |call| {
         let id = call.argument()[0];
-        info!("received VMDestroy VM {}", id);
+        info!("received RealmDestroy Realm {}", id);
 
-        vm::instance()
+        realm::instance()
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .remove(id)?;
         call.reply(rmi::RET_SUCCESS)?;
         Ok(())
     });
 
-    listen!(mainloop, rmi::Code::VMRun, |call| {
+    listen!(mainloop, rmi::Code::RealmRun, |call| {
         let id = call.argument()[0];
         let vcpu = call.argument()[1];
         let incr_pc = call.argument()[2];
         debug!(
-            "received VMRun VCPU {} on VM {} PC_INCR {}",
+            "received RealmRun VCPU {} on Realm {} PC_INCR {}",
             vcpu, id, incr_pc
         );
-        let ret = vm::instance()
+        let ret = realm::instance()
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .run(id, vcpu, incr_pc);
         match ret {
@@ -73,7 +73,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::Code::VMMapMemory, |call| {
+    listen!(mainloop, rmi::Code::RealmMapMemory, |call| {
         let id = call.argument()[0];
         let guest = call.argument()[1];
         let phys = call.argument()[2];
@@ -81,10 +81,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         // prot: bits[0] : writable, bits[1] : fault on exec, bits[2] : device
         let prot = call.argument()[4]; // bits[3]
         debug!(
-            "received MapMemory to VM {} {:#X} -> {:#X} size:{:#X} prot:{:#X}",
+            "received MapMemory to Realm {} {:#X} -> {:#X} size:{:#X} prot:{:#X}",
             id, guest, phys, size, prot
         );
-        let ret = vm::instance()
+        let ret = realm::instance()
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .map(id, guest, phys, size, prot);
         match ret {
@@ -94,15 +94,15 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::Code::VMUnmapMemory, |call| {
+    listen!(mainloop, rmi::Code::RealmUnmapMemory, |call| {
         let id = call.argument()[0];
         let guest = call.argument()[1];
         let size = call.argument()[2];
         debug!(
-            "received UnmapMemory to VM {} {:#X}, size:{:#X}",
+            "received UnmapMemory to Realm {} {:#X}, size:{:#X}",
             id, guest, size
         );
-        let ret = vm::instance()
+        let ret = realm::instance()
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .unmap(id, guest, size);
         match ret {
@@ -112,16 +112,16 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::Code::VMSetReg, |call| {
+    listen!(mainloop, rmi::Code::RealmSetReg, |call| {
         let id = call.argument()[0];
         let vcpu = call.argument()[1];
         let register = call.argument()[2];
         let value = call.argument()[3];
         debug!(
-            "received VMSetReg Reg[{}]={:#X} to VCPU {} on VM {}",
+            "received RealmSetReg Reg[{}]={:#X} to VCPU {} on Realm {}",
             register, value, vcpu, id
         );
-        let ret = vm::instance()
+        let ret = realm::instance()
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .set_reg(id, vcpu, register, value);
         match ret {
@@ -131,15 +131,15 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::Code::VMGetReg, |call| {
+    listen!(mainloop, rmi::Code::RealmGetReg, |call| {
         let id = call.argument()[0];
         let vcpu = call.argument()[1];
         let register = call.argument()[2];
         debug!(
-            "received VMGetReg Reg[{}] of VCPU {} on VM {}",
+            "received RealmGetReg Reg[{}] of VCPU {} on Realm {}",
             register, vcpu, id
         );
-        let ret = vm::instance()
+        let ret = realm::instance()
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .get_reg(id, vcpu, register);
         match ret {

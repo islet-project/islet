@@ -47,7 +47,7 @@ pub unsafe fn main() -> ! {
 }
 
 fn init_instance() {
-    monitor::realm::vm::set_instance(armv9a::realm::vm::VMManager::new());
+    monitor::realm::set_instance(armv9a::realm::registry::Manager::new());
     monitor::smc::set_instance(armv9a::smc::SMC::new());
     monitor::config::set_instance(armv9a::config::RMMConfig::new());
 }

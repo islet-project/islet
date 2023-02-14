@@ -33,9 +33,7 @@ fn enter() -> [usize; 4] {
             if vcpu.is_realm_dead() {
                 vcpu.from_current();
             } else {
-                vcpu.realm.upgrade().map(|realm| {
-                    realm.lock().page_table.lock().clean();
-                });
+                vcpu.realm.lock().page_table.lock().clean();
                 return helper::rmm_exit([0; 4]);
             }
         }
@@ -70,18 +68,7 @@ impl monitor::realm::Control for Manager {
         let s2_table = Arc::new(Mutex::new(
             Box::new(Stage2Translation::new()) as Box<dyn IPATranslation>
         ));
-        let vttbr = bits_in_reg(VTTBR_EL2::VMID, id as u64)
-            | bits_in_reg(VTTBR_EL2::BADDR, s2_table.lock().get_base_address() as u64);
-
         let realm = Realm::new(id, s2_table);
-
-        realm
-            .lock()
-            .vcpus
-            .iter()
-            .for_each(|vcpu: &Arc<Mutex<VCPU<Context>>>| {
-                vcpu.lock().context.sys_regs.vttbr = vttbr
-            });
 
         rms.0 += 1;
         rms.1.insert(id, realm.clone());
@@ -89,19 +76,18 @@ impl monitor::realm::Control for Manager {
     }
 
     fn create_vcpu(&self, id: usize) -> Result<usize, Error> {
-        get_realm(id)
-            .ok_or(Error::new(ErrorKind::NotConnected))?
-            .lock()
-            .create_vcpu()
-        // // let _me = &self.me;
-        // let _vcpu = VCPU::new(self.me.clone());
-        // _vcpu.lock().set_vttbr(
-        //     self.id as u64,
-        //     self.page_table.lock().get_base_address() as u64,
-        // );
+        let realm = get_realm(id).ok_or(Error::new(ErrorKind::NotConnected))?;
 
-        // self.vcpus.push(_vcpu);
-        // Ok(self.vcpus.len() - 1)
+        let page_table = realm.lock().page_table.lock().get_base_address();
+        let vttbr = bits_in_reg(VTTBR_EL2::VMID, id as u64)
+            | bits_in_reg(VTTBR_EL2::BADDR, page_table as u64);
+
+        let _vcpu = VCPU::new(realm.clone());
+        _vcpu.lock().context.sys_regs.vttbr = vttbr;
+
+        realm.lock().vcpus.push(_vcpu);
+        let vcpuid = realm.lock().vcpus.len() - 1;
+        Ok(vcpuid)
     }
 
     fn remove(&self, id: usize) -> Result<(), &str> {
@@ -140,7 +126,9 @@ impl monitor::realm::Control for Manager {
         get_realm(id)
             .ok_or("Not exist Realm")?
             .lock()
-            .switch_to(vcpu)?;
+            .vcpus
+            .get(vcpu)
+            .map(|vcpu| VCPU::into_current(&mut *vcpu.lock()));
 
         trace!("Switched to VCPU {} on Realm {}", vcpu, id);
         let ret = enter();
@@ -207,9 +195,7 @@ impl monitor::realm::Control for Manager {
                 flags as usize,
             );
 
-        let smc = monitor::smc::instance()
-            .ok_or(Error::new(ErrorKind::Unsupported))
-            .unwrap();
+        let smc = monitor::smc::instance().ok_or(Error::new(ErrorKind::Unsupported))?;
         let cmd = smc.convert(smc::Code::MarkRealm);
         let mut arg = [phys, 0, 0, 0];
         let mut remain = size;

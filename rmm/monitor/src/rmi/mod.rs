@@ -132,9 +132,7 @@ impl communication::Receiver for Receiver {
     fn recv(&self) -> Result<Call, Error> {
         let cmd = usize::from(Code::RequestComplete);
         let arg = self.sender.pop();
-        let smc = smc::instance()
-            .ok_or(Error::new(ErrorKind::Unsupported))
-            .unwrap();
+        let smc = smc::instance().ok_or(Error::new(ErrorKind::Unsupported))?;
         let ret = smc.call(cmd, arg);
 
         let cmd = ret[0];

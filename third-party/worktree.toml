@@ -33,3 +33,7 @@ commit = "ad1f2eebadfe"
 [gki-build]
 branch = "3rd-gki-build"
 commit = "5fe377f6a20b"
+
+[kvmtool]
+branch = "3rd-kvmtool-cca-rfc-v1"
+commit = "275981645b8b"

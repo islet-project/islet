@@ -1,7 +1,7 @@
 [nw-linux]
-branch = "3rd-nw-linux"
-commit = "e29efa98724a"
-upstream = "upstream-linux-v5.17"
+branch = "3rd-linux-cca-rfc-v1"
+commit = "dc921fa30f0c"
+upstream = "upstream-linux-cca-rfc-v1"
 
 [optee-build]
 branch = "3rd-optee-build"

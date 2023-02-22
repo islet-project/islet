@@ -53,14 +53,14 @@ def prepare_realm(name):
     run(["make"], cwd=srcdir)
     run(["make", "install"], cwd=srcdir)
 
-def prepare_bootloaders(rmm):
+def prepare_bootloaders(rmm, bl33):
     args = [
         "CROSS_COMPILE=%s" % CROSS_COMPILE,
         "PLAT=fvp",
         "ENABLE_RME=1",
         "FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts",
         "DEBUG=1",
-        "BL33=%s/build/fvp/debug/tftf.bin" % TF_A_TESTS,
+        "BL33=%s" % bl33,
     ]
 
     if rmm == "islet":
@@ -252,13 +252,13 @@ if __name__ == "__main__":
 
         if args.normal_world == "tf-a-tests":
             prepare_tf_a_tests()
-            prepare_bootloaders(args.rmm)
+            bl33="%s/build/fvp/debug/tftf.bin" % TF_A_TESTS
+            prepare_bootloaders(args.rmm, bl33)
             #prepare_fip_tf_a_tests()
         else:
             prepare_nw_linux()
-
-            #check prepare_bootloaders()
-            prepare_fip_linux()
+            prepare_bootloaders(args.rmm, PREBUILT_EDK2)
+            #prepare_fip_linux()
 
             if args.realm is not None:
                 prepare_realm(args.realm)

@@ -23,6 +23,14 @@ def commit(path):
     proc = run(['git', 'rev-parse', '--short', 'HEAD'], cwd=path)
     return proc.stdout.strip()
 
+def check_exist(project, info):
+    proc = run(['git', 'worktree', 'list'], cwd=ROOT)
+    for line in proc.stdout.splitlines():
+        if line.find(info["commit"]) > 0:
+            return True
+
+    return False
+
 def add_worktree(project, info):
     branch = info["branch"]
     print(f"[+] Sync worktree to third-party/{project}: branch[{branch}]")
@@ -43,6 +51,10 @@ if __name__ == "__main__":
     tree = toml.load(os.path.join(THIRD_PARTY, "worktree.toml"))
 
     for project, info in tree.items():
+        if check_exist(project, info):
+            print(f"[!] Already added project [{project}]")
+            continue
+
         if len(sys.argv) == 1:
             add_worktree(project, info)
         elif len(sys.argv) == 2 and sys.argv[1] == project:

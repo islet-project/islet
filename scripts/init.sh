@@ -39,5 +39,3 @@ $HERE/deps/rust.sh
 echo "preparing prerequisites for build"
 cd ${ROOT}
 ./scripts/prepare_qemu.sh
-./scripts/prepare_fastmodel.sh
-./scripts/prepare_toolchains.sh

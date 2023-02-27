@@ -1,9 +1,10 @@
 # wasm-realm uses kernel of linux-realm
 include ../linux/Makefile
 
-WASMFS = $(ROOT)/assets/prebuilt/qemu/guest/wasm-realm-initrd.cpio.gz
+WASMFS = $(ROOT)/assets/prebuilt/rootfs/rootfs-realm-wasm.cpio.gz
 KERNEL = $(TARGET)
 
+# Run on host
 .PHONY: run
 run: config build install
 	qemu-system-aarch64 \

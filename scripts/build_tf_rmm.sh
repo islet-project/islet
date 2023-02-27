@@ -8,4 +8,4 @@ export CROSS_COMPILE=$1
 cmake -DRMM_CONFIG=fvp_defcfg -S . -B build
 cmake --build build
 
-cp build/rmm.img $ROOT/out/tf-rmm.img
+cp build/Release/rmm.img $ROOT/out/tf-rmm.img

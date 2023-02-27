@@ -1,6 +1,6 @@
 ROOT      = $(shell git rev-parse --show-toplevel)
 LINUX     = $(ROOT)/third-party/realm-linux
-TOOLCHAIN = $(ROOT)/assets/toolchains/aarch64/bin/aarch64-linux-gnu-
+TOOLCHAIN = $(ROOT)/assets/toolchain/aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-
 TARGETDIR = $(ROOT)/out/realm
 TARGET    = $(TARGETDIR)/linux.realm
 
@@ -10,7 +10,7 @@ all: config build
 config:
 	make -C $(LINUX) \
 		defconfig ARCH=arm64 \
-		KBUILD_DEFCONFIG=realmvm_defconfig \
+		KBUILD_DEFCONFIG=realm \
 		CROSS_COMPILE=$(TOOLCHAIN)
 
 .PHONY: build

@@ -1,30 +1,30 @@
 [nw-linux]
-branch = "3rd-linux-cca-rfc-v1"
-commit = "dc921fa30f0c"
+branch = "3rd-nw-linux-230222"
+commit = "604bc2c405be"
 upstream = "upstream-linux-cca-rfc-v1"
 
 [optee-build]
-branch = "3rd-optee-build"
-commit = "977f2f228bf7"
+branch = "3rd-optee-build-230227"
+commit = "2d485b745dbb"
 
 [realm-linux]
-branch = "3rd-realm-linux"
-commit = "8f6dc54433b3"
-upstream = "upstream-linux-v5.17"
+branch = "3rd-realm-linux-230222"
+commit = "c0517c7c4c7a"
+upstream = "upstream-linux-cca-rfc-v1"
 
 [tf-a-tests]
-branch = "3rd-tf-a-tests"
-commit = "f7b3be91ab95"
-upstream = "upstream-tf-a-tests-v2.7"
+branch = "3rd-tf-a-tests-230227"
+commit = "3042dd1da343"
+upstream = "upstream-tftf-lts-v2.8"
 
 [tf-a]
-branch = "3rd-tf-a"
-commit = "913627710563"
-upstream = "upstream-tf-a-v2.7"
+branch = "3rd-tf-a-230222"
+commit = "33b4df9c1f77"
+upstream = "upstream-tf-a-lts-v2.8"
 
 [tf-rmm]
-branch = "3rd-tf-rmm-v0.2.0"
-commit = "7d34f27fa9ff"
+branch = "3rd-tf-rmm-230223"
+commit = "708eb9d6ef16"
 
 [android-kernel]
 branch = "3rd-android-kernel"
@@ -35,5 +35,6 @@ branch = "3rd-gki-build"
 commit = "5fe377f6a20b"
 
 [kvmtool]
-branch = "3rd-kvmtool-cca-rfc-v1"
-commit = "275981645b8b"
+branch = "3rd-kvmtool-230227"
+commit = "2e8fe7ff6124"
+tag = "kvmtool-cca-rfc-v1"

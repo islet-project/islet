@@ -30,7 +30,7 @@ def make(srcdir, extra=None):
 
 def prepare_tf_a_tests():
     srcdir = TF_A_TESTS
-    outbin = os.path.join(TF_A_TESTS, "build/fvp/debug/tftf.bin")
+    outbin = TFTF_BIN
 
     args = [
         "CROSS_COMPILE=%s" % CROSS_COMPILE,
@@ -96,49 +96,6 @@ def prepare_rmm(rmm):
     elif rmm == "tf-rmm":
         run(["./scripts/build_tf_rmm.sh", CROSS_COMPILE], cwd=ROOT)
 
-def prepare_fiptool():
-    print("[!] Building firmware image package tool...")
-    make(FIPTOOL)
-
-    outbin = os.path.join(FIPTOOL, "fiptool")
-    if not os.path.exists(outbin):
-        print("[!] Failed to build: %s" % outbin)
-
-def prepare_fip_tf_a_tests():
-    print("[!] Building fip for tf-a-tests...")
-    fiptool = os.path.join(FIPTOOL, "fiptool")
-    fdtsdir = os.path.join(TF_A, "build/fvp/debug/fdts")
-    run(["%s" % fiptool,
-         "create",
-         "--fw-config", "%s/fvp_fw_config.dtb" % fdtsdir,
-         "--tb-fw-config", "%s/fvp_tb_fw_config.dtb" % fdtsdir,
-         "--soc-fw-config", "%s/fvp_soc_fw_config.dtb" % fdtsdir,
-         "--nt-fw-config", "%s/fvp_nt_fw_config.dtb" % fdtsdir,
-         "--hw-config", "%s/fvp-base-gicv3-psci-1t.dtb" % fdtsdir,
-         "--tb-fw", "%s/bl2.bin" % OUT,
-         "--soc-fw", "%s/bl31.bin" % OUT,
-#         "--rmm-fw", "%s/rmm.bin" % OUT,
-         "--nt-fw", "%s/build/fvp/debug/tftf.bin" % TF_A_TESTS,
-         "%s/fip-tf-a-tests.bin" % OUT], cwd=ROOT)
-
-def prepare_fip_linux():
-    print("[!] Building fip for linux...")
-
-    fiptool = os.path.join(FIPTOOL, "fiptool")
-    fdtsdir = os.path.join(TF_A, "build/fvp/debug/fdts")
-    run(["%s" % fiptool,
-         "create",
-         "--fw-config", "%s/fvp_fw_config.dtb" % fdtsdir,
-         "--tb-fw-config", "%s/fvp_tb_fw_config.dtb" % fdtsdir,
-         "--soc-fw-config", "%s/fvp_soc_fw_config.dtb" % fdtsdir,
-         "--nt-fw-config", "%s/fvp_nt_fw_config.dtb" % fdtsdir,
-         "--hw-config", "%s/fvp-base-gicv3-psci-1t.dtb" % fdtsdir,
-         "--tb-fw", "%s/bl2.bin" % OUT,
-         "--soc-fw", "%s/bl31.bin" % OUT,
-         "--rmm-fw", "%s/rmm.bin" % OUT,
-         "--nt-fw", PREBUILT_EDK2,
-         "%s/fip.bin" % OUT], cwd=ROOT)
-
 def prepare_nw_linux():
     args = [
         "-j%d" % multiprocessing.cpu_count(), "-f",
@@ -160,6 +117,16 @@ def prepare_nw_linux():
         "boot-img" # DEPS:  $(GRUB_BIN) ${LINUX_BIN} ${LINUX_DTB_BIN}
     ]
     make(BUILD_SCRIPT, args)
+
+def prepare_kvmtool():
+    print("[!] Building kvmtool...")
+    args = [
+        "CROSS_COMPILE=%s" % KVMTOOL_CROSS_COMPILE,
+        "ARCH=arm64",
+        "LIBFDT_DIR=%s/libfdt" % DTC,
+    ]
+    make(KVMTOOL, args)
+    run(["cp", "%s/lkvm" % KVMTOOL, OUT], cwd=ROOT)
 
 def run_fvp_tf_a_tests(debug):
     print("[!] Running fvp for tf-a-tests...")
@@ -186,19 +153,23 @@ def run_fvp_linux(debug):
     run(args, cwd=FASTMODEL)
 
 def place_realm_at_shared():
-    os.makedirs("%s" % PC_SHARE_DIR, exist_ok=True)
-    run(["cp", "-R", PREBUILT_QEMU, PC_SHARE_DIR], cwd=ROOT)
-    run(["cp", "-R", "%s/realm/." % OUT, "%s/guest/" % PC_SHARE_DIR], cwd=ROOT)
+    os.makedirs(GUEST_SHARED, exist_ok=True)
+    run(["cp", "-R", "%s/." % REALM_ROOTFS, GUEST_SHARED], cwd=ROOT)
+    run(["cp", "-R", "%s/realm/." % OUT, GUEST_SHARED], cwd=ROOT)
+    run(["cp", "%s/lkvm" % OUT, GUEST_SHARED], cwd=ROOT)
+    run(["cp", LAUNCH_REALM, "%s/launch.sh" % GUEST_SHARED], cwd=ROOT)
 
 def clean_repo():
-    run(["make", "clean"], cwd=FIPTOOL)
     run(["make", "distclean"], cwd=TF_A)
     run(["make", "distclean"], cwd=TF_A_TESTS)
+    run(["make", "clean"], cwd=REALM_LINUX)
+    run(["make", "clean"], cwd=KVMTOOL)
 
     args = ["-f", "fvp.mk", "linux-clean", "boot-img-clean"]
     make(BUILD_SCRIPT, args)
 
     run(["rm", "-rf", "out"], cwd=ROOT)
+    run(["rm", "-rf", "build"], cwd=TF_RMM)
 
 def get_all_realms():
     realms = []
@@ -247,18 +218,15 @@ if __name__ == "__main__":
     validate_args(args)
 
     if not args.run_only:
-        prepare_fiptool()
         prepare_rmm(args.rmm)
 
         if args.normal_world == "tf-a-tests":
             prepare_tf_a_tests()
-            bl33="%s/build/fvp/debug/tftf.bin" % TF_A_TESTS
-            prepare_bootloaders(args.rmm, bl33)
-            #prepare_fip_tf_a_tests()
+            prepare_bootloaders(args.rmm, TFTF_BIN)
         else:
+            prepare_kvmtool()
             prepare_nw_linux()
             prepare_bootloaders(args.rmm, PREBUILT_EDK2)
-            #prepare_fip_linux()
 
             if args.realm is not None:
                 prepare_realm(args.realm)

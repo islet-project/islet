@@ -21,12 +21,17 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
-# TODO: Sync 3rd-parties submodules
-
-# Sync islet-assets
+# Sync assets
 $HERE/deps/assets.sh
 if [ $? -ne 0 ]; then
 	echo "Failed to sync assets."
+	exit 1
+fi
+
+# Sync submodule of third-party
+$HERE/deps/submodule.sh
+if [ $? -ne 0 ]; then
+	echo "Failed to sync submodule of third-party."
 	exit 1
 fi
 

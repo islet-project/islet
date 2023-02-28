@@ -5,8 +5,8 @@ UART=$ROOT/out/uart0.log
 
 [ -e $UART ] && rm $UART
 
-$ROOT/scripts/fvp-cca -bo -nw=tf-a-tests
-$ROOT/scripts/fvp-cca -ro -nw=tf-a-tests &
+$ROOT/scripts/fvp-cca -bo -nw=tf-a-tests -rmm=tf-rmm
+$ROOT/scripts/fvp-cca -ro -nw=tf-a-tests -rmm=tf-rmm &
 
 sleep 10
 

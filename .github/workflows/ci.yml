@@ -7,7 +7,21 @@ on:
     branches: [ main ]
 
 jobs:
-  fvp-cca:
+  linux-cca:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # fetch all branch for worktree
+          submodules: true
+
+      - name: Install dependencies
+        run: ./scripts/init.sh
+
+      - name: Build linux cca components
+        run: ./scripts/fvp-cca -bo -nw=linux -rm=linux -rmm=tf-rmm
+
+  tf-a-tests:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3

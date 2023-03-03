@@ -8,14 +8,16 @@ import subprocess
 import sys
 
 from config import *
+from os import environ
 
 os.makedirs(OUT, exist_ok=True)
 
-def run(cmd, cwd):
+def run(cmd, cwd, new_env=None):
     process = subprocess.run(cmd, cwd=cwd,
                        stderr=subprocess.STDOUT,
                        stdout=subprocess.PIPE,
                        universal_newlines=True,
+                       env=new_env,
                        check=False)
     if process.returncode != 0:
         print("[!] Failed to run: %s @ %s" % (cmd, cwd))
@@ -118,6 +120,38 @@ def prepare_nw_linux():
     ]
     make(BUILD_SCRIPT, args)
 
+def prepare_nw_aosp():
+    new_env = environ.copy()
+    new_env["BUILD_CONFIG"] = "../android-kernel/build.config.gki.aarch64"
+    new_env["OUT_DIR"] = NW_AOSP_OUT
+    new_env["KMI_SYMBOL_LIST_STRICT_MODE"] = "0"
+
+    print("[!] Building Android kernel...")
+    run("build/build.sh", cwd=NW_AOSP_BUILD_SCRIPT, new_env=new_env)
+
+    print("[!] Building boot image...")
+    args = [
+        "cp",
+        "%s/%s/android-kernel/arch/arm64/boot/Image" % (NW_AOSP_BUILD_SCRIPT, NW_AOSP_OUT),
+        "%s/Image_aosp" % OUT
+    ]
+    run(args, cwd=ROOT)
+    run(["cp", PREBUILT_AOSP_DTB, OUT], cwd=ROOT)
+    run(["cp", PREBUILT_GRUB, OUT], cwd=ROOT)
+
+    if not os.path.exists("%s/initrd-aosp.img" % OUT):
+        print("[!] Place AOSP ramdisk image with name 'initrd-aosp.img' to %s" % OUT)
+        sys.exit(1)
+
+    print("[!] compsing boot image...")
+    args = [
+        "-j%d" % multiprocessing.cpu_count(), "-f",
+        "fvp-android.mk",
+        "boot-img" # DEPS:  $(GRUB_BIN) ${AOSP_KERNEL_BIN} ${AOSP_DTB_BIN}
+    ]
+    make(BUILD_SCRIPT, args)
+
+
 def prepare_kvmtool():
     print("[!] Building kvmtool...")
     args = [
@@ -152,6 +186,25 @@ def run_fvp_linux(debug):
         args += ["--cadi-server"]
     run(args, cwd=FASTMODEL)
 
+def run_fvp_aosp(debug):
+    new_env = environ.copy()
+    new_env["LD_PRELOAD"] = PREBUILT_AOSP_ADB
+    print("[!] Running fvp for Android...")
+    args = ["./FVP_Base_RevC-2xAEMvA",
+            "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
+            "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
+            "-C", "bp.mmc.p_mmc_file=%s/boot-aosp.img" % OUT,
+            "-C", "bp.virtioblockdevice.image_path=%s/system-qemu-aosp.img" % OUT,
+            "-C", "bp.virtiop9device.root_path=%s" % PC_SHARE_DIR,
+            "-C", "bp.virtio_net.hostbridge.userNetworking=1",
+            "-C", "bp.virtio_net.hostbridge.userNetPorts=5555=5555",
+            "-C",  "bp.virtio_net.enabled=1",
+            "-f", CONFIG,
+            "-Q", "1000"]
+    if debug:
+        args += ["--cadi-server"]
+    run(args, cwd=FASTMODEL, new_env=new_env)
+
 def place_realm_at_shared():
     os.makedirs(GUEST_SHARED, exist_ok=True)
     run(["cp", "-R", "%s/." % REALM_ROOTFS, GUEST_SHARED], cwd=ROOT)
@@ -179,7 +232,7 @@ def get_all_realms():
     return sorted(realms)
 
 def validate_args(args):
-    nw_list = ["linux", "tf-a-tests"]
+    nw_list = ["linux", "tf-a-tests", "aosp"]
     if not args.normal_world in nw_list:
         print("Please select one of the normal components:")
         print("  " + "\n  ".join(nw_list))
@@ -223,6 +276,9 @@ if __name__ == "__main__":
         if args.normal_world == "tf-a-tests":
             prepare_tf_a_tests()
             prepare_bootloaders(args.rmm, TFTF_BIN)
+        elif args.normal_world == "aosp":
+            prepare_nw_aosp()
+            prepare_bootloaders(args.rmm, PREBUILT_EDK2)
         else:
             prepare_kvmtool()
             prepare_nw_linux()
@@ -237,3 +293,6 @@ if __name__ == "__main__":
 
     if not args.build_only and args.normal_world == "linux":
         run_fvp_linux(args.debug)
+
+    if not args.build_only and args.normal_world == "aosp":
+        run_fvp_aosp(args.debug)

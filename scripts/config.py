@@ -13,6 +13,8 @@ PREBUILT = os.path.join(ROOT, "assets/prebuilt")
 PREBUILT_EDK2 = os.path.join(PREBUILT, "FVP_AARCH64_EFI.fd")
 PREBUILT_GRUB = os.path.join(PREBUILT, "bootaa64.efi")
 PREBUILT_QEMU = os.path.join(PREBUILT, "qemu")
+PREBUILT_AOSP_DTB = os.path.join(PREBUILT, "aosp/fvp-base-aosp.dtb")
+PREBUILT_AOSP_ADB = os.path.join(PREBUILT, "aosp/bind_to_localhost.so")
 
 REALM_ROOTFS = os.path.join(ROOT, "assets/rootfs")
 
@@ -26,6 +28,8 @@ THIRD_PARTY = os.path.join(ROOT, "third-party")
 BUILD_SCRIPT = os.path.join(THIRD_PARTY, "optee-build")
 REALM_LINUX = os.path.join(THIRD_PARTY, "realm-linux")
 NW_LINUX = os.path.join(THIRD_PARTY, "nw-linux")
+NW_AOSP_BUILD_SCRIPT = os.path.join(THIRD_PARTY, "gki-build")
+NW_AOSP_OUT = "out/aosp_nw"
 TF_A = os.path.join(THIRD_PARTY, "tf-a")
 TF_A_TESTS = os.path.join(THIRD_PARTY, "tf-a-tests")
 TFTF_BIN = os.path.join(TF_A_TESTS, "build/fvp/debug/tftf.bin")

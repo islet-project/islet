@@ -137,6 +137,7 @@ def prepare_nw_aosp():
     ]
     run(args, cwd=ROOT)
     run(["cp", PREBUILT_AOSP_DTB, OUT], cwd=ROOT)
+    run(["cp", PREBUILT_AOSP_INITRD, OUT], cwd=ROOT)
     run(["cp", PREBUILT_GRUB, OUT], cwd=ROOT)
 
     if not os.path.exists("%s/initrd-aosp.img" % OUT):

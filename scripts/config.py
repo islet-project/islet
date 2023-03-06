@@ -14,6 +14,7 @@ PREBUILT_EDK2 = os.path.join(PREBUILT, "FVP_AARCH64_EFI.fd")
 PREBUILT_GRUB = os.path.join(PREBUILT, "bootaa64.efi")
 PREBUILT_QEMU = os.path.join(PREBUILT, "qemu")
 PREBUILT_AOSP_DTB = os.path.join(PREBUILT, "aosp/fvp-base-aosp.dtb")
+PREBUILT_AOSP_INITRD = os.path.join(PREBUILT, "aosp/initrd-aosp.img")
 PREBUILT_AOSP_ADB = os.path.join(PREBUILT, "aosp/bind_to_localhost.so")
 
 REALM_ROOTFS = os.path.join(ROOT, "assets/rootfs")

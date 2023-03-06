@@ -8,7 +8,7 @@ UART=$ROOT/out/uart0.log
 $ROOT/scripts/fvp-cca -bo -nw=tf-a-tests -rmm=tf-rmm
 $ROOT/scripts/fvp-cca -ro -nw=tf-a-tests -rmm=tf-rmm &
 
-sleep 10
+sleep 20
 
 # cleanup
 ps -ef | grep fvp-cca | grep -v grep | awk '{print $2}' | xargs kill

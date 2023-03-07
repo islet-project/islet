@@ -38,6 +38,13 @@ impl monitor::smc::Caller for SMC {
                 out("x7") ret[7],
             )
         }
+
+        trace!(
+            "SMC: cmd[{:X}], args{:X?}, ret{:X?}",
+            command,
+            args,
+            ret
+        );
         ret
     }
 }

@@ -28,6 +28,8 @@ const RMM_REALM_SET_REG: usize = 0xc400_0172;
 const RMM_REALM_GET_REG: usize = 0xc400_0173;
 const RMM_REQ_COMPLETE: usize = 0xc400_018f;
 
+pub const ABI_VERSION: usize = 2;
+
 pub const RET_SUCCESS: usize = 0x101;
 pub const RET_FAIL: usize = 0x100;
 pub const RET_EXCEPTION_IRQ: usize = 0x0;

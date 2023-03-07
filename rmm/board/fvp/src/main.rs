@@ -14,7 +14,6 @@ mod driver;
 mod entry;
 
 use armv9a::allocator;
-use armv9a::config;
 use armv9a::cpu;
 use armv9a::helper;
 
@@ -49,7 +48,6 @@ pub unsafe fn main() -> ! {
 fn init_instance() {
     monitor::realm::set_instance(armv9a::realm::registry::Manager::new());
     monitor::smc::set_instance(armv9a::smc::SMC::new());
-    monitor::config::set_instance(armv9a::config::RMMConfig::new());
 }
 
 mod mock {

@@ -1,9 +1,9 @@
 use crate::allocator;
-use crate::config::{NUM_OF_CPU, RMM_STACK_SIZE};
 use crate::helper;
 use crate::helper::ID_AA64MMFR0_EL1;
 use crate::log::LevelFilter;
 
+use armv9a::config::{NUM_OF_CPU, RMM_STACK_SIZE};
 use monitor::io::stdout;
 use monitor::logger;
 

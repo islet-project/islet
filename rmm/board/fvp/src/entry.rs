@@ -50,7 +50,7 @@ unsafe fn clear_bss() {
 
 fn init_console() {
     let _ = stdout().attach(crate::driver::uart::pl011::device());
-    logger::register_global_logger(LevelFilter::Info); // Control log level
+    logger::register_global_logger(LevelFilter::Trace); // Control log level
     info!("Initialized the console!");
 }
 

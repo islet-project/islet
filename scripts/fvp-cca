@@ -132,7 +132,7 @@ def prepare_nw_aosp():
     print("[!] Building boot image...")
     args = [
         "cp",
-        "%s/%s/android-kernel/arch/arm64/boot/Image" % (NW_AOSP_BUILD_SCRIPT, NW_AOSP_OUT),
+        "%s/%s/arch/arm64/boot/Image" % (NW_AOSP_BUILD_SCRIPT, NW_AOSP_OUT),
         "%s/Image_aosp" % OUT
     ]
     run(args, cwd=ROOT)

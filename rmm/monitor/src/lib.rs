@@ -16,5 +16,8 @@ pub mod realm;
 pub mod rmi;
 pub mod smc;
 
+// TODO: move to lib
+pub mod utils;
+
 #[macro_use]
 extern crate log;

@@ -13,8 +13,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         let id = realm::instance()
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .create()?;
-        call.reply(rmi::RET_SUCCESS)?;
-        call.reply(id)?;
+        call.reply(&[rmi::RET_SUCCESS, id, 0, 0]);
         Ok(())
     });
 
@@ -27,12 +26,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .create_vcpu(id);
         match ret {
-            Ok(vcpuid) => {
-                call.reply(rmi::RET_SUCCESS)?;
-                call.reply(vcpuid)
-            }
-            Err(_) => call.reply(rmi::RET_FAIL),
-        }?;
+            Ok(vcpuid) => call.reply(&[rmi::RET_SUCCESS, vcpuid, 0, 0]),
+            Err(_) => call.reply(&[rmi::RET_FAIL, 0, 0, 0]),
+        };
         Ok(())
     });
 
@@ -43,7 +39,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         realm::instance()
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .remove(id)?;
-        call.reply(rmi::RET_SUCCESS)?;
+        call.reply(&[rmi::RET_SUCCESS, 0, 0, 0]);
         Ok(())
     });
 
@@ -61,15 +57,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
         match ret {
             Ok(val) => match val[0] {
                 rmi::RET_EXCEPTION_TRAP | rmi::RET_EXCEPTION_IRQ => {
-                    call.reply(val[0]).or(Err("RMM failed to reply."))?;
-                    call.reply(val[1])?;
-                    call.reply(val[2])?;
-                    call.reply(val[3])
+                    call.reply(&[val[0], val[1], val[2], val[3]])
                 }
-                _ => call.reply(rmi::RET_SUCCESS),
+                _ => call.reply(&[rmi::RET_SUCCESS, 0, 0, 0]),
             },
-            Err(_) => Err(Error::new(ErrorKind::Unsupported)),
-        }?;
+            Err(_) => call.reply(&[rmi::RET_FAIL, 0, 0, 0]),
+        };
         Ok(())
     });
 
@@ -88,8 +81,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .map(id, guest, phys, size, prot);
         match ret {
-            Ok(_) => call.reply(rmi::RET_SUCCESS)?,
-            Err(_) => call.reply(rmi::RET_FAIL)?,
+            Ok(_) => call.reply(&[rmi::RET_SUCCESS, 0, 0, 0]),
+            Err(_) => call.reply(&[rmi::RET_FAIL, 0, 0, 0]),
         }
         Ok(())
     });
@@ -106,8 +99,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .unmap(id, guest, size);
         match ret {
-            Ok(_) => call.reply(rmi::RET_SUCCESS)?,
-            Err(_) => call.reply(rmi::RET_FAIL)?,
+            Ok(_) => call.reply(&[rmi::RET_SUCCESS, 0, 0, 0]),
+            Err(_) => call.reply(&[rmi::RET_FAIL, 0, 0, 0]),
         }
         Ok(())
     });
@@ -125,8 +118,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .set_reg(id, vcpu, register, value);
         match ret {
-            Ok(_) => call.reply(rmi::RET_SUCCESS)?,
-            Err(_) => call.reply(rmi::RET_FAIL)?,
+            Ok(_) => call.reply(&[rmi::RET_SUCCESS, 0, 0, 0]),
+            Err(_) => call.reply(&[rmi::RET_FAIL, 0, 0, 0]),
         }
         Ok(())
     });
@@ -143,11 +136,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop<rmi::Receiver>) {
             .ok_or(Error::new(ErrorKind::Unsupported))?
             .get_reg(id, vcpu, register);
         match ret {
-            Ok(value) => {
-                call.reply(rmi::RET_SUCCESS)?;
-                call.reply(value)?;
-            }
-            Err(_) => call.reply(rmi::RET_FAIL)?,
+            Ok(val) => call.reply(&[rmi::RET_SUCCESS, val, 0, 0]),
+            Err(_) => call.reply(&[rmi::RET_FAIL, 0, 0, 0]),
         }
         Ok(())
     });

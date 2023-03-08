@@ -1,6 +1,6 @@
 use alloc::rc::Rc;
 
-use crate::communication::{Error, Event, Sender};
+use crate::communication::{Event, Sender};
 
 extern crate alloc;
 
@@ -27,8 +27,8 @@ where
         &self.argument
     }
 
-    pub fn reply(&self, reply: R) -> Result<(), Error> {
-        self.sender.send(reply)
+    pub fn reply(&self, reply: &R) {
+        self.sender.send(reply);
     }
 }
 
@@ -51,7 +51,6 @@ pub mod test {
 
     use super::{Context, Sender};
     use crate::communication::Event;
-    use crate::io::Error;
 
     extern crate alloc;
 
@@ -74,9 +73,8 @@ pub mod test {
     impl Sender for MockSender {
         type Event = usize;
 
-        fn send(&self, event: usize) -> Result<(), Error> {
-            self.data.replace(event);
-            Ok(())
+        fn send(&self, event: &usize) {
+            self.data.replace(*event);
         }
     }
 
@@ -88,7 +86,7 @@ pub mod test {
         assert_eq!(call.code(), 1234usize);
         assert_eq!(*call.argument(), 5678usize);
 
-        assert!(call.reply(91011usize).is_ok());
+        call.reply(&91011usize);
 
         assert_eq!(sender.get(), 91011usize);
     }

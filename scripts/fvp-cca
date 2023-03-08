@@ -153,15 +153,16 @@ def prepare_nw_aosp():
     make(BUILD_SCRIPT, args)
 
 
-def prepare_kvmtool():
+def prepare_kvmtool(lkvm="lkvm"):
     print("[!] Building kvmtool...")
     args = [
         "CROSS_COMPILE=%s" % KVMTOOL_CROSS_COMPILE,
         "ARCH=arm64",
         "LIBFDT_DIR=%s/libfdt" % DTC,
+        lkvm,
     ]
     make(KVMTOOL, args)
-    run(["cp", "%s/lkvm" % KVMTOOL, OUT], cwd=ROOT)
+    run(["cp", "%s/%s" % (KVMTOOL, lkvm), OUT], cwd=ROOT)
 
 def run_fvp_tf_a_tests(debug):
     print("[!] Running fvp for tf-a-tests...")
@@ -278,6 +279,7 @@ if __name__ == "__main__":
             prepare_tf_a_tests()
             prepare_bootloaders(args.rmm, TFTF_BIN)
         elif args.normal_world == "aosp":
+            prepare_kvmtool("lkvm-static")
             prepare_nw_aosp()
             prepare_bootloaders(args.rmm, PREBUILT_EDK2)
         else:

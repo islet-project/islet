@@ -2,10 +2,9 @@ use alloc::rc::Rc;
 use core::cell::RefCell;
 use core::cmp::Ordering;
 
-use crate::smc;
-
 use crate::call;
-use crate::communication::{self, Error, ErrorKind};
+use crate::communication::{self, Error};
+use crate::smc;
 
 extern crate alloc;
 
@@ -28,7 +27,7 @@ const RMM_REALM_SET_REG: usize = 0xc400_0172;
 const RMM_REALM_GET_REG: usize = 0xc400_0173;
 const RMM_REQ_COMPLETE: usize = 0xc400_018f;
 
-pub const ABI_VERSION: usize = 2;
+pub const ABI_VERSION: usize = 1;
 
 pub const RET_SUCCESS: usize = 0x101;
 pub const RET_FAIL: usize = 0x100;
@@ -113,7 +112,7 @@ impl Ord for Code {
 }
 
 pub type Argument = [usize; 7];
-pub type Return = usize;
+pub type Return = [usize; 4];
 pub type Call = call::Context<Code, Argument, Return>;
 
 pub struct Receiver {
@@ -126,59 +125,59 @@ impl Receiver {
             sender: Rc::new(Sender::new()),
         }
     }
+
+    pub fn sender(&self) -> Rc<Sender> {
+        self.sender.clone()
+    }
 }
 
 impl communication::Receiver for Receiver {
     type Event = Call;
 
-    fn recv(&self) -> Result<Call, Error> {
+    fn dispatch(&self) {
         let cmd = usize::from(Code::RequestComplete);
         let arg = self.sender.pop();
-        let smc = smc::instance().ok_or(Error::new(ErrorKind::Unsupported))?;
+        let smc = smc::instance().unwrap();
         let ret = smc.call(cmd, arg);
+        self.sender.push(&[ret[0], ret[1], ret[2], ret[3]]);
+    }
 
-        let cmd = ret[0];
+    fn recv(&self) -> Result<Call, Error> {
         let mut arg = [0usize; 7];
-        arg.clone_from_slice(&ret[1..8]);
+        let ret = self.sender.pop();
+        let cmd = ret[0];
+        arg[1..4].clone_from_slice(&ret[1..4]);
         Ok(Call::new(Code::from(cmd), arg, self.sender.clone()))
     }
 }
 
 pub struct Sender {
-    data: RefCell<(usize, [Return; 4])>,
+    data: RefCell<Return>,
 }
 
 impl Sender {
     const fn new() -> Self {
         Self {
-            data: RefCell::new((0usize, [0usize; 4])),
+            data: RefCell::new([0usize; 4]),
         }
     }
 
-    fn pop(&self) -> [Return; 4] {
-        let mut d = self.data.borrow_mut();
-        let ret = d.1;
-        *d = (0usize, [0usize; 4]);
+    fn pop(&self) -> Return {
+        let mut data = self.data.borrow_mut();
+        let ret = *data;
+        *data = [0usize; 4];
         ret
     }
 
-    fn push(&self, data: usize) -> Result<(), Error> {
-        let mut d = self.data.borrow_mut();
-        let pos = d.0;
-        if pos < 4 {
-            d.1[pos] = data;
-            d.0 += 1;
-            Ok(())
-        } else {
-            Err(Error::new(ErrorKind::StorageFull))
-        }
+    fn push(&self, data: &Return) {
+        *self.data.borrow_mut() = *data;
     }
 }
 
 impl communication::Sender for Sender {
     type Event = Return;
 
-    fn send(&self, event: Return) -> Result<(), Error> {
-        self.push(event)
+    fn send(&self, event: &Return) {
+        self.push(event);
     }
 }

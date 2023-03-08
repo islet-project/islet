@@ -34,12 +34,14 @@ pub trait Receiver {
     {
         Iter { receiver: self }
     }
+
+    fn dispatch(&self) {}
 }
 
 pub trait Sender {
     type Event;
 
-    fn send(&self, event: Self::Event) -> Result<(), Error>;
+    fn send(&self, event: &Self::Event);
 }
 
 #[cfg(test)]

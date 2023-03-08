@@ -65,6 +65,7 @@ where
                         error!("Not registered event.");
                     }
                 }
+                self.receiver.dispatch();
             }
         }
     }

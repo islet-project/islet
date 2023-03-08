@@ -2,13 +2,10 @@ extern crate alloc;
 
 use alloc::collections::btree_map::BTreeMap;
 
-use crate::communication::{Event, Handler, IdleHandler, Receiver};
+use crate::communication::{Event, Handler, Receiver};
 
 #[macro_export]
 macro_rules! listen {
-    ($mainloop:expr, $handler:expr) => {{
-        $mainloop.set_idle_handler(alloc::boxed::Box::new($handler))
-    }};
     ($mainloop:expr, $code:expr, $handler:expr) => {{
         $mainloop.set_event_handler($code, alloc::boxed::Box::new($handler))
     }};
@@ -21,7 +18,6 @@ where
 {
     receiver: T,
     on_event: BTreeMap<<T::Event as Event>::Code, Handler<T::Event>>,
-    on_idle: Option<IdleHandler>,
 }
 
 impl<T> Mainloop<T>
@@ -34,7 +30,6 @@ where
         Self {
             receiver,
             on_event: BTreeMap::new(),
-            on_idle: None,
         }
     }
 
@@ -46,14 +41,10 @@ where
         self.on_event.insert(code, handler);
     }
 
-    pub fn set_idle_handler(&mut self, handler: IdleHandler) {
-        self.on_idle.replace(handler);
-    }
-
     pub fn run(&mut self) {
         for event in self.receiver.iter() {
             if self.on_event.is_empty() {
-                self.on_idle.as_mut().map(|handler| handler());
+                error!("There is no registered event handler.");
             } else {
                 match self.on_event.get_mut(&event.code()) {
                     Some(handler) => {
@@ -65,8 +56,9 @@ where
                         error!("Not registered event.");
                     }
                 }
-                self.receiver.dispatch();
             }
+
+            self.receiver.dispatch();
         }
     }
 }
@@ -151,22 +143,5 @@ pub mod test {
         mainloop.run();
 
         assert!(*result.borrow());
-    }
-
-    #[test]
-    fn idle_handler() {
-        let receiver = MockReceiver::new(&[1234usize, 5678usize]);
-        let mut mainloop = Mainloop::new(receiver);
-        let result = Rc::new(RefCell::new(0usize));
-        let r = result.clone();
-
-        // If there is no registered event_handler, idle handler is called
-        // mainloop.set_event_handler(5678usize, |_| {});
-
-        listen!(mainloop, move || (*r.borrow_mut()) += 1);
-
-        mainloop.run();
-
-        assert_eq!(*result.borrow(), 2);
     }
 }

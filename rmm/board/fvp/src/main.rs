@@ -18,7 +18,6 @@ use armv9a::cpu;
 use armv9a::helper;
 
 use monitor::communication::Sender;
-use monitor::listen;
 use monitor::mainloop::Mainloop;
 use monitor::rmi::{self, Receiver};
 
@@ -37,10 +36,6 @@ pub unsafe fn main() -> ! {
     rmi::gpt::set_event_handler(&mut mainloop);
     rmi::realm::set_event_handler(&mut mainloop);
     rmi::version::set_event_handler(&mut mainloop);
-
-    listen!(mainloop, || {
-        warn!("RMM: idle handler called.");
-    });
 
     let ret = mock::boot_complete();
     sender.send(&ret);

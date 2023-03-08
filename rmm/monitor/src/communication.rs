@@ -22,8 +22,6 @@ pub trait Event {
 
 pub type Handler<T> = Box<dyn FnMut(T) -> Result<(), &'static str>>;
 
-pub type IdleHandler = Box<dyn FnMut()>;
-
 pub trait Receiver {
     type Event;
 

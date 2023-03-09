@@ -27,9 +27,9 @@ pub unsafe fn main() -> ! {
         helper::regs::current_el()
     );
 
-    let rmm = armv9a::realm::registry::Manager::new();
+    let rmi = armv9a::realm::registry::RMI::new();
     let smc = armv9a::smc::SMC::new();
-    let monitor = monitor::Monitor::new(rmm, smc);
+    let monitor = monitor::Monitor::new(rmi, smc);
     monitor.boot_complete();
     monitor.run();
 

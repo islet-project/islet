@@ -1,8 +1,7 @@
 extern crate alloc;
 
 use super::{Context, Handler};
-use crate::realm::Manager;
-use crate::rmi;
+use crate::rmi::{self, RMI};
 use crate::smc::SecureMonitorCall;
 use crate::utils::spsc;
 
@@ -35,7 +34,7 @@ impl Mainloop {
         self.tx.send(ctx);
     }
 
-    pub fn run(&self, rmm: Manager, smc: SecureMonitorCall) {
+    pub fn run(&self, rmi: RMI, smc: SecureMonitorCall) {
         loop {
             let mut ctx = self.rx.recv();
 
@@ -45,7 +44,7 @@ impl Mainloop {
 
             match self.on_event.get(&ctx.cmd) {
                 Some(handler) => {
-                    handler(&mut ctx, rmm, smc);
+                    handler(&mut ctx, rmi, smc);
                     ctx.arg = [ctx.ret[0], ctx.ret[1], ctx.ret[2], ctx.ret[3]];
                 }
                 None => {
@@ -54,7 +53,7 @@ impl Mainloop {
                 }
             }
 
-            ctx.cmd = rmi::RMM_REQ_COMPLETE;
+            ctx.cmd = rmi::REQ_COMPLETE;
             self.dispatch(smc, ctx);
         }
     }

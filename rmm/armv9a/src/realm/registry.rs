@@ -55,14 +55,14 @@ fn get_realm(id: usize) -> Option<RealmMutex> {
 }
 
 #[derive(Debug)]
-pub struct Manager;
-impl Manager {
-    pub fn new() -> &'static Manager {
-        &Manager {}
+pub struct RMI;
+impl RMI {
+    pub fn new() -> &'static RMI {
+        &RMI {}
     }
 }
 
-impl monitor::realm::Control for Manager {
+impl monitor::rmi::Interface for RMI {
     fn create(&self) -> Result<usize, &str> {
         let mut rms = RMS.lock();
         let id = rms.0;

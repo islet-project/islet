@@ -1,7 +1,9 @@
 extern crate alloc;
 
 use super::{Context, Handler};
+use crate::realm::Manager;
 use crate::rmi;
+use crate::smc::SecureMonitorCall;
 use crate::utils::spsc;
 
 use alloc::collections::btree_map::BTreeMap;
@@ -23,9 +25,7 @@ impl Mainloop {
         }
     }
 
-    pub fn dispatch(&self, ctx: Context) {
-        use crate::smc;
-        let smc = smc::instance().unwrap();
+    pub fn dispatch(&self, smc: SecureMonitorCall, ctx: Context) {
         let ret = smc.call(ctx.cmd, ctx.arg);
         let ctx = Context {
             cmd: ret[0],
@@ -35,7 +35,7 @@ impl Mainloop {
         self.tx.send(ctx);
     }
 
-    pub fn run(&self) {
+    pub fn run(&self, rmm: Manager, smc: SecureMonitorCall) {
         loop {
             let mut ctx = self.rx.recv();
 
@@ -45,7 +45,7 @@ impl Mainloop {
 
             match self.on_event.get(&ctx.cmd) {
                 Some(handler) => {
-                    handler(&mut ctx);
+                    handler(&mut ctx, rmm, smc);
                     ctx.arg = [ctx.ret[0], ctx.ret[1], ctx.ret[2], ctx.ret[3]];
                 }
                 None => {
@@ -55,7 +55,7 @@ impl Mainloop {
             }
 
             ctx.cmd = rmi::RMM_REQ_COMPLETE;
-            self.dispatch(ctx);
+            self.dispatch(smc, ctx);
         }
     }
 

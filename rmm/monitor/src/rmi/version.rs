@@ -5,7 +5,7 @@ use crate::rmi;
 extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::Code::Version, |ctx| {
+    listen!(mainloop, rmi::Code::Version, |ctx, _, _| {
         trace!("RMM: requested version information: {}", rmi::ABI_VERSION);
         ctx.ret[0] = rmi::ABI_VERSION;
     });

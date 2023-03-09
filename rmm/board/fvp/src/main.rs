@@ -27,16 +27,11 @@ pub unsafe fn main() -> ! {
         helper::regs::current_el()
     );
 
-    init_instance();
-
-    let monitor = monitor::Monitor::new();
+    let rmm = armv9a::realm::registry::Manager::new();
+    let smc = armv9a::smc::SMC::new();
+    let monitor = monitor::Monitor::new(rmm, smc);
     monitor.boot_complete();
     monitor.run();
 
     panic!("failed to run the mainloop");
-}
-
-fn init_instance() {
-    monitor::realm::set_instance(armv9a::realm::registry::Manager::new());
-    monitor::smc::set_instance(armv9a::smc::SMC::new());
 }

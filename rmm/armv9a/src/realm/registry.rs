@@ -15,7 +15,8 @@ use crate::realm::context::Context;
 use crate::realm::mm::page_table::pte;
 use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::translation_granule_4k::RawPTE;
-use monitor::smc;
+use crate::smc::SMC;
+use monitor::smc::{self, Caller};
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
@@ -195,7 +196,7 @@ impl monitor::realm::Control for Manager {
                 flags as usize,
             );
 
-        let smc = monitor::smc::instance().ok_or(Error::new(ErrorKind::Unsupported))?;
+        let smc = SMC::new();
         let cmd = smc.convert(smc::Code::MarkRealm);
         let mut arg = [phys, 0, 0, 0];
         let mut remain = size;

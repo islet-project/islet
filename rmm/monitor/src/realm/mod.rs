@@ -51,20 +51,6 @@ pub enum State {
 }
 
 pub type Manager = &'static dyn Control;
-static mut REALM: Option<Manager> = None;
-
-#[allow(unused_must_use)]
-pub fn set_instance(vm: Manager) {
-    unsafe {
-        if REALM.is_none() {
-            REALM = Some(vm);
-        }
-    };
-}
-
-pub fn instance() -> Option<Manager> {
-    unsafe { REALM }
-}
 
 pub trait Control: Debug + Send + Sync {
     fn create(&self) -> Result<usize, &str>;

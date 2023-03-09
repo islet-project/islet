@@ -17,9 +17,7 @@ use armv9a::allocator;
 use armv9a::cpu;
 use armv9a::helper;
 
-use monitor::communication::Sender;
-use monitor::mainloop::Mainloop;
-use monitor::rmi::{self, Receiver};
+use monitor;
 
 #[no_mangle]
 pub unsafe fn main() -> ! {
@@ -29,18 +27,11 @@ pub unsafe fn main() -> ! {
         helper::regs::current_el()
     );
 
-    let receiver = Receiver::new();
-    let sender = receiver.sender();
-    let mut mainloop = Mainloop::new(receiver);
     init_instance();
-    rmi::gpt::set_event_handler(&mut mainloop);
-    rmi::realm::set_event_handler(&mut mainloop);
-    rmi::version::set_event_handler(&mut mainloop);
 
-    let ret = mock::boot_complete();
-    sender.send(&ret);
-
-    mainloop.run();
+    let monitor = monitor::Monitor::new();
+    monitor.boot_complete();
+    monitor.run();
 
     panic!("failed to run the mainloop");
 }
@@ -48,21 +39,4 @@ pub unsafe fn main() -> ! {
 fn init_instance() {
     monitor::realm::set_instance(armv9a::realm::registry::Manager::new());
     monitor::smc::set_instance(armv9a::smc::SMC::new());
-}
-
-mod mock {
-    pub(super) unsafe fn boot_complete() -> [usize; 4] {
-        const BOOT_COMPLETE: u64 = 0xC400_01CF;
-        const BOOT_SUCCESS: u64 = 0x0;
-
-        let mut ret: [usize; 4] = [0usize; 4];
-        core::arch::asm!(
-            "smc #0x0",
-            inlateout("x0") BOOT_COMPLETE => ret[0],
-            inlateout("x1") BOOT_SUCCESS => ret[1],
-            out("x2") ret[2],
-            out("x3") ret[3],
-        );
-        ret
-    }
 }

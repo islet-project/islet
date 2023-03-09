@@ -19,23 +19,21 @@ pub(crate) mod utils; // TODO: move to lib
 #[macro_use]
 extern crate log;
 
-use event::Mainloop;
+use crate::event::Mainloop;
+use crate::rmi::RMI;
+use crate::smc::SecureMonitorCall;
 
 pub struct Monitor {
     mainloop: Mainloop,
-    manager: realm::Manager,
-    smc: smc::SecureMonitorCall,
+    rmi: RMI,
+    smc: SecureMonitorCall,
 }
 
 impl Monitor {
-    pub fn new(manager: realm::Manager, smc: smc::SecureMonitorCall) -> Self {
+    pub fn new(rmi: RMI, smc: smc::SecureMonitorCall) -> Self {
         let mut mainloop = Mainloop::new();
         Self::add_event_handler(&mut mainloop);
-        Self {
-            mainloop,
-            manager,
-            smc,
-        }
+        Self { mainloop, rmi, smc }
     }
 
     fn add_event_handler(mainloop: &mut Mainloop) {
@@ -55,6 +53,6 @@ impl Monitor {
     }
 
     pub fn run(&self) {
-        self.mainloop.run(self.manager, self.smc);
+        self.mainloop.run(self.rmi, self.smc);
     }
 }

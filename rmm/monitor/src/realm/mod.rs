@@ -4,7 +4,6 @@ pub mod vcpu;
 use crate::realm::mm::IPATranslation;
 use crate::realm::vcpu::{Context, VCPU};
 
-use crate::error::Error;
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
@@ -48,24 +47,4 @@ pub enum State {
     Ready,
     Running,
     Destroy,
-}
-
-pub type Manager = &'static dyn Control;
-
-pub trait Control: Debug + Send + Sync {
-    fn create(&self) -> Result<usize, &str>;
-    fn create_vcpu(&self, id: usize) -> Result<usize, Error>;
-    fn remove(&self, id: usize) -> Result<(), &str>;
-    fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<([usize; 4]), &str>;
-    fn map(
-        &self,
-        id: usize,
-        guest: usize,
-        phys: usize,
-        size: usize,
-        prot: usize,
-    ) -> Result<(), &str>;
-    fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<(), &str>;
-    fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), &str>;
-    fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, &str>;
 }

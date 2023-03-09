@@ -4,7 +4,7 @@ extern crate alloc;
 
 pub use mainloop::Mainloop;
 
-use crate::realm::Manager;
+use crate::rmi::RMI;
 use crate::smc::SecureMonitorCall;
 
 use alloc::boxed::Box;
@@ -27,4 +27,4 @@ pub struct Context {
     pub ret: Return,
 }
 
-pub type Handler = Box<dyn Fn(&mut Context, Manager, SecureMonitorCall)>;
+pub type Handler = Box<dyn Fn(&mut Context, RMI, SecureMonitorCall)>;

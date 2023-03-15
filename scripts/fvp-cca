@@ -49,6 +49,18 @@ def prepare_tf_a_tests():
         print("[!] Failed to build: %s" % outbin)
         sys.exit(1)
 
+def prepare_hvc_loop():
+    run(["cargo", "build", "--release"], cwd=HVC_LOOP)
+    run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
+         "%s/aarch64-unknown-none-softfloat/release/hvc-loop" % OUT,
+         "%s/hvc_loop.bin" % OUT],
+         cwd=ROOT)
+
+    if not os.path.exists(HVC_LOOP_BIN):
+        print("[!] Failed to build hvc_loop")
+        sys.exit(1)
+
+
 def prepare_realm(name):
     print("[!] Building realm(%s)... " % name)
     srcdir = os.path.join(REALM, name)
@@ -236,7 +248,7 @@ def get_all_realms():
     return sorted(realms)
 
 def validate_args(args):
-    nw_list = ["linux", "tf-a-tests", "aosp"]
+    nw_list = ["linux", "tf-a-tests", "aosp", "hvc-loop"]
     if not args.normal_world in nw_list:
         print("Please select one of the normal components:")
         print("  " + "\n  ".join(nw_list))
@@ -290,6 +302,9 @@ if __name__ == "__main__":
             prepare_kvmtool("lkvm-static")
             prepare_nw_aosp(args.no_prebuilt_initrd)
             prepare_bootloaders(args.rmm, PREBUILT_EDK2)
+        elif args.normal_world == "hvc-loop":
+            prepare_hvc_loop()
+            prepare_bootloaders(args.rmm, HVC_LOOP_BIN)
         else:
             prepare_kvmtool()
             prepare_nw_linux()
@@ -300,6 +315,9 @@ if __name__ == "__main__":
                 place_realm_at_shared()
 
     if not args.build_only and args.normal_world == "tf-a-tests":
+        run_fvp_tf_a_tests(args.debug)
+
+    if not args.build_only and args.normal_world == "hvc-loop":
         run_fvp_tf_a_tests(args.debug)
 
     if not args.build_only and args.normal_world == "linux":

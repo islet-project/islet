@@ -37,6 +37,9 @@ TFTF_BIN = os.path.join(TF_A_TESTS, "build/fvp/debug/tftf.bin")
 TF_RMM = os.path.join(THIRD_PARTY, "tf-rmm")
 KVMTOOL = os.path.join(THIRD_PARTY, "kvmtool")
 
+HVC_LOOP = os.path.join(ROOT, "realm/hvc-loop")
+HVC_LOOP_BIN = os.path.join(OUT, "hvc_loop.bin") 
+
 # directory shared between the pc desktop and the host OS on fvp using 9p filesystem
 PC_SHARE_DIR = os.path.join(OUT, "pc_share_dir")
 GUEST_SHARED = os.path.join(PC_SHARE_DIR, "guest")

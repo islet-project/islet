@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "lib/uart",
+    "realm/hvc-loop",
     "rmm/armv9a",
     "rmm/board/fvp",
     "rmm/monitor",

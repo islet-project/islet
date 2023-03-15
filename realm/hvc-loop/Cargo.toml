@@ -1,0 +1,19 @@
+[package]
+name = "hvc-loop"
+version = "0.0.1"
+authors = ["ISLET Contributors"]
+edition = "2018"
+
+[[bin]]
+name = "hvc-loop"
+path = "src/main.rs"
+
+[dependencies]
+armv9a = { path = "../../rmm/armv9a" }
+linked_list_allocator = "0.10.4"
+log = "0.4.17"
+monitor = { path = "../../rmm/monitor" }
+uart = { path = "../../lib/uart" }
+
+[build-dependencies]
+cc = "1.0"

@@ -40,6 +40,7 @@ KVMTOOL = os.path.join(THIRD_PARTY, "kvmtool")
 # directory shared between the pc desktop and the host OS on fvp using 9p filesystem
 PC_SHARE_DIR = os.path.join(OUT, "pc_share_dir")
 GUEST_SHARED = os.path.join(PC_SHARE_DIR, "guest")
+NW_AOSP_DATA = os.path.join(OUT, "aosp_data")
 
 DTC = os.path.join(ROOT, "assets/dtc")
 CROSS_COMPILE = os.path.join(ROOT, "assets/toolchain/aarch64-none-elf/bin/aarch64-none-elf-")

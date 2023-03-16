@@ -120,7 +120,7 @@ def prepare_nw_linux():
     ]
     make(BUILD_SCRIPT, args)
 
-def prepare_nw_aosp():
+def prepare_nw_aosp(no_prebuilt_initrd):
     new_env = environ.copy()
     new_env["BUILD_CONFIG"] = "../android-kernel/build.config.gki.aarch64"
     new_env["OUT_DIR"] = NW_AOSP_OUT
@@ -137,7 +137,8 @@ def prepare_nw_aosp():
     ]
     run(args, cwd=ROOT)
     run(["cp", PREBUILT_AOSP_DTB, OUT], cwd=ROOT)
-    run(["cp", PREBUILT_AOSP_INITRD, OUT], cwd=ROOT)
+    if not no_prebuilt_initrd:
+        run(["cp", PREBUILT_AOSP_INITRD, OUT], cwd=ROOT)
     run(["cp", PREBUILT_GRUB, OUT], cwd=ROOT)
 
     if not os.path.exists("%s/initrd-aosp.img" % OUT):
@@ -189,6 +190,7 @@ def run_fvp_linux(debug):
     run(args, cwd=FASTMODEL)
 
 def run_fvp_aosp(debug):
+    os.makedirs(NW_AOSP_DATA, exist_ok=True)
     new_env = environ.copy()
     new_env["LD_PRELOAD"] = PREBUILT_AOSP_ADB
     print("[!] Running fvp for Android...")
@@ -197,7 +199,7 @@ def run_fvp_aosp(debug):
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
             "-C", "bp.mmc.p_mmc_file=%s/boot-aosp.img" % OUT,
             "-C", "bp.virtioblockdevice.image_path=%s/system-qemu-aosp.img" % OUT,
-            "-C", "bp.virtiop9device.root_path=%s" % PC_SHARE_DIR,
+            "-C", "bp.virtiop9device.root_path=%s" % NW_AOSP_DATA,
             "-C", "bp.virtio_net.hostbridge.userNetworking=1",
             "-C", "bp.virtio_net.hostbridge.userNetPorts=5555=5555",
             "-C",  "bp.virtio_net.enabled=1",
@@ -251,7 +253,12 @@ def validate_args(args):
         if not args.realm in realms:
             print("Please select one of the realms:")
             print("  " + "\n  ".join(realms))
-            exit(1)
+            sys.exit(1)
+
+    if args.no_prebuilt_initrd:
+        if args.run_only or args.normal_world != "aosp":
+            print("--no-prebuilt-initrd is valid only when building normal world AOSP")
+            sys.exit(1)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FVP launcher for CCA")
@@ -264,11 +271,12 @@ if __name__ == "__main__":
     parser.add_argument("--clean", "-c", help="Clean the repo", action="store_true")
     parser.add_argument("--realm", "-rm", help="A sample realm")
     parser.add_argument("--rmm", "-rmm", help="A realm management monitor (islet, trp, tf-rmm)", default="islet")
+    parser.add_argument("--no-prebuilt-initrd", "-no-pi", help="Not using the prebuilt AOSP initrd", action="store_true")
     args = parser.parse_args()
 
     if args.clean:
         clean_repo()
-        exit(0)
+        sys.exit(0)
 
     validate_args(args)
 
@@ -280,7 +288,7 @@ if __name__ == "__main__":
             prepare_bootloaders(args.rmm, TFTF_BIN)
         elif args.normal_world == "aosp":
             prepare_kvmtool("lkvm-static")
-            prepare_nw_aosp()
+            prepare_nw_aosp(args.no_prebuilt_initrd)
             prepare_bootloaders(args.rmm, PREBUILT_EDK2)
         else:
             prepare_kvmtool()

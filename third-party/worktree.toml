@@ -28,7 +28,7 @@ commit = "708eb9d6ef16"
 
 [android-kernel]
 branch = "3rd-android-kernel-6.2"
-commit = "0e2f6c2b90ba"
+commit = "b8859291c271"
 
 [gki-build]
 branch = "3rd-gki-build-230309"

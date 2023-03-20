@@ -1,0 +1,13 @@
+[package]
+name = "uart"
+version = "0.0.1"
+authors = ["Islet Contributors"]
+edition = "2018"
+
+[lib]
+name = "uart"
+path = "src/lib.rs"
+
+[dependencies]
+monitor = { path = "../../rmm/monitor" }
+spinning_top = "0.2.4"

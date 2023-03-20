@@ -50,7 +50,8 @@ unsafe fn clear_bss() {
 }
 
 fn init_console() {
-    let _ = stdout().attach(crate::driver::uart::pl011::device());
+    const UART3_BASE: usize = 0x1c0c_0000usize;
+    let _ = stdout().attach(uart::pl011::device(UART3_BASE));
     logger::register_global_logger(LevelFilter::Trace); // Control log level
     info!("Initialized the console!");
 }

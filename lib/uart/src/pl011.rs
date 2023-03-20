@@ -5,10 +5,6 @@ use spinning_top::Spinlock;
 
 use monitor::io::{self, ConsoleWriter, Error, ErrorKind, Result, Write};
 
-const V2M_OFFSET: usize = 0;
-const V2M_IOFPGA_UART3_BASE: usize = V2M_OFFSET + 0x1c0c0000usize;
-
-const BASE: usize = V2M_IOFPGA_UART3_BASE;
 const CLK_IN_HZ: usize = 24000000;
 const BAUDRATE: usize = 115200;
 
@@ -79,9 +75,13 @@ struct DeviceInner {
 impl DeviceInner {
     pub const fn new() -> Self {
         Self {
-            register: BASE as *mut u32,
+            register: 0 as *mut u32,
             ready: false,
         }
+    }
+
+    pub fn set_base(&mut self, base: usize) {
+        self.register = base as *mut u32;
     }
 
     pub fn putc(&mut self, byte: u8) -> Result<()> {
@@ -156,13 +156,7 @@ unsafe impl Send for DeviceInner {}
 
 static DEVICE_INNER: Spinlock<DeviceInner> = Spinlock::new(DeviceInner::new());
 
-pub struct Device {}
-
-impl Device {
-    pub const fn new() -> Self {
-        Self {}
-    }
-}
+pub struct Device(usize);
 
 impl io::Device for Device {
     fn initialized(&self) -> bool {
@@ -170,6 +164,7 @@ impl io::Device for Device {
     }
 
     fn initialize(&mut self) -> Result<()> {
+        DEVICE_INNER.lock().set_base(self.0);
         DEVICE_INNER.lock().initialize()
     }
 }
@@ -182,6 +177,6 @@ impl Write for Device {
 
 impl ConsoleWriter for Device {}
 
-pub fn device() -> Box<Device> {
-    Box::new(Device::new())
+pub fn device(base: usize) -> Box<Device> {
+    Box::new(Device(base))
 }

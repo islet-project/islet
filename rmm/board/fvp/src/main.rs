@@ -5,12 +5,9 @@
 #![warn(rust_2018_idioms)]
 #![deny(warnings)]
 
-extern crate alloc;
-
 #[macro_use]
 extern crate log;
 
-mod driver;
 mod entry;
 
 use armv9a::allocator;

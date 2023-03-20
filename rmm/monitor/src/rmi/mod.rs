@@ -1,5 +1,6 @@
 use crate::error::Error;
 
+pub mod features;
 pub mod gpt;
 pub mod realm;
 pub mod version;
@@ -11,6 +12,7 @@ pub const REALM_CREATE: usize = 0xc400_0158;
 pub const REALM_DESTROY: usize = 0xc400_0159;
 pub const REALM_RUN: usize = 0xc400_0160;
 pub const VCPU_CREATE: usize = 0xc400_0161;
+pub const FEATURES: usize = 0xc400_0165;
 pub const REALM_MAP_MEMORY: usize = 0xc400_0170;
 pub const REALM_UNMAP_MEMORY: usize = 0xc400_0171;
 pub const REALM_SET_REG: usize = 0xc400_0172;
@@ -28,6 +30,9 @@ pub const RET_EXCEPTION_IRQ: usize = 0x0;
 pub const RET_EXCEPTION_SERROR: usize = 0x1;
 pub const RET_EXCEPTION_TRAP: usize = 0x2;
 pub const RET_EXCEPTION_IL: usize = 0x3;
+
+pub const SUCCESS: usize = 0;
+pub const ERROR_INPUT: usize = 1;
 
 pub type RMI = &'static dyn Interface;
 

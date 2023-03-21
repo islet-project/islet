@@ -1,3 +1,6 @@
+pub(crate) mod params;
+
+use self::params::Params;
 use crate::event::Mainloop;
 use crate::listen;
 use crate::rmi;
@@ -6,6 +9,10 @@ extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REALM_CREATE, |ctx, rmi, _| {
+        let addr = ctx.arg[1];
+        let param = unsafe { Params::parse(addr) };
+        trace!("{:?}", param);
+
         let ret = rmi.create();
         match ret {
             Ok(id) => {

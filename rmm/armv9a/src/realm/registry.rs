@@ -63,7 +63,7 @@ impl RMI {
 }
 
 impl monitor::rmi::Interface for RMI {
-    fn create(&self) -> Result<usize, &str> {
+    fn create_realm(&self) -> Result<usize, &str> {
         let mut rms = RMS.lock();
         let id = rms.0;
         let s2_table = Arc::new(Mutex::new(

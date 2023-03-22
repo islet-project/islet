@@ -13,6 +13,7 @@ pub const REALM_DESTROY: usize = 0xc400_0159;
 pub const REALM_RUN: usize = 0xc400_0160;
 pub const VCPU_CREATE: usize = 0xc400_0161;
 pub const FEATURES: usize = 0xc400_0165;
+pub const REC_AUX_COUNT: usize = 0xc400_0167;
 pub const REALM_MAP_MEMORY: usize = 0xc400_0170;
 pub const REALM_UNMAP_MEMORY: usize = 0xc400_0171;
 pub const REALM_SET_REG: usize = 0xc400_0172;
@@ -34,10 +35,12 @@ pub const RET_EXCEPTION_IL: usize = 0x3;
 pub const SUCCESS: usize = 0;
 pub const ERROR_INPUT: usize = 1;
 
+pub const MAX_REC_AUX_GRANULES: usize = 16;
+
 pub type RMI = &'static dyn Interface;
 
 pub trait Interface {
-    fn create(&self) -> Result<usize, &str>;
+    fn create_realm(&self) -> Result<usize, &str>;
     fn create_vcpu(&self, id: usize) -> Result<usize, Error>;
     fn remove(&self, id: usize) -> Result<(), &str>;
     fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<([usize; 4]), &str>;

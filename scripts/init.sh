@@ -5,6 +5,7 @@ set -e
 ROOT=$(git rev-parse --show-toplevel)
 HERE=$ROOT/scripts
 
+sudo apt update
 sudo apt install -y -qq --no-install-recommends \
 	binutils python3-pip \
 	device-tree-compiler xterm fakeroot mtools fdisk cpio \

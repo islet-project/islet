@@ -13,14 +13,25 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let param = unsafe { Params::parse(addr) };
         trace!("{:?}", param);
 
-        let ret = rmi.create();
+        // TODO:
+        //   Validate params
+        //   Manage granule including locking
+        //   Manage vmid
+        //   Keep params in Realm
+
+        let ret = rmi.create_realm();
         match ret {
             Ok(id) => {
-                ctx.ret[0] = rmi::RET_SUCCESS;
+                ctx.ret[0] = rmi::SUCCESS;
                 ctx.ret[1] = id;
             }
             Err(_) => ctx.ret[0] = rmi::RET_FAIL,
         }
+    });
+
+    listen!(mainloop, rmi::REC_AUX_COUNT, |ctx, _, _| {
+        ctx.ret[0] = rmi::SUCCESS;
+        ctx.ret[1] = rmi::MAX_REC_AUX_GRANULES;
     });
 
     listen!(mainloop, rmi::VCPU_CREATE, |ctx, rmi, _| {

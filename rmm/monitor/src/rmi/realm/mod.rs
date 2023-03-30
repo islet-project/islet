@@ -15,7 +15,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
     listen!(mainloop, rmi::REALM_CREATE, |ctx, rmi, smc| {
         let addr = ctx.arg[1];
-        // TODO: Mark back to NS when destroy
+        // TODO: Mark to NS when destroy
         let ret = super::gpt::mark_realm(smc, addr);
         if ret[0] != 0 {
             ctx.ret[0] = rmi::RET_FAIL;

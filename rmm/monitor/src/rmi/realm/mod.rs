@@ -8,6 +8,11 @@ use crate::rmi;
 extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
+    listen!(mainloop, rmi::REALM_ACTIVATE, |ctx, _, _| {
+        super::dummy();
+        ctx.ret[0] = rmi::SUCCESS;
+    });
+
     listen!(mainloop, rmi::REALM_CREATE, |ctx, rmi, _| {
         let addr = ctx.arg[1];
         let param = unsafe { Params::parse(addr) };

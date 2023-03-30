@@ -40,6 +40,8 @@ impl Monitor {
         rmi::features::set_event_handler(mainloop);
         rmi::gpt::set_event_handler(mainloop);
         rmi::realm::set_event_handler(mainloop);
+        rmi::rec::set_event_handler(mainloop);
+        rmi::rtt::set_event_handler(mainloop);
         rmi::version::set_event_handler(mainloop);
     }
 

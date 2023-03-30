@@ -9,7 +9,7 @@ use crate::realm::context::Context;
 use crate::rsi::RSI_REMAP_PAGE;
 
 use monitor::realm::vcpu::VCPU;
-use monitor::rmi;
+use monitor::{rmi, rsi};
 
 #[repr(u16)]
 #[derive(Debug, Copy, Clone)]
@@ -95,29 +95,40 @@ pub extern "C" fn handle_lower_exception(
                 1 // forward to nw w/o increasing elr
             }
             Syndrome::SMC => {
-                debug!("Synchronous: SMC");
+                debug!("Synchronous: SMC: {:#X}", vcpu.context.gp_regs[0]);
                 let req_id: u64 = vcpu.context.gp_regs[0];
-                if req_id == RSI_REMAP_PAGE {
-                    // fabricate an exception to force remap page as shared from non-sec
-                    tf.regs[0] = rmi::RET_EXCEPTION_TRAP as u64;
-                    tf.regs[1] = Syndrome::DataAbort(Fault::Translation { level: 3 }).into();
-                    tf.regs[2] = vcpu.context.gp_regs[1] >> 8;
-                    tf.regs[3] = vcpu.context.gp_regs[2];
-                    vcpu.context.elr += 4; // continue
-                    unsafe {
-                        ESR_EL2.set(tf.regs[1]);
-                        HPFAR_EL2.set(tf.regs[2]);
-                        FAR_EL2.set(tf.regs[3]);
+                match req_id as usize {
+                    rsi::HOST_CALL => {
+                        tf.regs[0] = rsi::HOST_CALL as u64;
+                        tf.regs[1] = vcpu.context.gp_regs[1];
+                        tf.regs[2] = vcpu.context.gp_regs[2];
+                        tf.regs[3] = vcpu.context.gp_regs[3];
+                        1
                     }
-                    1 // forward to nw w/o increasing elr
-                } else {
-                    vcpu.context.elr += 4; // continue
-                    0 // for now, trap to el2 to check the realm progress
+                    RSI_REMAP_PAGE => {
+                        // fabricate an exception to force remap page as shared from non-sec
+                        tf.regs[0] = rmi::RET_EXCEPTION_TRAP as u64;
+                        tf.regs[1] = Syndrome::DataAbort(Fault::Translation { level: 3 }).into();
+                        tf.regs[2] = vcpu.context.gp_regs[1] >> 8;
+                        tf.regs[3] = vcpu.context.gp_regs[2];
+                        vcpu.context.elr += 4; // continue
+                        unsafe {
+                            ESR_EL2.set(tf.regs[1]);
+                            HPFAR_EL2.set(tf.regs[2]);
+                            FAR_EL2.set(tf.regs[3]);
+                        }
+                        1 // forward to nw w/o increasing elr
+                    }
+                    _ => {
+                        vcpu.context.elr += 4; // continue
+                        0 // for now, trap to el2 to check the realm progress
+                    }
                 }
                 //vcpu.context.elr += 4; // continue
                 //0 // for now, trap to el2 to check the realm progress
             }
             Syndrome::InstructionAbort(_) | Syndrome::DataAbort(_) => {
+                debug!("Synchronous: InstructionAbort | DataAbort");
                 tf.regs[0] = rmi::RET_EXCEPTION_TRAP as u64;
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = unsafe { HPFAR_EL2.get() };

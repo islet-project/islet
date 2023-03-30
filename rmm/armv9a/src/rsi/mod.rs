@@ -1,1 +1,1 @@
-pub const RSI_REMAP_PAGE: u64 = 0xfeed_0001;
+pub const RSI_REMAP_PAGE: usize = 0xfeed_0001;

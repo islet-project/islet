@@ -13,14 +13,21 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         ctx.ret[0] = rmi::SUCCESS;
     });
 
-    listen!(mainloop, rmi::REALM_CREATE, |ctx, rmi, _| {
+    listen!(mainloop, rmi::REALM_CREATE, |ctx, rmi, smc| {
         let addr = ctx.arg[1];
+        // TODO: Mark back to NS when destroy
+        let ret = super::gpt::mark_realm(smc, addr);
+        if ret[0] != 0 {
+            ctx.ret[0] = rmi::RET_FAIL;
+            return;
+        }
+
         let param = unsafe { Params::parse(addr) };
         trace!("{:?}", param);
 
         // TODO:
         //   Validate params
-        //   Manage granule including locking
+        //   Manage granule including ocking
         //   Manage vmid
         //   Keep params in Realm
 

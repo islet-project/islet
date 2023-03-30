@@ -1,29 +1,38 @@
+pub(crate) mod params;
+
+use self::params::Params;
+use super::gpt::mark_realm;
 use crate::event::Mainloop;
 use crate::listen;
 use crate::{rmi, rsi};
 
 extern crate alloc;
 
+// TODO: Bind rd with realm & rec
 pub fn set_event_handler(mainloop: &mut Mainloop) {
-    // related with:
-    //   - VCPU_CREATE
-    listen!(mainloop, rmi::REC_CREATE, |ctx, rmi, _| {
-        let ret = rmi.create_vcpu(0);
-        match ret {
-            Ok(vcpuid) => {
-                ctx.ret[0] = rmi::SUCCESS;
-                ctx.ret[1] = vcpuid; // TODO: Binding to RD
-            }
-            Err(_) => ctx.ret[0] = rmi::RET_FAIL,
+    listen!(mainloop, rmi::REC_CREATE, |ctx, rmi, smc| {
+        ctx.ret[0] = rmi::RET_FAIL;
+
+        if rmi.create_vcpu(0).is_err() {
+            return;
         }
+
+        let addr = ctx.arg[2];
+        if mark_realm(smc, addr)[0] != 0 {
+            return;
+        }
+
+        let param = unsafe { Params::parse(addr) };
+        trace!("{:?}", param);
+        if rmi.set_reg(0, 0, 31, param.pc() as usize).is_err() {
+            return;
+        }
+
+        ctx.ret[0] = rmi::SUCCESS;
     });
 
-    // related with:
-    //   - REALM_RUN
     listen!(mainloop, rmi::REC_ENTER, |ctx, rmi, _| {
-        let _ = rmi.set_reg(0, 0, 31, 0x88b00000);
-        let ret = rmi.run(0, 0, 0);
-        match ret {
+        match rmi.run(0, 0, 0) {
             Ok(val) => match val[0] {
                 rsi::HOST_CALL => {
                     trace!("HOST_CALL: {:#X?}", val);

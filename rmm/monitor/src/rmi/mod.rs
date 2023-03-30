@@ -3,17 +3,25 @@ use crate::error::Error;
 pub mod features;
 pub mod gpt;
 pub mod realm;
+pub mod rec;
+pub mod rtt;
 pub mod version;
 
 pub const VERSION: usize = 0xc400_0150;
 pub const GRANULE_DELEGATE: usize = 0xc400_0151;
 pub const GRANULE_UNDELEGATE: usize = 0xc400_0152;
+pub const DATA_CREATE: usize = 0xc400_0153;
+pub const REALM_ACTIVATE: usize = 0xc400_0157;
 pub const REALM_CREATE: usize = 0xc400_0158;
 pub const REALM_DESTROY: usize = 0xc400_0159;
+pub const REC_CREATE: usize = 0xc400_015a;
+pub const REC_ENTER: usize = 0xc400_015c;
+pub const RTT_MAP_UNPROTECTED: usize = 0xc400_015f;
 pub const REALM_RUN: usize = 0xc400_0160;
 pub const VCPU_CREATE: usize = 0xc400_0161;
 pub const FEATURES: usize = 0xc400_0165;
 pub const REC_AUX_COUNT: usize = 0xc400_0167;
+pub const RTT_INIT_RIPAS: usize = 0xc400_0168;
 pub const REALM_MAP_MEMORY: usize = 0xc400_0170;
 pub const REALM_UNMAP_MEMORY: usize = 0xc400_0171;
 pub const REALM_SET_REG: usize = 0xc400_0172;
@@ -34,6 +42,7 @@ pub const RET_EXCEPTION_IL: usize = 0x3;
 
 pub const SUCCESS: usize = 0;
 pub const ERROR_INPUT: usize = 1;
+pub const ERROR_REC: usize = 3;
 
 pub const MAX_REC_AUX_GRANULES: usize = 16;
 
@@ -55,4 +64,8 @@ pub trait Interface {
     fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<(), &str>;
     fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), &str>;
     fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, &str>;
+}
+
+pub(crate) fn dummy() {
+    trace!("Dummy implementation.");
 }

@@ -35,9 +35,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         match rmi.run(0, 0, 0) {
             Ok(val) => match val[0] {
                 rsi::HOST_CALL => {
-                    trace!("HOST_CALL: {:#X?}", val);
-                    // This point means that realm is executed
-                    // TODO: Parse rsi_host_call data structure
+                    trace!("REC_ENTER ret: {:#X?}", val);
+                    let ipa = val[1];
+                    // TODO: ipa to pa
+                    if ipa == 0x88b0_6000 {
+                        let pa: usize = 0x88a0_6000;
+                        let host_call = unsafe { rsi::HostCall::parse(pa) };
+                        trace!("{:?}", host_call);
+                    }
                     ctx.ret[0] = rmi::ERROR_REC;
                 }
                 rmi::RET_EXCEPTION_TRAP | rmi::RET_EXCEPTION_IRQ => {

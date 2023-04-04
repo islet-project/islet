@@ -5,30 +5,44 @@ UART=$ROOT/out/uart0.log
 
 [ -e $UART ] && rm $UART
 
+check_result()
+{
+	# cleanup
+	ps -ef | grep fvp-cca | grep -v grep | awk '{print $2}' | xargs kill
+	ps -ef | grep "FVP terminal" | grep -v grep | awk '{print $2}' | xargs kill
+	ps -ef | grep FVP_Base_RevC-2xAEMvA | grep -v grep | awk '{print $2}' | xargs kill
+
+	# report
+	PASSED=$(tail -10 $UART | grep "Tests Passed" | awk '{print $4}')
+	FAILED=$(tail -10 $UART | grep "Tests Failed" | awk '{print $4}')
+	PASSED="${PASSED//[$'\t\r\n ']/}"
+	FAILED="${FAILED//[$'\t\r\n ']/}"
+
+	if [ "$PASSED" == "" ]; then
+		echo "[-] Test failed! (There are no proper result logs)"
+		exit 1
+	fi
+
+	echo "[!] Tests result: $PASSED passed, $FAILED failed."
+
+	if [ $FAILED -ne 0 ]; then
+		tail -10 $UART
+		exit $FAILED
+	fi
+}
+
+# tf-rmm tests
 $ROOT/scripts/fvp-cca -bo -nw=tf-a-tests -rmm=tf-rmm
 $ROOT/scripts/fvp-cca -ro -nw=tf-a-tests -rmm=tf-rmm &
 
 sleep 20
 
-# cleanup
-ps -ef | grep fvp-cca | grep -v grep | awk '{print $2}' | xargs kill
-ps -ef | grep "FVP terminal" | grep -v grep | awk '{print $2}' | xargs kill
-ps -ef | grep FVP_Base_RevC-2xAEMvA | grep -v grep | awk '{print $2}' | xargs kill
+check_result
 
-# report
-PASSED=$(tail -10 $UART | grep "Tests Passed" | awk '{print $4}')
-FAILED=$(tail -10 $UART | grep "Tests Failed" | awk '{print $4}')
-PASSED="${PASSED//[$'\t\r\n ']/}"
-FAILED="${FAILED//[$'\t\r\n ']/}"
+# islet-rmm tests
+$ROOT/scripts/fvp-cca -bo -nw=tf-a-tests -rmm=islet
+$ROOT/scripts/fvp-cca -ro -nw=tf-a-tests -rmm=islet &
 
-if [ "$PASSED" == "" ]; then
-	echo "[-] Test failed! (There are no proper result logs)"
-	exit 1
-fi
+sleep 20
 
-echo "[!] Tests result: $PASSED passed, $FAILED failed."
-
-if [ $FAILED -ne 0 ]; then
-	tail -10 $UART
-	exit $FAILED
-fi
+check_result

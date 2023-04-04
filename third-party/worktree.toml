@@ -13,8 +13,8 @@ commit = "c0517c7c4c7a"
 upstream = "upstream-linux-cca-rfc-v1"
 
 [tf-a-tests]
-branch = "3rd-tf-a-tests-230227"
-commit = "3042dd1da343"
+branch = "3rd-tf-a-tests-230404"
+commit = "1a00fff2b124"
 upstream = "upstream-tftf-lts-v2.8"
 
 [tf-a]

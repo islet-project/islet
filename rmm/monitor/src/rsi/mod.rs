@@ -1,4 +1,5 @@
 pub const HOST_CALL: usize = 0xc400_0199;
+pub const REMAP_PAGE: usize = 0xfeed_0001;
 
 #[repr(C)]
 pub struct HostCall {

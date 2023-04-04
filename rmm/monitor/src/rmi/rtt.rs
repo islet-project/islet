@@ -15,9 +15,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         ctx.ret[0] = rmi::SUCCESS;
     });
 
-    // related with:
-    //   - RIM
-    //   - REALM_MAP_MEMORY
     listen!(mainloop, rmi::DATA_CREATE, |ctx, rmi, _| {
         let _rd = ctx.arg[0];
         let _data = ctx.arg[1];

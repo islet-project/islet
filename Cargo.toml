@@ -6,11 +6,6 @@ members = [
     "rmm/monitor",
 ]
 
-exclude = [
-    "sdk",
-    "sdk/bootstrap",
-]
-
 [profile.dev]
 panic = "abort"
 

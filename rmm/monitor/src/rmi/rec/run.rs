@@ -98,8 +98,6 @@ struct EntryGICv3Inner {
     lrs: [u64; 16],
 }
 
-/////
-
 #[repr(C)]
 struct ExitInner {
     exit_reason: ExitReason,

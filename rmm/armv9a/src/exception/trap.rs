@@ -103,6 +103,7 @@ pub extern "C" fn handle_lower_exception(
                         tf.regs[1] = vcpu.context.gp_regs[1];
                         tf.regs[2] = vcpu.context.gp_regs[2];
                         tf.regs[3] = vcpu.context.gp_regs[3];
+                        vcpu.context.elr += 4;
                         1
                     }
                     RSI_REMAP_PAGE => {

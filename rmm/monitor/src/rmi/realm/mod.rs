@@ -46,23 +46,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         ctx.ret[1] = rmi::MAX_REC_AUX_GRANULES;
     });
 
-    listen!(mainloop, rmi::VCPU_CREATE, |ctx, rmi, _| {
-        let id = ctx.arg[0];
-        let ret = rmi.create_vcpu(id);
-        match ret {
-            Ok(vcpuid) => {
-                ctx.ret[0] = rmi::RET_SUCCESS;
-                ctx.ret[1] = vcpuid;
-            }
-            Err(_) => ctx.ret[0] = rmi::RET_FAIL,
-        }
-    });
-
     listen!(mainloop, rmi::REALM_DESTROY, |ctx, rmi, _| {
-        let id = ctx.arg[0];
-        let ret = rmi.remove(id);
+        let _rd = ctx.arg[0];
+        let ret = rmi.remove(0); // temporarily
         match ret {
-            Ok(_) => ctx.ret[0] = rmi::RET_SUCCESS,
+            Ok(_) => ctx.ret[0] = rmi::SUCCESS,
             Err(_) => ctx.ret[0] = rmi::RET_FAIL,
         }
     });

@@ -10,6 +10,14 @@ impl HostCall {
         &*(addr as *const Self)
     }
 
+    pub unsafe fn parse_mut<'a>(addr: usize) -> &'a mut Self {
+        &mut *(addr as *mut Self)
+    }
+
+    pub unsafe fn set_gpr0(&mut self, val: u64) {
+        (*self.inner.val).gprs[0] = val;
+    }
+
     // Safety: union type should be initialized
     // Check UB
     pub fn imm(&self) -> u16 {

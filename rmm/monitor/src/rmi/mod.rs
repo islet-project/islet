@@ -15,10 +15,11 @@ pub const REALM_ACTIVATE: usize = 0xc400_0157;
 pub const REALM_CREATE: usize = 0xc400_0158;
 pub const REALM_DESTROY: usize = 0xc400_0159;
 pub const REC_CREATE: usize = 0xc400_015a;
+pub const REC_DESTROY: usize = 0xc400_015b;
 pub const REC_ENTER: usize = 0xc400_015c;
 pub const RTT_MAP_UNPROTECTED: usize = 0xc400_015f;
 pub const REALM_RUN: usize = 0xc400_0160;
-pub const VCPU_CREATE: usize = 0xc400_0161;
+pub const RTT_READ_ENTRY: usize = 0xc400_0161;
 pub const FEATURES: usize = 0xc400_0165;
 pub const REC_AUX_COUNT: usize = 0xc400_0167;
 pub const RTT_INIT_RIPAS: usize = 0xc400_0168;
@@ -45,6 +46,14 @@ pub const ERROR_INPUT: usize = 1;
 pub const ERROR_REC: usize = 3;
 
 pub const MAX_REC_AUX_GRANULES: usize = 16;
+
+pub const EXIT_SYNC: u8 = 0;
+pub const EXIT_IRQ: u8 = 1;
+pub const EXIT_FIQ: u8 = 2;
+pub const EXIT_PSCI: u8 = 3;
+pub const EXIT_RIPAS_CHANGE: u8 = 4;
+pub const EXIT_HOST_CALL: u8 = 5;
+pub const EXIT_SERROR: u8 = 6;
 
 pub type RMI = &'static dyn Interface;
 

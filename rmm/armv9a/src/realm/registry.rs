@@ -205,7 +205,7 @@ impl monitor::rmi::Interface for RMI {
                 let ret = smc.call(cmd, arg)[0];
                 if ret != 0 {
                     //Just show a warn message not return fail
-                    warn!("failed to set GPT {:X}", arg[0]);
+                    warn!("failed to set GPT {:X} ret: {:X}", arg[0], ret);
                 }
             }
             arg[0] += PAGE_SIZE;

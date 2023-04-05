@@ -182,7 +182,7 @@ def run_fvp_linux(debug):
             "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
             "-C", "bp.virtioblockdevice.image_path=%s/boot.img" % OUT,
-            "-C", "bp.virtiop9device.root_path=%s" % PC_SHARE_DIR,
+            "-C", "bp.virtiop9device.root_path=%s" % SHARED_PATH,
             "-f", CONFIG,
             "-Q", "1000"]
     if debug:
@@ -210,11 +210,11 @@ def run_fvp_aosp(debug):
     run(args, cwd=FASTMODEL, new_env=new_env)
 
 def place_realm_at_shared():
-    os.makedirs(GUEST_SHARED, exist_ok=True)
-    run(["cp", "-R", "%s/." % REALM_ROOTFS, GUEST_SHARED], cwd=ROOT)
-    run(["cp", "-R", "%s/realm/." % OUT, GUEST_SHARED], cwd=ROOT)
-    run(["cp", "%s/lkvm" % OUT, GUEST_SHARED], cwd=ROOT)
-    run(["cp", LAUNCH_REALM, "%s/launch.sh" % GUEST_SHARED], cwd=ROOT)
+    os.makedirs(SHARED_PATH, exist_ok=True)
+    run(["cp", "-R", "%s/." % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
+    run(["cp", "-R", "%s/realm/." % OUT, SHARED_PATH], cwd=ROOT)
+    run(["cp", "%s/lkvm" % OUT, SHARED_PATH], cwd=ROOT)
+    run(["cp", LAUNCH_REALM, "%s/launch.sh" % SHARED_PATH], cwd=ROOT)
 
 def clean_repo():
     run(["make", "distclean"], cwd=TF_A)

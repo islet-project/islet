@@ -11,4 +11,5 @@
 	-c 1 \
 	-k linux.realm \
 	-i rootfs-realm.cpio.gz \
-	-p "earlycon=ttyS0 printk.devkmsg=on"
+	-p "earlycon=ttyS0 printk.devkmsg=on" \
+	--9p /shared,FMR

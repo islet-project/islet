@@ -39,6 +39,10 @@ branch = "3rd-kvmtool-230227"
 commit = "2e8fe7ff6124"
 tag = "kvmtool-cca-rfc-v1"
 
+[kvm-unit-tests]
+branch = "3rd-kvm-unit-tests-230406"
+commit = "05515ff54903"
+
 [certifier]
 branch = "3rd-certifier"
 commit = "a65a397fc7a8"

@@ -7,7 +7,8 @@ OUT = os.path.join(ROOT, "out")
 
 SCRIPT = os.path.join(ROOT, "scripts")
 CONFIG = os.path.join(SCRIPT, ".config")
-LAUNCH_REALM = os.path.join(SCRIPT, "launch_realm_on_fvp.sh")
+LAUNCH_REALM = os.path.join(SCRIPT, "fvp/launch-realm.sh")
+TEST_REALM = os.path.join(SCRIPT, "fvp/test-realm.sh")
 
 PREBUILT = os.path.join(ROOT, "assets/prebuilt")
 PREBUILT_EDK2 = os.path.join(PREBUILT, "FVP_AARCH64_EFI.fd")
@@ -36,6 +37,7 @@ TF_A_TESTS = os.path.join(THIRD_PARTY, "tf-a-tests")
 TFTF_BIN = os.path.join(TF_A_TESTS, "build/fvp/debug/tftf.bin")
 TF_RMM = os.path.join(THIRD_PARTY, "tf-rmm")
 KVMTOOL = os.path.join(THIRD_PARTY, "kvmtool")
+KVM_UNIT_TESTS = os.path.join(THIRD_PARTY, "kvm-unit-tests")
 
 # directory shared between the pc desktop and the host OS on fvp using 9p filesystem
 SHARED_PATH = os.path.join(OUT, "shared")

@@ -1,9 +1,11 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
-ROOT=$(dirname -- "$0")/../..
+set -e
 
-cd $ROOT/third-party/tf-rmm && git submodule update --init
-if [ $? -ne 0 ]; then
-	echo "Failed to sync submodule for third-party."
-	exit 1
-fi
+ROOT=$(git rev-parse --show-toplevel)
+THIRD_PARTY=$ROOT/third-party
+TF_RMM=$THIRD_PARTY/tf-rmm
+KVM_UNIT_TESTS=$THIRD_PARTY/kvm-unit-tests
+
+cd $TF_RMM && git submodule update --init
+cd $KVM_UNIT_TESTS && git submodule update --init

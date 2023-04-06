@@ -165,6 +165,19 @@ def prepare_kvmtool(lkvm="lkvm"):
     make(KVMTOOL, args)
     run(["cp", "%s/%s" % (KVMTOOL, lkvm), OUT], cwd=ROOT)
 
+def prepare_kvm_unit_tests():
+    print("[!] Building kvm-unit-tests...")
+    cmd = [
+        "./configure",
+        "--arch=arm64",
+        "--cross-prefix=%s" % KVMTOOL_CROSS_COMPILE,
+        "--target=kvmtool",
+    ]
+    run(cmd, cwd=KVM_UNIT_TESTS)
+    args = []
+    make(KVM_UNIT_TESTS, args)
+    run(["cp", "-R", "arm", "%s/%s" % (OUT, "kvm-unit-tests")], cwd=KVM_UNIT_TESTS)
+
 def run_fvp_tf_a_tests(debug):
     print("[!] Running fvp for tf-a-tests...")
     args = ["./FVP_Base_RevC-2xAEMvA",
@@ -214,7 +227,9 @@ def place_realm_at_shared():
     run(["cp", "-R", "%s/." % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
     run(["cp", "-R", "%s/realm/." % OUT, SHARED_PATH], cwd=ROOT)
     run(["cp", "%s/lkvm" % OUT, SHARED_PATH], cwd=ROOT)
-    run(["cp", LAUNCH_REALM, "%s/launch.sh" % SHARED_PATH], cwd=ROOT)
+    run(["cp", "-R", "%s/kvm-unit-tests" % OUT, SHARED_PATH], cwd=ROOT)
+    run(["cp", LAUNCH_REALM, SHARED_PATH], cwd=ROOT)
+    run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
 
 def clean_repo():
     run(["make", "distclean"], cwd=TF_A)
@@ -292,6 +307,7 @@ if __name__ == "__main__":
             prepare_bootloaders(args.rmm, PREBUILT_EDK2)
         else:
             prepare_kvmtool()
+            prepare_kvm_unit_tests()
             prepare_nw_linux()
             prepare_bootloaders(args.rmm, PREBUILT_EDK2)
 

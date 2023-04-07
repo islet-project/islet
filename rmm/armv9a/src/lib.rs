@@ -12,6 +12,7 @@ pub mod exception;
 pub mod helper;
 pub mod panic;
 pub mod realm;
+pub mod rmm;
 pub mod smc;
 
 extern crate alloc;

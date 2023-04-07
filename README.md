@@ -14,18 +14,12 @@ To manage Realm VMs, Realm Management Monitor (RMM)
 is needed to be running at EL2 in the Realm world.
 ISLET provides the implementation of RMM that is written in Rust. 
 
-## REALM
-ISLET provides sample realms running on fvp.
-You may run according to [Getting started](#getting-started)
-
-```
-realm/
-├── linux
-│   └── Makefile
-└── wasm
-    ├── Makefile
-    └── README.md
-```
+## Software components
+- [Host Linux](https://gitlab.arm.com/linux-arm/linux-cca): Linux supported Arm CCA running on normal world
+- Islet RMM: Rust-based Realm Management Monitor running on realm world EL2
+- [TF RMM](https://www.trustedfirmware.org/projects/tf-rmm/): C-based Realm Management Monitor running on realm world EL2
+- [Linux Realm](https://gitlab.arm.com/linux-arm/linux-cca): Linux running on realm world EL0-1
+- WASM Realm: Linux with root filesystem built `wasmer` running on realm world EL0-1
 
 ## Getting started 
 ### Installing dependencies
@@ -33,58 +27,29 @@ realm/
 ./scripts/init.sh
 ```
 
-### Running the linux realm
+### Running a linux realm
 ```bash
-// Start FVP
-$ ./scripts/fvp-cca --normal-world=linux --realm=linux
+// Start FVP on host
+$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=tf-rmm
 
-// Login with root in the normal world linux
-Welcome to Buildroot, type root or test to login
-buildroot login: root
-
-// Run a linux realm
-# cd /qemu/guest/
-# ../qemu-system-aarch64 \
-        -kernel linux.realm \
-        -initrd initramfs-busybox-aarch64.cpio.gz \
-        -append "earlycon=pl011,mmio,0x1c0a0000 console=ttyAMA0" \
-        --enable-kvm \
-        -cpu host \
-        -smp 1 \
-        -M virt,gic-version=3 \
-        -m 256M \
-        -nographic
+// Run a linux realm on fvp
+$ ./launch-realm.sh
 ```
 
-### Running the wasm realm
+### Testing the realm features
 ```bash
-// Start FVP
-$ ./scripts/fvp-cca --normal-world=linux --realm=wasm
+// Start FVP on fvp
+$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=tf-rmm
 
-// Login with root in the normal world linux
-Welcome to Buildroot, type root or test to login
-buildroot login: root
-
-// Run a wasm realm
-# cd /qemu/guest/
-# ../qemu-system-aarch64 \
-        -kernel linux.realm \
-        -initrd wasm-realm-initrd.cpio.gz \
-        -append "earlycon=pl011,mmio,0x1c0a0000 console=ttyAMA0" \
-        --enable-kvm \
-        -cpu host \
-        -smp 1 \
-        -M virt,gic-version=3 \
-        -m 256M \
-        -nographic
-
-// Run a wasm on realm
-Welcome to wasm realm!
-# wasmer ./app/hello.wasm
-hello, world!
+// Test the realm features on fvp
+$ ./test-realm.sh [attest]
 ```
 
-### Testing islet-rmm with tf-a-tests
+### Testing RMMs with tf-a-tests
 ```
-$ ./scripts/fvp-cca --normal-world=tf-a-tests
+# Islet RMM
+$ ./scripts/fvp-cca --normal-world=tf-a-tests --rmm=islet
+
+# TF RMM
+$ ./scripts/fvp-cca --normal-world=tf-a-tests --rmm=tf-rmm
 ```

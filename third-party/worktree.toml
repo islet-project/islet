@@ -4,8 +4,8 @@ commit = "604bc2c405be"
 upstream = "upstream-linux-cca-rfc-v1"
 
 [optee-build]
-branch = "3rd-optee-build-230227"
-commit = "ca9f1655342f"
+branch = "3rd-optee-build-230407"
+commit = "616a9430763d"
 
 [realm-linux]
 branch = "3rd-realm-linux-230222"

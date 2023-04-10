@@ -26,7 +26,7 @@ impl<T: Context + Default> Realm<T> {
             let vcpus = Vec::new();
             let realm = Mutex::new(Self {
                 id: id,
-                state: State::Init,
+                state: State::New,
                 vcpus: vcpus,
                 page_table: page_table,
             });
@@ -43,8 +43,8 @@ impl<T: Context> Drop for Realm<T> {
 
 #[derive(Debug)]
 pub enum State {
-    Init,
-    Ready,
-    Running,
-    Destroy,
+    Null,
+    New,
+    Active,
+    SystemOff,
 }

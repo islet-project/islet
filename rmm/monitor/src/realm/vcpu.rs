@@ -35,7 +35,7 @@ impl<T: Context + Default> VCPU<T> {
             Mutex::new(Self {
                 realm: realm,
                 me: me.clone(),
-                state: State::Stopped,
+                state: State::Ready,
                 context: T::new(),
                 pcpu: None,
             })
@@ -59,7 +59,7 @@ impl<T: Context + Default> VCPU<T> {
             Arc::decrement_strong_count(ptr);
             Arc::from_raw(ptr);
         }
-        self.state = State::Stopped;
+        self.state = State::Ready;
     }
 
     pub fn is_realm_dead(&self) -> bool {
@@ -75,6 +75,7 @@ impl<T: Context> Drop for VCPU<T> {
 
 #[derive(Debug)]
 pub enum State {
+    Null,
+    Ready,
     Running,
-    Stopped,
 }

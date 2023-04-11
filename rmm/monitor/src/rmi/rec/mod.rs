@@ -13,13 +13,15 @@ extern crate alloc;
 // TODO: Bind rd with realm & rec
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_CREATE, |ctx, rmi, smc| {
-        let _rd = ctx.arg[0];
-        let _rec = ctx.arg[1];
+        let _rec = ctx.arg[0];
+        let rd = ctx.arg[1];
         let params_ptr = ctx.arg[2];
+        let realm_id = rd;
         ctx.ret[0] = rmi::RET_FAIL;
 
-        if rmi.create_vcpu(0).is_err() {
-            return;
+        match rmi.create_vcpu(realm_id) {
+            Ok(vcpuid) => ctx.ret[1] = vcpuid,
+            Err(_) => return,
         }
 
         if mark_realm(smc, params_ptr)[0] != 0 {

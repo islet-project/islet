@@ -51,6 +51,32 @@ pub const EXIT_SERROR: u8 = 6;
 
 pub type RMI = &'static dyn Interface;
 
+pub struct MapProt(usize);
+
+impl From<usize> for MapProt {
+    fn from(prot: usize) -> Self {
+        Self(prot as usize)
+    }
+}
+
+impl MapProt {
+    pub fn new(data: usize) -> Self {
+        MapProt(data)
+    }
+    pub fn set_bit(&mut self, prot: u64) -> &mut Self {
+        self.0 |= 1 << prot;
+        self
+    }
+    pub fn get(&self) -> usize {
+        self.0
+    }
+    pub fn is_set(&self, prot: u64) -> bool {
+        ((self.0 & (1 << prot)) >> prot) == 1
+    }
+    pub const DEVICE: u64 = 0;
+    pub const NS_PAS: u64 = 1;
+}
+
 pub trait Interface {
     fn create_realm(&self) -> Result<usize, &str>;
     fn create_vcpu(&self, id: usize) -> Result<usize, Error>;

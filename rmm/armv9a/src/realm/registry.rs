@@ -3,8 +3,8 @@ use monitor::realm::mm::address::{GuestPhysAddr, PhysAddr};
 use monitor::realm::mm::IPATranslation;
 use monitor::realm::vcpu::VCPU;
 use monitor::realm::Realm;
+use monitor::rmi::MapProt;
 
-use crate::config::PAGE_SIZE;
 use crate::exception::trap::syndrome::{Fault, Syndrome};
 use crate::helper;
 use crate::helper::bits_in_reg;
@@ -15,8 +15,6 @@ use crate::realm::context::Context;
 use crate::realm::mm::page_table::pte;
 use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::translation_granule_4k::RawPTE;
-use crate::smc::SMC;
-use monitor::smc::{self, Caller};
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
@@ -147,7 +145,8 @@ impl monitor::rmi::Interface for RMI {
         prot: usize,
     ) -> Result<(), &str> {
         let mut flags = 0;
-        let mut realm_pas = true;
+        let _prot = MapProt::new(prot);
+        let mut realm_pas: bool = _prot.is_set(MapProt::NS_PAS) == false;
         //FIXME: temporary
         unsafe {
             if let Some(vcpu) = realm::vcpu::current() {
@@ -177,7 +176,7 @@ impl monitor::rmi::Interface for RMI {
 
         // TODO:  define bit mask
         flags |= helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);
-        if prot & 0b100 == 0b100 {
+        if _prot.is_set(MapProt::DEVICE) {
             flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::DEVICE_NGNRE);
             flags |= helper::bits_in_reg(RawPTE::NS, 0b1);
         } else {
@@ -196,21 +195,6 @@ impl monitor::rmi::Interface for RMI {
                 flags as usize,
             );
 
-        let smc = SMC::new();
-        let cmd = smc.convert(smc::Code::MarkRealm);
-        let mut arg = [phys, 0, 0, 0];
-        let mut remain = size;
-        while remain > 0 {
-            if (flags & helper::bits_in_reg(RawPTE::NS, 0b1)) == 0 {
-                let ret = smc.call(cmd, arg)[0];
-                if ret != 0 {
-                    //Just show a warn message not return fail
-                    warn!("failed to set GPT {:X} ret: {:X}", arg[0], ret);
-                }
-            }
-            arg[0] += PAGE_SIZE;
-            remain -= PAGE_SIZE;
-        }
         Ok(())
     }
 

@@ -1,6 +1,8 @@
 pub(crate) mod params;
+pub(crate) mod rd;
 
 use self::params::Params;
+pub use self::rd::Rd;
 use super::gpt::{mark_ns, mark_realm};
 use crate::event::Mainloop;
 use crate::listen;
@@ -15,7 +17,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     listen!(mainloop, rmi::REALM_CREATE, |ctx, rmi, smc| {
-        let _rd = ctx.arg[0];
+        let rd = unsafe { &mut Rd::new(ctx.arg[0]) };
         let params_ptr = ctx.arg[1];
 
         // TODO: Read ns memory w/o delegation
@@ -38,6 +40,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         match ret {
             Ok(id) => {
                 ctx.ret[0] = rmi::SUCCESS;
+                rd.realm_id = id;
                 ctx.ret[1] = id;
             }
             Err(_) => ctx.ret[0] = rmi::RET_FAIL,
@@ -50,7 +53,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     listen!(mainloop, rmi::REALM_DESTROY, |ctx, rmi, _| {
-        let _rd = ctx.arg[0];
+        let _rd = unsafe { Rd::into(ctx.arg[0]) };
         let ret = rmi.remove(0); // temporarily
         match ret {
             Ok(_) => ctx.ret[0] = rmi::SUCCESS,

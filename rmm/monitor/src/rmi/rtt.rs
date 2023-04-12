@@ -1,4 +1,5 @@
 use super::gpt::{mark_ns, mark_realm};
+use super::realm::{rd::State, Rd};
 
 use crate::event::Mainloop;
 use crate::listen;
@@ -20,16 +21,19 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::DATA_CREATE, |ctx, rmi, smc| {
         // taget_pa: location where realm data is created.
         let taget_pa = ctx.arg[0];
-        let rd = ctx.arg[1];
+        let rd = unsafe { Rd::into(ctx.arg[1]) };
         let ipa = ctx.arg[2];
         let src_pa = ctx.arg[3];
 
-        // islet stores rd as realm id
-        let realm_id = rd;
+        let realm_id = rd.realm_id;
         let granule_sz = 4096;
 
-        // TODO: Make sure DATA_CREATE is only processed
+        // Make sure DATA_CREATE is only processed
         // when the realm is in its New state.
+        if rd.state != State::New {
+            ctx.ret[0] = rmi::RET_FAIL;
+            return;
+        }
 
         // 1. map src to rmm
         // FIXME: replace delegation with mapping a page to rmm
@@ -44,11 +48,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         unsafe {
             core::ptr::copy_nonoverlapping(src_pa as *const u8, taget_pa as *mut u8, granule_sz);
         }
-        // TODO: Make sure DATA_CREATE is only processed
-        // when the realm is in its New state.
 
         // 4. map ipa to _taget_pa into S2 table
         let prot = rmi::MapProt::new(0);
+        trace!("realm_id: {}", realm_id);
         let ret = rmi.map(realm_id, ipa, taget_pa, granule_sz, prot.get());
         match ret {
             Ok(_) => ctx.ret[0] = rmi::SUCCESS,
@@ -66,13 +69,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
     // Map an unprotected IPA to a non-secure PA.
     listen!(mainloop, rmi::RTT_MAP_UNPROTECTED, |ctx, rmi, _| {
-        let rd = ctx.arg[0];
+        let rd = unsafe { Rd::into(ctx.arg[0]) };
         let ipa = ctx.arg[1];
         let _level = ctx.arg[2];
         let ns_pa = ctx.arg[3];
 
         // islet stores rd as realm id
-        let realm_id = rd;
+        let realm_id = rd.realm_id;
         let granule_sz = 4096;
         let mut prot = rmi::MapProt(0);
         prot.set_bit(rmi::MapProt::NS_PAS);

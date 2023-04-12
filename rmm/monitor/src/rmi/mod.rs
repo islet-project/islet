@@ -63,15 +63,14 @@ impl MapProt {
     pub fn new(data: usize) -> Self {
         MapProt(data)
     }
-    pub fn set_bit(&mut self, prot: u64) -> &mut Self {
+    pub fn set_bit(&mut self, prot: u64) {
         self.0 |= 1 << prot;
-        self
     }
     pub fn get(&self) -> usize {
         self.0
     }
     pub fn is_set(&self, prot: u64) -> bool {
-        ((self.0 & (1 << prot)) >> prot) == 1
+        (self.0 >> prot) & 1 == 1
     }
     pub const DEVICE: u64 = 0;
     pub const NS_PAS: u64 = 1;

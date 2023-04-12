@@ -145,8 +145,8 @@ impl monitor::rmi::Interface for RMI {
         prot: usize,
     ) -> Result<(), &str> {
         let mut flags = 0;
-        let _prot = MapProt::new(prot);
-        let mut realm_pas: bool = _prot.is_set(MapProt::NS_PAS) == false;
+        let prot = MapProt::new(prot);
+        let mut realm_pas = !prot.is_set(MapProt::NS_PAS);
         //FIXME: temporary
         unsafe {
             if let Some(vcpu) = realm::vcpu::current() {
@@ -176,7 +176,7 @@ impl monitor::rmi::Interface for RMI {
 
         // TODO:  define bit mask
         flags |= helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);
-        if _prot.is_set(MapProt::DEVICE) {
+        if prot.is_set(MapProt::DEVICE) {
             flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::DEVICE_NGNRE);
             flags |= helper::bits_in_reg(RawPTE::NS, 0b1);
         } else {

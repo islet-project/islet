@@ -93,7 +93,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             let ipa: u64 = 0x800088e00000;
             if run.entry_gpr0() == ipa {
                 // TODO: Get ipa from rec->regs[1] and map to pa
-                let pa: usize = 0x88a0_6000;
+                let pa: usize = 0x88b0_6000;
                 let host_call = rsi::HostCall::parse_mut(pa);
                 host_call.set_gpr0(ipa);
             }
@@ -111,7 +111,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                     let ipa = val[1];
                     // TODO: ipa to pa
                     if ipa == 0x88b0_6000 {
-                        let pa: usize = 0x88a0_6000;
+                        let pa: usize = ipa;
                         unsafe {
                             let host_call = rsi::HostCall::parse(pa);
                             run.set_imm(host_call.imm());

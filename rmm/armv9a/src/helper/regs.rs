@@ -128,12 +128,37 @@ define_sys_register!(
 pub mod mair_attr {
     // N: non
     // G: Gathering, R: Reodering, E: Early write-back
-    pub const MT_DEVICE_NGNRNE: u64 = 0b0000; // 0x0
-    pub const MT_DEVICE_NGNRE: u64 = 0b0100; // 0x4
-    pub const MT_DEVICE_GRE: u64 = 0b1100; // 0xc
-    pub const MT_NORMAL_NC: u64 = 0b0100_0100; // 0x44, normal memory, non-cacheable
-    pub const MT_NORMAL: u64 = 0b1111_1111; // 0xff, nomral memory, inner read-alloc, write-alloc,wb, non-transient
+    pub const DEVICE_NGNRNE: u64 = 0b0000; // 0x0
+    pub const DEVICE_NGNRE: u64 = 0b0100; // 0x4
+    pub const DEVICE_GRE: u64 = 0b1100; // 0xc
+    pub const NORMAL_NC: u64 = 0b0100_0100; // 0x44, normal memory, non-cacheable
+    pub const NORMAL: u64 = 0b1111_1111; // 0xff, nomral memory, inner read-alloc, write-alloc,wb, non-transient
 }
+
+define_sys_register!(
+    TTBR0_EL2, // ref. Translation Table Base Register 0(EL2)
+    ASID[63 - 48],
+    BADDR[47 - 1],
+    CNP[0 - 0]
+);
+
+define_sys_register!(
+    TCR_EL2, // ref. Translation Control Register (EL2)
+    MTX[33 - 33],
+    DS[32 - 32],
+    TCMA[30 - 30],
+    TBID[29 - 29],
+    HPD[24 - 24],
+    HD[22 - 22],
+    HA[21 - 21],
+    TBI[20 - 20],
+    PS[18 - 16],
+    TG0[15 - 14],
+    SH0[13 - 12],
+    ORGN0[11 - 10],
+    IRGN0[9 - 8],
+    T0SZ[5 - 0]
+);
 
 define_sys_register!(
     VTCR_EL2,

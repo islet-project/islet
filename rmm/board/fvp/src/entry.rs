@@ -2,8 +2,9 @@ use crate::allocator;
 use crate::helper;
 use crate::helper::ID_AA64MMFR0_EL1;
 use crate::log::LevelFilter;
-
 use armv9a::config::{NUM_OF_CPU, RMM_STACK_SIZE};
+use armv9a::rmm::translation;
+
 use monitor::io::stdout;
 use monitor::logger;
 
@@ -84,6 +85,6 @@ unsafe fn setup() {
 
         (&mut COLD_BOOT as *mut bool).write_volatile(false);
     }
-
+    translation::set_register_mm();
     helper::init();
 }

@@ -26,7 +26,6 @@ define_bits!(
 
 #[derive(Clone, Copy)]
 pub struct Entry(PTDesc);
-
 impl page_table::Entry for Entry {
     fn new() -> Self {
         Self(PTDesc::new(0))
@@ -61,8 +60,8 @@ impl page_table::Entry for Entry {
         self.0
             .set(addr.as_u64() | flags)
             .set_masked_value(PTDesc::SH, attr::shareable::INNER)
-            .set_bits(PTDesc::AF)
-            .set_bits(PTDesc::VALID);
+            .set_masked_value(PTDesc::INDX, 0x0)
+            .set_bits(PTDesc::AF | PTDesc::VALID);
 
         unsafe {
             core::arch::asm!(
@@ -96,7 +95,6 @@ impl page_table::Entry for Entry {
         match self.is_valid() {
             true => match self.0.get_masked_value(PTDesc::TYPE) {
                 attr::page_type::TABLE_OR_PAGE => true,
-                attr::page_type::BLOCK => false,
                 _ => false,
             },
             false => false,

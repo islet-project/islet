@@ -96,7 +96,7 @@ def prepare_rmm(rmm):
              "%s/rmm.bin" % OUT],
              cwd=ROOT)
     elif rmm == "tf-rmm":
-        run(["./scripts/build_tf_rmm.sh", CROSS_COMPILE], cwd=ROOT)
+        run(["./scripts/build-tf-rmm.sh", CROSS_COMPILE], cwd=ROOT)
 
 def prepare_nw_linux():
     args = [
@@ -167,15 +167,7 @@ def prepare_kvmtool(lkvm="lkvm"):
 
 def prepare_kvm_unit_tests():
     print("[!] Building kvm-unit-tests...")
-    cmd = [
-        "./configure",
-        "--arch=arm64",
-        "--cross-prefix=%s" % KVMTOOL_CROSS_COMPILE,
-        "--target=kvmtool",
-    ]
-    run(cmd, cwd=KVM_UNIT_TESTS)
-    args = []
-    make(KVM_UNIT_TESTS, args)
+    run(["./scripts/build-kvm-unit-tests.sh"], cwd=ROOT)
     run(["cp", "-R", "arm", "%s/%s" % (OUT, "kvm-unit-tests")], cwd=KVM_UNIT_TESTS)
 
 def run_fvp_tf_a_tests(debug):

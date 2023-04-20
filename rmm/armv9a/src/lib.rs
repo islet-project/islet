@@ -10,6 +10,7 @@ pub mod config;
 pub mod cpu;
 pub mod exception;
 pub mod helper;
+pub mod mm;
 pub mod panic;
 pub mod realm;
 pub mod rmm;

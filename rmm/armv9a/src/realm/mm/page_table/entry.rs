@@ -1,8 +1,9 @@
 use monitor::mm::address::PhysAddr;
 use monitor::mm::page_table::{self, Level};
 
-use super::super::translation_granule_4k::{RawGPA, RawPTE};
+use super::super::translation_granule_4k::RawPTE;
 use super::pte;
+use crate::mm::RawGPA;
 
 use crate::helper::bits_in_reg;
 

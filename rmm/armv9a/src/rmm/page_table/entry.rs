@@ -1,8 +1,8 @@
 use monitor::mm::address::PhysAddr;
 use monitor::mm::page_table::{self, Level};
 
-use super::super::granule::RawGPA;
 use super::attr;
+use crate::mm::RawGPA;
 use crate::{define_bitfield, define_bits, define_mask};
 
 use crate::helper::bits_in_reg;

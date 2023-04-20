@@ -1,20 +1,6 @@
 use crate::{define_bitfield, define_bits, define_mask};
 
 define_bits!(
-    RawGPA, // ref. K6.1.2
-    L0Index[47 - 39],
-    L1Index[38 - 30],
-    L2Index[29 - 21],
-    L3Index[20 - 12]
-);
-
-impl From<usize> for RawGPA {
-    fn from(addr: usize) -> Self {
-        Self(addr as u64)
-    }
-}
-
-define_bits!(
     RawPTE,
     NS[55 - 55], // DDI0615A: For a Block or Page descriptor fetched for stage 2 in the Realm Security state, bit 55 is the NS field. if set, it means output address is in NS PAS.
     XN[54 - 54],

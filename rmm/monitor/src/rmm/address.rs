@@ -1,6 +1,6 @@
+use crate::impl_addr;
+use crate::mm::page::Address;
 use core::fmt;
-use monitor::impl_addr;
-use monitor::mm::page::Address;
 
 use core::ops::{Add, AddAssign, BitAnd, BitOr, Sub, SubAssign};
 

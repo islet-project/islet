@@ -88,12 +88,12 @@ pub extern "C" fn handle_lower_exception(
         // TODO: adjust elr according to the decision that kvm made
         Kind::Synchronous => match Syndrome::from(esr) {
             Syndrome::HVC => {
-                debug!("Synchronous: HVC");
+                debug!("Synchronous: HVC: {:#X}", vcpu.context.gp_regs[0]);
                 tf.regs[0] = rmi::RET_EXCEPTION_TRAP as u64;
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = 0;
                 tf.regs[3] = unsafe { FAR_EL2.get() };
-                RET_TO_RMM
+                RET_TO_REC
             }
             Syndrome::SMC => {
                 debug!("Synchronous: SMC: {:#X}", vcpu.context.gp_regs[0]);
@@ -134,6 +134,7 @@ pub extern "C" fn handle_lower_exception(
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = unsafe { HPFAR_EL2.get() };
                 tf.regs[3] = unsafe { FAR_EL2.get() };
+                debug!("HPFAR {:X?}, {:X?}", tf.regs[2], tf.regs[3]);
                 RET_TO_RMM
             }
             undefined => {

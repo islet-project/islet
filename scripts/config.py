@@ -40,7 +40,7 @@ KVMTOOL = os.path.join(THIRD_PARTY, "kvmtool")
 KVM_UNIT_TESTS = os.path.join(THIRD_PARTY, "kvm-unit-tests")
 
 HVC_LOOP = os.path.join(ROOT, "realm/hvc-loop")
-HVC_LOOP_BIN = os.path.join(OUT, "hvc_loop.bin") 
+HVC_LOOP_BIN = os.path.join(OUT, "hvc-loop.bin")
 
 # directory shared between the pc desktop and the host OS on fvp using 9p filesystem
 SHARED_PATH = os.path.join(OUT, "shared")

@@ -11,6 +11,7 @@ pub mod r#macro;
 pub mod mm;
 pub mod realm;
 pub mod rmi;
+pub mod rmm;
 pub mod rsi;
 pub mod smc;
 

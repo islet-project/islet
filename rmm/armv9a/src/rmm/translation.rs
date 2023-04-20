@@ -1,4 +1,3 @@
-use super::address::VirtAddr;
 use super::page::RmmBasePageSize;
 use super::page_table::entry::{Entry, PTDesc};
 use super::page_table::{attr, L1Table};
@@ -6,6 +5,7 @@ use crate::config::{LARGE_PAGE_SIZE, PAGE_SIZE};
 use crate::helper;
 use crate::helper::{bits_in_reg, regs};
 use core::arch::asm;
+use monitor::rmm::address::VirtAddr;
 
 use core::ffi::c_void;
 use core::fmt;

@@ -30,7 +30,7 @@ def make(srcdir, extra=None):
         args += extra
     run(args, cwd=srcdir)
 
-def prepare_tf_a_tests():
+def prepare_tf_a_tests(realm):
     srcdir = TF_A_TESTS
     outbin = TFTF_BIN
 
@@ -53,19 +53,24 @@ def prepare_hvc_loop():
     run(["cargo", "build", "--release"], cwd=HVC_LOOP)
     run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
          "%s/aarch64-unknown-none-softfloat/release/hvc-loop" % OUT,
-         "%s/hvc_loop.bin" % OUT],
+         HVC_LOOP_BIN],
          cwd=ROOT)
+
+    os.makedirs("%s/realm" % OUT, exist_ok=True)
+    run(["cp", HVC_LOOP_BIN, "%s/realm" % OUT], cwd=ROOT)
 
     if not os.path.exists(HVC_LOOP_BIN):
         print("[!] Failed to build hvc_loop")
         sys.exit(1)
 
-
 def prepare_realm(name):
     print("[!] Building realm(%s)... " % name)
-    srcdir = os.path.join(REALM, name)
-    run(["make"], cwd=srcdir)
-    run(["make", "install"], cwd=srcdir)
+    if args.realm == "hvc-loop":
+        prepare_hvc_loop()
+    else:
+        srcdir = os.path.join(REALM, name)
+        run(["make"], cwd=srcdir)
+        run(["make", "install"], cwd=srcdir)
 
 def prepare_bootloaders(rmm, bl33):
     args = [
@@ -302,16 +307,16 @@ if __name__ == "__main__":
     if not args.run_only:
         prepare_rmm(args.rmm)
 
+        if args.realm is not None:
+            prepare_realm(args.realm)
+
         if args.normal_world == "tf-a-tests":
-            prepare_tf_a_tests()
+            prepare_tf_a_tests(args.realm)
             prepare_bootloaders(args.rmm, TFTF_BIN)
         elif args.normal_world == "aosp":
             prepare_kvmtool("lkvm-static")
             prepare_nw_aosp(args.no_prebuilt_initrd)
             prepare_bootloaders(args.rmm, PREBUILT_EDK2)
-        elif args.normal_world == "hvc-loop":
-            prepare_hvc_loop()
-            prepare_bootloaders(args.rmm, HVC_LOOP_BIN)
         else:
             prepare_kvmtool()
             prepare_kvm_unit_tests()
@@ -319,7 +324,6 @@ if __name__ == "__main__":
             prepare_bootloaders(args.rmm, PREBUILT_EDK2)
 
             if args.realm is not None:
-                prepare_realm(args.realm)
                 place_realm_at_shared()
 
     if not args.build_only and args.normal_world == "tf-a-tests":

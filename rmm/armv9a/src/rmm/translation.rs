@@ -1,11 +1,10 @@
 use super::page::RmmBasePageSize;
 use super::page_table::entry::{Entry, PTDesc};
 use super::page_table::{attr, L1Table};
-use crate::config::{LARGE_PAGE_SIZE, PAGE_SIZE};
+use crate::config::PAGE_SIZE;
 use crate::helper;
 use crate::helper::{bits_in_reg, regs};
 use core::arch::asm;
-use monitor::rmm::address::VirtAddr;
 
 use core::ffi::c_void;
 use core::fmt;
@@ -13,11 +12,13 @@ use lazy_static::lazy_static;
 use monitor::mm::address::PhysAddr;
 use monitor::mm::page::Page;
 use monitor::mm::page_table::{PageTable, PageTableMethods};
+use monitor::rmm::address::VirtAddr;
 use spin::mutex::Mutex;
 
 extern "C" {
-    static __RMM_BASE: u64;
+    static __RMM_BASE__: u64;
     static __RW_START__: u64;
+    static __RW_END__: u64;
 }
 
 lazy_static! {
@@ -57,36 +58,43 @@ impl<'a> RmmPageTable<'a> {
         }
     }
 
-    pub fn fill(&mut self) {
+    fn fill(&mut self) {
         if self.dirty == true {
             return;
         }
 
         let ro_flags = helper::bits_in_reg(PTDesc::AP, attr::permission::RO);
         let rw_flags = helper::bits_in_reg(PTDesc::AP, attr::permission::RW);
+        let rmm_flags = helper::bits_in_reg(PTDesc::INDX, attr::mair_idx::RMM_MEM);
+
         unsafe {
-            let base_address = &__RMM_BASE as *const u64 as u64;
+            let base_address = &__RMM_BASE__ as *const u64 as u64;
             let rw_start = &__RW_START__ as *const u64 as u64;
+            let ro_size = rw_start - base_address;
+            let rw_size = &__RW_END__ as *const u64 as u64 - rw_start;
             let uart_phys = 0x1c0c0000 as u64;
             self.set_pages(
                 VirtAddr::from(base_address),
                 PhysAddr::from(base_address),
-                PAGE_SIZE * 19,
-                ro_flags,
+                ro_size as usize,
+                ro_flags | rmm_flags,
             );
             self.set_pages(
                 VirtAddr::from(rw_start),
                 PhysAddr::from(rw_start),
-                (LARGE_PAGE_SIZE * 16) - (PAGE_SIZE * 19),
+                rw_size as usize,
                 rw_flags,
             );
+            // UART
             self.set_pages(
                 VirtAddr::from(uart_phys),
                 PhysAddr::from(uart_phys),
                 1,
-                rw_flags,
+                rw_flags | rmm_flags,
             );
         }
+        //TODO Set dirty only if pages are updated, not added
+        self.dirty = true;
     }
 
     fn get_base_address(&self) -> *const c_void {
@@ -98,9 +106,6 @@ impl<'a> RmmPageTable<'a> {
         let phyaddr = Page::<RmmBasePageSize, PhysAddr>::range_with_size(phys, size);
 
         self.root_pgtlb.set_pages(virtaddr, phyaddr, flags);
-
-        //TODO Set dirty only if pages are updated, not added
-        self.dirty = true;
     }
 }
 
@@ -123,7 +128,9 @@ pub fn set_register_mm() {
     }
 
     // /* Set attributes in the right indices of the MAIR. */
-    let mair_el2 = bits_in_reg(regs::MAIR_EL2::Attr0, regs::mair_attr::NORMAL);
+    let mair_el2 = bits_in_reg(regs::MAIR_EL2::Attr0, regs::mair_attr::NORMAL)
+        | bits_in_reg(regs::MAIR_EL2::Attr1, regs::mair_attr::DEVICE_NGNRNE)
+        | bits_in_reg(regs::MAIR_EL2::Attr2, regs::mair_attr::DEVICE_NGNRE);
 
     /*
      * The size of the virtual address space is configured as 64 – T0SZ.
@@ -153,4 +160,15 @@ pub fn set_register_mm() {
         regs::TTBR0_EL2.set(ttlb_base);
         asm!("dsb ish", "isb",);
     }
+}
+
+pub fn set_pages_for_rmi(addr: usize) {
+    let rw_flags = helper::bits_in_reg(PTDesc::AP, attr::permission::RW);
+    let device_flags = helper::bits_in_reg(PTDesc::INDX, attr::mair_idx::DEVICE_MEM);
+    let va = VirtAddr::from(addr);
+    let phys = PhysAddr::from(addr);
+
+    let mut page_table = RMM_PAGE_TABLE.lock();
+
+    page_table.set_pages(va, phys, PAGE_SIZE, rw_flags | device_flags);
 }

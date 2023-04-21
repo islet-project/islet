@@ -23,19 +23,26 @@ extern crate log;
 
 use crate::event::Mainloop;
 use crate::rmi::RMI;
+use crate::rmm::PageMap;
 use crate::smc::SecureMonitorCall;
 
 pub struct Monitor {
     mainloop: Mainloop,
     rmi: RMI,
     smc: SecureMonitorCall,
+    rmm: PageMap,
 }
 
 impl Monitor {
-    pub fn new(rmi: RMI, smc: smc::SecureMonitorCall) -> Self {
+    pub fn new(rmi: RMI, smc: SecureMonitorCall, rmm: PageMap) -> Self {
         let mut mainloop = Mainloop::new();
         Self::add_event_handler(&mut mainloop);
-        Self { mainloop, rmi, smc }
+        Self {
+            mainloop,
+            rmi,
+            smc,
+            rmm,
+        }
     }
 
     fn add_event_handler(mainloop: &mut Mainloop) {
@@ -58,6 +65,6 @@ impl Monitor {
     }
 
     pub fn run(&self) {
-        self.mainloop.run(self.rmi, self.smc);
+        self.mainloop.run(self.rmi, self.smc, self.rmm);
     }
 }

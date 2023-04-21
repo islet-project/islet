@@ -2,6 +2,7 @@ extern crate alloc;
 
 use super::{Context, Handler};
 use crate::rmi::{self, RMI};
+use crate::rmm::PageMap;
 use crate::smc::SecureMonitorCall;
 use crate::utils::spsc;
 
@@ -34,7 +35,7 @@ impl Mainloop {
         self.tx.send(ctx);
     }
 
-    pub fn run(&self, rmi: RMI, smc: SecureMonitorCall) {
+    pub fn run(&self, rmi: RMI, smc: SecureMonitorCall, rmm: PageMap) {
         loop {
             let mut ctx = self.rx.recv();
 
@@ -44,7 +45,7 @@ impl Mainloop {
 
             match self.on_event.get(&ctx.cmd) {
                 Some(handler) => {
-                    handler(&mut ctx, rmi, smc);
+                    handler(&mut ctx, rmi, smc, rmm);
                     ctx.arg = [ctx.ret[0], ctx.ret[1], ctx.ret[2], ctx.ret[3]];
                 }
                 None => {

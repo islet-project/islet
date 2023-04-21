@@ -8,18 +8,19 @@ use crate::rmi;
 extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::RTT_INIT_RIPAS, |ctx, _, _| {
+    listen!(mainloop, rmi::RTT_INIT_RIPAS, |ctx, _, _, _| {
         super::dummy();
         ctx.ret[0] = rmi::SUCCESS;
     });
 
-    listen!(mainloop, rmi::RTT_READ_ENTRY, |ctx, _, _| {
+    listen!(mainloop, rmi::RTT_READ_ENTRY, |ctx, _, _, _| {
         super::dummy();
         ctx.ret[0] = rmi::SUCCESS;
     });
 
-    listen!(mainloop, rmi::DATA_CREATE, |ctx, rmi, smc| {
+    listen!(mainloop, rmi::DATA_CREATE, |ctx, rmi, smc, rmm| {
         // taget_pa: location where realm data is created.
+        let _ = rmm.map([ctx.arg[2], ctx.arg[3], 0, 0]);
         let taget_pa = ctx.arg[0];
         let rd = unsafe { Rd::into(ctx.arg[1]) };
         let ipa = ctx.arg[2];
@@ -68,7 +69,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     // Map an unprotected IPA to a non-secure PA.
-    listen!(mainloop, rmi::RTT_MAP_UNPROTECTED, |ctx, rmi, _| {
+    listen!(mainloop, rmi::RTT_MAP_UNPROTECTED, |ctx, rmi, _, _| {
         let rd = unsafe { Rd::into(ctx.arg[0]) };
         let ipa = ctx.arg[1];
         let _level = ctx.arg[2];

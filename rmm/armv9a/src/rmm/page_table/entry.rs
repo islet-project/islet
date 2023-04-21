@@ -60,7 +60,6 @@ impl page_table::Entry for Entry {
         self.0
             .set(addr.as_u64() | flags)
             .set_masked_value(PTDesc::SH, attr::shareable::INNER)
-            .set_masked_value(PTDesc::INDX, 0x0)
             .set_bits(PTDesc::AF | PTDesc::VALID);
 
         unsafe {

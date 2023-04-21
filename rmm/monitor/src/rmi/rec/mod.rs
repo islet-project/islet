@@ -112,14 +112,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                     trace!("REC_ENTER ret: {:#X?}", val);
                     let ipa = val[1];
                     // TODO: ipa to pa
-                    if ipa == 0x88b0_6000 {
-                        let pa: usize = ipa;
-                        unsafe {
-                            let host_call = rsi::HostCall::parse(pa);
-                            run.set_imm(host_call.imm());
-                            run.set_exit_reason(rmi::EXIT_HOST_CALL);
-                        };
-                    }
+                    let pa: usize = ipa;
+                    unsafe {
+                        let host_call = rsi::HostCall::parse(pa);
+                        run.set_imm(host_call.imm());
+                        run.set_exit_reason(rmi::EXIT_HOST_CALL);
+
+                        trace!("HOST_CALL param: {:#X?}", host_call);
+                    };
                     ctx.ret[0] = rmi::SUCCESS;
                 }
                 rmi::RET_EXCEPTION_TRAP | rmi::RET_EXCEPTION_IRQ => {

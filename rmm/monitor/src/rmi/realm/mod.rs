@@ -11,12 +11,13 @@ use crate::rmi;
 extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::REALM_ACTIVATE, |ctx, _, _| {
+    listen!(mainloop, rmi::REALM_ACTIVATE, |ctx, _, _, _| {
         super::dummy();
         ctx.ret[0] = rmi::SUCCESS;
     });
 
-    listen!(mainloop, rmi::REALM_CREATE, |ctx, rmi, smc| {
+    listen!(mainloop, rmi::REALM_CREATE, |ctx, rmi, smc, rmm| {
+        let _ = rmm.map([ctx.arg[0], ctx.arg[1], 0, 0]);
         let rd = unsafe { &mut Rd::new(ctx.arg[0]) };
         let params_ptr = ctx.arg[1];
 
@@ -47,12 +48,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
     });
 
-    listen!(mainloop, rmi::REC_AUX_COUNT, |ctx, _, _| {
+    listen!(mainloop, rmi::REC_AUX_COUNT, |ctx, _, _, _| {
         ctx.ret[0] = rmi::SUCCESS;
         ctx.ret[1] = rmi::MAX_REC_AUX_GRANULES;
     });
 
-    listen!(mainloop, rmi::REALM_DESTROY, |ctx, rmi, _| {
+    listen!(mainloop, rmi::REALM_DESTROY, |ctx, rmi, _, _| {
         let _rd = unsafe { Rd::into(ctx.arg[0]) };
         let ret = rmi.remove(0); // temporarily
         match ret {

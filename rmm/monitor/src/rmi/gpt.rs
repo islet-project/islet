@@ -6,11 +6,11 @@ use crate::smc;
 extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::GRANULE_DELEGATE, |ctx, _, smc| {
+    listen!(mainloop, rmi::GRANULE_DELEGATE, |ctx, _, smc, _| {
         ctx.ret = mark_realm(smc, ctx.arg[0]);
     });
 
-    listen!(mainloop, rmi::GRANULE_UNDELEGATE, |ctx, _, smc| {
+    listen!(mainloop, rmi::GRANULE_UNDELEGATE, |ctx, _, smc, _| {
         ctx.ret = mark_ns(smc, ctx.arg[0]);
     });
 }

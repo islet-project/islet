@@ -29,7 +29,8 @@ pub unsafe fn main() -> ! {
 
     let rmi = armv9a::realm::registry::RMI::new();
     let smc = armv9a::smc::SMC::new();
-    let monitor = monitor::Monitor::new(rmi, smc);
+    let rmm = armv9a::rmm::MemoryMap::new();
+    let monitor = monitor::Monitor::new(rmi, smc, rmm);
     monitor.boot_complete();
     monitor.run();
 

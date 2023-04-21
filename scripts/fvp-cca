@@ -39,8 +39,10 @@ def prepare_tf_a_tests(realm):
         "PLAT=fvp",
         "DEBUG=1",
         "all",
-        "pack_realm",
     ]
+
+    if realm != "hvc-loop":
+        args += ["pack_realm"]
 
     print("[!] Building tf-a-tests...")
     make(srcdir, args)
@@ -48,6 +50,18 @@ def prepare_tf_a_tests(realm):
     if not os.path.exists(outbin):
         print("[!] Failed to build: %s" % outbin)
         sys.exit(1)
+
+    # Pack realm to tftf
+    if realm == "hvc-loop":
+        tftf_max_size = 10485760
+        args = [
+            'dd',
+            'if=%s' % HVC_LOOP_BIN,
+            'of=%s' % outbin,
+            'obs=1',
+            'seek=%s' % tftf_max_size
+        ]
+        run(args, cwd=ROOT)
 
 def prepare_hvc_loop():
     run(["cargo", "build", "--release"], cwd=HVC_LOOP)

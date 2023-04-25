@@ -1,5 +1,5 @@
 ROOT = $(shell git rev-parse --show-toplevel)
-TARGET = hvc-loop
+TARGET = rsi-test
 
 all: build
 

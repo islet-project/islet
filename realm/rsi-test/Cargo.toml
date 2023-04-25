@@ -1,9 +1,9 @@
 [package]
-name = "hvc-loop"
+name = "rsi-test"
 version = "0.0.1"
 authors = ["ISLET Contributors"]
 edition = "2018"
 
 [[bin]]
-name = "hvc-loop"
+name = "rsi-test"
 path = "src/main.rs"

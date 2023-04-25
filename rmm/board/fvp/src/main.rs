@@ -28,8 +28,9 @@ pub unsafe fn main() -> ! {
     let smc = armv9a::smc::SMC::new();
     let rmm = armv9a::rmm::MemoryMap::new();
     let monitor = monitor::Monitor::new(rmi, smc, rmm);
-    monitor.boot_complete();
-    monitor.run();
+    let mut mainloop = monitor::event::Mainloop::new();
+    mainloop.boot_complete(smc);
+    mainloop.run(&monitor);
 
     panic!("failed to run the mainloop");
 }

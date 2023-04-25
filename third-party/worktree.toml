@@ -5,7 +5,7 @@ upstream = "upstream-linux-cca-rfc-v1"
 
 [optee-build]
 branch = "3rd-optee-build-230407"
-commit = "616a9430763d"
+commit = "13fe78ba976e"
 
 [realm-linux]
 branch = "3rd-realm-linux-230222"

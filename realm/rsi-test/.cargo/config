@@ -1,4 +1,4 @@
 [target.aarch64-unknown-none-softfloat]
 rustflags = [
-  "-C", "link-args=-Trealm/hvc-loop/memory.x",
+  "-C", "link-args=-Trealm/rsi-test/memory.x",
 ]

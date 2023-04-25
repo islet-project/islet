@@ -41,7 +41,7 @@ def prepare_tf_a_tests(realm):
         "all",
     ]
 
-    if realm != "hvc-loop":
+    if realm != "rsi-test":
         args += ["pack_realm"]
 
     print("[!] Building tf-a-tests...")
@@ -52,35 +52,35 @@ def prepare_tf_a_tests(realm):
         sys.exit(1)
 
     # Pack realm to tftf
-    if realm == "hvc-loop":
+    if realm == "rsi-test":
         tftf_max_size = 10485760
         args = [
             'dd',
-            'if=%s' % HVC_LOOP_BIN,
+            'if=%s' % RSI_TEST_BIN,
             'of=%s' % outbin,
             'obs=1',
             'seek=%s' % tftf_max_size
         ]
         run(args, cwd=ROOT)
 
-def prepare_hvc_loop():
-    run(["cargo", "build", "--release"], cwd=HVC_LOOP)
+def prepare_rsi_test():
+    run(["cargo", "build", "--release"], cwd=RSI_TEST)
     run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
-         "%s/aarch64-unknown-none-softfloat/release/hvc-loop" % OUT,
-         HVC_LOOP_BIN],
+         "%s/aarch64-unknown-none-softfloat/release/rsi-test" % OUT,
+         RSI_TEST_BIN],
          cwd=ROOT)
 
     os.makedirs("%s/realm" % OUT, exist_ok=True)
-    run(["cp", HVC_LOOP_BIN, "%s/realm" % OUT], cwd=ROOT)
+    run(["cp", RSI_TEST_BIN, "%s/realm" % OUT], cwd=ROOT)
 
-    if not os.path.exists(HVC_LOOP_BIN):
-        print("[!] Failed to build hvc_loop")
+    if not os.path.exists(RSI_TEST_BIN):
+        print("[!] Failed to build rsi-test")
         sys.exit(1)
 
 def prepare_realm(name):
     print("[!] Building realm(%s)... " % name)
-    if args.realm == "hvc-loop":
-        prepare_hvc_loop()
+    if args.realm == "rsi-test":
+        prepare_rsi_test()
     else:
         srcdir = os.path.join(REALM, name)
         run(["make"], cwd=srcdir)
@@ -274,7 +274,7 @@ def get_all_realms():
     return sorted(realms)
 
 def validate_args(args):
-    nw_list = ["linux", "tf-a-tests", "aosp", "hvc-loop"]
+    nw_list = ["linux", "tf-a-tests", "aosp"]
     if not args.normal_world in nw_list:
         print("Please select one of the normal components:")
         print("  " + "\n  ".join(nw_list))
@@ -341,9 +341,6 @@ if __name__ == "__main__":
                 place_realm_at_shared()
 
     if not args.build_only and args.normal_world == "tf-a-tests":
-        run_fvp_tf_a_tests(args.debug)
-
-    if not args.build_only and args.normal_world == "hvc-loop":
         run_fvp_tf_a_tests(args.debug)
 
     if not args.build_only and args.normal_world == "linux":

@@ -8,7 +8,7 @@ MEMORY {
 SECTIONS
 {
  . = (((0x80000000) + (0x80000000) - ((0x0) + (0x00300000) + (0x02000000) + (0x00100000))));
- __RMM_BASE = .;
+ __RMM_BASE__ = .;
  .text : {
   KEEP(*(.head.text))
   . = ALIGN(16);

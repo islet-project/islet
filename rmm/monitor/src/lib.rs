@@ -5,6 +5,7 @@
 #![deny(warnings)]
 
 pub mod error;
+pub mod event;
 pub mod io;
 pub mod logger;
 pub mod r#macro;
@@ -15,56 +16,23 @@ pub mod rmm;
 pub mod rsi;
 pub mod smc;
 
-pub(crate) mod event;
 pub(crate) mod utils; // TODO: move to lib
 
 #[macro_use]
 extern crate log;
 
-use crate::event::Mainloop;
 use crate::rmi::RMI;
 use crate::rmm::PageMap;
 use crate::smc::SecureMonitorCall;
 
 pub struct Monitor {
-    mainloop: Mainloop,
-    rmi: RMI,
-    smc: SecureMonitorCall,
-    rmm: PageMap,
+    pub rmi: RMI,
+    pub smc: SecureMonitorCall,
+    pub mm: PageMap,
 }
 
 impl Monitor {
-    pub fn new(rmi: RMI, smc: SecureMonitorCall, rmm: PageMap) -> Self {
-        let mut mainloop = Mainloop::new();
-        Self::add_event_handler(&mut mainloop);
-        Self {
-            mainloop,
-            rmi,
-            smc,
-            rmm,
-        }
-    }
-
-    fn add_event_handler(mainloop: &mut Mainloop) {
-        rmi::features::set_event_handler(mainloop);
-        rmi::gpt::set_event_handler(mainloop);
-        rmi::realm::set_event_handler(mainloop);
-        rmi::rec::set_event_handler(mainloop);
-        rmi::rtt::set_event_handler(mainloop);
-        rmi::version::set_event_handler(mainloop);
-    }
-
-    pub fn boot_complete(&self) {
-        let ctx = event::Context {
-            cmd: rmi::BOOT_COMPLETE,
-            arg: [rmi::BOOT_SUCCESS, 0, 0, 0],
-            ..Default::default()
-        };
-
-        self.mainloop.dispatch(self.smc, ctx);
-    }
-
-    pub fn run(&self) {
-        self.mainloop.run(self.rmi, self.smc, self.rmm);
+    pub fn new(rmi: RMI, smc: SecureMonitorCall, mm: PageMap) -> Self {
+        Self { rmi, smc, mm }
     }
 }

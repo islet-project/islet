@@ -42,8 +42,11 @@ impl Drop for Rec {
 
 // TODO: Bind rd with realm & rec
 pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::REC_CREATE, |ctx, rmi, smc, rmm| {
-        let _ = rmm.map([ctx.arg[0], ctx.arg[1], ctx.arg[2], 0]);
+    listen!(mainloop, rmi::REC_CREATE, |ctx, rmm| {
+        let mm = rmm.mm;
+        let rmi = rmm.rmi;
+        let smc = rmm.smc;
+        let _ = mm.map([ctx.arg[0], ctx.arg[1], ctx.arg[2], 0]);
         let rec = unsafe { &mut Rec::new(ctx.arg[0]) };
         let rd = unsafe { Rd::into(ctx.arg[1]) };
         let params_ptr = ctx.arg[2];
@@ -74,15 +77,18 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         ctx.ret[0] = rmi::SUCCESS;
     });
 
-    listen!(mainloop, rmi::REC_DESTROY, |ctx, _, _, _| {
+    listen!(mainloop, rmi::REC_DESTROY, |ctx, _| {
         super::dummy();
         ctx.ret[0] = rmi::SUCCESS;
     });
 
-    listen!(mainloop, rmi::REC_ENTER, |ctx, rmi, smc, rmm| {
+    listen!(mainloop, rmi::REC_ENTER, |ctx, rmm| {
+        let mm = rmm.mm;
+        let rmi = rmm.rmi;
+        let smc = rmm.smc;
         let _rec = unsafe { Rec::into(ctx.arg[0]) };
         let run_ptr = ctx.arg[1];
-        let _ = rmm.map([run_ptr, 0, 0, 0]);
+        let _ = mm.map([run_ptr, 0, 0, 0]);
         if mark_realm(smc, run_ptr)[0] != 0 {
             return;
         }

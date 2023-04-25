@@ -1,10 +1,10 @@
 extern crate alloc;
 
 use super::{Context, Handler};
-use crate::rmi::{self, RMI};
-use crate::rmm::PageMap;
+use crate::rmi;
 use crate::smc::SecureMonitorCall;
 use crate::utils::spsc;
+use crate::Monitor;
 
 use alloc::collections::btree_map::BTreeMap;
 use alloc::rc::Rc;
@@ -25,6 +25,25 @@ impl Mainloop {
         }
     }
 
+    fn add_event_handlers(&mut self) {
+        rmi::features::set_event_handler(self);
+        rmi::gpt::set_event_handler(self);
+        rmi::realm::set_event_handler(self);
+        rmi::rec::set_event_handler(self);
+        rmi::rtt::set_event_handler(self);
+        rmi::version::set_event_handler(self);
+    }
+
+    pub fn boot_complete(&mut self, smc: SecureMonitorCall) {
+        let ctx = Context {
+            cmd: rmi::BOOT_COMPLETE,
+            arg: [rmi::BOOT_SUCCESS, 0, 0, 0],
+            ..Default::default()
+        };
+        self.add_event_handlers();
+        self.dispatch(smc, ctx);
+    }
+
     pub fn dispatch(&self, smc: SecureMonitorCall, ctx: Context) {
         let ret = smc.call(ctx.cmd, ctx.arg);
         let ctx = Context {
@@ -35,9 +54,10 @@ impl Mainloop {
         self.tx.send(ctx);
     }
 
-    pub fn run(&self, rmi: RMI, smc: SecureMonitorCall, rmm: PageMap) {
+    pub fn run(&self, monitor: &Monitor) {
         loop {
             let mut ctx = self.rx.recv();
+            let smc = monitor.smc;
 
             if self.on_event.is_empty() {
                 panic!("There is no registered event handler.");
@@ -45,7 +65,7 @@ impl Mainloop {
 
             match self.on_event.get(&ctx.cmd) {
                 Some(handler) => {
-                    handler(&mut ctx, rmi, smc, rmm);
+                    handler(&mut ctx, monitor);
                     ctx.arg = [ctx.ret[0], ctx.ret[1], ctx.ret[2], ctx.ret[3]];
                 }
                 None => {

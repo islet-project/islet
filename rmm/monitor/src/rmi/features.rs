@@ -27,7 +27,7 @@ const NOT_SUPPORTED: usize = 0;
 const FEATURE_REGISTER_0_INDEX: usize = 0;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::FEATURES, |ctx, _, _, _| {
+    listen!(mainloop, rmi::FEATURES, |ctx, _| {
         if ctx.arg[0] != FEATURE_REGISTER_0_INDEX {
             ctx.ret[0] = rmi::ERROR_INPUT;
             return;

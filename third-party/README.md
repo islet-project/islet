@@ -19,3 +19,8 @@ You can check below after `scripts/init.sh` or `scripts/sync-worktree.sh`.
 │   ├── tf-a           # worktree
 │   ├── tf-a-tests     # worktree
 ```
+
+## How to add patches to third-parties
+1. Fork the third-party branch to another branch (ex. 3rd-nw-linux-XXXXXX)
+2. Add patches and test
+3. Update `third-party/worktree.toml` and make pull-request

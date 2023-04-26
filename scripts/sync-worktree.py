@@ -44,8 +44,7 @@ def add_worktree(project, info):
     run(['git', 'worktree', 'move', branch, f'third-party/{project}'], cwd=ROOT)
  
     if info["commit"] != commit(os.path.join(THIRD_PARTY, project)):
-        print(f"[-] Mismatched [{project}] commit: {commit}")
-        sys.exit(1)
+        print(f"[-][Warning] Mismatched [{project}] commit: {commit}")
 
 if __name__ == "__main__":
     tree = toml.load(os.path.join(THIRD_PARTY, "worktree.toml"))

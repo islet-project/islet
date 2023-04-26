@@ -29,12 +29,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let ipa = ctx.arg[2];
         let src_pa = ctx.arg[3];
 
-        let realm_id = rd.realm_id;
+        let realm_id = rd.id();
         let granule_sz = 4096;
 
         // Make sure DATA_CREATE is only processed
         // when the realm is in its New state.
-        if rd.state != State::New {
+        if !rd.at_state(State::New) {
             ctx.ret[0] = rmi::RET_FAIL;
             return;
         }
@@ -80,7 +80,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let ns_pa = ctx.arg[3];
 
         // islet stores rd as realm id
-        let realm_id = rd.realm_id;
+        let realm_id = rd.id();
         let granule_sz = 4096;
         let mut prot = rmi::MapProt(0);
         prot.set_bit(rmi::MapProt::NS_PAS);

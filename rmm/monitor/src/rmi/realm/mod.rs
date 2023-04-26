@@ -21,7 +21,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let smc = rmm.smc;
         let mm = rmm.mm;
         let _ = mm.map([ctx.arg[0], ctx.arg[1], 0, 0]);
-        let rd = unsafe { &mut Rd::new(ctx.arg[0]) };
         let params_ptr = ctx.arg[1];
 
         // TODO: Read ns memory w/o delegation
@@ -44,7 +43,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         match ret {
             Ok(id) => {
                 ctx.ret[0] = rmi::SUCCESS;
-                rd.realm_id = id;
+                let _ = unsafe { Rd::new(ctx.arg[0], id) };
                 ctx.ret[1] = id;
             }
             Err(_) => ctx.ret[0] = rmi::RET_FAIL,

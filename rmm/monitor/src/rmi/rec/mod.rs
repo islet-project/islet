@@ -14,25 +14,29 @@ use core::mem::ManuallyDrop;
 extern crate alloc;
 
 struct Rec {
-    pub vcpuid: usize,
+    pub rd: &'static Rd,
+    vcpuid: usize,
 }
 
 impl Rec {
-    pub unsafe fn new(rd_addr: usize) -> ManuallyDrop<&'static mut Rec> {
-        let rec: &mut Rec = &mut *(rd_addr as *mut Rec);
-        *rec = Default::default();
+    pub unsafe fn new(
+        rec_addr: usize,
+        vcpuid: usize,
+        rd: &'static Rd,
+    ) -> ManuallyDrop<&'static mut Rec> {
+        let rec: &mut Rec = &mut *(rec_addr as *mut Rec);
+        rec.vcpuid = vcpuid;
+        rec.rd = rd;
         ManuallyDrop::new(rec)
     }
 
-    pub unsafe fn into(rd_addr: usize) -> ManuallyDrop<&'static mut Rec> {
-        let rec: &mut Rec = &mut *(rd_addr as *mut Rec);
+    pub unsafe fn into(rec_addr: usize) -> ManuallyDrop<&'static mut Rec> {
+        let rec: &mut Rec = &mut *(rec_addr as *mut Rec);
         ManuallyDrop::new(rec)
     }
-}
 
-impl Default for Rec {
-    fn default() -> Self {
-        Self { vcpuid: 0 }
+    pub fn id(&self) -> usize {
+        self.vcpuid
     }
 }
 
@@ -40,23 +44,22 @@ impl Drop for Rec {
     fn drop(&mut self) {}
 }
 
-// TODO: Bind rd with realm & rec
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_CREATE, |ctx, rmm| {
         let mm = rmm.mm;
         let rmi = rmm.rmi;
         let smc = rmm.smc;
-        let _ = mm.map([ctx.arg[0], ctx.arg[1], ctx.arg[2], 0]);
-        let rec = unsafe { &mut Rec::new(ctx.arg[0]) };
+        let _ = mm.map([ctx.arg[0], ctx.arg[2], 0, 0]);
         let rd = unsafe { Rd::into(ctx.arg[1]) };
         let params_ptr = ctx.arg[2];
         ctx.ret[0] = rmi::RET_FAIL;
 
-        match rmi.create_vcpu(rd.realm_id) {
+        match rmi.create_vcpu(rd.id()) {
             Ok(vcpuid) => {
                 ctx.ret[1] = vcpuid;
-                rec.vcpuid = vcpuid;
-                // store rd in rec
+                let _ = unsafe {
+                    Rec::new(ctx.arg[0], vcpuid, ManuallyDrop::<&mut Rd>::into_inner(rd))
+                };
             }
             Err(_) => return,
         }
@@ -67,8 +70,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         let params = unsafe { Params::parse(params_ptr) };
         trace!("{:?}", params);
+        let rec = unsafe { Rec::into(ctx.arg[0]) };
+        let rd = unsafe { Rd::into(ctx.arg[1]) };
         if rmi
-            .set_reg(rd.realm_id, rec.vcpuid, 31, params.pc() as usize)
+            .set_reg(rd.id(), rec.id(), 31, params.pc() as usize)
             .is_err()
         {
             return;

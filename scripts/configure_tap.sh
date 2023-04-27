@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # input arguments
-ifname=$1   # the name of host eth interface (e.g., eth0)
-host_ip=$2  # host_ip address
-gateway=$3  # gateway address
+ifname=$1  # the name of host eth interface (e.g., eth0)
+host_ip=$2 # host_ip address
+gateway=$3 # gateway address
 
 # 1. check if armbr0 is already configured
 out=$(brctl show | grep armbr0)
@@ -34,4 +34,3 @@ sudo ip route add default via ${gateway} dev armbr0
 sudo ip tuntap add dev ARM${user} mode tap user ${user}
 sudo ip link set dev ARM${user} up
 sudo ip link set ARM${user} master armbr0
-

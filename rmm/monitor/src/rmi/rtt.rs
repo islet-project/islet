@@ -55,7 +55,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // 4. map ipa to _taget_pa into S2 table
         let prot = rmi::MapProt::new(0);
-        trace!("realm_id: {}", realm_id);
         let ret = rmi.map(realm_id, ipa, taget_pa, granule_sz, prot.get());
         match ret {
             Ok(_) => ctx.ret[0] = rmi::SUCCESS,

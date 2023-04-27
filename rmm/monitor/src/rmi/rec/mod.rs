@@ -1,11 +1,11 @@
 mod params;
-mod run;
+pub mod run;
 
 use self::params::Params;
 use self::run::Run;
 use super::gpt::{mark_ns, mark_realm};
 use super::realm::Rd;
-use crate::event::Mainloop;
+use crate::event::{realmexit, Context, Mainloop};
 use crate::listen;
 use crate::{rmi, rsi};
 
@@ -91,7 +91,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mm = rmm.mm;
         let rmi = rmm.rmi;
         let smc = rmm.smc;
-        let _rec = unsafe { Rec::into(ctx.arg[0]) };
+        let rec = unsafe { Rec::into(ctx.arg[0]) };
         let run_ptr = ctx.arg[1];
         let _ = mm.map([run_ptr, 0, 0, 0]);
         if mark_realm(smc, run_ptr)[0] != 0 {
@@ -107,7 +107,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             if run.entry_gpr0() == ipa {
                 // TODO: Get ipa from rec->regs[1] and map to pa
                 let pa: usize = 0x88b0_6000;
-                let host_call = rsi::HostCall::parse_mut(pa);
+                let host_call = rsi::hostcall::HostCall::parse_mut(pa);
                 host_call.set_gpr0(ipa);
             }
         }
@@ -119,22 +119,16 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         match rmi.run(0, 0, 0) {
             Ok(val) => match val[0] {
-                rsi::HOST_CALL => {
+                realmexit::RSI => {
                     trace!("REC_ENTER ret: {:#X?}", val);
-                    let ipa = val[1];
-                    // TODO: ipa to pa
-                    let pa: usize = ipa;
-                    unsafe {
-                        let host_call = rsi::HostCall::parse(pa);
-                        run.set_imm(host_call.imm());
-                        run.set_exit_reason(rmi::EXIT_HOST_CALL);
-
-                        trace!("HOST_CALL param: {:#X?}", host_call);
+                    let rsi = &rmm.rsi;
+                    let mut rsi_ctx = Context {
+                        cmd: val[1], // RSI request
+                        arg: [rec.rd.id(), rec.id(), 0, 0],
+                        ..Default::default()
                     };
-                    ctx.ret[0] = rmi::SUCCESS;
-                }
-                rmi::RET_EXCEPTION_TRAP | rmi::RET_EXCEPTION_IRQ => {
-                    ctx.ret = [val[0], val[1], val[2], val[3], 0, 0, 0, 0];
+                    rsi.dispatch(&mut rsi_ctx, rmm, run);
+                    ctx.ret[0] = rsi_ctx.ret[0];
                 }
                 _ => ctx.ret[0] = rmi::SUCCESS,
             },

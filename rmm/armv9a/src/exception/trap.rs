@@ -2,13 +2,14 @@ mod frame;
 pub mod syndrome;
 
 use self::frame::TrapFrame;
-use self::syndrome::{Fault, Syndrome};
+use self::syndrome::Syndrome;
 use crate::cpu;
-use crate::helper::{ESR_EL2, FAR_EL2, HPFAR_EL2};
+use crate::helper::{FAR_EL2, HPFAR_EL2};
 use crate::realm::context::Context;
 
+use monitor::event::realmexit;
 use monitor::realm::vcpu::VCPU;
-use monitor::{rmi, rsi};
+use monitor::rmi;
 
 #[repr(u16)]
 #[derive(Debug, Copy, Clone)]
@@ -96,37 +97,10 @@ pub extern "C" fn handle_lower_exception(
                 RET_TO_REC
             }
             Syndrome::SMC => {
-                debug!("Synchronous: SMC: {:#X}", vcpu.context.gp_regs[0]);
-                let cmd = vcpu.context.gp_regs[0];
-                match cmd as usize {
-                    rsi::HOST_CALL => {
-                        tf.regs[0] = rsi::HOST_CALL as u64;
-                        tf.regs[1] = vcpu.context.gp_regs[1];
-                        tf.regs[2] = vcpu.context.gp_regs[2];
-                        tf.regs[3] = vcpu.context.gp_regs[3];
-                        advance_pc(vcpu);
-                        RET_TO_RMM
-                    }
-                    rsi::REMAP_PAGE => {
-                        // fabricate an exception to force remap page as shared from non-sec
-                        tf.regs[0] = rmi::RET_EXCEPTION_TRAP as u64;
-                        tf.regs[1] = Syndrome::DataAbort(Fault::Translation { level: 3 }).into();
-                        tf.regs[2] = vcpu.context.gp_regs[1] >> 8;
-                        tf.regs[3] = vcpu.context.gp_regs[2];
-                        advance_pc(vcpu);
-                        unsafe {
-                            ESR_EL2.set(tf.regs[1]);
-                            HPFAR_EL2.set(tf.regs[2]);
-                            FAR_EL2.set(tf.regs[3]);
-                        }
-                        RET_TO_RMM
-                    }
-                    cmd => {
-                        error!("Unhandled SMC cmd {:X}", cmd);
-                        advance_pc(vcpu);
-                        RET_TO_REC
-                    }
-                }
+                tf.regs[0] = realmexit::RSI as u64;
+                tf.regs[1] = vcpu.context.gp_regs[0]; // RSI command
+                advance_pc(vcpu);
+                RET_TO_RMM
             }
             Syndrome::InstructionAbort(_) | Syndrome::DataAbort(_) => {
                 debug!("Synchronous: InstructionAbort | DataAbort");

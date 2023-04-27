@@ -1,17 +1,14 @@
 pub mod mainloop;
-
-extern crate alloc;
+pub mod realmexit;
+pub mod rsihandle;
 
 pub use mainloop::Mainloop;
-
-use crate::Monitor;
-
-use alloc::boxed::Box;
+pub use rsihandle::RsiHandle;
 
 #[macro_export]
 macro_rules! listen {
-    ($mainloop:expr, $code:expr, $handler:expr) => {{
-        $mainloop.add_event_handler($code.into(), alloc::boxed::Box::new($handler))
+    ($eventloop:expr, $code:expr, $handler:expr) => {{
+        $eventloop.add_event_handler($code.into(), alloc::boxed::Box::new($handler))
     }};
 }
 
@@ -25,5 +22,3 @@ pub struct Context {
     pub arg: Argument,
     pub ret: Return,
 }
-
-pub type Handler = Box<dyn Fn(&mut Context, &Monitor)>;

@@ -8,6 +8,7 @@ OUT = os.path.join(ROOT, "out")
 SCRIPT = os.path.join(ROOT, "scripts")
 CONFIG = os.path.join(SCRIPT, ".config")
 LAUNCH_REALM = os.path.join(SCRIPT, "fvp/launch-realm.sh")
+LAUNCH_REALM_NET = os.path.join(SCRIPT, "fvp/launch-realm-net.sh")
 TEST_REALM = os.path.join(SCRIPT, "fvp/test-realm.sh")
 
 PREBUILT = os.path.join(ROOT, "assets/prebuilt")
@@ -17,6 +18,7 @@ PREBUILT_QEMU = os.path.join(PREBUILT, "qemu")
 PREBUILT_AOSP_DTB = os.path.join(PREBUILT, "aosp/fvp-base-aosp.dtb")
 PREBUILT_AOSP_INITRD = os.path.join(PREBUILT, "aosp/initrd-aosp.img")
 PREBUILT_AOSP_ADB = os.path.join(PREBUILT, "aosp/bind_to_localhost.so")
+PREBUILT_NET = os.path.join(PREBUILT, "net")
 
 REALM_ROOTFS = os.path.join(ROOT, "assets/rootfs")
 

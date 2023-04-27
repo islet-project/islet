@@ -129,7 +129,7 @@ def prepare_rmm(rmm):
     elif rmm == "tf-rmm":
         run(["./scripts/build-tf-rmm.sh", CROSS_COMPILE], cwd=ROOT)
 
-def prepare_nw_linux():
+def prepare_nw_linux(fvp_ip, host_ip):
     args = [
         "-j%d" % multiprocessing.cpu_count(), "-f",
         "fvp.mk",
@@ -147,8 +147,14 @@ def prepare_nw_linux():
     args = [
         "-j%d" % multiprocessing.cpu_count(), "-f",
         "fvp.mk",
-        "boot-img" # DEPS:  $(GRUB_BIN) ${LINUX_BIN} ${LINUX_DTB_BIN}
     ]
+    if fvp_ip != None and host_ip != None:
+        args.append("boot-img-net")
+        args.append("FVP_IP=" + fvp_ip) # if fvp_ip is given, boot-img tries to set fvp_ip into the fvp statically
+        args.append("HOST_IP=" + host_ip) # in fvp, host_ip is used as a gateway address
+    else:
+        args.append("boot-img")
+
     make(BUILD_SCRIPT, args)
 
 def prepare_nw_aosp(no_prebuilt_initrd):
@@ -201,6 +207,10 @@ def prepare_kvm_unit_tests():
     run(["./scripts/build-kvm-unit-tests.sh"], cwd=ROOT)
     run(["cp", "-R", "arm", "%s/%s" % (OUT, "kvm-unit-tests")], cwd=KVM_UNIT_TESTS)
 
+def prepare_tap_network(ifname, host_ip, gateway):
+    print("[!] Configuring a tap network for fvp...")
+    run(["./scripts/configure_tap.sh", ifname, host_ip, gateway], cwd=ROOT)
+
 def run_fvp_tf_a_tests(debug):
     print("[!] Running fvp for tf-a-tests...")
     args = ["./FVP_Base_RevC-2xAEMvA",
@@ -219,6 +229,23 @@ def run_fvp_linux(debug):
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
             "-C", "bp.virtioblockdevice.image_path=%s/boot.img" % OUT,
             "-C", "bp.virtiop9device.root_path=%s" % SHARED_PATH,
+            "-f", CONFIG,
+            "-Q", "1000"]
+    if debug:
+        args += ["--cadi-server"]
+    run(args, cwd=FASTMODEL)
+
+def run_fvp_linux_net(debug, ifname, host_ip, gateway):
+    user_name = os.getlogin()
+    prepare_tap_network(ifname, host_ip, gateway)
+    print("[!] Running fvp for linux with the tap network..", )
+    args = ["./FVP_Base_RevC-2xAEMvA",
+            "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
+            "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
+            "-C", "bp.virtioblockdevice.image_path=%s/boot.img" % OUT,
+            "-C", "bp.virtiop9device.root_path=%s" % SHARED_PATH,
+            "-C", "bp.virtio_net.hostbridge.interfaceName=ARM%s" % user_name,
+            "-C", "bp.virtio_net.enabled=1",
             "-f", CONFIG,
             "-Q", "1000"]
     if debug:
@@ -245,14 +272,21 @@ def run_fvp_aosp(debug):
         args += ["--cadi-server"]
     run(args, cwd=FASTMODEL, new_env=new_env)
 
-def place_realm_at_shared():
+def place_realm_at_shared(host_ip):
     os.makedirs(SHARED_PATH, exist_ok=True)
     run(["cp", "-R", "%s/." % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
     run(["cp", "-R", "%s/realm/." % OUT, SHARED_PATH], cwd=ROOT)
     run(["cp", "%s/lkvm" % OUT, SHARED_PATH], cwd=ROOT)
     run(["cp", "-R", "%s/kvm-unit-tests" % OUT, SHARED_PATH], cwd=ROOT)
     run(["cp", LAUNCH_REALM, SHARED_PATH], cwd=ROOT)
+    run(["cp", LAUNCH_REALM_NET, SHARED_PATH], cwd=ROOT)
     run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
+
+    # packet forwarding daemon
+    if host_ip != None:
+        run(["cp", "%s/rinetd" % PREBUILT_NET, SHARED_PATH], cwd=ROOT)
+        run(["cp", "%s/rinetd.conf" % PREBUILT_NET, SHARED_PATH], cwd=ROOT)
+        run(["sed", "-i", "-e", "s/HOST_IP/%s/g" % host_ip, "%s/rinetd.conf" % SHARED_PATH], cwd=ROOT)
 
 def clean_repo():
     run(["make", "distclean"], cwd=TF_A)
@@ -274,7 +308,7 @@ def get_all_realms():
     return sorted(realms)
 
 def validate_args(args):
-    nw_list = ["linux", "tf-a-tests", "aosp"]
+    nw_list = ["linux", "linux-net", "tf-a-tests", "aosp"]
     if not args.normal_world in nw_list:
         print("Please select one of the normal components:")
         print("  " + "\n  ".join(nw_list))
@@ -310,6 +344,13 @@ if __name__ == "__main__":
     parser.add_argument("--realm", "-rm", help="A sample realm")
     parser.add_argument("--rmm", "-rmm", help="A realm management monitor (islet, trp, tf-rmm)", default="islet")
     parser.add_argument("--no-prebuilt-initrd", "-no-pi", help="Not using the prebuilt AOSP initrd", action="store_true")
+
+    # for the network capability of FVP linux
+    parser.add_argument("--host-ip", "-hip", help="the ip address of host machine")
+    parser.add_argument("--fvp-ip", "-fip", help="the ip address that is going to be assigned to the fvp host, which must be in the same LAN to the host.")
+    parser.add_argument("--ifname", "-if", help="the interface name of host machine")
+    parser.add_argument("--gateway", "-gw", help="the gateway address of host machine")
+
     args = parser.parse_args()
 
     if args.clean:
@@ -334,17 +375,20 @@ if __name__ == "__main__":
         else:
             prepare_kvmtool()
             prepare_kvm_unit_tests()
-            prepare_nw_linux()
+            prepare_nw_linux(args.fvp_ip, args.host_ip)
             prepare_bootloaders(args.rmm, PREBUILT_EDK2)
 
             if args.realm is not None:
-                place_realm_at_shared()
+                place_realm_at_shared(args.host_ip)
 
     if not args.build_only and args.normal_world == "tf-a-tests":
         run_fvp_tf_a_tests(args.debug)
 
     if not args.build_only and args.normal_world == "linux":
         run_fvp_linux(args.debug)
+    
+    if not args.build_only and args.normal_world == "linux-net":
+        run_fvp_linux_net(args.debug, args.ifname, args.host_ip, args.gateway)
 
     if not args.build_only and args.normal_world == "aosp":
         run_fvp_aosp(args.debug)

@@ -1,13 +1,16 @@
 extern crate alloc;
 
-use super::{Context, Handler};
+use super::Context;
 use crate::rmi;
 use crate::smc::SecureMonitorCall;
 use crate::utils::spsc;
 use crate::Monitor;
 
+use alloc::boxed::Box;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::rc::Rc;
+
+pub type Handler = Box<dyn Fn(&mut Context, &Monitor)>;
 
 pub struct Mainloop {
     pub tx: Rc<spsc::Sender<Context>>,

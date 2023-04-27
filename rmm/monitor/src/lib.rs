@@ -21,18 +21,25 @@ pub(crate) mod utils; // TODO: move to lib
 #[macro_use]
 extern crate log;
 
+use crate::event::RsiHandle;
 use crate::rmi::RMI;
 use crate::rmm::PageMap;
 use crate::smc::SecureMonitorCall;
 
 pub struct Monitor {
     pub rmi: RMI,
+    pub rsi: RsiHandle,
     pub smc: SecureMonitorCall,
     pub mm: PageMap,
 }
 
 impl Monitor {
     pub fn new(rmi: RMI, smc: SecureMonitorCall, mm: PageMap) -> Self {
-        Self { rmi, smc, mm }
+        Self {
+            rmi,
+            rsi: RsiHandle::new(),
+            smc,
+            mm,
+        }
     }
 }

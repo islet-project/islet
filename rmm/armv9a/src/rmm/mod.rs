@@ -10,16 +10,20 @@ impl MemoryMap {
     }
 }
 impl monitor::rmm::RmmPage for MemoryMap {
-    fn map(&self, phys: [usize; 4]) -> Result<(), &str> {
-        for addr in phys {
-            if addr != 0 {
-                translation::set_pages_for_rmi(addr);
-            }
+    fn map(&self, addr: usize, secure: bool) -> bool {
+        if addr == 0 {
+            warn!("map address is empty");
+            return false;
         }
-        Ok(())
+        translation::set_pages_for_rmi(addr, secure);
+        true
     }
-    fn unmap(&self, _phys: [usize; 4]) -> Result<(), &str> {
-        // TODO
-        Ok(())
+    fn unmap(&self, addr: usize) -> bool {
+        if addr == 0 {
+            warn!("map address is empty");
+            return false;
+        }
+        translation::unset_page_for_rmi(addr);
+        true
     }
 }

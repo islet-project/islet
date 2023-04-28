@@ -107,6 +107,12 @@ impl<'a> RmmPageTable<'a> {
 
         self.root_pgtlb.set_pages(virtaddr, phyaddr, flags);
     }
+
+    fn unset_page(&mut self, addr: usize) {
+        let va = VirtAddr::from(addr);
+        let page = Page::<RmmBasePageSize, VirtAddr>::including_address(va);
+        self.root_pgtlb.unset_page(page);
+    }
 }
 
 impl<'a> fmt::Debug for RmmPageTable<'a> {
@@ -162,13 +168,19 @@ pub fn set_register_mm() {
     }
 }
 
-pub fn set_pages_for_rmi(addr: usize) {
+pub fn set_pages_for_rmi(addr: usize, secure: bool) {
     let rw_flags = helper::bits_in_reg(PTDesc::AP, attr::permission::RW);
     let device_flags = helper::bits_in_reg(PTDesc::INDX, attr::mair_idx::DEVICE_MEM);
+    let secure_flags = helper::bits_in_reg(PTDesc::NS, !secure as u64);
     let va = VirtAddr::from(addr);
     let phys = PhysAddr::from(addr);
 
     let mut page_table = RMM_PAGE_TABLE.lock();
 
-    page_table.set_pages(va, phys, PAGE_SIZE, rw_flags | device_flags);
+    page_table.set_pages(va, phys, PAGE_SIZE, rw_flags | device_flags | secure_flags);
+}
+
+pub fn unset_page_for_rmi(addr: usize) {
+    let mut page_table = RMM_PAGE_TABLE.lock();
+    page_table.unset_page(addr);
 }

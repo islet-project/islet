@@ -18,7 +18,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn label(&mut self, expected: u16) -> Result<u16, Error> {
-        let provided = self.decoder.u16().unwrap();
+        let provided = self.decoder.u16()?;
         if expected != provided {
             println!("Expected: {}, provided: {}", expected, provided);
             Err(Error::Format)
@@ -42,7 +42,7 @@ impl<'a> Parser<'a> {
         let label = label as u16;
         let mut parse = || {
             let label = self.label(label)?;
-            let value = self.decoder.bytes().unwrap();
+            let value = self.decoder.bytes()?;
             Ok::<Claim<[u8; N]>, Error>(Claim {
                 label,
                 value: value.try_into().or(Err(Error::Format))?,
@@ -55,8 +55,8 @@ impl<'a> Parser<'a> {
         let label = label as u16;
         let mut parse = || {
             let label = self.label(label)?;
-            let _ = self.decoder.array().unwrap().unwrap();
-            let value = self.decoder.bytes().unwrap();
+            let _ = self.decoder.array()?;
+            let value = self.decoder.bytes()?;
             Ok::<Claim<[u8; N]>, Error>(Claim {
                 label,
                 value: value.try_into().or(Err(Error::Format))?,

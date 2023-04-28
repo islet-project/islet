@@ -1,13 +1,15 @@
+#![deny(warnings)]
+#![warn(rust_2018_idioms)]
+
+pub mod attester;
 pub mod claim;
 pub mod error;
-mod mock;
-mod parser;
-pub mod token;
+pub mod report;
 pub mod verifier;
 
-pub fn attest() -> Result<Vec<u8>, crate::error::Error> {
-    Ok(mock::REPORT.to_vec())
-}
+mod config;
+mod mock;
+mod parser;
 
 #[cfg(test)]
 mod tests {
@@ -15,7 +17,7 @@ mod tests {
 
     #[test]
     fn attest_verify() {
-        let report = attest().unwrap();
+        let report = attester::attest().unwrap();
         assert_eq!(report.len(), mock::REPORT_LEN);
         verifier::verify(&report).unwrap();
     }

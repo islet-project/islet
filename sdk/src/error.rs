@@ -5,6 +5,7 @@ pub enum Error {
     EndOfInput,
     Decoding,
     Format,
+    PlatformToken(u16),
 }
 
 impl From<minicbor::decode::Error> for Error {

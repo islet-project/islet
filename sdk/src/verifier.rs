@@ -1,8 +1,11 @@
 use crate::error::Error;
-use crate::token::{Platform, SWComponent0, SWComponent1};
+use crate::parser::Parser;
+use crate::token::Platform;
 
 use minicbor::data::Tag;
 use minicbor::Decoder;
+
+use crate::claim::platform::Label;
 
 const TAG_CCA_TOKEN: u64 = 399;
 const TAG_COSE_SIGN1: u64 = 18;
@@ -15,34 +18,21 @@ pub fn verify(raw_report: &[u8]) -> Result<(), Error> {
     let (platform, _realm) = cca_token(raw_report)?;
     let (payload, _signature) = plat_token(platform)?;
 
-    let mut decoder = Decoder::new(payload);
-
-    if 9 != decoder.map()?.ok_or(Error::Decoding)? {
+    let mut parser = Parser::new(payload);
+    if 9 != parser.decoder.map()?.ok_or(Error::Decoding)? {
         return Err(Error::Format);
     }
 
     let plat_token = Platform {
-        profile: (decoder.u16()?, decoder.str()?.to_string()),
-        challenge: (
-            decoder.u16()?,
-            decoder.bytes()?.try_into().or(Err(Error::Format))?,
-        ),
-        implementation_id: (
-            decoder.u16()?,
-            decoder.bytes()?.try_into().or(Err(Error::Format))?,
-        ),
-        instance_id: (
-            decoder.u16()?,
-            decoder.bytes()?.try_into().or(Err(Error::Format))?,
-        ),
-        config: (
-            decoder.u16()?,
-            decoder.bytes()?.try_into().or(Err(Error::Format))?,
-        ),
-        lifecycle: (decoder.u16()?, decoder.u16()?),
-        hash_algo: (decoder.u16()?, decoder.str()?.to_string()),
-        sw_components: sw_components(&mut decoder)?,
-        verification_service: (decoder.u16()?, decoder.str()?.to_string()),
+        profile: parser.string_claim(Label::Profile)?,
+        challenge: parser.bytes_claim::<32>(Label::Challenge)?,
+        implementation_id: parser.bytes_claim::<64>(Label::ImplementationId)?,
+        instance_id: parser.bytes_claim::<33>(Label::InstanceId)?,
+        config: parser.bytes_claim::<33>(Label::Config)?,
+        lifecycle: parser.u16_claim(Label::Lifecycle)?,
+        hash_algo: parser.string_claim(Label::HashAlgo)?,
+        sw_components: parser.sw_components(Label::SWComponents)?,
+        verification_service: parser.string_claim(Label::VerificationService)?,
     };
 
     println!("{:?}", plat_token);
@@ -90,70 +80,4 @@ fn plat_token(token: &[u8]) -> Result<(&[u8], &[u8]), Error> {
     let payload = decoder.bytes()?;
     let signature = decoder.bytes()?;
     Ok((payload, signature))
-}
-
-fn sw_components(
-    decoder: &mut Decoder,
-) -> Result<(u16, SWComponent0, SWComponent1, SWComponent1, SWComponent1), Error> {
-    let label = decoder.u16()?;
-    assert_eq!(4, decoder.array().unwrap().unwrap());
-    assert_eq!(5, decoder.map().unwrap().unwrap());
-
-    let sw_comp0 = SWComponent0 {
-        name: (decoder.u16()?, decoder.str()?.to_string()),
-        measurement: (
-            decoder.u16()?,
-            decoder.bytes()?.try_into().or(Err(Error::Format))?,
-        ),
-        version: (decoder.u16()?, decoder.str()?.to_string()),
-        signer_id: (
-            decoder.u16()?,
-            decoder.bytes()?.try_into().or(Err(Error::Format))?,
-        ),
-        hash_algo: (decoder.u16()?, decoder.str()?.to_string()),
-    };
-
-    assert_eq!(4, decoder.map().unwrap().unwrap());
-    let sw_comp1 = SWComponent1 {
-        name: (decoder.u16()?, decoder.str()?.to_string()),
-        measurement: (
-            decoder.u16()?,
-            decoder.bytes()?.try_into().or(Err(Error::Format))?,
-        ),
-        version: (decoder.u16()?, decoder.str()?.to_string()),
-        signer_id: (
-            decoder.u16()?,
-            decoder.bytes()?.try_into().or(Err(Error::Format))?,
-        ),
-    };
-
-    assert_eq!(4, decoder.map().unwrap().unwrap());
-    let sw_comp2 = SWComponent1 {
-        name: (decoder.u16()?, decoder.str()?.to_string()),
-        measurement: (
-            decoder.u16()?,
-            decoder.bytes()?.try_into().or(Err(Error::Format))?,
-        ),
-        version: (decoder.u16()?, decoder.str()?.to_string()),
-        signer_id: (
-            decoder.u16()?,
-            decoder.bytes()?.try_into().or(Err(Error::Format))?,
-        ),
-    };
-
-    assert_eq!(4, decoder.map().unwrap().unwrap());
-    let sw_comp3 = SWComponent1 {
-        name: (decoder.u16()?, decoder.str()?.to_string()),
-        measurement: (
-            decoder.u16()?,
-            decoder.bytes()?.try_into().or(Err(Error::Format))?,
-        ),
-        version: (decoder.u16()?, decoder.str()?.to_string()),
-        signer_id: (
-            decoder.u16()?,
-            decoder.bytes()?.try_into().or(Err(Error::Format))?,
-        ),
-    };
-
-    Ok((label, sw_comp0, sw_comp1, sw_comp2, sw_comp3))
 }

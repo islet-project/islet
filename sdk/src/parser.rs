@@ -1,5 +1,5 @@
 use crate::claim::{
-    platform::{Label, SWComponent0, SWComponent1},
+    platform::{SWComponent0, SWComponent1},
     Claim,
 };
 use crate::error::Error;
@@ -18,7 +18,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn label(&mut self, expected: u16) -> Result<u16, Error> {
-        let provided = self.decoder.u16()?;
+        let provided = self.decoder.u16().unwrap();
         if expected != provided {
             println!("Expected: {}, provided: {}", expected, provided);
             Err(Error::Format)
@@ -27,7 +27,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn string_claim(&mut self, label: Label) -> Result<Claim<String>, Error> {
+    pub fn string_claim(&mut self, label: u16) -> Result<Claim<String>, Error> {
         let label = label as u16;
         let mut parse = || {
             Ok::<Claim<String>, Error>(Claim {
@@ -38,18 +38,34 @@ impl<'a> Parser<'a> {
         parse().or(Err(Error::PlatformToken(label)))
     }
 
-    pub fn bytes_claim<const N: usize>(&mut self, label: Label) -> Result<Claim<[u8; N]>, Error> {
+    pub fn bytes_claim<const N: usize>(&mut self, label: u16) -> Result<Claim<[u8; N]>, Error> {
         let label = label as u16;
         let mut parse = || {
+            let label = self.label(label)?;
+            let value = self.decoder.bytes().unwrap();
             Ok::<Claim<[u8; N]>, Error>(Claim {
-                label: self.label(label)?,
-                value: self.decoder.bytes()?.try_into().or(Err(Error::Format))?,
+                label,
+                value: value.try_into().or(Err(Error::Format))?,
             })
         };
         parse().or(Err(Error::PlatformToken(label)))
     }
 
-    pub fn u16_claim(&mut self, label: Label) -> Result<Claim<u16>, Error> {
+    pub fn rem_claim<const N: usize>(&mut self, label: u16) -> Result<Claim<[u8; N]>, Error> {
+        let label = label as u16;
+        let mut parse = || {
+            let label = self.label(label)?;
+            let _ = self.decoder.array().unwrap().unwrap();
+            let value = self.decoder.bytes().unwrap();
+            Ok::<Claim<[u8; N]>, Error>(Claim {
+                label,
+                value: value.try_into().or(Err(Error::Format))?,
+            })
+        };
+        parse().or(Err(Error::PlatformToken(label)))
+    }
+
+    pub fn u16_claim(&mut self, label: u16) -> Result<Claim<u16>, Error> {
         let label = label as u16;
         let mut parse = || {
             Ok::<Claim<u16>, Error>(Claim {
@@ -60,9 +76,9 @@ impl<'a> Parser<'a> {
         parse().or(Err(Error::PlatformToken(label)))
     }
 
-    pub fn sw_components(
+    pub fn sw_components_claim(
         &mut self,
-        label: Label,
+        label: u16,
     ) -> Result<Claim<(SWComponent0, SWComponent1, SWComponent1, SWComponent1)>, Error> {
         let label = self.label(label as u16)?;
         let decoder = &mut self.decoder;

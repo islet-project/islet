@@ -1,5 +1,7 @@
+pub mod claim;
 pub mod error;
 mod mock;
+mod parser;
 pub mod token;
 pub mod verifier;
 

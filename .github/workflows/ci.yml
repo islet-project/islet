@@ -81,7 +81,7 @@ jobs:
 
     - name: Check local packages and all of its dependencies for errors
       run:
-        cargo check
+        cargo check --workspace --exclude islet-sdk
 
     - name: Check rust coding-style
       run: |

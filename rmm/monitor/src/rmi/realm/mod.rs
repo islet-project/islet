@@ -3,10 +3,11 @@ pub(crate) mod rd;
 
 use self::params::Params;
 pub use self::rd::Rd;
-use super::gpt::{mark_ns, mark_realm};
 use crate::event::Mainloop;
 use crate::listen;
 use crate::rmi;
+use crate::rmm::granule;
+use crate::rmm::granule::{GranuleState, RmmGranule};
 
 extern crate alloc;
 
@@ -18,20 +19,18 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
     listen!(mainloop, rmi::REALM_CREATE, |ctx, rmm| {
         let rmi = rmm.rmi;
-        let smc = rmm.smc;
         let mm = rmm.mm;
-        let _ = mm.map([ctx.arg[0], ctx.arg[1], 0, 0]);
         let params_ptr = ctx.arg[1];
 
-        // TODO: Read ns memory w/o delegation
-        if mark_realm(smc, params_ptr)[0] == 0 {
-            let param = unsafe { Params::parse(params_ptr) };
-            trace!("{:?}", param);
-            let _ = mark_ns(smc, params_ptr)[0];
-        } else {
-            ctx.ret[0] = rmi::RET_FAIL;
-            return;
-        }
+        let g_rd = granule::find_granule(ctx.arg[0], GranuleState::Delegated).unwrap();
+        let g_param = granule::find_granule(params_ptr, GranuleState::Undelegated).unwrap();
+        g_rd.set_state(GranuleState::RD, mm);
+        g_param.set_state(GranuleState::Param, mm);
+
+        let param = unsafe { Params::parse(params_ptr) };
+        trace!("{:?}", param);
+
+        g_param.set_state(GranuleState::Undelegated, mm);
 
         // TODO:
         //   Validate params
@@ -59,6 +58,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rmi = rmm.rmi;
         let _rd = unsafe { Rd::into(ctx.arg[0]) };
         let ret = rmi.remove(0); // temporarily
+
+        let g_rd = granule::find_granule(ctx.arg[0], GranuleState::RD).unwrap();
+        g_rd.set_state(GranuleState::Delegated, rmm.mm);
+
         match ret {
             Ok(_) => ctx.ret[0] = rmi::SUCCESS,
             Err(_) => ctx.ret[0] = rmi::RET_FAIL,

@@ -3,11 +3,13 @@ pub mod run;
 
 use self::params::Params;
 use self::run::Run;
-use super::gpt::{mark_ns, mark_realm};
 use super::realm::Rd;
 use crate::event::{realmexit, Context, Mainloop};
 use crate::listen;
 use crate::{rmi, rsi};
+
+use crate::rmm::granule;
+use crate::rmm::granule::{GranuleState, RmmGranule};
 
 use core::mem::ManuallyDrop;
 
@@ -46,10 +48,12 @@ impl Drop for Rec {
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_CREATE, |ctx, rmm| {
-        let mm = rmm.mm;
         let rmi = rmm.rmi;
-        let smc = rmm.smc;
-        let _ = mm.map([ctx.arg[0], ctx.arg[2], 0, 0]);
+        let mm = rmm.mm;
+
+        let g_rec = granule::find_granule(ctx.arg[0], GranuleState::Delegated).unwrap();
+        g_rec.set_state(GranuleState::Rec, mm);
+
         let rd = unsafe { Rd::into(ctx.arg[1]) };
         let params_ptr = ctx.arg[2];
         ctx.ret[0] = rmi::RET_FAIL;
@@ -64,9 +68,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             Err(_) => return,
         }
 
-        if mark_realm(smc, params_ptr)[0] != 0 {
-            return;
-        }
+        let g_param = granule::find_granule(params_ptr, GranuleState::Undelegated).unwrap();
+        g_param.set_state(GranuleState::Param, mm);
 
         let params = unsafe { Params::parse(params_ptr) };
         trace!("{:?}", params);
@@ -79,24 +82,24 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return;
         }
 
+        g_param.set_state(GranuleState::Undelegated, mm);
         ctx.ret[0] = rmi::SUCCESS;
     });
 
-    listen!(mainloop, rmi::REC_DESTROY, |ctx, _| {
-        super::dummy();
+    listen!(mainloop, rmi::REC_DESTROY, |ctx, rmm| {
+        let g_rec = granule::find_granule(ctx.arg[0], GranuleState::Rec).unwrap();
+        g_rec.set_state(GranuleState::Delegated, rmm.mm);
         ctx.ret[0] = rmi::SUCCESS;
     });
 
     listen!(mainloop, rmi::REC_ENTER, |ctx, rmm| {
-        let mm = rmm.mm;
         let rmi = rmm.rmi;
-        let smc = rmm.smc;
+        let mm = rmm.mm;
         let rec = unsafe { Rec::into(ctx.arg[0]) };
         let run_ptr = ctx.arg[1];
-        let _ = mm.map([run_ptr, 0, 0, 0]);
-        if mark_realm(smc, run_ptr)[0] != 0 {
-            return;
-        }
+
+        let g_run = granule::find_granule(run_ptr, GranuleState::Undelegated).unwrap();
+        g_run.set_state(GranuleState::Param, mm);
 
         let run = unsafe { Run::parse_mut(run_ptr) };
         trace!("{:?}", run);
@@ -135,9 +138,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             Err(_) => ctx.ret[0] = rmi::ERROR_REC,
         };
 
-        if mark_ns(smc, run_ptr)[0] != 0 {
-            ctx.ret[0] = rmi::RET_FAIL;
-            return;
-        }
+        g_run.set_state(GranuleState::Undelegated, mm);
     });
 }

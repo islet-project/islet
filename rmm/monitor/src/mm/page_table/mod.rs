@@ -51,6 +51,7 @@ pub trait PageTableMethods<A: Address, L, E> {
     fn set_page<S: PageSize>(&mut self, guest: Page<S, A>, phys: Page<S, PhysAddr>, flags: u64);
     fn entry<S: PageSize>(&self, guest: Page<S, A>) -> Option<E>;
     fn drop(&mut self);
+    fn unset_page<S: PageSize>(&mut self, guest: Page<S, A>);
 }
 
 impl<A: Address, L: Level, E: Entry + Copy> PageTableMethods<A, L, E> for PageTable<A, L, E> {
@@ -119,6 +120,19 @@ impl<A: Address, L: Level, E: Entry + Copy> PageTableMethods<A, L, E> for PageTa
             alloc::alloc::dealloc(
                 self as *mut PageTable<A, L, E> as *mut u8,
                 alloc::alloc::Layout::from_size_align(L::TABLE_SIZE, L::TABLE_SIZE).unwrap(),
+            );
+        }
+    }
+
+    default fn unset_page<S: PageSize>(&mut self, guest: Page<S, A>) {
+        let index = E::index::<L>(guest.address().into());
+        if self.entries[index].is_valid() {
+            self.entry(guest).unwrap().clear();
+            info!(
+                "default [L:{}][{}]0x{:X}->cleared",
+                L::THIS_LEVEL,
+                index,
+                guest.address().into()
             );
         }
     }
@@ -193,6 +207,13 @@ where
                 self as *mut PageTable<A, L, E> as *mut u8,
                 alloc::alloc::Layout::from_size_align(L::TABLE_SIZE, L::TABLE_SIZE).unwrap(),
             );
+        }
+    }
+
+    fn unset_page<S: PageSize>(&mut self, guest: Page<S, A>) {
+        let index = E::index::<L>(guest.address().into());
+        if self.entries[index].is_valid() {
+            self.entry(guest).unwrap().clear();
         }
     }
 }

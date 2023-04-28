@@ -1,3 +1,5 @@
+pub const SMC_SUCCESS: usize = 0;
+
 pub type SecureMonitorCall = &'static dyn Caller;
 
 pub enum Code {

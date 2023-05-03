@@ -11,6 +11,13 @@ pub fn verify(report: &Report) -> Result<Claims, Error> {
     let (platform, realm) = cca_token(&report.buffer).or(Err(Error::CCAToken))?;
     let (plat_sig, plat_tok) = plat_token(platform)?;
     let (realm_sig, realm_tok) = realm_token(realm)?;
+
+    // Replace user_data temporarily
+    let mut realm_tok = realm_tok;
+    let user_data = &mut realm_tok.challenge.value;
+    user_data.fill(0);
+    user_data[..report.user_data.len()].copy_from_slice(&report.user_data);
+
     Ok(Claims {
         realm_sig,
         realm_tok,

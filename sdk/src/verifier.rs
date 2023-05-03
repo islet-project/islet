@@ -1,25 +1,34 @@
+use crate::claim::{self, Claim, Claims};
 use crate::config::*;
 use crate::error::Error;
 use crate::parser::Parser;
-use crate::report::{token, Report};
+use crate::report::Report;
 
 use minicbor::data::Tag;
 use minicbor::Decoder;
 
-pub fn verify(raw_report: &[u8]) -> Result<(), Error> {
-    let (platform, realm) = cca_token(raw_report)?;
-    let platform = verify_plat_token(platform)?;
-    let realm = verify_realm_token(realm)?;
-    let report = Report { platform, realm };
-    println!("{:?}", report);
-    Ok(())
+pub fn verify(report: &Report) -> Result<Claims, Error> {
+    let (platform, realm) = cca_token(&report.buffer).or(Err(Error::CCAToken))?;
+    let (plat_sig, plat_tok) = plat_token(platform)?;
+    let (realm_sig, realm_tok) = realm_token(realm)?;
+    Ok(Claims {
+        realm_sig,
+        realm_tok,
+        plat_sig,
+        plat_tok,
+    })
 }
 
-fn verify_plat_token(encoded: &[u8]) -> Result<token::Platform, Error> {
+fn plat_token(encoded: &[u8]) -> Result<(claim::PlatformSignature, claim::PlatformToken), Error> {
     use crate::claim::platform::Label;
-    let (payload, _signature) = verify_cose_sign1(encoded)?;
+    let (payload, signature) = cose_sign1(encoded).or(Err(Error::CoseSign))?;
+    let signature: claim::PlatformSignature = Claim {
+        label: 0,
+        value: signature.try_into().or(Err(Error::PlatformSignature))?,
+    };
+
     let mut parser = Parser::new(payload);
-    Ok(token::Platform {
+    let token = claim::PlatformToken {
         claims_len: parser.decoder.map()?.ok_or(Error::Decoding)?,
         profile: parser.string_claim(Label::Profile as u16)?,
         challenge: parser.bytes_claim::<32>(Label::Challenge as u16)?,
@@ -30,14 +39,21 @@ fn verify_plat_token(encoded: &[u8]) -> Result<token::Platform, Error> {
         hash_algo: parser.string_claim(Label::HashAlgo as u16)?,
         sw_components: parser.sw_components_claim(Label::SWComponents as u16)?,
         verification_service: parser.string_claim(Label::VerificationService as u16)?,
-    })
+    };
+
+    Ok((signature, token))
 }
 
-fn verify_realm_token(encoded: &[u8]) -> Result<token::Realm, Error> {
+fn realm_token(encoded: &[u8]) -> Result<(claim::RealmSignature, claim::RealmToken), Error> {
     use crate::claim::realm::Label;
-    let (payload, _signature) = verify_cose_sign1(encoded).unwrap();
+    let (payload, signature) = cose_sign1(encoded).or(Err(Error::CoseSign))?;
+    let signature: claim::RealmSignature = Claim {
+        label: 0,
+        value: signature.try_into().or(Err(Error::RealmSignature))?,
+    };
+
     let mut parser = Parser::new(payload);
-    Ok(token::Realm {
+    let token = claim::RealmToken {
         claims_len: parser.decoder.map()?.ok_or(Error::Decoding)?,
         challenge: parser.bytes_claim::<64>(Label::Challenge as u16)?,
         rpv: parser.bytes_claim::<64>(Label::RPV as u16)?,
@@ -46,13 +62,15 @@ fn verify_realm_token(encoded: &[u8]) -> Result<token::Realm, Error> {
         hash_algo: parser.string_claim(Label::HashAlgo as u16)?,
         rim: parser.bytes_claim::<32>(Label::RIM as u16)?,
         rem: parser.rem_claim::<32>(Label::REM as u16)?,
-    })
+    };
+
+    Ok((signature, token))
 }
 
-fn cca_token(raw_report: &[u8]) -> Result<(&[u8], &[u8]), Error> {
-    let mut decoder = Decoder::new(&raw_report);
+fn cca_token(report: &[u8]) -> Result<(&[u8], &[u8]), Error> {
+    let mut decoder = Decoder::new(&report);
     if decoder.tag()? != Tag::Unassigned(TAG_CCA_TOKEN) {
-        return Err(Error::NotCCAToken);
+        return Err(Error::CCAToken);
     }
 
     if TOKEN_COUNT != decoder.map()?.ok_or(Error::Decoding)? {
@@ -73,7 +91,7 @@ fn cca_token(raw_report: &[u8]) -> Result<(&[u8], &[u8]), Error> {
     Ok((plat_token, realm_token))
 }
 
-fn verify_cose_sign1(token: &[u8]) -> Result<(&[u8], &[u8]), Error> {
+fn cose_sign1(token: &[u8]) -> Result<(&[u8], &[u8]), Error> {
     let mut decoder = Decoder::new(token);
     if Tag::Unassigned(TAG_COSE_SIGN1) != decoder.tag()? {
         return Err(Error::Format);

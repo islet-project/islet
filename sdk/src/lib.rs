@@ -18,7 +18,8 @@ mod tests {
     #[test]
     fn attest_verify() {
         let report = attester::attest().unwrap();
-        assert_eq!(report.len(), mock::REPORT_LEN);
-        verifier::verify(&report).unwrap();
+        assert_eq!(report.buffer.len(), mock::REPORT_LEN);
+        let claims = verifier::verify(&report).unwrap();
+        println!("{:#?}", claims);
     }
 }

@@ -17,9 +17,14 @@ mod tests {
 
     #[test]
     fn attest_verify() {
-        let report = attester::attest().unwrap();
+        let user_data = b"User data";
+        let report = attester::attest(user_data).unwrap();
         assert_eq!(report.buffer.len(), mock::REPORT_LEN);
         let claims = verifier::verify(&report).unwrap();
         println!("{:#?}", claims);
+        assert_eq!(
+            user_data,
+            &claims.realm_tok.challenge.value[..user_data.len()]
+        );
     }
 }

@@ -1,9 +1,10 @@
 use super::Claim;
+use crate::config;
 
 #[derive(Debug)]
 pub struct Realm {
     pub claims_len: u64,
-    pub challenge: Claim<[u8; 64]>,
+    pub challenge: Claim<[u8; config::CHALLENGE_SIZE]>,
     pub rpv: Claim<[u8; 64]>,
     pub public_key: Claim<[u8; 97]>,
     pub hash_algo: Claim<String>,

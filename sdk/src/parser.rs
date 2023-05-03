@@ -35,7 +35,7 @@ impl<'a> Parser<'a> {
                 value: self.decoder.str()?.to_string(),
             })
         };
-        parse().or(Err(Error::PlatformToken(label)))
+        parse().or(Err(Error::Claim(label)))
     }
 
     pub fn bytes_claim<const N: usize>(&mut self, label: u16) -> Result<Claim<[u8; N]>, Error> {
@@ -48,7 +48,7 @@ impl<'a> Parser<'a> {
                 value: value.try_into().or(Err(Error::Format))?,
             })
         };
-        parse().or(Err(Error::PlatformToken(label)))
+        parse().or(Err(Error::Claim(label)))
     }
 
     pub fn rem_claim<const N: usize>(&mut self, label: u16) -> Result<Claim<[u8; N]>, Error> {
@@ -62,7 +62,7 @@ impl<'a> Parser<'a> {
                 value: value.try_into().or(Err(Error::Format))?,
             })
         };
-        parse().or(Err(Error::PlatformToken(label)))
+        parse().or(Err(Error::Claim(label)))
     }
 
     pub fn u16_claim(&mut self, label: u16) -> Result<Claim<u16>, Error> {
@@ -73,7 +73,7 @@ impl<'a> Parser<'a> {
                 value: self.decoder.u16()?,
             })
         };
-        parse().or(Err(Error::PlatformToken(label)))
+        parse().or(Err(Error::Claim(label)))
     }
 
     pub fn sw_components_claim(

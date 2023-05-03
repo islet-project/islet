@@ -1,11 +1,14 @@
 #[derive(Debug)]
 pub enum Error {
-    NotCCAToken,
     TypeMismatch,
     EndOfInput,
     Decoding,
     Format,
-    PlatformToken(u16),
+    CCAToken,
+    CoseSign,
+    RealmSignature,
+    PlatformSignature,
+    Claim(u16),
 }
 
 impl From<minicbor::decode::Error> for Error {

@@ -8,7 +8,7 @@ pub enum Error {
     CoseSign,
     RealmSignature,
     PlatformSignature,
-    Claim(u16),
+    Claim(&'static str),
 }
 
 impl From<minicbor::decode::Error> for Error {

@@ -7,7 +7,7 @@ pub mod error;
 pub mod report;
 pub mod verifier;
 
-mod config;
+pub mod config;
 mod mock;
 mod parser;
 
@@ -22,9 +22,11 @@ mod tests {
         assert_eq!(report.buffer.len(), mock::REPORT_LEN);
         let claims = verifier::verify(&report).unwrap();
         println!("{:#?}", claims);
-        assert_eq!(
-            user_data,
-            &claims.realm_tok.challenge.value[..user_data.len()]
-        );
+
+        if let claim::Value::Bytes(value) = &claims.realm_tok.challenge.value {
+            assert_eq!(user_data, &value[..user_data.len()]);
+        } else {
+            assert!(false, "Wrong user data");
+        }
     }
 }

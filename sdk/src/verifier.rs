@@ -1,4 +1,4 @@
-use crate::claim::{self, Claim, Claims};
+use crate::claim::{self, Claim, Claims, Value};
 use crate::config::*;
 use crate::error::Error;
 use crate::parser::Parser;
@@ -14,9 +14,10 @@ pub fn verify(report: &Report) -> Result<Claims, Error> {
 
     // Replace user_data temporarily
     let mut realm_tok = realm_tok;
-    let user_data = &mut realm_tok.challenge.value;
-    user_data.fill(0);
-    user_data[..report.user_data.len()].copy_from_slice(&report.user_data);
+    if let Value::Bytes(user_data) = &mut realm_tok.challenge.value {
+        user_data.fill(0);
+        user_data[..report.user_data.len()].copy_from_slice(&report.user_data);
+    }
 
     Ok(Claims {
         realm_sig,
@@ -27,48 +28,48 @@ pub fn verify(report: &Report) -> Result<Claims, Error> {
 }
 
 fn plat_token(encoded: &[u8]) -> Result<(claim::PlatformSignature, claim::PlatformToken), Error> {
-    use crate::claim::platform::Label;
     let (payload, signature) = cose_sign1(encoded).or(Err(Error::CoseSign))?;
-    let signature: claim::PlatformSignature = Claim {
-        label: 0,
-        value: signature.try_into().or(Err(Error::PlatformSignature))?,
+    let signature = Claim {
+        label: TAG_UNASSIGINED,
+        title: STR_PLAT_SIGNATURE,
+        value: Value::Bytes(signature.to_vec()),
     };
 
     let mut parser = Parser::new(payload);
     let token = claim::PlatformToken {
         claims_len: parser.decoder.map()?.ok_or(Error::Decoding)?,
-        profile: parser.string_claim(Label::Profile as u16)?,
-        challenge: parser.bytes_claim::<32>(Label::Challenge as u16)?,
-        implementation_id: parser.bytes_claim::<64>(Label::ImplementationId as u16)?,
-        instance_id: parser.bytes_claim::<33>(Label::InstanceId as u16)?,
-        config: parser.bytes_claim::<33>(Label::Config as u16)?,
-        lifecycle: parser.u16_claim(Label::Lifecycle as u16)?,
-        hash_algo: parser.string_claim(Label::HashAlgo as u16)?,
-        sw_components: parser.sw_components_claim(Label::SWComponents as u16)?,
-        verification_service: parser.string_claim(Label::VerificationService as u16)?,
+        profile: parser.string(STR_PLAT_PROFILE)?,
+        challenge: parser.bytes::<32>(STR_PLAT_CHALLENGE)?,
+        implementation_id: parser.bytes::<64>(STR_PLAT_IMPLEMENTATION_ID)?,
+        instance_id: parser.bytes::<33>(STR_PLAT_INSTANCE_ID)?,
+        config: parser.bytes::<33>(STR_PLAT_CONFIGURATION)?,
+        lifecycle: parser.u16(STR_PLAT_SECURITY_LIFECYCLE)?,
+        hash_algo_id: parser.string(STR_PLAT_HASH_ALGO_ID)?,
+        sw_components: parser.sw_components(STR_PLAT_SW_COMPONENTS)?,
+        verification_service: parser.string(STR_PLAT_VERIFICATION_SERVICE)?,
     };
 
     Ok((signature, token))
 }
 
 fn realm_token(encoded: &[u8]) -> Result<(claim::RealmSignature, claim::RealmToken), Error> {
-    use crate::claim::realm::Label;
     let (payload, signature) = cose_sign1(encoded).or(Err(Error::CoseSign))?;
-    let signature: claim::RealmSignature = Claim {
-        label: 0,
-        value: signature.try_into().or(Err(Error::RealmSignature))?,
+    let signature = Claim {
+        label: TAG_UNASSIGINED,
+        title: STR_REALM_SIGNATURE,
+        value: Value::Bytes(signature.to_vec()),
     };
 
     let mut parser = Parser::new(payload);
     let token = claim::RealmToken {
         claims_len: parser.decoder.map()?.ok_or(Error::Decoding)?,
-        challenge: parser.bytes_claim::<64>(Label::Challenge as u16)?,
-        rpv: parser.bytes_claim::<64>(Label::RPV as u16)?,
-        public_key: parser.bytes_claim::<97>(Label::PublicKey as u16)?,
-        public_key_hash_algo: parser.string_claim(Label::PublicKeyHashAlgo as u16)?,
-        hash_algo: parser.string_claim(Label::HashAlgo as u16)?,
-        rim: parser.bytes_claim::<32>(Label::RIM as u16)?,
-        rem: parser.rem_claim::<32>(Label::REM as u16)?,
+        challenge: parser.bytes::<64>(STR_REALM_CHALLENGE)?,
+        rpv: parser.bytes::<64>(STR_REALM_PERSONALIZATION_VALUE)?,
+        public_key: parser.bytes::<97>(STR_REALM_PUB_KEY)?,
+        public_key_hash_algo: parser.string(STR_REALM_PUB_KEY_HASH_ALGO_ID)?,
+        hash_algo: parser.string(STR_REALM_HASH_ALGO_ID)?,
+        rim: parser.bytes::<32>(STR_REALM_INITIAL_MEASUREMENT)?,
+        rem: parser.rem::<32>(STR_REALM_EXTENTIBLE_MEASUREMENTS)?,
     };
 
     Ok((signature, token))

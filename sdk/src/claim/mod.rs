@@ -4,13 +4,21 @@ pub mod realm;
 pub use self::platform::Platform as PlatformToken;
 pub use self::realm::Realm as RealmToken;
 
-pub type RealmSignature = Claim<[u8; 96]>;
-pub type PlatformSignature = Claim<[u8; 64]>;
+pub type RealmSignature = Claim;
+pub type PlatformSignature = Claim;
 
 #[derive(Debug)]
-pub struct Claim<T: std::fmt::Debug> {
+pub enum Value {
+    U16(u16),
+    String(String),
+    Bytes(Vec<u8>),
+}
+
+#[derive(Debug)]
+pub struct Claim {
     pub label: u16,
-    pub value: T,
+    pub title: &'static str,
+    pub value: Value,
 }
 
 #[derive(Debug)]

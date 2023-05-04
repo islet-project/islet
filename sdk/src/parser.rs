@@ -1,7 +1,8 @@
 use crate::claim::{
     platform::{SWComponent0, SWComponent1},
-    Claim,
+    Claim, Value,
 };
+use crate::config::to_label;
 use crate::error::Error;
 
 use minicbor::Decoder;
@@ -17,70 +18,76 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn label(&mut self, expected: u16) -> Result<u16, Error> {
-        let provided = self.decoder.u16()?;
-        if expected != provided {
-            println!("Expected: {}, provided: {}", expected, provided);
-            Err(Error::Format)
+    pub fn label(&mut self, title: &'static str) -> Result<u16, Error> {
+        let label = self.decoder.u16()?;
+        if label != to_label(title) {
+            println!("Expected: {}, Provided: {}", to_label(title), label);
+            Err(Error::Claim(title))
         } else {
-            Ok(expected)
+            Ok(label)
         }
     }
 
-    pub fn string_claim(&mut self, label: u16) -> Result<Claim<String>, Error> {
-        let label = label as u16;
+    pub fn string(&mut self, title: &'static str) -> Result<Claim, Error> {
         let mut parse = || {
-            Ok::<Claim<String>, Error>(Claim {
-                label: self.label(label)?,
-                value: self.decoder.str()?.to_string(),
+            Ok::<Claim, Error>(Claim {
+                label: self.label(title)?,
+                title,
+                value: Value::String(self.decoder.str()?.to_string()),
             })
         };
-        parse().or(Err(Error::Claim(label)))
+        parse().or(Err(Error::Claim(title)))
     }
 
-    pub fn bytes_claim<const N: usize>(&mut self, label: u16) -> Result<Claim<[u8; N]>, Error> {
-        let label = label as u16;
+    pub fn bytes<const N: usize>(&mut self, title: &'static str) -> Result<Claim, Error> {
         let mut parse = || {
-            let label = self.label(label)?;
+            let label = self.label(title)?;
             let value = self.decoder.bytes()?;
-            Ok::<Claim<[u8; N]>, Error>(Claim {
+            if value.len() != N {
+                return Err(Error::Claim(title));
+            }
+            Ok::<Claim, Error>(Claim {
                 label,
-                value: value.try_into().or(Err(Error::Format))?,
+                title,
+                value: Value::Bytes(value.to_vec()),
             })
         };
-        parse().or(Err(Error::Claim(label)))
+        parse().or(Err(Error::Claim(title)))
     }
 
-    pub fn rem_claim<const N: usize>(&mut self, label: u16) -> Result<Claim<[u8; N]>, Error> {
-        let label = label as u16;
+    pub fn u16(&mut self, title: &'static str) -> Result<Claim, Error> {
         let mut parse = || {
-            let label = self.label(label)?;
+            Ok::<Claim, Error>(Claim {
+                label: self.label(title)?,
+                title,
+                value: Value::U16(self.decoder.u16()?),
+            })
+        };
+        parse().or(Err(Error::Claim(title)))
+    }
+
+    pub fn rem<const N: usize>(&mut self, title: &'static str) -> Result<Claim, Error> {
+        let mut parse = || {
+            let label = self.label(title)?;
             let _ = self.decoder.array()?;
             let value = self.decoder.bytes()?;
-            Ok::<Claim<[u8; N]>, Error>(Claim {
+            if value.len() != N {
+                return Err(Error::Claim(title));
+            }
+            Ok::<Claim, Error>(Claim {
                 label,
-                value: value.try_into().or(Err(Error::Format))?,
+                title,
+                value: Value::Bytes(value.to_vec()),
             })
         };
-        parse().or(Err(Error::Claim(label)))
+        parse().or(Err(Error::Claim(title)))
     }
 
-    pub fn u16_claim(&mut self, label: u16) -> Result<Claim<u16>, Error> {
-        let label = label as u16;
-        let mut parse = || {
-            Ok::<Claim<u16>, Error>(Claim {
-                label: self.label(label)?,
-                value: self.decoder.u16()?,
-            })
-        };
-        parse().or(Err(Error::Claim(label)))
-    }
-
-    pub fn sw_components_claim(
+    pub fn sw_components(
         &mut self,
-        label: u16,
-    ) -> Result<Claim<(SWComponent0, SWComponent1, SWComponent1, SWComponent1)>, Error> {
-        let label = self.label(label as u16)?;
+        title: &'static str,
+    ) -> Result<(SWComponent0, SWComponent1, SWComponent1, SWComponent1), Error> {
+        let _ = self.label(title)?;
         let decoder = &mut self.decoder;
         assert_eq!(4, decoder.array().unwrap().unwrap());
         assert_eq!(5, decoder.map().unwrap().unwrap());
@@ -141,9 +148,6 @@ impl<'a> Parser<'a> {
             ),
         };
 
-        Ok(Claim {
-            label,
-            value: (sw_comp0, sw_comp1, sw_comp2, sw_comp3),
-        })
+        Ok((sw_comp0, sw_comp1, sw_comp2, sw_comp3))
     }
 }

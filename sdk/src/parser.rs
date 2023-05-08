@@ -1,7 +1,4 @@
-use crate::claim::{
-    platform::{SWComponent0, SWComponent1},
-    Claim, Value,
-};
+use crate::claim::{platform::SWComponent, Claim, PlatformSWComponents, Value};
 use crate::config::to_label;
 use crate::error::Error;
 
@@ -83,16 +80,13 @@ impl<'a> Parser<'a> {
         parse().or(Err(Error::Claim(title)))
     }
 
-    pub fn sw_components(
-        &mut self,
-        title: &'static str,
-    ) -> Result<(SWComponent0, SWComponent1, SWComponent1, SWComponent1), Error> {
+    pub fn sw_components(&mut self, title: &'static str) -> Result<PlatformSWComponents, Error> {
         let _ = self.label(title)?;
         let decoder = &mut self.decoder;
         assert_eq!(4, decoder.array().unwrap().unwrap());
         assert_eq!(5, decoder.map().unwrap().unwrap());
 
-        let sw_comp0 = SWComponent0 {
+        let sw_comp0 = SWComponent {
             name: (decoder.u16()?, decoder.str()?.to_string()),
             measurement: (
                 decoder.u16()?,
@@ -107,7 +101,7 @@ impl<'a> Parser<'a> {
         };
 
         assert_eq!(4, decoder.map().unwrap().unwrap());
-        let sw_comp1 = SWComponent1 {
+        let sw_comp1 = SWComponent {
             name: (decoder.u16()?, decoder.str()?.to_string()),
             measurement: (
                 decoder.u16()?,
@@ -118,10 +112,11 @@ impl<'a> Parser<'a> {
                 decoder.u16()?,
                 decoder.bytes()?.try_into().or(Err(Error::Format))?,
             ),
+            hash_algo: (0, String::from("")),
         };
 
         assert_eq!(4, decoder.map().unwrap().unwrap());
-        let sw_comp2 = SWComponent1 {
+        let sw_comp2 = SWComponent {
             name: (decoder.u16()?, decoder.str()?.to_string()),
             measurement: (
                 decoder.u16()?,
@@ -132,10 +127,11 @@ impl<'a> Parser<'a> {
                 decoder.u16()?,
                 decoder.bytes()?.try_into().or(Err(Error::Format))?,
             ),
+            hash_algo: (0, String::from("")),
         };
 
         assert_eq!(4, decoder.map().unwrap().unwrap());
-        let sw_comp3 = SWComponent1 {
+        let sw_comp3 = SWComponent {
             name: (decoder.u16()?, decoder.str()?.to_string()),
             measurement: (
                 decoder.u16()?,
@@ -146,8 +142,9 @@ impl<'a> Parser<'a> {
                 decoder.u16()?,
                 decoder.bytes()?.try_into().or(Err(Error::Format))?,
             ),
+            hash_algo: (0, String::from("")),
         };
 
-        Ok((sw_comp0, sw_comp1, sw_comp2, sw_comp3))
+        Ok([sw_comp0, sw_comp1, sw_comp2, sw_comp3])
     }
 }

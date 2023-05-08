@@ -9,6 +9,7 @@ pub enum Error {
     RealmSignature,
     PlatformSignature,
     Claim(&'static str),
+    ClaimCount,
 }
 
 impl From<minicbor::decode::Error> for Error {

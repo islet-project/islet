@@ -2,8 +2,9 @@ pub const TOKEN_COUNT: u64 = 2;
 pub const TOKEN_PLAT: u16 = 44234;
 pub const TOKEN_REALM: u16 = 44241;
 
-pub const CLAIM_COUNT_REALM_TOKEN: usize = 6;
+pub const CLAIM_COUNT_REALM_TOKEN: usize = 7;
 pub const CLAIM_COUNT_PLATFORM_TOKEN: usize = 8;
+pub const CLAIM_COUNT_SW_COMPONENT: usize = 4;
 
 pub const CHALLENGE_SIZE: usize = 64;
 

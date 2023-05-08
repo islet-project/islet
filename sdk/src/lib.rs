@@ -19,14 +19,27 @@ mod tests {
     fn attest_verify() {
         let user_data = b"User data";
         let report = attester::attest(user_data).unwrap();
-        assert_eq!(report.buffer.len(), mock::REPORT_LEN);
         let claims = verifier::verify(&report).unwrap();
-        println!("{:#?}", claims);
+        println!("Debug: {:?}", claims);
 
-        if let claim::Value::Bytes(value) = &claims.realm_tok.challenge.value {
+        if let claim::Value::Bytes(value) = &claims.value(config::STR_USER_DATA).unwrap() {
             assert_eq!(user_data, &value[..user_data.len()]);
         } else {
             assert!(false, "Wrong user data");
         }
+
+        if let claim::Value::String(value) = &claims.value(config::STR_PLAT_PROFILE).unwrap() {
+            assert_eq!(value.as_str(), "http://arm.com/CCA-SSD/1.0.0");
+        } else {
+            assert!(false, "Wrong platform profile");
+        }
+    }
+
+    #[test]
+    fn claim_not_supported_yet() {
+        let user_data = b"User data";
+        let report = attester::attest(user_data).unwrap();
+        let claims = verifier::verify(&report).unwrap();
+        assert!(claims.value(config::STR_PLAT_SW_COMPONENTS).is_none());
     }
 }

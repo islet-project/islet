@@ -9,25 +9,35 @@ use minicbor::Decoder;
 
 pub fn verify(report: &Report) -> Result<Claims, Error> {
     let (platform, realm) = cca_token(&report.buffer).or(Err(Error::CCAToken))?;
-    let (plat_sig, plat_tok) = plat_token(platform)?;
+    let (plat_sig, plat_tok, sw_comps) = plat_token(platform)?;
     let (realm_sig, realm_tok) = realm_token(realm)?;
-
-    // Replace user_data temporarily
-    let mut realm_tok = realm_tok;
-    if let Value::Bytes(user_data) = &mut realm_tok.challenge.value {
-        user_data.fill(0);
-        user_data[..report.user_data.len()].copy_from_slice(&report.user_data);
-    }
-
-    Ok(Claims {
+    let mut claims = Claims {
         realm_sig,
         realm_tok,
         plat_sig,
         plat_tok,
-    })
+        sw_comps,
+    };
+
+    // Replace user_data temporarily
+    if let Value::Bytes(user_data) = &mut claims.get_mut(STR_REALM_CHALLENGE).unwrap().value {
+        user_data.fill(0);
+        user_data[..report.user_data.len()].copy_from_slice(&report.user_data);
+    }
+
+    Ok(claims)
 }
 
-fn plat_token(encoded: &[u8]) -> Result<(claim::PlatformSignature, claim::PlatformToken), Error> {
+fn plat_token(
+    encoded: &[u8],
+) -> Result<
+    (
+        claim::PlatformSignature,
+        claim::PlatformToken,
+        claim::PlatformSWComponents,
+    ),
+    Error,
+> {
     let (payload, signature) = cose_sign1(encoded).or(Err(Error::CoseSign))?;
     let signature = Claim {
         label: TAG_UNASSIGINED,
@@ -36,20 +46,36 @@ fn plat_token(encoded: &[u8]) -> Result<(claim::PlatformSignature, claim::Platfo
     };
 
     let mut parser = Parser::new(payload);
-    let token = claim::PlatformToken {
-        claims_len: parser.decoder.map()?.ok_or(Error::Decoding)?,
-        profile: parser.string(STR_PLAT_PROFILE)?,
-        challenge: parser.bytes::<32>(STR_PLAT_CHALLENGE)?,
-        implementation_id: parser.bytes::<64>(STR_PLAT_IMPLEMENTATION_ID)?,
-        instance_id: parser.bytes::<33>(STR_PLAT_INSTANCE_ID)?,
-        config: parser.bytes::<33>(STR_PLAT_CONFIGURATION)?,
-        lifecycle: parser.u16(STR_PLAT_SECURITY_LIFECYCLE)?,
-        hash_algo_id: parser.string(STR_PLAT_HASH_ALGO_ID)?,
-        sw_components: parser.sw_components(STR_PLAT_SW_COMPONENTS)?,
-        verification_service: parser.string(STR_PLAT_VERIFICATION_SERVICE)?,
-    };
 
-    Ok((signature, token))
+    const SW_COMP_COUNT: usize = 1;
+    if CLAIM_COUNT_PLATFORM_TOKEN + SW_COMP_COUNT
+        != parser.decoder.map()?.ok_or(Error::Decoding)? as usize
+    {
+        return Err(Error::ClaimCount);
+    }
+
+    let profile = parser.string(STR_PLAT_PROFILE)?;
+    let challenge = parser.bytes::<32>(STR_PLAT_CHALLENGE)?;
+    let implementation_id = parser.bytes::<64>(STR_PLAT_IMPLEMENTATION_ID)?;
+    let instance_id = parser.bytes::<33>(STR_PLAT_INSTANCE_ID)?;
+    let config = parser.bytes::<33>(STR_PLAT_CONFIGURATION)?;
+    let lifecycle = parser.u16(STR_PLAT_SECURITY_LIFECYCLE)?;
+    let hash_algo_id = parser.string(STR_PLAT_HASH_ALGO_ID)?;
+    let sw_components = parser.sw_components(STR_PLAT_SW_COMPONENTS)?;
+    let verification_service = parser.string(STR_PLAT_VERIFICATION_SERVICE)?;
+
+    let token = [
+        profile,
+        challenge,
+        implementation_id,
+        instance_id,
+        config,
+        lifecycle,
+        hash_algo_id,
+        verification_service,
+    ];
+
+    Ok((signature, token, sw_components))
 }
 
 fn realm_token(encoded: &[u8]) -> Result<(claim::RealmSignature, claim::RealmToken), Error> {
@@ -61,16 +87,19 @@ fn realm_token(encoded: &[u8]) -> Result<(claim::RealmSignature, claim::RealmTok
     };
 
     let mut parser = Parser::new(payload);
-    let token = claim::RealmToken {
-        claims_len: parser.decoder.map()?.ok_or(Error::Decoding)?,
-        challenge: parser.bytes::<64>(STR_REALM_CHALLENGE)?,
-        rpv: parser.bytes::<64>(STR_REALM_PERSONALIZATION_VALUE)?,
-        public_key: parser.bytes::<97>(STR_REALM_PUB_KEY)?,
-        public_key_hash_algo: parser.string(STR_REALM_PUB_KEY_HASH_ALGO_ID)?,
-        hash_algo: parser.string(STR_REALM_HASH_ALGO_ID)?,
-        rim: parser.bytes::<32>(STR_REALM_INITIAL_MEASUREMENT)?,
-        rem: parser.rem::<32>(STR_REALM_EXTENTIBLE_MEASUREMENTS)?,
-    };
+    if CLAIM_COUNT_REALM_TOKEN != parser.decoder.map()?.ok_or(Error::Decoding)? as usize {
+        return Err(Error::ClaimCount);
+    }
+
+    let token = [
+        parser.bytes::<64>(STR_REALM_CHALLENGE)?,
+        parser.bytes::<64>(STR_REALM_PERSONALIZATION_VALUE)?,
+        parser.bytes::<97>(STR_REALM_PUB_KEY)?,
+        parser.string(STR_REALM_PUB_KEY_HASH_ALGO_ID)?,
+        parser.string(STR_REALM_HASH_ALGO_ID)?,
+        parser.bytes::<32>(STR_REALM_INITIAL_MEASUREMENT)?,
+        parser.rem::<32>(STR_REALM_EXTENTIBLE_MEASUREMENTS)?,
+    ];
 
     Ok((signature, token))
 }

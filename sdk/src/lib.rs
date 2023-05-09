@@ -1,13 +1,16 @@
 #![deny(warnings)]
+#![feature(vec_into_raw_parts)]
 #![warn(rust_2018_idioms)]
 
 pub mod attester;
+pub mod c_api;
 pub mod claim;
 pub mod error;
 pub mod report;
 pub mod verifier;
 
-pub mod config;
+/// cbindgen:ignore
+mod config;
 mod mock;
 mod parser;
 

@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct SWComponent {
     pub name: (u16, String),
     pub measurement: (u16, [u8; 32]),

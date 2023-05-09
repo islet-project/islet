@@ -41,7 +41,7 @@ fn plat_token(
     let (payload, signature) = cose_sign1(encoded).or(Err(Error::CoseSign))?;
     let signature = Claim {
         label: TAG_UNASSIGINED,
-        title: STR_PLAT_SIGNATURE,
+        title: STR_PLAT_SIGNATURE.to_string(),
         value: Value::Bytes(signature.to_vec()),
     };
 
@@ -82,7 +82,7 @@ fn realm_token(encoded: &[u8]) -> Result<(claim::RealmSignature, claim::RealmTok
     let (payload, signature) = cose_sign1(encoded).or(Err(Error::CoseSign))?;
     let signature = Claim {
         label: TAG_UNASSIGINED,
-        title: STR_REALM_SIGNATURE,
+        title: STR_REALM_SIGNATURE.to_string(),
         value: Value::Bytes(signature.to_vec()),
     };
 

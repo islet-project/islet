@@ -29,7 +29,7 @@ impl<'a> Parser<'a> {
         let mut parse = || {
             Ok::<Claim, Error>(Claim {
                 label: self.label(title)?,
-                title,
+                title: title.to_string(),
                 value: Value::String(self.decoder.str()?.to_string()),
             })
         };
@@ -45,7 +45,7 @@ impl<'a> Parser<'a> {
             }
             Ok::<Claim, Error>(Claim {
                 label,
-                title,
+                title: title.to_string(),
                 value: Value::Bytes(value.to_vec()),
             })
         };
@@ -56,7 +56,7 @@ impl<'a> Parser<'a> {
         let mut parse = || {
             Ok::<Claim, Error>(Claim {
                 label: self.label(title)?,
-                title,
+                title: title.to_string(),
                 value: Value::U16(self.decoder.u16()?),
             })
         };
@@ -73,7 +73,7 @@ impl<'a> Parser<'a> {
             }
             Ok::<Claim, Error>(Claim {
                 label,
-                title,
+                title: title.to_string(),
                 value: Value::Bytes(value.to_vec()),
             })
         };

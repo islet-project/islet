@@ -3,27 +3,29 @@ pub mod platform;
 use self::platform::SWComponent;
 use crate::config;
 
+use serde::{Deserialize, Serialize};
+
 pub type RealmSignature = Claim;
 pub type RealmToken = [Claim; config::CLAIM_COUNT_REALM_TOKEN];
 pub type PlatformSignature = Claim;
 pub type PlatformToken = [Claim; config::CLAIM_COUNT_PLATFORM_TOKEN];
 pub type PlatformSWComponents = [SWComponent; config::CLAIM_COUNT_SW_COMPONENT];
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Value {
     U16(u16),
     String(String),
     Bytes(Vec<u8>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Claim {
     pub label: u16,
-    pub title: &'static str,
+    pub title: String,
     pub value: Value,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub realm_sig: RealmSignature,
     pub realm_tok: RealmToken,

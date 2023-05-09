@@ -6,8 +6,6 @@ pub const CLAIM_COUNT_REALM_TOKEN: usize = 7;
 pub const CLAIM_COUNT_PLATFORM_TOKEN: usize = 8;
 pub const CLAIM_COUNT_SW_COMPONENT: usize = 4;
 
-pub const CHALLENGE_SIZE: usize = 64;
-
 pub const TAG_CCA_TOKEN: u64 = 399;
 pub const TAG_COSE_SIGN1: u64 = 18;
 

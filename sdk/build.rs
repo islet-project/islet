@@ -8,11 +8,12 @@ fn main() {
     config.header = Some(
         "// Copyright (c) 2023 Samsung Electronics Co., Ltd. All Rights Reserved.".to_string(),
     );
+    config.pragma_once = true;
 
     cbindgen::Builder::new()
         .with_crate(crate_dir)
         .with_config(config)
         .generate()
         .expect("Unable to generate bindings.")
-        .write_to_file("islet.h");
+        .write_to_file("include/islet.h");
 }

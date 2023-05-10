@@ -70,3 +70,10 @@ pub unsafe extern "C" fn islet_parse(
     }
     0
 }
+
+#[no_mangle]
+pub unsafe extern "C" fn islet_print_claims(claims: *const c_uchar, claims_len: c_int) {
+    let encoded = from_raw_parts(claims as *const u8, claims_len as usize);
+    let decoded: Claims = deserialize(encoded).unwrap();
+    println!("{:?}", decoded);
+}

@@ -1,5 +1,7 @@
 // Copyright (c) 2023 Samsung Electronics Co., Ltd. All Rights Reserved.
 
+#pragma once
+
 #include <cstdarg>
 #include <cstdint>
 #include <cstdlib>
@@ -23,5 +25,7 @@ int islet_parse(const char *title,
                 int claims_len,
                 unsigned char *value_out,
                 int *value_out_len);
+
+void islet_print_claims(const unsigned char *claims, int claims_len);
 
 } // extern "C"

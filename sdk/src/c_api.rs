@@ -1,6 +1,7 @@
 use crate::attester::attest;
 use crate::claim::{Claims, Value};
 use crate::report::Report;
+use crate::sealing::{seal, unseal};
 use crate::verifier::verify;
 
 use bincode::{deserialize, serialize};
@@ -76,4 +77,34 @@ pub unsafe extern "C" fn islet_print_claims(claims: *const c_uchar, claims_len: 
     let encoded = from_raw_parts(claims as *const u8, claims_len as usize);
     let decoded: Claims = deserialize(encoded).unwrap();
     println!("{:?}", decoded);
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn islet_seal(
+    plaintext: *const c_uchar,
+    plaintext_len: c_int,
+    sealed_out: *mut c_uchar,
+    sealed_out_len: *mut c_int,
+) -> c_int {
+    let plaintext = from_raw_parts(plaintext as *const u8, plaintext_len as usize);
+    let sealed = seal(plaintext).unwrap();
+    *sealed_out_len = sealed.len() as c_int;
+    let out = from_raw_parts_mut(sealed_out, sealed.len());
+    out.copy_from_slice(&sealed[..]);
+    0
+}
+
+#[no_mangle]
+pub unsafe extern "C" fn islet_unseal(
+    sealed: *const c_uchar,
+    sealed_len: c_int,
+    plaintext_out: *mut c_uchar,
+    plaintext_out_len: &mut c_int,
+) -> c_int {
+    let sealed = from_raw_parts(sealed as *const u8, sealed_len as usize);
+    let plaintext = unseal(sealed).unwrap();
+    *plaintext_out_len = plaintext.len() as c_int;
+    let out = from_raw_parts_mut(plaintext_out, plaintext.len());
+    out.copy_from_slice(&plaintext[..]);
+    0
 }

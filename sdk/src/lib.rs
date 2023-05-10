@@ -7,6 +7,7 @@ pub mod c_api;
 pub mod claim;
 pub mod error;
 pub mod report;
+pub mod sealing;
 pub mod verifier;
 
 /// cbindgen:ignore
@@ -44,5 +45,14 @@ mod tests {
         let report = attester::attest(user_data).unwrap();
         let claims = verifier::verify(&report).unwrap();
         assert!(claims.value(config::STR_PLAT_SW_COMPONENTS).is_none());
+    }
+
+    #[test]
+    fn sealing() {
+        use super::sealing::{seal, unseal};
+        let usr_data = b"User data";
+        let enc_data = seal(usr_data).unwrap();
+        let dec_data = unseal(&enc_data).unwrap();
+        assert_eq!(usr_data, &dec_data[..]);
     }
 }

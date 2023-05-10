@@ -28,4 +28,14 @@ int islet_parse(const char *title,
 
 void islet_print_claims(const unsigned char *claims, int claims_len);
 
+int islet_seal(const unsigned char *plaintext,
+               int plaintext_len,
+               unsigned char *sealed_out,
+               int *sealed_out_len);
+
+int islet_unseal(const unsigned char *sealed,
+                 int sealed_len,
+                 unsigned char *plaintext_out,
+                 int *plaintext_out_len);
+
 } // extern "C"

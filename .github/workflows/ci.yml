@@ -93,3 +93,27 @@ jobs:
     - uses: actions-rs/audit-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+
+  sdk:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: true
+
+    - name: Install dependencies
+      run: |
+        ./scripts/deps/pkgs.sh
+        ./scripts/deps/rust.sh
+
+    - name: Run sdk build & test (x86_64)
+      working-directory: sdk
+      run: cargo test
+
+    - name: Run sdk sample (x86_64)
+      working-directory: sdk/example
+      run: ./run.sh
+
+    - name: Run sdk build (aarch64)
+      working-directory: sdk
+      run: cargo build -Zbuild-std=panic_abort,std --target=aarch64-unknown-linux-gnu

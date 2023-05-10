@@ -281,12 +281,19 @@ def place_realm_at_shared(host_ip):
     run(["cp", LAUNCH_REALM, SHARED_PATH], cwd=ROOT)
     run(["cp", LAUNCH_REALM_NET, SHARED_PATH], cwd=ROOT)
     run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
-
-    # packet forwarding daemon
+    
     if host_ip != None:
+        # packet forwarding daemon
         run(["cp", "%s/rinetd" % PREBUILT_NET, SHARED_PATH], cwd=ROOT)
         run(["cp", "%s/rinetd.conf" % PREBUILT_NET, SHARED_PATH], cwd=ROOT)
         run(["sed", "-i", "-e", "s/HOST_IP/%s/g" % host_ip, "%s/rinetd.conf" % SHARED_PATH], cwd=ROOT)
+
+        # prebuilt examples: confidential-ml
+        os.makedirs(SHARED_EXAMPLES_PATH, exist_ok=True)
+        run(["cp", "-R", "%s/confidential-ml" % EXAMPLES, SHARED_EXAMPLES_PATH], cwd=ROOT)
+        run(["cp", "%s/confidential-ml/device/device.exe" % PREBUILT_EXAMPLES, "%s/confidential-ml/device/device.exe" % SHARED_EXAMPLES_PATH], cwd=ROOT)
+        run(["cp", "-R", "%s/lib" % PREBUILT_EXAMPLES, SHARED_EXAMPLES_PATH], cwd=ROOT)
+        run(["tar", "-zxvf", "%s/lib/libtensorflowlite.tar.gz" % SHARED_EXAMPLES_PATH, "-C", "%s/lib/" % SHARED_EXAMPLES_PATH], cwd=ROOT)
 
 def clean_repo():
     run(["make", "distclean"], cwd=TF_A)

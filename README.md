@@ -37,7 +37,8 @@ $ ./launch-realm.sh
 ```
 
 ### Running a linux realm with a networking support and prebuilt examples
-See [examples.md](./docs/examples.md). To get details about its network configuration, see [network.md](./docs/network.md).
+See [examples](./examples/README.md).
+To get details about its network configuration, see [network.md](./docs/network.md).
 
 ### Testing the realm features
 ```bash

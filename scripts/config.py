@@ -19,12 +19,14 @@ PREBUILT_AOSP_DTB = os.path.join(PREBUILT, "aosp/fvp-base-aosp.dtb")
 PREBUILT_AOSP_INITRD = os.path.join(PREBUILT, "aosp/initrd-aosp.img")
 PREBUILT_AOSP_ADB = os.path.join(PREBUILT, "aosp/bind_to_localhost.so")
 PREBUILT_NET = os.path.join(PREBUILT, "net")
+PREBUILT_EXAMPLES = os.path.join(PREBUILT, "examples")
 
 REALM_ROOTFS = os.path.join(ROOT, "assets/rootfs")
 
 REALM = os.path.join(ROOT, "realm")
 RMM = os.path.join(ROOT, "rmm/board/fvp")
 SDK = os.path.join(ROOT, "sdk/")
+EXAMPLES = os.path.join(ROOT, "examples")
 
 # third-party
 THIRD_PARTY = os.path.join(ROOT, "third-party")
@@ -46,6 +48,7 @@ RSI_TEST_BIN = os.path.join(OUT, "rsi-test.bin")
 
 # directory shared between the pc desktop and the host OS on fvp using 9p filesystem
 SHARED_PATH = os.path.join(OUT, "shared")
+SHARED_EXAMPLES_PATH = os.path.join(OUT, "shared/examples/")
 NW_AOSP_DATA = os.path.join(OUT, "aosp_data")
 
 DTC = os.path.join(ROOT, "assets/dtc")

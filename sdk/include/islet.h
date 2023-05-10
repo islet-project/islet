@@ -8,6 +8,18 @@
 #include <ostream>
 #include <new>
 
+constexpr static const int ISLET_E_SUCCESS = 0;
+
+constexpr static const int ISLET_E_FAILURE = -1;
+
+constexpr static const int ISLET_E_INPUT = -2;
+
+constexpr static const int ISLET_E_WRONG_REPORT = -3;
+
+constexpr static const int ISLET_E_WRONG_CLAIMS = -4;
+
+constexpr static const int ISLET_E_NOT_SUPPORTED = -5;
+
 extern "C" {
 
 int islet_attest(const unsigned char *user_data,

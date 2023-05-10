@@ -1,17 +1,21 @@
 #[derive(Debug)]
 pub enum Error {
-    TypeMismatch,
-    EndOfInput,
-    Decoding,
-    Format,
     CCAToken,
-    CoseSign,
-    RealmSignature,
-    PlatformSignature,
     Claim(&'static str),
     ClaimCount,
+    Claims,
+    CoseSign,
+    Decoding,
+    EndOfInput,
+    Format,
+    NotSupported,
+    PlatformSignature,
+    RealmSignature,
+    Report,
     Sealing,
     SealingKey,
+    Serialize,
+    TypeMismatch,
 }
 
 impl From<minicbor::decode::Error> for Error {

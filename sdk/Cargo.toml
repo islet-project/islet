@@ -11,6 +11,8 @@ crate-type = ["cdylib"]
 cbindgen = "0.24.0"
 
 [dependencies]
-minicbor = "*"
 bincode = "1.0"
+minicbor = "0.19.1"
+rand = "0.8"
+rsa = "0.9.2"
 serde = { version = "1.0", features = ["derive"] }

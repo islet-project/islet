@@ -10,6 +10,8 @@ pub enum Error {
     PlatformSignature,
     Claim(&'static str),
     ClaimCount,
+    Sealing,
+    SealingKey,
 }
 
 impl From<minicbor::decode::Error> for Error {

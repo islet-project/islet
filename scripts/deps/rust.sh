@@ -14,6 +14,9 @@ rustup toolchain install $MSRV
 rustup target add aarch64-unknown-none-softfloat
 rustup component add rust-src rustfmt
 
-cargo install cargo-bloat
+# sdk
+rustup target add aarch64-unknown-linux-gnu
+
+cargo install cargo-bloat cbindgen
 
 rustc --version --verbose

@@ -5,16 +5,8 @@ set -e
 ROOT=$(git rev-parse --show-toplevel)
 HERE=$ROOT/scripts
 
-sudo apt update
-sudo apt install -y -qq --no-install-recommends \
-	binutils python3-pip \
-	device-tree-compiler xterm fakeroot mtools fdisk cpio \
-	dosfstools e2fsprogs \
-	libxml-libxml-perl \
-	jq lcov graphviz inkscape \
-	flex bison
-
-pip3 install toml
+# Install packages
+$HERE/deps/pkgs.sh
 
 # Sync thirt-party projects as worktree
 $ROOT/scripts/sync-worktree.py

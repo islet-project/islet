@@ -2,38 +2,26 @@
 
 #include <iostream>
 #include <string>
-#include <vector>
+#include <cstring>
 
 int main() {
     using byte = unsigned char;
 
-    // -- Seal -- //
-    std::vector<byte> sealed_out(2048);
-    int sealed_out_len;
+    byte sealed[2048], unsealed[2048];
+    memset(sealed, 0, sizeof(sealed));
+    memset(unsealed, 0, sizeof(unsealed));
+    int sealed_len = 0, unsealed_len = 0;
 
+    // -- Seal -- //
     std::string plaintext("Plaintext");
-    if (islet_seal((const unsigned char*)plaintext.c_str(),
-                     plaintext.size(),
-                     sealed_out.data(),
-                     &sealed_out_len) != 0) {
+    if (islet_seal((const byte*)plaintext.c_str(), plaintext.size(), sealed, &sealed_len))
         return -1;
-    }
-    std::cout << "Success to seal the plaintext. sealed_out_len: "
-              << sealed_out_len << std::endl;
 
     // -- Unseal -- //
-    std::vector<byte> plaintext_out(2048);
-    int plaintext_out_len;
-
-    if (islet_unseal(sealed_out.data(),
-                     sealed_out_len,
-                     plaintext_out.data(),
-                     &plaintext_out_len) != 0) {
+    if (islet_unseal(sealed, sealed_len, unsealed, &unsealed_len))
         return -1;
-    }
-    std::cout << "Success to unseal the sealed: "
-              << std::string(plaintext_out.begin(), plaintext_out.end()) << std::endl;
 
+    printf("Success sealing round trip.\n");
 
     return 0;
 }

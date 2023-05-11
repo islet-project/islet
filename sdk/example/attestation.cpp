@@ -1,48 +1,43 @@
-#include <islet.h>
+#include "../include/islet.h"
 
 #include <iostream>
 #include <string>
-#include <vector>
+#include <cstring>
+
+static const char CLAIM_TITLE_USER_DATA[] = "User data";
+static const char CLAIM_TITLE_PLATFORM_PROFILE[] = "Profile";
 
 int main() {
     using byte = unsigned char;
 
-    // -- Attest -- //
-    std::vector<byte> report_out(2048);
-    int report_out_len;
+    byte report[2048], claims[1024], value[1024];
+    memset(report, 0, sizeof(report));
+    memset(claims, 0, sizeof(report));
+    memset(value, 0, sizeof(value));
+    int report_len = 0, claims_len = 0, value_len = 0;
 
-    std::string user_data("User custom data");
-    if (islet_attest((const unsigned char*)user_data.c_str(),
-                     user_data.size(),
-                     report_out.data(),
-                     &report_out_len) != 0) {
+    // -- Attest -- //
+    std::string user_data("User Custom data");
+    if (islet_attest((const byte*)user_data.c_str(), user_data.size(), report, &report_len))
         return -1;
-    }
-    std::cout << "Success to get an attestation report." << std::endl;
 
     // -- Verify -- //
-    std::vector<byte> claims_out(2048);
-    int claims_out_len;
-    if (islet_verify(report_out.data(), report_out_len, claims_out.data(), &claims_out_len) != 0) {
+    if (islet_verify(report, report_len, claims, &claims_len))
         return -1;
-    }
-    std::cout << "Success to verify the attestation report and get attestation claims." << std::endl;
 
-    // -- Debug print -- //
-    islet_print_claims(claims_out.data(), claims_out_len);
+    islet_print_claims(claims, claims_len);
 
-    // -- Get claim value -- //
-    std::vector<byte> value_out(2048);
-    int value_out_len;
-    if (islet_parse("User data", claims_out.data(), claims_out_len, value_out.data(), &value_out_len)) {
+    // -- Parse -- //
+    if (islet_parse(CLAIM_TITLE_USER_DATA, claims, claims_len, value, &value_len))
         return -1;
-    }
-    std::cout << "Claim-User data: " << std::string(value_out.begin(), value_out.end()) << std::endl;
 
-    if (islet_parse("Profile", claims_out.data(), claims_out_len, value_out.data(), &value_out_len)) {
+    printf("Claim[User data]: %s\n", (char*) value);
+
+    memset(value, 0, sizeof(value));
+    if (islet_parse(CLAIM_TITLE_PLATFORM_PROFILE, claims, claims_len, value, &value_len))
         return -1;
-    }
-    std::cout << "Claim-Platform profile: " << std::string(value_out.begin(), value_out.end()) << std::endl;
+
+    printf("Claim[Platform  profile]: %s\n", (char*) value);
 
     return 0;
 }

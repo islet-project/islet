@@ -16,6 +16,11 @@ pub const ISLET_E_WRONG_REPORT: c_int = -3;
 pub const ISLET_E_WRONG_CLAIMS: c_int = -4;
 pub const ISLET_E_NOT_SUPPORTED: c_int = -5;
 
+/// Get an attestation report(token).
+///
+/// # Note
+/// This API returns hard coded report to simuate temporarily.
+/// `User data` could be used as nonce to prevent reply attack.
 #[no_mangle]
 pub unsafe extern "C" fn islet_attest(
     user_data: *const c_uchar,
@@ -43,6 +48,7 @@ pub unsafe extern "C" fn islet_attest(
     }
 }
 
+/// Verify the attestation report and returns attestation claims if succeeded.
 #[no_mangle]
 pub unsafe extern "C" fn islet_verify(
     report: *const c_uchar,
@@ -69,6 +75,7 @@ pub unsafe extern "C" fn islet_verify(
     }
 }
 
+/// Parse the claims with the given title and returns the claim if succeeded.
 #[no_mangle]
 pub unsafe extern "C" fn islet_parse(
     title: *const c_char,
@@ -107,6 +114,7 @@ pub unsafe extern "C" fn islet_parse(
     }
 }
 
+/// Print all claims including Realm Token and Platform Token.
 #[no_mangle]
 pub unsafe extern "C" fn islet_print_claims(claims: *const c_uchar, claims_len: c_int) {
     let encoded = from_raw_parts(claims as *const u8, claims_len as usize);
@@ -115,6 +123,10 @@ pub unsafe extern "C" fn islet_print_claims(claims: *const c_uchar, claims_len: 
     }
 }
 
+/// Seals the plaintext given into the binary slice
+///
+/// # Note
+/// This API seals with hard coded key to simuate temporarily.
 #[no_mangle]
 pub unsafe extern "C" fn islet_seal(
     plaintext: *const c_uchar,
@@ -137,6 +149,10 @@ pub unsafe extern "C" fn islet_seal(
     }
 }
 
+/// Unseals the sealed bianry given into the plaintext
+///
+/// # Note
+/// This API unseals with hard coded key to simuate temporarily.
 #[no_mangle]
 pub unsafe extern "C" fn islet_unseal(
     sealed: *const c_uchar,

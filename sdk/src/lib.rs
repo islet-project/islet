@@ -50,9 +50,9 @@ mod tests {
     #[test]
     fn sealing() {
         use super::sealing::{seal, unseal};
-        let usr_data = b"User data";
-        let enc_data = seal(usr_data).unwrap();
-        let dec_data = unseal(&enc_data).unwrap();
-        assert_eq!(usr_data, &dec_data[..]);
+        let plaintext = b"Plaintext";
+        let sealed = seal(plaintext).unwrap();
+        let unsealed = unseal(&sealed).unwrap();
+        assert_eq!(plaintext, &unsealed[..]);
     }
 }

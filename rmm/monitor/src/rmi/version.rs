@@ -4,8 +4,12 @@ use crate::rmi;
 
 extern crate alloc;
 
+fn encode_version() -> usize {
+    (rmi::ABI_MAJOR_VERSION << 16) | rmi::ABI_MINOR_VERSION
+}
+
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::VERSION, |ctx, _| {
-        ctx.ret[0] = rmi::ABI_VERSION;
+        ctx.ret[0] = encode_version();
     });
 }

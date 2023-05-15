@@ -50,12 +50,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_CREATE, |ctx, rmm| {
         let rmi = rmm.rmi;
         let mm = rmm.mm;
-
-        let g_rec = granule::find_granule(ctx.arg[0], GranuleState::Delegated).unwrap();
+        let g_rec = granule::find_granule(ctx.arg[0], GranuleState::Delegated);
         g_rec.set_state(GranuleState::Rec, mm);
-
         let rd = unsafe { Rd::into(ctx.arg[1]) };
         let params_ptr = ctx.arg[2];
+        mm.map(params_ptr, false);
         ctx.ret[0] = rmi::RET_FAIL;
 
         match rmi.create_vcpu(rd.id()) {
@@ -68,9 +67,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             Err(_) => return,
         }
 
-        let g_param = granule::find_granule(params_ptr, GranuleState::Undelegated).unwrap();
-        g_param.set_state(GranuleState::Param, mm);
-
         let params = unsafe { Params::parse(params_ptr) };
         trace!("{:?}", params);
         let rec = unsafe { Rec::into(ctx.arg[0]) };
@@ -81,25 +77,21 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         {
             return;
         }
-
-        g_param.set_state(GranuleState::Undelegated, mm);
+        mm.unmap(params_ptr);
         ctx.ret[0] = rmi::SUCCESS;
     });
 
     listen!(mainloop, rmi::REC_DESTROY, |ctx, rmm| {
-        let g_rec = granule::find_granule(ctx.arg[0], GranuleState::Rec).unwrap();
+        let g_rec = granule::find_granule(ctx.arg[0], GranuleState::Rec);
         g_rec.set_state(GranuleState::Delegated, rmm.mm);
         ctx.ret[0] = rmi::SUCCESS;
     });
 
     listen!(mainloop, rmi::REC_ENTER, |ctx, rmm| {
         let rmi = rmm.rmi;
-        let mm = rmm.mm;
         let rec = unsafe { Rec::into(ctx.arg[0]) };
         let run_ptr = ctx.arg[1];
-
-        let g_run = granule::find_granule(run_ptr, GranuleState::Undelegated).unwrap();
-        g_run.set_state(GranuleState::Param, mm);
+        rmm.mm.map(run_ptr, false);
 
         let run = unsafe { Run::parse_mut(run_ptr) };
         trace!("{:?}", run);
@@ -137,7 +129,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             },
             Err(_) => ctx.ret[0] = rmi::ERROR_REC,
         };
-
-        g_run.set_state(GranuleState::Undelegated, mm);
+        rmm.mm.unmap(run_ptr);
     });
 }

@@ -21,16 +21,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rmi = rmm.rmi;
         let mm = rmm.mm;
         let params_ptr = ctx.arg[1];
-
-        let g_rd = granule::find_granule(ctx.arg[0], GranuleState::Delegated).unwrap();
-        let g_param = granule::find_granule(params_ptr, GranuleState::Undelegated).unwrap();
+        mm.map(params_ptr, false);
+        let g_rd = granule::find_granule(ctx.arg[0], GranuleState::Delegated);
         g_rd.set_state(GranuleState::RD, mm);
-        g_param.set_state(GranuleState::Param, mm);
 
         let param = unsafe { Params::parse(params_ptr) };
         trace!("{:?}", param);
-
-        g_param.set_state(GranuleState::Undelegated, mm);
 
         // TODO:
         //   Validate params
@@ -47,6 +43,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             }
             Err(_) => ctx.ret[0] = rmi::RET_FAIL,
         }
+        mm.unmap(params_ptr);
     });
 
     listen!(mainloop, rmi::REC_AUX_COUNT, |ctx, _| {
@@ -59,7 +56,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let _rd = unsafe { Rd::into(ctx.arg[0]) };
         let ret = rmi.remove(0); // temporarily
 
-        let g_rd = granule::find_granule(ctx.arg[0], GranuleState::RD).unwrap();
+        let g_rd = granule::find_granule(ctx.arg[0], GranuleState::RD);
         g_rd.set_state(GranuleState::Delegated, rmm.mm);
 
         match ret {

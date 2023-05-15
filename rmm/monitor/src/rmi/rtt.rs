@@ -1,4 +1,3 @@
-use super::gpt::{mark_ns, mark_realm};
 use super::realm::{rd::State, Rd};
 
 use crate::event::Mainloop;
@@ -6,7 +5,6 @@ use crate::listen;
 use crate::rmi;
 use crate::rmm::granule;
 use crate::rmm::granule::{GranuleState, RmmGranule};
-use crate::smc;
 
 extern crate alloc;
 
@@ -23,7 +21,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
     listen!(mainloop, rmi::DATA_CREATE, |ctx, rmm| {
         let rmi = rmm.rmi;
-        let smc = rmm.smc;
         let mm = rmm.mm;
         // taget_pa: location where realm data is created.
         let taget_pa = ctx.arg[0];
@@ -42,14 +39,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         // 1. map src to rmm
-        if mark_realm(smc, mm, src_pa)[0] != smc::SMC_SUCCESS {
-            ctx.ret[0] = rmi::RET_FAIL;
-            return;
-        }
-        let g_src = granule::find_granule(ipa, GranuleState::Delegated).unwrap();
-        let g_ipa = granule::find_granule(src_pa, GranuleState::Delegated).unwrap();
+        mm.map(src_pa, false);
+        let g_ipa = granule::find_granule(ipa, GranuleState::Delegated);
+        let g_tar = granule::find_granule(taget_pa, GranuleState::Delegated);
         g_ipa.set_state(GranuleState::Data, mm);
-        g_src.set_state(GranuleState::Data, mm);
+        g_tar.set_state(GranuleState::Data, mm);
 
         // 3. copy src to _data
         unsafe {
@@ -67,11 +61,20 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // TODO: 5. perform measure
 
         // 6. unmap src and _taget_pa from rmm
+        mm.unmap(src_pa);
+    });
+
+    listen!(mainloop, rmi::DATA_DESTORY, |ctx, rmm| {
+        let mm = rmm.mm;
+        let target_data = ctx.arg[0];
+        let ipa = ctx.arg[1];
+
+        let g_tar = granule::find_granule(target_data, GranuleState::Data);
+        let g_ipa = granule::find_granule(ipa, GranuleState::Data);
+        g_tar.set_state(GranuleState::Delegated, mm);
         g_ipa.set_state(GranuleState::Delegated, mm);
-        g_src.set_state(GranuleState::Delegated, mm);
-        if mark_ns(smc, mm, src_pa)[0] != smc::SMC_SUCCESS {
-            ctx.ret[0] = rmi::RET_FAIL;
-        }
+
+        ctx.ret[0] = rmi::SUCCESS;
     });
 
     // Map an unprotected IPA to a non-secure PA.

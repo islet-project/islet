@@ -11,6 +11,7 @@ pub const VERSION: usize = 0xc400_0150;
 pub const GRANULE_DELEGATE: usize = 0xc400_0151;
 pub const GRANULE_UNDELEGATE: usize = 0xc400_0152;
 pub const DATA_CREATE: usize = 0xc400_0153;
+pub const DATA_DESTORY: usize = 0xc400_0155;
 pub const REALM_ACTIVATE: usize = 0xc400_0157;
 pub const REALM_CREATE: usize = 0xc400_0158;
 pub const REALM_DESTROY: usize = 0xc400_0159;

@@ -6,10 +6,13 @@ pub const FVP_DRAM0_BASE: usize = 0x8000_0000;
 pub const FVP_DRAM0_SIZE: usize = 0x7C00_0000;
 pub const FVP_DRAM0_END: usize = FVP_DRAM0_BASE + FVP_DRAM0_SIZE - 1;
 
+pub const FVP_DRAM1_BASE: usize = 0x8_8000_0000;
+pub const FVP_DRAM1_SIZE: usize = 0x8000_0000;
+pub const FVP_DRAM1_END: usize = FVP_DRAM1_BASE + FVP_DRAM1_SIZE - 1;
+
 const GRANULE_SIZE: usize = 4096;
 const GRANULE_SHIFT: usize = 12;
-const RMM_MAX_GRANULES: usize = 0x7_C000; // 507904(fvp dram0 size - ideal)
-const GRANULE_BASE_ADDRESS: usize = FVP_DRAM0_BASE + 0x800_0000;
+const GRANULE_BASE_ADDRESS: usize = FVP_DRAM0_BASE;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum GranuleState {
@@ -61,26 +64,16 @@ impl RmmGranule for Granule {
             GranuleState::Delegated => {
                 if self.state != GranuleState::Undelegated && self.state != GranuleState::Delegated
                 {
+                    self.zeroize();
                     mm.unmap(self.addr());
                 }
                 self.state = state;
             }
             GranuleState::RTT => info!("set state Data for Realm"),
             GranuleState::Undelegated => unsafe {
-                if self.state == GranuleState::Param {
-                    mm.unmap(self.addr());
-                }
                 self.state = state;
-                // self.zeroize();
                 GRANULE.remove(&self.idx);
             },
-            GranuleState::Param => {
-                if self.state != GranuleState::Undelegated {
-                    warn!("check the granule state");
-                }
-                self.state = state;
-                mm.map(self.addr(), false);
-            }
             _ => {
                 if self.state == GranuleState::Undelegated {
                     warn!("skip state Delegated");
@@ -109,25 +102,19 @@ impl RmmGranule for Granule {
 
     fn zeroize(&self) {
         let buf = self.addr();
-        for i in 0..GRANULE_SIZE {
-            unsafe {
-                core::ptr::write_volatile((buf + i) as *mut usize, 0);
-            }
+        unsafe {
+            core::ptr::write_bytes(buf as *mut usize, 0x0, GRANULE_SIZE / 8);
         }
     }
 }
 
 // Define a function find_granule which returns a Granule instance from the GRANULE array using the given address and expected state.
-pub fn find_granule(addr: usize, expected_state: GranuleState) -> Option<&'static mut Granule> {
+pub fn find_granule(addr: usize, expected_state: GranuleState) -> &'static mut Granule {
     let idx = granule_addr_to_idx(addr);
-    if idx >= RMM_MAX_GRANULES {
-        warn!("check the granule index {}", idx);
-        return None;
-    }
-
     unsafe {
         match GRANULE.get_mut(&idx) {
             Some(g) => {
+                // TODO: after RIPAS implement, it will be changed to panic
                 if expected_state != g.get_state() {
                     info!(
                         "check the {:X} granule state {:?}<-{:?}",
@@ -136,16 +123,23 @@ pub fn find_granule(addr: usize, expected_state: GranuleState) -> Option<&'stati
                         expected_state
                     );
                 }
-                Some(g)
+                g
             }
             None => {
+                // TODO: after RIPAS implement, it will be changed to panic
+                if expected_state != GranuleState::Undelegated {
+                    info!(
+                        "check the {:X} granule state Undelegated<-{:?}",
+                        addr, expected_state
+                    );
+                }
                 let new = Granule {
-                    state: expected_state,
+                    state: GranuleState::Undelegated,
                     // refcount: 0,
                     idx: idx,
                 };
                 GRANULE.insert(idx, new);
-                Some(GRANULE.get_mut(&idx).unwrap())
+                GRANULE.get_mut(&idx).expect("granule insert failed!")
             }
         }
     }
@@ -153,17 +147,18 @@ pub fn find_granule(addr: usize, expected_state: GranuleState) -> Option<&'stati
 
 // Define a function granule_addr_to_idx which returns the index of the granule using the given address.
 fn granule_addr_to_idx(addr: usize) -> usize {
-    if addr < GRANULE_BASE_ADDRESS || addr > FVP_DRAM0_END {
+    if addr < GRANULE_BASE_ADDRESS
+        || (addr > FVP_DRAM0_END && addr < FVP_DRAM1_BASE)
+        || addr > FVP_DRAM1_END
+    {
         // if the address is out of range.
-        info!("address is strange 0x{:X}", addr);
-        return usize::MAX;
+        panic!("address is strange 0x{:X}", addr);
     }
     (addr - GRANULE_BASE_ADDRESS) >> GRANULE_SHIFT
 }
 
 // Define a function granule_idx_to_addr which returns the address of the granule using the given index.
 fn granule_idx_to_addr(idx: usize) -> usize {
-    assert!(idx < RMM_MAX_GRANULES);
     GRANULE_BASE_ADDRESS + (idx << GRANULE_SHIFT)
 }
 
@@ -195,30 +190,35 @@ mod test {
 
     #[test]
     fn test_add_granule() {
-        granule::find_granule(TEST_ADDR, GranuleState::Undelegated).expect("can't find granule");
-        assert!(granule::find_granule(TEST_ADDR, GranuleState::Delegated) != None);
+        granule::find_granule(TEST_ADDR, GranuleState::Undelegated);
+        assert!(
+            granule::find_granule(TEST_ADDR, GranuleState::Undelegated).get_state()
+                == GranuleState::Undelegated
+        );
     }
 
     #[test]
     fn test_find_granule_with_addr() {
         let dummy_map: PageMap = MockPageMap::new();
-        let g = granule::find_granule(TEST_ADDR, GranuleState::Undelegated)
-            .expect("can't find granule");
+        let g = granule::find_granule(TEST_ADDR, GranuleState::Undelegated);
         g.set_state(GranuleState::Delegated, dummy_map);
 
-        assert!(granule::find_granule(TEST_ADDR, GranuleState::Delegated) != None);
+        assert!(
+            granule::find_granule(TEST_ADDR, GranuleState::Delegated).get_state()
+                == GranuleState::Delegated
+        );
     }
 
     #[test]
+    #[should_panic]
     fn test_find_granule_with_wrong_addr() {
-        assert!(granule::find_granule(TEST_WRONG_ADDR, GranuleState::Undelegated) == None);
+        granule::find_granule(TEST_WRONG_ADDR, GranuleState::Undelegated);
     }
 
     #[test]
     fn test_convert_addr() {
         let dummy_map: PageMap = MockPageMap::new();
-        let g = granule::find_granule(TEST_ADDR, GranuleState::Undelegated)
-            .expect("can't find granule");
+        let g = granule::find_granule(TEST_ADDR, GranuleState::Undelegated);
         g.set_state(GranuleState::Delegated, dummy_map);
 
         let idx = granule::granule_addr_to_idx(TEST_ADDR);
@@ -229,8 +229,7 @@ mod test {
     #[test]
     fn test_get_index() {
         let dummy_map: PageMap = MockPageMap::new();
-        let g = granule::find_granule(TEST_ADDR, GranuleState::Undelegated)
-            .expect("can't find granule");
+        let g = granule::find_granule(TEST_ADDR, GranuleState::Undelegated);
         g.set_state(GranuleState::Delegated, dummy_map);
 
         let idx = granule::granule_addr_to_idx(TEST_ADDR);
@@ -241,8 +240,7 @@ mod test {
     #[test]
     fn test_addr() {
         let dummy_map: PageMap = MockPageMap::new();
-        let g = granule::find_granule(TEST_ADDR, GranuleState::Undelegated)
-            .expect("can't find granule");
+        let g = granule::find_granule(TEST_ADDR, GranuleState::Undelegated);
         g.set_state(GranuleState::Delegated, dummy_map);
 
         assert!(g.addr() == TEST_ADDR);

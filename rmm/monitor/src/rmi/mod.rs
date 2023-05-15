@@ -27,7 +27,8 @@ pub const REQ_COMPLETE: usize = 0xc400_018f;
 pub const BOOT_COMPLETE: usize = 0xC400_01CF;
 pub const BOOT_SUCCESS: usize = 0x0;
 
-pub const ABI_VERSION: usize = 1;
+pub const ABI_MAJOR_VERSION: usize = 1;
+pub const ABI_MINOR_VERSION: usize = 0;
 
 pub const RET_FAIL: usize = 0x100;
 pub const RET_EXCEPTION_IRQ: usize = 0x0;

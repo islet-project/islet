@@ -26,7 +26,7 @@ pub fn mark_realm(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize) -> [usi
     let arg = [addr, 0, 0, 0];
     let ret = smc.call(cmd, arg);
     if ret[0] == smc::SMC_SUCCESS {
-        let g = granule::find_granule(addr, GranuleState::Undelegated).unwrap();
+        let g = granule::find_granule(addr, GranuleState::Undelegated);
         g.set_state(GranuleState::Delegated, mm);
     }
     ret
@@ -37,7 +37,7 @@ pub fn mark_ns(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize) -> [usize;
     let arg = [addr, 0, 0, 0];
     let ret = smc.call(cmd, arg);
     if ret[0] == smc::SMC_SUCCESS {
-        let g = granule::find_granule(addr, GranuleState::Delegated).unwrap();
+        let g = granule::find_granule(addr, GranuleState::Delegated);
         g.set_state(GranuleState::Undelegated, mm);
     }
     ret

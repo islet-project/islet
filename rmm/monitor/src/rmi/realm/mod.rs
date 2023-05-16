@@ -7,7 +7,7 @@ use crate::event::Mainloop;
 use crate::listen;
 use crate::rmi;
 use crate::rmm::granule;
-use crate::rmm::granule::{GranuleState, RmmGranule};
+use crate::rmm::granule::GranuleState;
 
 extern crate alloc;
 
@@ -22,8 +22,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mm = rmm.mm;
         let params_ptr = ctx.arg[1];
         mm.map(params_ptr, false);
-        let g_rd = granule::find_granule(ctx.arg[0], GranuleState::Delegated);
-        g_rd.set_state(GranuleState::RD, mm);
+        granule::set_granule(ctx.arg[0], GranuleState::RD, mm);
 
         let param = unsafe { Params::parse(params_ptr) };
         trace!("{:?}", param);
@@ -55,9 +54,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rmi = rmm.rmi;
         let _rd = unsafe { Rd::into(ctx.arg[0]) };
         let ret = rmi.remove(0); // temporarily
-
-        let g_rd = granule::find_granule(ctx.arg[0], GranuleState::RD);
-        g_rd.set_state(GranuleState::Delegated, rmm.mm);
+        granule::set_granule(ctx.arg[0], GranuleState::Delegated, rmm.mm);
 
         match ret {
             Ok(_) => ctx.ret[0] = rmi::SUCCESS,

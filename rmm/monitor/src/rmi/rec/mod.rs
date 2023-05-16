@@ -9,7 +9,7 @@ use crate::listen;
 use crate::{rmi, rsi};
 
 use crate::rmm::granule;
-use crate::rmm::granule::{GranuleState, RmmGranule};
+use crate::rmm::granule::GranuleState;
 
 use core::mem::ManuallyDrop;
 
@@ -50,8 +50,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_CREATE, |ctx, rmm| {
         let rmi = rmm.rmi;
         let mm = rmm.mm;
-        let g_rec = granule::find_granule(ctx.arg[0], GranuleState::Delegated);
-        g_rec.set_state(GranuleState::Rec, mm);
+        granule::set_granule(ctx.arg[0], GranuleState::Rec, mm);
         let rd = unsafe { Rd::into(ctx.arg[1]) };
         let params_ptr = ctx.arg[2];
         mm.map(params_ptr, false);
@@ -82,8 +81,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     listen!(mainloop, rmi::REC_DESTROY, |ctx, rmm| {
-        let g_rec = granule::find_granule(ctx.arg[0], GranuleState::Rec);
-        g_rec.set_state(GranuleState::Delegated, rmm.mm);
+        granule::set_granule(ctx.arg[0], GranuleState::Delegated, rmm.mm);
         ctx.ret[0] = rmi::SUCCESS;
     });
 

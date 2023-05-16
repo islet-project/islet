@@ -4,7 +4,7 @@ use crate::event::Mainloop;
 use crate::listen;
 use crate::rmi;
 use crate::rmm::granule;
-use crate::rmm::granule::{GranuleState, RmmGranule};
+use crate::rmm::granule::GranuleState;
 
 extern crate alloc;
 
@@ -22,8 +22,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::DATA_CREATE, |ctx, rmm| {
         let rmi = rmm.rmi;
         let mm = rmm.mm;
-        // taget_pa: location where realm data is created.
-        let taget_pa = ctx.arg[0];
+        // target_pa: location where realm data is created.
+        let target_pa = ctx.arg[0];
         let rd = unsafe { Rd::into(ctx.arg[1]) };
         let ipa = ctx.arg[2];
         let src_pa = ctx.arg[3];
@@ -37,22 +37,19 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             ctx.ret[0] = rmi::RET_FAIL;
             return;
         }
-
         // 1. map src to rmm
+        granule::set_granule(ipa, GranuleState::Data, mm);
+        granule::set_granule(target_pa, GranuleState::Data, mm);
         mm.map(src_pa, false);
-        let g_ipa = granule::find_granule(ipa, GranuleState::Delegated);
-        let g_tar = granule::find_granule(taget_pa, GranuleState::Delegated);
-        g_ipa.set_state(GranuleState::Data, mm);
-        g_tar.set_state(GranuleState::Data, mm);
 
         // 3. copy src to _data
         unsafe {
-            core::ptr::copy_nonoverlapping(src_pa as *const u8, taget_pa as *mut u8, granule_sz);
+            core::ptr::copy_nonoverlapping(src_pa as *const u8, target_pa as *mut u8, granule_sz);
         }
 
         // 4. map ipa to _taget_pa into S2 table
         let prot = rmi::MapProt::new(0);
-        let ret = rmi.map(realm_id, ipa, taget_pa, granule_sz, prot.get());
+        let ret = rmi.map(realm_id, ipa, target_pa, granule_sz, prot.get());
         match ret {
             Ok(_) => ctx.ret[0] = rmi::SUCCESS,
             Err(_) => ctx.ret[0] = rmi::RET_FAIL,
@@ -69,10 +66,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let target_data = ctx.arg[0];
         let ipa = ctx.arg[1];
 
-        let g_tar = granule::find_granule(target_data, GranuleState::Data);
-        let g_ipa = granule::find_granule(ipa, GranuleState::Data);
-        g_tar.set_state(GranuleState::Delegated, mm);
-        g_ipa.set_state(GranuleState::Delegated, mm);
+        granule::set_granule(target_data, GranuleState::Delegated, mm);
+        granule::set_granule(ipa, GranuleState::Delegated, mm);
 
         ctx.ret[0] = rmi::SUCCESS;
     });

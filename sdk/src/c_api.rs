@@ -9,17 +9,22 @@ use bincode::{deserialize, serialize};
 use std::ffi::{c_char, c_int, c_uchar, CStr};
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 
-pub const ISLET_E_SUCCESS: c_int = 0;
-pub const ISLET_E_FAILURE: c_int = -1;
-pub const ISLET_E_INPUT: c_int = -2;
-pub const ISLET_E_WRONG_REPORT: c_int = -3;
-pub const ISLET_E_WRONG_CLAIMS: c_int = -4;
-pub const ISLET_E_NOT_SUPPORTED: c_int = -5;
+#[allow(non_camel_case_types)]
+#[repr(C)]
+pub enum islet_status_t {
+    ISLET_SUCCESS = 0,
+    ISLET_FAILURE = -1,
+    ISLET_ERROR_INPUT = -2,
+    ISLET_ERROR_WRONG_REPORT = -3,
+    ISLET_ERROR_WRONG_CLAIMS = -4,
+    ISLET_ERROR_FEATURE_NOT_SUPPORTED = -5,
+}
 
 /// Get an attestation report(token).
 ///
 /// # Note
-/// This API returns hard coded report to simuate temporarily.
+/// This API currently returns hard-coded report to simulate attest operation.
+/// In future, this will be finalized to support reports signed by RMM.
 /// `User data` could be used as nonce to prevent reply attack.
 #[no_mangle]
 pub unsafe extern "C" fn islet_attest(
@@ -27,9 +32,9 @@ pub unsafe extern "C" fn islet_attest(
     user_data_len: c_int,
     report_out: *mut c_uchar,
     report_out_len: *mut c_int,
-) -> c_int {
+) -> islet_status_t {
     if user_data_len > 64 {
-        return ISLET_E_INPUT;
+        return islet_status_t::ISLET_ERROR_INPUT;
     }
 
     let do_attest = || -> Result<(), Error> {
@@ -43,8 +48,8 @@ pub unsafe extern "C" fn islet_attest(
     };
 
     match do_attest() {
-        Ok(()) => ISLET_E_SUCCESS,
-        Err(_) => ISLET_E_FAILURE,
+        Ok(()) => islet_status_t::ISLET_SUCCESS,
+        Err(_) => islet_status_t::ISLET_FAILURE,
     }
 }
 
@@ -55,7 +60,7 @@ pub unsafe extern "C" fn islet_verify(
     report_len: c_int,
     claims_out: *mut c_uchar,
     claims_out_len: *mut c_int,
-) -> c_int {
+) -> islet_status_t {
     let do_verify = || -> Result<(), Error> {
         let encoded = from_raw_parts(report as *const u8, report_len as usize);
         let decoded: Report = deserialize(encoded).or(Err(Error::Report))?;
@@ -69,9 +74,9 @@ pub unsafe extern "C" fn islet_verify(
     };
 
     match do_verify() {
-        Ok(()) => ISLET_E_SUCCESS,
-        Err(Error::Report) => ISLET_E_WRONG_REPORT,
-        Err(_) => ISLET_E_FAILURE,
+        Ok(()) => islet_status_t::ISLET_SUCCESS,
+        Err(Error::Report) => islet_status_t::ISLET_ERROR_WRONG_REPORT,
+        Err(_) => islet_status_t::ISLET_FAILURE,
     }
 }
 
@@ -83,7 +88,7 @@ pub unsafe extern "C" fn islet_parse(
     claims_len: c_int,
     value_out: *mut c_uchar,
     value_out_len: *mut c_int,
-) -> c_int {
+) -> islet_status_t {
     let do_parse = || -> Result<(), Error> {
         let encoded = from_raw_parts(claims as *const u8, claims_len as usize);
         let decoded: Claims = deserialize(encoded).or(Err(Error::Claims))?;
@@ -108,9 +113,9 @@ pub unsafe extern "C" fn islet_parse(
     };
 
     match do_parse() {
-        Ok(()) => ISLET_E_SUCCESS,
-        Err(Error::Claims) => ISLET_E_WRONG_CLAIMS,
-        Err(_) => ISLET_E_FAILURE,
+        Ok(()) => islet_status_t::ISLET_SUCCESS,
+        Err(Error::Claims) => islet_status_t::ISLET_ERROR_WRONG_CLAIMS,
+        Err(_) => islet_status_t::ISLET_FAILURE,
     }
 }
 
@@ -126,14 +131,15 @@ pub unsafe extern "C" fn islet_print_claims(claims: *const c_uchar, claims_len: 
 /// Seals the plaintext given into the binary slice
 ///
 /// # Note
-/// This API seals with hard coded key to simuate temporarily.
+/// This API currently seals with a hard-coded key, to simulate seal operation.
+/// In future, this will be finalized to support keys derived from HES.
 #[no_mangle]
 pub unsafe extern "C" fn islet_seal(
     plaintext: *const c_uchar,
     plaintext_len: c_int,
     sealed_out: *mut c_uchar,
     sealed_out_len: *mut c_int,
-) -> c_int {
+) -> islet_status_t {
     let do_seal = || -> Result<(), Error> {
         let plaintext = from_raw_parts(plaintext as *const u8, plaintext_len as usize);
         let sealed = seal(plaintext)?;
@@ -144,22 +150,23 @@ pub unsafe extern "C" fn islet_seal(
     };
 
     match do_seal() {
-        Ok(()) => ISLET_E_SUCCESS,
-        Err(_) => ISLET_E_FAILURE,
+        Ok(()) => islet_status_t::ISLET_SUCCESS,
+        Err(_) => islet_status_t::ISLET_FAILURE,
     }
 }
 
-/// Unseals the sealed bianry given into the plaintext
+/// Unseals into plaintext the sealed binary provided.
 ///
 /// # Note
-/// This API unseals with hard coded key to simuate temporarily.
+/// This API currently unseals with a hard-coded key, to simulate unseal operation.
+/// In future, this will be finalized to support keys derived from HES.
 #[no_mangle]
 pub unsafe extern "C" fn islet_unseal(
     sealed: *const c_uchar,
     sealed_len: c_int,
     plaintext_out: *mut c_uchar,
     plaintext_out_len: *mut c_int,
-) -> c_int {
+) -> islet_status_t {
     let do_unseal = || -> Result<(), Error> {
         let sealed = from_raw_parts(sealed as *const u8, sealed_len as usize);
         let plaintext = unseal(sealed)?;
@@ -170,7 +177,7 @@ pub unsafe extern "C" fn islet_unseal(
     };
 
     match do_unseal() {
-        Ok(()) => ISLET_E_SUCCESS,
-        Err(_) => ISLET_E_FAILURE,
+        Ok(()) => islet_status_t::ISLET_SUCCESS,
+        Err(_) => islet_status_t::ISLET_FAILURE,
     }
 }

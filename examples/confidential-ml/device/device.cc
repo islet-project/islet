@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-// operations are: cold-init, get-certifier, run-runtime-server
 DEFINE_bool(print_all, false,  "verbose");
 DEFINE_string(operation, "", "operation");
 
@@ -39,18 +38,14 @@ DEFINE_string(data_dir, "./data/", "directory for application data");
 DEFINE_string(runtime_host, "localhost", "address for runtime");
 DEFINE_int32(runtime_model_port, 8124, "port for runtime (used to deliver model)");
 DEFINE_int32(runtime_data_port, 8125, "port for runtime (used to deliver data for device1)");
+DEFINE_int32(gui_rx_port, 8127, "port for receiving data from gui");
+DEFINE_int32(gui_tx_port, 8128, "port for sending data to gui");
 
 DEFINE_string(policy_store_file, "store.bin", "policy store file name");
 DEFINE_string(platform_file_name, "platform_file.bin", "platform certificate");
 DEFINE_string(platform_attest_endorsement, "platform_attest_endorsement.bin", "platform endorsement of attest key");
 DEFINE_string(attest_key_file, "attest_key_file.bin", "attest key");
 DEFINE_string(measurement_file, "example_app.measurement", "measurement");
-
-// device performs four possible roles
-//    cold-init: This creates application keys and initializes the policy store.
-//    get-certifier: This obtains the app admission cert naming the public app key from the service.
-//    run-shell-ml: It acts as an interactive shell to provide the ability of word prediction in a traditional machine learning way
-//    run-shell-fl: It acts as an interactive shell to provide the ability of word prediction in a federated learning way
 
 #include "../certifier-data/policy_key.cc"
 #include "../common/word_model.h"
@@ -153,6 +148,67 @@ void run_shell(secure_authenticated_channel& channel, bool is_federated_learning
   }
 }
 
+void run_gui(secure_authenticated_channel& channel, bool is_federated_learning) {
+  download_model(channel);
+
+  while(1) {
+    unsigned char read_cmd[256] = {0,};
+    unsigned char write_cmd[256] = {0,};
+
+    unsigned char input[1024] = {0,};
+    unsigned char out_prediction[1024] = {0,};
+    unsigned char correct_answer[1024] = {0,};
+    FILE *fp;
+    bool pipe_error = false;
+
+    // 1. wait for input from GUI (browser) (using netcat)
+    printf("wait for input from GUI..\n");
+    sprintf((char *)read_cmd, "nc -l -p %d -q 1 < /dev/null", FLAGS_gui_rx_port);
+
+    // 2. read input
+    fp = popen((const char *)read_cmd, "r");
+    if (fp == NULL) {
+      printf("popen fail\n");
+      return;
+    }
+    char *r = fgets((char *)input, sizeof(input), fp);
+    pclose(fp);
+    if (r == NULL) {
+      printf("pipe null\n");
+      pipe_error = true;
+    }
+    printf("read input from GUI: %s\n", input);
+
+    if (pipe_error) {
+      sprintf((char *)out_prediction, "something wrong on device side. please retry");
+    } else {
+      // 3. do inference
+      inference(input, out_prediction);
+      printf("Prediction: %s\n", out_prediction);
+
+      // 4. read correct_answer
+      // As of now, simply assume input is synonymous to the correct answer.
+      printf("Correct answer: %s\n", input);
+    }
+
+    // 5. send prediction
+    sleep(1);
+    sprintf((char *)write_cmd, "echo %s | netcat 0.0.0.0 %d", out_prediction, FLAGS_gui_tx_port);
+    system((const char *)write_cmd);
+    printf("send prediction to GUI done\n");
+    if (pipe_error)
+      continue;
+
+    // 6. update correct answer
+    if (is_federated_learning) {
+      training(input);
+      update_model(channel);
+    } else {
+      update_data(channel, input);
+    }
+  }
+}
+
 int main(int an, char** av) {
   gflags::ParseCommandLineFlags(&an, &av, true);
   an = 1;
@@ -161,7 +217,8 @@ int main(int an, char** av) {
     printf("device.exe --print_all=true|false --operation=op --policy_host=policy-host-address --policy_port=policy-host-port\n");
     printf("\t --data_dir=-directory-for-app-data --runtime_host=runtime-host-address --runtime_model_port=runtime-model-port --runtime_data_port=runtime-data-port\n");
     printf("\t --policy_cert_file=self-signed-policy-cert-file-name --policy_store_file=policy-store-file-name\n");
-    printf("Operations are: cold-init, get-certifier, run-shell-ml, run-shell-fl\n");
+    printf("\t --gui_rx_port=gui-rx-port --gui_tx_port=gui-tx-port\n");
+    printf("Operations are: cold-init, get-certifier, run-shell-ml, run-shell-fl, run-gui-ml, run-gui-fl\n");
     return 0;
   }
 
@@ -218,10 +275,12 @@ int main(int an, char** av) {
       printf("certification failed\n");
       ret = 1;
     }
-  } else if ((FLAGS_operation == "run-shell-ml") || (FLAGS_operation == "run-shell-fl")) {
+  } else if ((FLAGS_operation == "run-shell-ml") || (FLAGS_operation == "run-shell-fl") ||
+		(FLAGS_operation == "run-gui-ml") || (FLAGS_operation == "run-gui-fl")) {
     string my_role("client");
     secure_authenticated_channel channel(my_role);
     bool is_federated_learning = false;
+    bool is_gui = false;
 
     if (!app_trust_data->warm_restart()) {
       printf("warm-restart failed\n");
@@ -246,11 +305,17 @@ int main(int an, char** av) {
       goto done;
     }
 
-    if (FLAGS_operation == "run-shell-fl")
+    if (FLAGS_operation == "run-shell-fl" || FLAGS_operation == "run-gui-fl")
       is_federated_learning = true;
+    if (FLAGS_operation == "run-gui-ml" || FLAGS_operation == "run-gui-fl")
+      is_gui = true;
     
     sprintf(ckpt_path, "./checkpoint/model_%d.ckpt", FLAGS_runtime_data_port);
-    run_shell(channel, is_federated_learning);
+
+    if (is_gui)
+      run_gui(channel, is_federated_learning);
+    else
+      run_shell(channel, is_federated_learning);
   } else {
     printf("Unknown operation\n");
   }

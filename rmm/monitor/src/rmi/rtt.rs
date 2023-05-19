@@ -38,8 +38,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return;
         }
         // 1. map src to rmm
-        granule::set_granule(ipa, GranuleState::Data, mm);
-        granule::set_granule(target_pa, GranuleState::Data, mm);
+        if granule::set_granule(target_pa, GranuleState::Data, mm) != granule::RET_SUCCESS {
+            ctx.ret[0] = rmi::ERROR_INPUT;
+            return;
+        }
         mm.map(src_pa, false);
 
         // 3. copy src to _data
@@ -64,10 +66,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::DATA_DESTORY, |ctx, rmm| {
         let mm = rmm.mm;
         let target_data = ctx.arg[0];
-        let ipa = ctx.arg[1];
-
-        granule::set_granule(target_data, GranuleState::Delegated, mm);
-        granule::set_granule(ipa, GranuleState::Delegated, mm);
+        if granule::set_granule(target_data, GranuleState::Delegated, mm) != granule::RET_SUCCESS {
+            ctx.ret[0] = rmi::ERROR_INPUT;
+            return;
+        }
 
         ctx.ret[0] = rmi::SUCCESS;
     });

@@ -22,7 +22,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mm = rmm.mm;
         let params_ptr = ctx.arg[1];
         mm.map(params_ptr, false);
-        granule::set_granule(ctx.arg[0], GranuleState::RD, mm);
+        if granule::set_granule(ctx.arg[0], GranuleState::RD, mm) != granule::RET_SUCCESS {
+            ctx.ret[0] = rmi::ERROR_INPUT;
+            return;
+        }
 
         let param = unsafe { Params::parse(params_ptr) };
         trace!("{:?}", param);
@@ -54,7 +57,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rmi = rmm.rmi;
         let _rd = unsafe { Rd::into(ctx.arg[0]) };
         let ret = rmi.remove(0); // temporarily
-        granule::set_granule(ctx.arg[0], GranuleState::Delegated, rmm.mm);
+        if granule::set_granule(ctx.arg[0], GranuleState::Delegated, rmm.mm) != granule::RET_SUCCESS
+        {
+            ctx.ret[0] = rmi::ERROR_INPUT;
+            return;
+        }
 
         match ret {
             Ok(_) => ctx.ret[0] = rmi::SUCCESS,

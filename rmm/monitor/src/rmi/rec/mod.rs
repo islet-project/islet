@@ -50,9 +50,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_CREATE, |ctx, rmm| {
         let rmi = rmm.rmi;
         let mm = rmm.mm;
-        granule::set_granule(ctx.arg[0], GranuleState::Rec, mm);
         let rd = unsafe { Rd::into(ctx.arg[1]) };
         let params_ptr = ctx.arg[2];
+
+        if granule::set_granule(ctx.arg[0], GranuleState::Rec, mm) != granule::RET_SUCCESS {
+            ctx.ret[0] = rmi::ERROR_INPUT;
+            return;
+        }
         mm.map(params_ptr, false);
         ctx.ret[0] = rmi::RET_FAIL;
 
@@ -81,7 +85,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     listen!(mainloop, rmi::REC_DESTROY, |ctx, rmm| {
-        granule::set_granule(ctx.arg[0], GranuleState::Delegated, rmm.mm);
+        if granule::set_granule(ctx.arg[0], GranuleState::Delegated, rmm.mm) != granule::RET_SUCCESS
+        {
+            ctx.ret[0] = rmi::ERROR_INPUT;
+            return;
+        }
         ctx.ret[0] = rmi::SUCCESS;
     });
 

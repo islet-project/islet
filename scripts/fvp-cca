@@ -222,7 +222,7 @@ def run_fvp_tf_a_tests(debug):
         args += ["--cadi-server"]
     run(args, cwd=FASTMODEL)
 
-def run_fvp_linux(debug):
+def run_fvp_linux(debug, trace):
     print("[!] Running fvp for linux...")
     args = ["./FVP_Base_RevC-2xAEMvA",
             "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
@@ -233,6 +233,18 @@ def run_fvp_linux(debug):
             "-Q", "1000"]
     if debug:
         args += ["--cadi-server"]
+    if trace:
+        args += ["--plugin", "%s" % TRACE_PATH,
+                "-C", "TRACE.TarmacTrace.trace_events=1",
+                "-C", "TRACE.TarmacTrace.trace_instructions=1",
+                "-C", "TRACE.TarmacTrace.start-instruction-count=1600000000",    
+                "-C", "TRACE.TarmacTrace.trace_core_registers=1",
+                "-C", "TRACE.TarmacTrace.trace_vfp=1",
+                "-C", "TRACE.TarmacTrace.trace_mmu=0",
+                "-C", "TRACE.TarmacTrace.trace_loads_stores=1",
+                "-C", "TRACE.TarmacTrace.trace_cache=0",
+                "-C", "TRACE.TarmacTrace.updated-registers=1",
+                "-C", "TRACE.TarmacTrace.trace-file=%s/trace.log" % OUT]
     run(args, cwd=FASTMODEL)
 
 def run_fvp_linux_net(debug, ifname, host_ip, gateway):
@@ -343,6 +355,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FVP launcher for CCA")
     parser.add_argument("--normal-world", "-nw", help="A normal world component")
     parser.add_argument("--debug", "-d", help="Using debug component", action="store_true")
+    parser.add_argument("--trace", "-t", help="Using trace component", action="store_true")
     parser.add_argument("--run-only", "-ro",
                         help="Running fvp without building", action="store_true")
     parser.add_argument("--build-only", "-bo",
@@ -392,7 +405,7 @@ if __name__ == "__main__":
         run_fvp_tf_a_tests(args.debug)
 
     if not args.build_only and args.normal_world == "linux":
-        run_fvp_linux(args.debug)
+        run_fvp_linux(args.debug, args.trace)
     
     if not args.build_only and args.normal_world == "linux-net":
         run_fvp_linux_net(args.debug, args.ifname, args.host_ip, args.gateway)

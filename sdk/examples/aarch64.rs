@@ -33,7 +33,7 @@ fn sealing() -> Result<(), Error> {
 }
 
 fn main() {
-    println!("# ISLET SDK examples: An example app running on arm64");
+    println!("# ISLET SDK examples: An example app running on aarch64");
     println!("Attestation result {:?}", attestation());
     println!("Sealing result {:?}", sealing());
 }

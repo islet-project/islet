@@ -5,13 +5,14 @@
 pub mod attester;
 pub mod c_api;
 pub mod claim;
+/// cbindgen:ignore
+pub mod config;
 pub mod error;
+pub mod prelude;
 pub mod report;
 pub mod sealing;
 pub mod verifier;
 
-/// cbindgen:ignore
-mod config;
 mod mock;
 mod parser;
 

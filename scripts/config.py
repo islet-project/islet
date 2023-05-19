@@ -56,3 +56,4 @@ CROSS_COMPILE = os.path.join(ROOT, "assets/toolchain/aarch64-none-elf/bin/aarch6
 LINUX_CROSS_COMPILE = os.path.join(ROOT, "assets/toolchain/aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-")
 KVMTOOL_CROSS_COMPILE = os.path.join(ROOT, "assets/toolchain/aarch64-none-linux-gnu-10-2/bin/aarch64-none-linux-gnu-")
 FASTMODEL = os.path.join(ROOT, "assets/fastmodel/Base_RevC_AEMvA_pkg/models/Linux64_GCC-9.3")
+TRACE_PATH = os.path.join(ROOT, "assets/fastmodel/Base_RevC_AEMvA_pkg/plugins/Linux64_GCC-9.3/TarmacTrace.so")

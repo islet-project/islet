@@ -12,8 +12,11 @@ const FVP_DRAM1_REGION: core::ops::Range<usize> = core::ops::Range {
     start: 0x8_8000_0000,
     end: 0x8_8000_0000 + 0x8000_0000 - 1,
 };
-
 const GRANULE_SIZE: usize = 4096;
+
+pub const RET_SUCCESS: usize = 0;
+pub const RET_STATE_ERR: usize = 1;
+pub const RET_INVALID_ADDR: usize = 2;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum GranuleState {
@@ -72,9 +75,15 @@ impl RmmGranule for Granule {
 }
 
 // Implement set_granule for Granule state control and check the valid.
-pub fn set_granule(addr: usize, state: GranuleState, mm: PageMap) {
+pub fn set_granule(addr: usize, state: GranuleState, mm: PageMap) -> usize {
+    if !validate_addr(addr) {
+        return RET_INVALID_ADDR;
+    }
     let mut granule = find_granule(addr);
     let prev_state = granule.get_mut(&addr).unwrap().get_state();
+    if !validate_state(prev_state, state) {
+        return RET_STATE_ERR;
+    }
     match state {
         GranuleState::Delegated => {
             if prev_state != GranuleState::Undelegated
@@ -86,34 +95,20 @@ pub fn set_granule(addr: usize, state: GranuleState, mm: PageMap) {
             }
             granule.get_mut(&addr).unwrap().set_state(state);
         }
-        GranuleState::RTT => granule.get_mut(&addr).unwrap().set_state(state),
         GranuleState::Undelegated => {
-            // TODO: after RIPAS implement, it will be changed to panic
-            if prev_state != GranuleState::Delegated {
-                warn!(
-                    "granule[{:X}]? expected:Delegated->found:{:?}",
-                    addr, prev_state
-                );
-            }
             granule.remove(&addr);
         }
+        GranuleState::RTT => granule.get_mut(&addr).unwrap().set_state(state),
         _ => {
-            // TODO: after RIPAS implement, it will be changed to panic
-            if prev_state != GranuleState::Delegated {
-                warn!(
-                    "granule[{:X}]? expected:Delegated->found:{:?}",
-                    addr, prev_state
-                );
-            }
             granule.get_mut(&addr).unwrap().set_state(state);
             mm.map(addr, true);
         }
     }
+    RET_SUCCESS
 }
 
 // Define a function find_granule which returns a Granule instance from the GRANULE array using the given address and expected state.
 fn find_granule(addr: usize) -> SpinlockGuard<'static, BTreeMap<usize, Granule>> {
-    validate_addr(addr);
     unsafe {
         let mut gr = GRANULE.lock();
         match gr.get_mut(&addr) {
@@ -130,66 +125,120 @@ fn find_granule(addr: usize) -> SpinlockGuard<'static, BTreeMap<usize, Granule>>
     }
 }
 
+fn validate_state(prev: GranuleState, cur: GranuleState) -> bool {
+    if cur == GranuleState::Delegated && prev == cur {
+        warn!("granule already delegated");
+        return false;
+    }
+    if prev != GranuleState::Delegated && cur != GranuleState::Delegated {
+        warn!("granule state err, prev:{:?}->to-be:{:?}", prev, cur);
+        return false;
+    }
+    true
+}
+
 // Define a function check_validate_addr which check the address is valid.
-fn validate_addr(addr: usize) {
+fn validate_addr(addr: usize) -> bool {
     if addr % GRANULE_SIZE != 0 {
-        // if the address is not aligned.
-        warn!("address need to align 0x{:X}", addr);
+        // if the address is out of range.
+        warn!("address need to be aligned 0x{:X}", addr);
+        return false;
     }
     if !(FVP_DRAM0_REGION.contains(&addr) || FVP_DRAM1_REGION.contains(&addr)) {
         // if the address is out of range.
-        panic!("address is strange 0x{:X}", addr);
+        warn!("address is strange 0x{:X}", addr);
+        return false;
     }
+    true
 }
 
 #[cfg(test)]
 mod test {
+    use crate::rmm::RmmPage;
+    use crate::PageMap;
+
     use crate::rmm::granule;
     use crate::rmm::granule::GranuleState;
-    use crate::rmm::granule::RmmGranule;
 
     const TEST_ADDR: usize = 0x880c_0000;
     const TEST_WRONG_ADDR: usize = 0x7900_0000;
 
+    pub struct MockPageMap;
+    impl MockPageMap {
+        pub fn new() -> &'static MockPageMap {
+            &MockPageMap {}
+        }
+    }
+    impl RmmPage for MockPageMap {
+        fn map(&self, _addr: usize, _secure: bool) -> bool {
+            true
+        }
+        fn unmap(&self, _addr: usize) -> bool {
+            true
+        }
+    }
+
     #[test]
     fn test_add_granule() {
-        let mut g = granule::find_granule(TEST_ADDR);
-        assert!(g.get_mut(&TEST_ADDR).unwrap().get_state() == GranuleState::Undelegated);
+        let dummy_map: PageMap = MockPageMap::new();
+        assert!(
+            granule::set_granule(TEST_ADDR, GranuleState::Delegated, dummy_map)
+                == granule::RET_SUCCESS
+        );
+        // restore state
+        assert!(
+            granule::set_granule(TEST_ADDR, GranuleState::Undelegated, dummy_map)
+                == granule::RET_SUCCESS
+        );
     }
 
     #[test]
-    fn test_find_granule_with_addr() {
-        let mut g = granule::find_granule(TEST_ADDR);
-        g.get_mut(&TEST_ADDR)
-            .unwrap()
-            .set_state(GranuleState::Delegated);
-
-        assert!(g.get_mut(&TEST_ADDR).unwrap().get_state() == GranuleState::Delegated);
-    }
-
-    #[test]
-    #[should_panic]
     fn test_find_granule_with_wrong_addr() {
-        let _g = granule::find_granule(TEST_WRONG_ADDR);
+        let dummy_map: PageMap = MockPageMap::new();
+        assert!(
+            granule::set_granule(TEST_WRONG_ADDR, GranuleState::Delegated, dummy_map)
+                == granule::RET_INVALID_ADDR
+        );
     }
 
     #[test]
-    fn test_get_addr() {
-        let mut g = granule::find_granule(TEST_ADDR);
-        g.get_mut(&TEST_ADDR)
-            .unwrap()
-            .set_state(GranuleState::Delegated);
-
-        assert!(g.get_mut(&TEST_ADDR).unwrap().addr() == TEST_ADDR);
+    fn test_validate_state() {
+        let dummy_map: PageMap = MockPageMap::new();
+        assert!(
+            granule::set_granule(TEST_ADDR, GranuleState::Delegated, dummy_map)
+                == granule::RET_SUCCESS
+        );
+        // RTT state don't use the map
+        assert!(
+            granule::set_granule(TEST_ADDR, GranuleState::RTT, dummy_map) == granule::RET_SUCCESS
+        );
+        // restore state
+        assert!(
+            granule::set_granule(TEST_ADDR, GranuleState::Delegated, dummy_map)
+                == granule::RET_SUCCESS
+        );
+        assert!(
+            granule::set_granule(TEST_ADDR, GranuleState::Undelegated, dummy_map)
+                == granule::RET_SUCCESS
+        );
     }
 
     #[test]
-    fn test_addr() {
-        let mut g = granule::find_granule(TEST_ADDR);
-        g.get_mut(&TEST_ADDR)
-            .unwrap()
-            .set_state(GranuleState::Delegated);
+    fn test_validate_wrong_state() {
+        let dummy_map: PageMap = MockPageMap::new();
+        assert!(
+            granule::set_granule(TEST_ADDR, GranuleState::Delegated, dummy_map)
+                == granule::RET_SUCCESS
+        );
+        assert!(
+            granule::set_granule(TEST_ADDR, GranuleState::Delegated, dummy_map)
+                == granule::RET_STATE_ERR
+        );
 
-        assert!(g.get_mut(&TEST_ADDR).unwrap().addr() == TEST_ADDR);
+        // restore state
+        assert!(
+            granule::set_granule(TEST_ADDR, GranuleState::Undelegated, dummy_map)
+                == granule::RET_SUCCESS
+        );
     }
 }

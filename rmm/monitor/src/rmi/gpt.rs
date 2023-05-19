@@ -24,19 +24,20 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 pub fn mark_realm(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize) -> [usize; 8] {
     let cmd = smc.convert(smc::Code::MarkRealm);
     let arg = [addr, 0, 0, 0];
-    let ret = smc.call(cmd, arg);
-    if ret[0] == smc::SMC_SUCCESS {
-        granule::set_granule(addr, GranuleState::Delegated, mm);
+
+    if granule::set_granule(addr, GranuleState::Delegated, mm) != granule::RET_SUCCESS {
+        [rmi::ERROR_INPUT, addr, 0, 0, 0, 0, 0, 0]
+    } else {
+        smc.call(cmd, arg)
     }
-    ret
 }
 
 pub fn mark_ns(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize) -> [usize; 8] {
     let cmd = smc.convert(smc::Code::MarkNonSecure);
     let arg = [addr, 0, 0, 0];
-    let ret = smc.call(cmd, arg);
-    if ret[0] == smc::SMC_SUCCESS {
-        granule::set_granule(addr, GranuleState::Undelegated, mm);
+    if granule::set_granule(addr, GranuleState::Undelegated, mm) != granule::RET_SUCCESS {
+        [rmi::ERROR_INPUT, addr, 0, 0, 0, 0, 0, 0]
+    } else {
+        smc.call(cmd, arg)
     }
-    ret
 }

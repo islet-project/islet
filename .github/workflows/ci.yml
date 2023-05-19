@@ -81,7 +81,7 @@ jobs:
 
     - name: Check local packages and all of its dependencies for errors
       run:
-        cargo check --workspace --exclude islet-sdk
+        cargo check --workspace --exclude islet_sdk
 
     - name: Check rust coding-style
       run: |
@@ -108,12 +108,16 @@ jobs:
 
     - name: Run sdk build & test (x86_64)
       working-directory: sdk
-      run: cargo test
+      run: make simulated
 
-    - name: Run sdk sample (x86_64)
-      working-directory: sdk/example
+    - name: Run sdk c_examples (x86_64)
+      working-directory: sdk/examples/c_api
       run: ./run.sh
+
+    - name: Run sdk examples (x86_64)
+      working-directory: sdk
+      run: make run_simulated
 
     - name: Run sdk build (aarch64)
       working-directory: sdk
-      run: cargo build -Zbuild-std=panic_abort,std --target=aarch64-unknown-linux-gnu
+      run: make sdk

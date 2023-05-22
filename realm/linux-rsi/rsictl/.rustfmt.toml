@@ -1,0 +1,2 @@
+# this is unstable so won't work for now (unless nighlty)
+brace_style = "AlwaysNextLine"

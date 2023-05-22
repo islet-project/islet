@@ -1,0 +1,26 @@
+[package]
+name = "rsictl"
+version = "0.1.0"
+edition = "2021"
+authors = [ "Lukasz Pawelczyk" ]
+description = "Command line interface for the RSI kernel module"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "*", features = ["derive"] }
+nix = "*"
+rand = "*"
+hex = "*"
+ciborium = "*"
+coset = "*"
+p256 = "*"
+p384 = "*"
+ecdsa = "*"
+
+[build-dependencies]
+cc = "*"
+bindgen = "*"
+
+[profile.release]
+strip = true

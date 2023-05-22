@@ -11,6 +11,10 @@
 #include <asm/rsi.h>
 
 struct realm_config __attribute((aligned(PAGE_SIZE))) config;
+EXPORT_SYMBOL(config);
+
+char __attribute__((aligned(PAGE_SIZE))) rsi_page_buf[PAGE_SIZE];
+EXPORT_SYMBOL(rsi_page_buf);
 
 unsigned long prot_ns_shared;
 EXPORT_SYMBOL(prot_ns_shared);

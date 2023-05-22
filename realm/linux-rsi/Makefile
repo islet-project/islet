@@ -1,10 +1,8 @@
-mkfile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
-current_dir := $(patsubst %/,%,$(dir $(mkfile_path)))
-up_dir      := $(dir $(current_dir))
+ROOT = $(shell git rev-parse --show-toplevel)
 
-export KERNEL_DIR := ${up_dir}/fvp-cca-scripts/4.linux-cca-realm
-export SHARED_DIR := ${up_dir}/fvp-cca-scripts/out/shared_dir
-export PATH := ${up_dir}/fvp-cca-scripts/toolchains/arm-gnu-toolchain-11.3.rel1-x86_64-aarch64-none-linux-gnu/bin:${PATH}
+export KERNEL_DIR := ${ROOT}/third-party/realm-linux
+export SHARED_DIR := ${ROOT}/out/shared
+export PATH := ${ROOT}/assets/toolchain/aarch64-none-linux-gnu/bin:${PATH}
 export CROSS_COMPILE := aarch64-none-linux-gnu-
 export ARCH := arm64
 

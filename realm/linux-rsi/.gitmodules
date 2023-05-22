@@ -1,3 +1,0 @@
-[submodule "rsictl/lib/qcbor"]
-	path = rsictl/lib/qcbor
-	url = https://github.com/laurencelundblade/QCBOR.git

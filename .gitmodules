@@ -1,3 +1,6 @@
 [submodule "assets"]
 	path = assets
 	url = https://github.com/Samsung/islet-asset
+[submodule "linux-rsi/qcbor"]
+	path = realm/linux-rsi/rsictl/lib/qcbor
+	url = https://github.com/laurencelundblade/QCBOR.git

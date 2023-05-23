@@ -9,7 +9,7 @@ commit = "13fe78ba976e"
 
 [realm-linux]
 branch = "3rd-realm-linux-230222"
-commit = "c0517c7c4c7a"
+commit = "c865d47546ee"
 upstream = "upstream-linux-cca-rfc-v1"
 
 [tf-a-tests]

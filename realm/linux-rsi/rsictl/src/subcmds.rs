@@ -128,10 +128,3 @@ pub(crate) struct VerifyCArgs
     #[arg(short, long)]
     input: String,
 }
-
-pub(crate) fn verify_c(args: &VerifyCArgs) -> GenericResult
-{
-    let token = tools::file_read(&args.input)?;
-    tools::verify_print_c(&token)?;
-    Ok(())
-}

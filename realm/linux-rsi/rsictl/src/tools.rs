@@ -42,13 +42,3 @@ pub(crate) fn verify_print(token: &[u8]) -> Result<(), rsictl::TokenError>
     rsictl::print_token(&claims);
     Ok(())
 }
-
-pub(crate) fn verify_print_c(token: &[u8]) -> Result<(), rsictl::CTokenError>
-{
-    let claims = rsictl::c_verify_token(token)?;
-    print!("\n\n\n !!!!!!!!!!!!!!! C PRINT !!!!!!!!!!!!!!! \n\n\n");
-    rsictl::c_print_token(&claims);
-    print!("\n\n\n !!!!!!!!!!!!!!! RUST PRINT !!!!!!!!!!!!!!! \n\n\n");
-    rsictl::c_print_token_rust(&claims);
-    Ok(())
-}

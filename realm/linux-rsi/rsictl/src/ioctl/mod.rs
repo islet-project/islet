@@ -6,7 +6,6 @@ const FLAGS: OFlag = OFlag::from_bits_truncate(O_RDWR);
 const MODE: Mode = Mode::from_bits_truncate(0o644);
 const DEV: &str = "/dev/rsi";
 
-
 struct Fd
 {
     fd: i32,

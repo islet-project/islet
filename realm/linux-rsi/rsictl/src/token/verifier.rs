@@ -1,9 +1,8 @@
-use std::str::FromStr;
+use super::*;
 use ciborium::{de, value::Value};
 use coset::{AsCborValue, CoseSign1};
 use p384::ecdsa::signature::Verifier;
-use super::*;
-
+use std::str::FromStr;
 
 fn unpack_i64(val: &Value) -> Result<i64, TokenError>
 {
@@ -47,7 +46,11 @@ fn unpack_tag(val: Value, id: u64, err: &'static str) -> Result<Value, TokenErro
     }
 }
 
-fn unpack_keyed_array(tupple: (Value, Value), id: u32, err: &'static str) -> Result<Vec<Value>, TokenError>
+fn unpack_keyed_array(
+    tupple: (Value, Value),
+    id: u32,
+    err: &'static str,
+) -> Result<Vec<Value>, TokenError>
 {
     if let (Value::Integer(key), Value::Array(vec)) = tupple {
         if key != id.into() {
@@ -59,7 +62,11 @@ fn unpack_keyed_array(tupple: (Value, Value), id: u32, err: &'static str) -> Res
     }
 }
 
-fn unpack_keyed_bytes(tupple: (Value, Value), id: u32, err: &'static str) -> Result<Vec<u8>, TokenError>
+fn unpack_keyed_bytes(
+    tupple: (Value, Value),
+    id: u32,
+    err: &'static str,
+) -> Result<Vec<u8>, TokenError>
 {
     if let (Value::Integer(key), Value::Bytes(vec)) = tupple {
         if key != id.into() {
@@ -74,11 +81,17 @@ fn unpack_keyed_bytes(tupple: (Value, Value), id: u32, err: &'static str) -> Res
 fn get_claim(val: Value, claim: &mut Claim) -> Result<(), TokenError>
 {
     match (val, &claim.data) {
-        (Value::Bool(b),        ClaimData::Bool(_))  => claim.data = ClaimData::Bool(b),
-        (i @ Value::Integer(_), ClaimData::Int64(_)) => claim.data = ClaimData::Int64(unpack_i64(&i)?),
-        (Value::Bytes(v),       ClaimData::Bstr(_))  => claim.data = ClaimData::Bstr(v),
-        (Value::Text(s),        ClaimData::Text(_))  => claim.data = ClaimData::Text(s),
-         _ => return Err(TokenError::InvalidTokenFormat("incompatible claim data type")),
+        (Value::Bool(b), ClaimData::Bool(_)) => claim.data = ClaimData::Bool(b),
+        (i @ Value::Integer(_), ClaimData::Int64(_)) => {
+            claim.data = ClaimData::Int64(unpack_i64(&i)?)
+        }
+        (Value::Bytes(v), ClaimData::Bstr(_)) => claim.data = ClaimData::Bstr(v),
+        (Value::Text(s), ClaimData::Text(_)) => claim.data = ClaimData::Text(s),
+        _ => {
+            return Err(TokenError::InvalidTokenFormat(
+                "incompatible claim data type",
+            ))
+        }
     }
 
     claim.present = true;
@@ -97,8 +110,10 @@ fn find_claim(claims: &mut [Claim], key: i64) -> Option<&mut Claim>
     None
 }
 
-fn get_claims_from_map(map: Vec<(Value, Value)>, claims: &mut [Claim])
-                       -> Result<Vec<(Value, Value)>, TokenError>
+fn get_claims_from_map(
+    map: Vec<(Value, Value)>,
+    claims: &mut [Claim],
+) -> Result<Vec<(Value, Value)>, TokenError>
 {
     let mut not_found = Vec::<(Value, Value)>::new();
 
@@ -165,7 +180,8 @@ fn verify_platform_token(attest_claims: &mut AttestationClaims) -> Result<(), To
     }
 
     let sw_components = rest.into_iter().next().unwrap();
-    let sw_components = unpack_keyed_array(sw_components, CCA_PLAT_SW_COMPONENTS, "sw components array")?;
+    let sw_components =
+        unpack_keyed_array(sw_components, CCA_PLAT_SW_COMPONENTS, "sw components array")?;
 
     if sw_components.len() > attest_claims.sw_component_claims.len() {
         return Err(TokenError::InvalidTokenFormat("too much sw components"));
@@ -180,7 +196,9 @@ fn verify_platform_token(attest_claims: &mut AttestationClaims) -> Result<(), To
         let map = unpack_map(sw_comp, "sw component not a map")?;
         let rest = get_claims_from_map(map, &mut sw_comp_claim.claims)?;
         if rest.len() != 0 {
-            return Err(TokenError::InvalidTokenFormat("sw component contains unrecognized claims"));
+            return Err(TokenError::InvalidTokenFormat(
+                "sw component contains unrecognized claims",
+            ));
         }
         sw_comp_claim.present = true;
     }
@@ -188,10 +206,11 @@ fn verify_platform_token(attest_claims: &mut AttestationClaims) -> Result<(), To
     Ok(())
 }
 
-fn verify_token_sign1(buf: &[u8],
-                      cose_sign1: &mut CoseSign1,
-                      cose_sign1_wrapper: &mut [Claim; CLAIM_COUNT_COSE_SIGN1_WRAPPER])
-                      -> Result<(), TokenError>
+fn verify_token_sign1(
+    buf: &[u8],
+    cose_sign1: &mut CoseSign1,
+    cose_sign1_wrapper: &mut [Claim; CLAIM_COUNT_COSE_SIGN1_WRAPPER],
+) -> Result<(), TokenError>
 {
     let val = de::from_reader(buf)?;
     let data = unpack_tag(val, TAG_COSE_SIGN1, "cose sign1 tag")?;
@@ -203,7 +222,9 @@ fn verify_token_sign1(buf: &[u8],
     let vec = unpack_array(data, "cose sign1 not an array")?;
 
     if vec.len() != CLAIM_COUNT_COSE_SIGN1_WRAPPER + 1 {
-        return Err(TokenError::InvalidTokenFormat("wrong cose sign1 claim count"));
+        return Err(TokenError::InvalidTokenFormat(
+            "wrong cose sign1 claim count",
+        ));
     }
 
     let mut iter = vec.into_iter();
@@ -227,12 +248,19 @@ fn verify_cca_token(buf: &[u8]) -> Result<(Vec<u8>, Vec<u8>), TokenError>
     let map = unpack_map(data, "cca token not a map")?;
 
     if map.len() != 2 {
-        return Err(TokenError::InvalidTokenFormat("wrong realm/plat token count"));
+        return Err(TokenError::InvalidTokenFormat(
+            "wrong realm/plat token count",
+        ));
     }
 
     let mut iter = map.into_iter();
-    let platform = unpack_keyed_bytes(iter.next().unwrap(), CCA_PLAT_TOKEN, "platform token bytes")?;
-    let realm = unpack_keyed_bytes(iter.next().unwrap(), CCA_REALM_DELEGATED_TOKEN, "realm token bytes")?;
+    let platform =
+        unpack_keyed_bytes(iter.next().unwrap(), CCA_PLAT_TOKEN, "platform token bytes")?;
+    let realm = unpack_keyed_bytes(
+        iter.next().unwrap(),
+        CCA_REALM_DELEGATED_TOKEN,
+        "realm token bytes",
+    )?;
 
     Ok((platform, realm))
 }
@@ -243,12 +271,16 @@ pub fn verify_token(buf: &[u8]) -> Result<AttestationClaims, TokenError>
 
     let (platform_token, realm_token) = verify_cca_token(&buf)?;
 
-    verify_token_sign1(&realm_token,
-                       &mut attest_claims.realm_cose_sign1,
-                       &mut attest_claims.realm_cose_sign1_wrapper)?;
-    verify_token_sign1(&platform_token,
-                       &mut attest_claims.plat_cose_sign1,
-                       &mut attest_claims.plat_cose_sign1_wrapper)?;
+    verify_token_sign1(
+        &realm_token,
+        &mut attest_claims.realm_cose_sign1,
+        &mut attest_claims.realm_cose_sign1_wrapper,
+    )?;
+    verify_token_sign1(
+        &platform_token,
+        &mut attest_claims.plat_cose_sign1,
+        &mut attest_claims.plat_cose_sign1_wrapper,
+    )?;
 
     verify_realm_token(&mut attest_claims)?;
     verify_platform_token(&mut attest_claims)?;
@@ -269,7 +301,14 @@ fn verify_coset_signature(cose: &CoseSign1, key: &[u8], aad: &[u8]) -> Result<()
     if cose.protected.header.alg.is_none() {
         return Err(TokenError::InvalidAlgorithm(None));
     }
-    let alg = cose.protected.header.alg.as_ref().unwrap().clone().try_into()?;
+    let alg = cose
+        .protected
+        .header
+        .alg
+        .as_ref()
+        .unwrap()
+        .clone()
+        .try_into()?;
     let verifier = RustCryptoVerifier::new(alg, &key);
     cose.verify_signature(aad, |sig, data| verifier.verify(sig, data))
 }
@@ -291,9 +330,15 @@ impl TryFrom<coset::Algorithm> for SigningAlgorithm
     fn try_from(alg: coset::Algorithm) -> Result<Self, Self::Error>
     {
         match alg {
-            coset::Algorithm::Assigned(coset::iana::Algorithm::ES256) => Ok(SigningAlgorithm::ES256),
-            coset::Algorithm::Assigned(coset::iana::Algorithm::ES384) => Ok(SigningAlgorithm::ES384),
-            coset::Algorithm::Assigned(coset::iana::Algorithm::ES512) => Ok(SigningAlgorithm::ES512),
+            coset::Algorithm::Assigned(coset::iana::Algorithm::ES256) => {
+                Ok(SigningAlgorithm::ES256)
+            }
+            coset::Algorithm::Assigned(coset::iana::Algorithm::ES384) => {
+                Ok(SigningAlgorithm::ES384)
+            }
+            coset::Algorithm::Assigned(coset::iana::Algorithm::ES512) => {
+                Ok(SigningAlgorithm::ES512)
+            }
             unknown => Err(TokenError::InvalidAlgorithm(Some(unknown))),
         }
     }
@@ -323,17 +368,17 @@ impl RustCryptoVerifier
                 let sig_hex = hex::encode(sig);
                 let sig = p256::ecdsa::Signature::from_str(&sig_hex)?;
                 key.verify(data, &sig)?;
-            },
+            }
             SigningAlgorithm::ES384 => {
                 let key = p384::ecdsa::VerifyingKey::from_sec1_bytes(&self.key_public_raw)?;
                 let sig_hex = hex::encode(sig);
                 let sig = p384::ecdsa::Signature::from_str(&sig_hex)?;
                 key.verify(data, &sig)?;
-            },
+            }
             SigningAlgorithm::ES512 => {
                 // p521 from RustCrypto cannot do ecdsa
                 return Err(TokenError::NotImplemented("p521 ecdsa"));
-            },
+            }
         }
         Ok(())
     }

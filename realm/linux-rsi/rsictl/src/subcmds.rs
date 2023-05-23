@@ -1,7 +1,6 @@
 use crate::tools;
 use clap::Args;
 
-
 pub(crate) type GenericResult = Result<(), Box<dyn std::error::Error>>;
 
 pub(crate) fn version() -> GenericResult

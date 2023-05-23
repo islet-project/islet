@@ -7,7 +7,7 @@
 
 mod internal
 {
-    use super::{RsiMeasurement, RsiAttestation};
+    use super::{RsiAttestation, RsiMeasurement};
 
     nix::ioctl_read!(abi_version, b'x', 190u8, u32);
     nix::ioctl_readwrite_buf!(measurement_read, b'x', 192u8, RsiMeasurement);
@@ -15,11 +15,9 @@ mod internal
     nix::ioctl_readwrite_buf!(attestation_token, b'x', 194u8, RsiAttestation);
 }
 
-
 pub const MAX_MEASUR_LEN: u16 = 0x40;
-pub const CHALLENGE_LEN:  u16 = 0x40;
-pub const MAX_TOKEN_LEN:  u16 = 0x1000;
-
+pub const CHALLENGE_LEN: u16 = 0x40;
+pub const MAX_TOKEN_LEN: u16 = 0x1000;
 
 // should be pub(super) but nix leaks the type through pub ioctl definitions
 #[repr(C)]
@@ -34,7 +32,11 @@ impl RsiMeasurement
 {
     pub(super) fn new_empty(index: u32) -> Self
     {
-        Self { index, data_len: 0, data: [0; MAX_MEASUR_LEN as usize] }
+        Self {
+            index,
+            data_len: 0,
+            data: [0; MAX_MEASUR_LEN as usize],
+        }
     }
 
     pub(super) fn new_from_data(index: u32, src: &[u8]) -> Self
@@ -44,7 +46,11 @@ impl RsiMeasurement
 
         let mut data = [0u8; MAX_MEASUR_LEN as usize];
         data[..src.len()].copy_from_slice(src);
-        Self { index, data_len: src.len().try_into().unwrap(), data }
+        Self {
+            index,
+            data_len: src.len().try_into().unwrap(),
+            data,
+        }
     }
 }
 
@@ -61,7 +67,11 @@ impl RsiAttestation
 {
     pub(super) fn new(src: &[u8; 64]) -> Self
     {
-        Self { challenge: src.clone(), token_len: 0, token: [0; MAX_TOKEN_LEN as usize] }
+        Self {
+            challenge: src.clone(),
+            token_len: 0,
+            token: [0; MAX_TOKEN_LEN as usize],
+        }
     }
 }
 

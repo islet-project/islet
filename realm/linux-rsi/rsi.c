@@ -167,7 +167,9 @@ static int do_attestation_init(phys_addr_t page, struct rsi_attestation *attest)
 
 	input.a0 = SMC_RSI_ATTESTATION_TOKEN_INIT;
 	input.a1 = page;
-	memcpy((uint8_t*)&output.a2, attest->challenge, sizeof(attest->challenge));
+
+	// Copy challenge to registers (a2-a9)
+	memcpy((uint8_t*)&input.a2, attest->challenge, sizeof(attest->challenge));
 
 	arm_smccc_1_2_smc(&input, &output);
 

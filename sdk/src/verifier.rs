@@ -11,7 +11,7 @@ pub fn verify(report: &Report) -> Result<Claims, Error> {
     let (platform, realm) = cca_token(&report.buffer).or(Err(Error::CCAToken))?;
     let (plat_sig, plat_tok, sw_comps) = plat_token(platform)?;
     let (realm_sig, realm_tok) = realm_token(realm)?;
-    let mut claims = Claims {
+    let claims = Claims {
         realm_sig,
         realm_tok,
         plat_sig,
@@ -19,10 +19,15 @@ pub fn verify(report: &Report) -> Result<Claims, Error> {
         sw_comps,
     };
 
-    // Replace user_data temporarily
-    if let Value::Bytes(user_data) = &mut claims.get_mut(STR_REALM_CHALLENGE).unwrap().value {
-        user_data.fill(0);
-        user_data[..report.user_data.len()].copy_from_slice(&report.user_data);
+    cfg_if::cfg_if! {
+        if #[cfg(target_arch="x86_64")] {
+            let mut claims = claims;
+            // Replace user_data temporarily
+            if let Value::Bytes(user_data) = &mut claims.get_mut(STR_REALM_CHALLENGE).unwrap().value {
+                user_data.fill(0);
+                user_data[..report.user_data.len()].copy_from_slice(&report.user_data);
+            }
+        }
     }
 
     Ok(claims)

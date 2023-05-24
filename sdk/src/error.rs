@@ -1,5 +1,6 @@
 #[derive(Debug)]
 pub enum Error {
+    AttestationReport,
     CCAToken,
     Claim(&'static str),
     ClaimCount,
@@ -8,6 +9,7 @@ pub enum Error {
     Decoding,
     EndOfInput,
     Format,
+    InvalidArgument,
     NotSupported,
     PlatformSignature,
     RealmSignature,

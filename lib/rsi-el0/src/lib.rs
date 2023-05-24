@@ -59,7 +59,7 @@ pub fn measurement_extend(index: u32, data: &[u8]) -> nix::Result<()> {
     kernel::measurement_extend(fd.get(), &measur)
 }
 
-pub fn attestation_token(challenge: &[u8; 64]) -> nix::Result<Vec<u8>> {
+pub fn attestation_token(challenge: &[u8; CHALLENGE_LEN as usize]) -> nix::Result<Vec<u8>> {
     let mut attest = [kernel::RsiAttestation::new(challenge)];
     let fd = Fd::wrap(nix::fcntl::open(DEV, FLAGS, MODE)?);
     kernel::attestation_token(fd.get(), &mut attest)?;

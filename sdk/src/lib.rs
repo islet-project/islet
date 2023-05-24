@@ -13,6 +13,7 @@ pub mod report;
 pub mod sealing;
 pub mod verifier;
 
+#[cfg(target_arch = "x86_64")]
 mod mock;
 mod parser;
 

@@ -5,8 +5,11 @@ simulated:
 	@cargo build --example simulated --target=x86_64-unknown-linux-gnu
 
 sdk:
-	@cargo build -Zbuild-std=panic_abort,std --target=aarch64-unknown-linux-gnu
-	@cargo build --example aarch64 -Zbuild-std=panic_abort,std --target=aarch64-unknown-linux-gnu
+	@cargo build -r --target=aarch64-unknown-linux-gnu
+
+sdk-example:
+	@RUSTFLAGS="-C target-feature=+crt-static" cargo build -r --example aarch64 --target=aarch64-unknown-linux-gnu
+	
 
 test:
 	@cargo test -- --nocapture
@@ -14,5 +17,5 @@ test:
 run_simulated:
 	@cargo run --example simulated --target=x86_64-unknown-linux-gnu
 
-fvp: sdk
-	@install -m755 ../out/aarch64-unknown-linux-gnu/debug/examples/aarch64 ../out/shared/sdk-example
+fvp: sdk-example
+	@install -m755 ../out/aarch64-unknown-linux-gnu/release/examples/aarch64 ../out/shared/sdk-example

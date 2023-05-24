@@ -10,15 +10,16 @@ description = "Command line interface for the RSI kernel module"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-clap = { version = "*", features = ["derive"] }
-nix = "*"
-rand = "*"
-hex = "*"
 ciborium = "*"
+clap = { version = "*", features = ["derive"] }
 coset = "*"
+ecdsa = "*"
+hex = "*"
+nix = "*"
 p256 = "*"
 p384 = "*"
-ecdsa = "*"
+rand = "*"
+rsi_el0 = { path = "../../../lib/rsi-el0" }
 
 [profile.release]
 strip = true

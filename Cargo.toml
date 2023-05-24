@@ -1,6 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
+    "lib/rsi-el0",
     "lib/uart",
     "realm/rsi-test",
     "rmm/armv9a",

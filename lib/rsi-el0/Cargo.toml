@@ -1,0 +1,12 @@
+[package]
+name = "rsi_el0"
+version = "0.0.1"
+authors = ["Islet Contributors"]
+edition = "2021"
+
+[lib]
+name = "rsi_el0"
+path = "src/lib.rs"
+
+[dependencies]
+nix = "*"

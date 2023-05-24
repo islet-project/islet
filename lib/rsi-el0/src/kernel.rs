@@ -35,7 +35,7 @@ impl RsiMeasurement {
 
     pub(super) fn new_from_data(index: u32, src: &[u8]) -> Self {
         // panic on wrong size here to avoid obscured panic below
-        assert!(!src.is_empty() && src.len() <= 64);
+        assert!(!src.is_empty() && src.len() <= MAX_MEASUR_LEN as usize);
 
         let mut data = [0u8; MAX_MEASUR_LEN as usize];
         data[..src.len()].copy_from_slice(src);
@@ -56,7 +56,7 @@ pub struct RsiAttestation {
 }
 
 impl RsiAttestation {
-    pub(super) fn new(src: &[u8; 64]) -> Self {
+    pub(super) fn new(src: &[u8; CHALLENGE_LEN as usize]) -> Self {
         Self {
             challenge: src.clone(),
             token_len: 0,

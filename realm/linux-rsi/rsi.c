@@ -151,7 +151,7 @@ static int do_measurement_extend(struct rsi_measurement *measur)
 	input.a0 = SMC_RSI_MEASUREMENT_EXTEND;
 	input.a1 = measur->index;
 	input.a2 = measur->data_len;
-	memcpy((uint8_t*)&output.a3, measur->data, measur->data_len);
+	memcpy((uint8_t*)&input.a3, measur->data, measur->data_len);
 
 	arm_smccc_1_2_smc(&input, &output);
 

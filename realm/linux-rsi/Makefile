@@ -1,4 +1,5 @@
 ROOT = $(shell git rev-parse --show-toplevel)
+HERE = ${ROOT}/realm/linux-rsi
 
 export KERNEL_DIR := ${ROOT}/third-party/realm-linux
 export SHARED_DIR := ${ROOT}/out/shared
@@ -14,7 +15,7 @@ obj-m += rsi.o
 all: module cmdline
 
 module: ${HEADERS}
-	make -C ${KERNEL_DIR} M=$(PWD) modules
+	make -C ${KERNEL_DIR} M=${HERE} modules
 	cp rsi.ko ${SHARED_DIR}
 
 cmdline:
@@ -22,5 +23,5 @@ cmdline:
 	install -m755 ${CMDLINE}/target/aarch64-unknown-linux-gnu/release/${CMDLINE} ${SHARED_DIR}
 
 clean:
-	make -C ${KERNEL_DIR} M=$(PWD) clean
+	make -C ${KERNEL_DIR} M=${HERE} clean
 	cd ${CMDLINE}; cargo clean

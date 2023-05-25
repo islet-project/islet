@@ -36,6 +36,21 @@ $ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=tf-rmm
 $ ./launch-realm.sh
 ```
 
+### Running SDK sample apps after [running a linux realm](#running-a-linux-realm)
+```bash
+// Move to shared dir on realm
+$ cd /shared
+
+// Insert RSI kernel module
+$ inmod rsi.ko
+
+// Run the sample app (rust)
+$ ./sdk-example
+
+// Run the sample app (c)
+$ LD_LIBRARY_PATH=./ ./sdk-example-c
+```
+
 ### Running a linux realm with a networking support and prebuilt examples
 See [examples](./examples/README.md).
 To get details about its network configuration, see [network.md](./docs/network.md).

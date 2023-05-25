@@ -12,7 +12,7 @@ fn attest_x86_64(user_data: &[u8]) -> Result<Report, Error> {
 
 #[cfg(target_arch = "aarch64")]
 fn attest_aarch64(user_data: &[u8]) -> Result<Report, Error> {
-    println!("Getting attestation operation on aarch64.");
+    println!("Getting an attestation report on aarch64.");
 
     const LEN: usize = rsi_el0::CHALLENGE_LEN as usize;
     if user_data.len() > LEN {

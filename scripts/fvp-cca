@@ -86,6 +86,13 @@ def prepare_realm(name):
         run(["make"], cwd=srcdir)
         run(["make", "install"], cwd=srcdir)
 
+def prepare_sdk():
+    print("[!] Building SDK...")
+    make(SDK, ["fvp"])
+
+    print("[!] Building RSI kernel module...")
+    make(RSI_KO)
+
 def prepare_bootloaders(rmm, bl33):
     args = [
         "CROSS_COMPILE=%s" % CROSS_COMPILE,
@@ -291,7 +298,6 @@ def place_realm_at_shared(host_ip):
     run(["cp", "%s/lkvm" % OUT, SHARED_PATH], cwd=ROOT)
     run(["cp", "-R", "%s/kvm-unit-tests" % OUT, SHARED_PATH], cwd=ROOT)
     run(["cp", LAUNCH_REALM, SHARED_PATH], cwd=ROOT)
-    run(["cp", LAUNCH_REALM_NET, SHARED_PATH], cwd=ROOT)
     run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
     
     if host_ip != None:
@@ -400,6 +406,7 @@ if __name__ == "__main__":
 
             if args.realm is not None:
                 place_realm_at_shared(args.host_ip)
+                prepare_sdk()
 
     if not args.build_only and args.normal_world == "tf-a-tests":
         run_fvp_tf_a_tests(args.debug)

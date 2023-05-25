@@ -8,7 +8,6 @@ OUT = os.path.join(ROOT, "out")
 SCRIPT = os.path.join(ROOT, "scripts")
 CONFIG = os.path.join(SCRIPT, ".config")
 LAUNCH_REALM = os.path.join(SCRIPT, "fvp/launch-realm.sh")
-LAUNCH_REALM_NET = os.path.join(SCRIPT, "fvp/launch-realm-net.sh")
 TEST_REALM = os.path.join(SCRIPT, "fvp/test-realm.sh")
 
 PREBUILT = os.path.join(ROOT, "assets/prebuilt")
@@ -26,6 +25,7 @@ REALM_ROOTFS = os.path.join(ROOT, "assets/rootfs")
 REALM = os.path.join(ROOT, "realm")
 RMM = os.path.join(ROOT, "rmm/board/fvp")
 SDK = os.path.join(ROOT, "sdk/")
+RSI_KO = os.path.join(ROOT, "realm/linux-rsi")
 EXAMPLES = os.path.join(ROOT, "examples")
 
 # third-party

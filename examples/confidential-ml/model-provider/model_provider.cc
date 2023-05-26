@@ -6,7 +6,7 @@
 #include "cc_helpers.h"
 
 #include <sys/socket.h>
-#include <arpa/inet.h>  
+#include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <openssl/ssl.h>
@@ -156,7 +156,7 @@ int main(int an, char** av) {
   int ret = 0;
   if (FLAGS_operation == "cold-init") {
     if (!app_trust_data->cold_init(public_key_alg,
-        symmetric_key_alg, hash_alg, hmac_alg)) {
+                                   symmetric_key_alg, hash_alg, hmac_alg)) {
       printf("cold-init failed\n");
       ret = 1;
     }
@@ -185,9 +185,9 @@ int main(int an, char** av) {
     }
 
     if (!channel.init_client_ssl(FLAGS_runtime_host, FLAGS_runtime_model_port,
-          app_trust_data->serialized_policy_cert_,
-          app_trust_data->private_auth_key_,
-          app_trust_data->private_auth_key_.certificate())) {
+                                 app_trust_data->serialized_policy_cert_,
+                                 app_trust_data->private_auth_key_,
+                                 app_trust_data->private_auth_key_.certificate())) {
       printf("Can't init client app\n");
       ret = 1;
       goto done;

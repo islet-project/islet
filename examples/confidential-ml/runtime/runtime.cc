@@ -122,7 +122,7 @@ void send_trained_model(secure_authenticated_channel& channel, char *path) {
   channel.write(len, trained_weights);
 }
 
-typedef struct _thread_arg{
+typedef struct _thread_arg {
   void (*callback)(secure_authenticated_channel& channel);
   int port;
 } thread_arg;
@@ -188,7 +188,7 @@ void read_data_from_devices(secure_authenticated_channel& channel) {
       LOG("---- send trained weights ----\n");
       send_trained_model(channel, ckpt_path);
       pthread_mutex_unlock(&aggr_mutex);
-    }    
+    }
   }
 }
 
@@ -221,8 +221,7 @@ void read_local_model_from_devices(secure_authenticated_channel& channel) {
           fl_model_idx = 0;
           aggr_model_send = num_fl_devices;
           LOG("---- aggregation done! ---\n");
-        }
-        else
+        } else
           LOG("aggregation fail\n");
         pthread_mutex_unlock(&aggr_mutex);
         break;
@@ -246,10 +245,10 @@ void *thread_func(void *arg) {
 
   LOG("thread run: port number: %d\n", targ->port);
   server_dispatch(FLAGS_runtime_host, targ->port,
-        app_trust_data->serialized_policy_cert_,
-        app_trust_data->private_auth_key_,
-        app_trust_data->private_auth_key_.certificate(),
-        targ->callback);
+                  app_trust_data->serialized_policy_cert_,
+                  app_trust_data->private_auth_key_,
+                  app_trust_data->private_auth_key_.certificate(),
+                  targ->callback);
 }
 
 void test_aggregation() {
@@ -322,7 +321,7 @@ int main(int an, char** av) {
   int ret = 0;
   if (FLAGS_operation == "cold-init") {
     if (!app_trust_data->cold_init(public_key_alg,
-        symmetric_key_alg, hash_alg, hmac_alg)) {
+                                   symmetric_key_alg, hash_alg, hmac_alg)) {
       LOG("cold-init failed\n");
       ret = 1;
     }

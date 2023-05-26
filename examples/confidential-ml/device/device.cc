@@ -160,7 +160,7 @@ void run_shell(secure_authenticated_channel& channel, bool is_federated_learning
       fgets((char *)msg, sizeof(msg), stdin);
       if (msg[strlen((const char *)msg)-1] == '\n')
         msg[strlen((const char *)msg)-1] = '\0';
-      
+
       update_data_and_get_prediction(channel, msg, out_prediction);
       printf("prediction: %s\n", out_prediction);
       continue;
@@ -331,7 +331,7 @@ int main(int an, char** av) {
   int ret = 0;
   if (FLAGS_operation == "cold-init") {
     if (!app_trust_data->cold_init(public_key_alg,
-        symmetric_key_alg, hash_alg, hmac_alg)) {
+                                   symmetric_key_alg, hash_alg, hmac_alg)) {
       printf("cold-init failed\n");
       ret = 1;
     }
@@ -360,9 +360,9 @@ int main(int an, char** av) {
     }
 
     if (!channel.init_client_ssl(FLAGS_runtime_host, FLAGS_runtime_data_port,
-          app_trust_data->serialized_policy_cert_,
-          app_trust_data->private_auth_key_,
-          app_trust_data->private_auth_key_.certificate())) {
+                                 app_trust_data->serialized_policy_cert_,
+                                 app_trust_data->private_auth_key_,
+                                 app_trust_data->private_auth_key_.certificate())) {
       printf("Can't init client app\n");
       ret = 1;
       if (is_gui) {
@@ -375,7 +375,7 @@ int main(int an, char** av) {
       is_federated_learning = true;
     if (FLAGS_model_type == "code")
       is_code_model = true;
-    
+
     sprintf(ckpt_path, "./checkpoint/model_%d.ckpt", FLAGS_runtime_data_port);
 
     if (is_gui)

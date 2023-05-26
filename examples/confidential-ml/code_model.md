@@ -1,7 +1,7 @@
 ## Try out confidential code generation in ML setting
 
 This section explains how to try out confidential code generation in ML setting. (For this model, FL is not supported)
-We prepare [a docker image](https://github.com/Samsung/islet/releases/download/example-confidential-ml-v1.0/cca_ubuntu_release.tar.gz) that contains everything needed to try out this example and it involves 4 different instances-- *certifier-service*, *runtime*, *model-provider*, *device*-- meaning that you need to open 4 terminals for each of them.
+We prepare [a docker image](https://github.com/Samsung/islet/releases/download/example-confidential-ml-v1.1/cca_ubuntu_release.tar.gz) that contains everything needed to try out this example and it involves 4 different instances-- *certifier-service*, *runtime*, *model-provider*, *device*-- meaning that you need to open 4 terminals for each of them.
 
 In this example, *device* is not involved in ML operations (inference and training), they just pass user-input on to *runtime* and then *runtime* does inference with the code model and give the result(code) back to *device*.
 The code model is a pre-trained model and *runtime* will not do training with user-input. This is the way that most state-of-the-art chatbots work these days.
@@ -9,21 +9,34 @@ The code model is a pre-trained model and *runtime* will not do training with us
 Note that since this model is a simple text classification model, it might not be able to handle arbitrary requests, that is to say, if you ask a new question that this model is not trained with,
 the quality of the output might be low. See [this csv file](./model_provider/code_x_data.csv) to know what requests are supported at this moment.
 
+#### Import and run a docker image
+
+Before trying this example, please do the following first to import and run a docker image.
+```
+$ wget https://github.com/Samsung/islet/releases/download/example-confidential-ml-v1.1/cca_ubuntu_release.tar.gz
+$ gzip -d cca_ubuntu_release.tar.gz
+$ cat cca_ubuntu_release.tar | docker import - cca_release:latest
+$ sudo docker run --net=host -it -d --name=cca_ubuntu_release cca_release
+```
+
 #### How to test with simulated enclave (no actual hardware TEE) on x86_64
 
 ```
-// make sure that you are in a docker image
 // In this case, all instances are running on the same host PC.
 // In ML case, only one device is enough to show how it works.
+// For each terminal, you need to go in the docker image using "docker exec".
 
+$ <terminal-1> sudo docker exec -it cca_ubuntu_release /bin/bash
 $ <terminal-1: certifier-service> cd /islet/examples/confidential-ml/certifier-service
 $ <terminal-1: certifier-service> ./run.sh x86_64
 
+$ <terminal-2> sudo docker exec -it cca_ubuntu_release /bin/bash
 $ <terminal-2: runtime> cd /islet/examples/confidential-ml/runtime
 $ <terminal-2: runtime> ./build.sh  # a one-time need. you can skip it if it's already built.
 $ <terminal-2: runtime> ./init.sh   # asks certifier-service to do attestation and authentication
 $ <terminal-2: runtime> ./run.sh code 0    # run ML server (1st arg indictates "code model" while 2nd arg indicates "ML")
 
+$ <terminal-3> sudo docker exec -it cca_ubuntu_release /bin/bash
 $ <terminal-3: model-provider> cd /islet/examples/confidential-ml/model-providers
 $ <terminal-3: model-provider> ./build.sh   # a one-time need
 $ <terminal-3: model-provider> ./init.sh    # asks certifier-service to do attestation and authentication
@@ -31,6 +44,7 @@ $ <terminal-3: model-provider> ./run.sh model_code.tflite    # sends a word pred
    send-model done, size: 77820
    ACK: 77820  # you can see this message if there is no problem in sending a model.
 
+$ <terminal-4> sudo docker exec -it cca_ubuntu_release /bin/bash
 $ <terminal-4: device> cd /islet/examples/confidential-ml/device
 $ <terminal-4: device> ./build.sh  # a one-time need
 $ <terminal-4: device> ./init.sh 0.0.0.0
@@ -51,26 +65,24 @@ int add2(int a, int b) {
 
 #### How to test with ISLET
 
+[TO BE UPDATED]
 In this setting, three instances (*certifier-service*, *runtime*, *model-provider*) run on the host PC directly while only one instance (*device*) runs on ARM FVP on the same host PC.
-
-First of all, be sure to run a docker image with the following options to be able to interact with ARM FVP.
-```
-# we have to allow port 8123,8124,8125,8126 that are used to communicate with ARM FVP.
-$ sudo docker run --net=bridge -it -p 8123:8123 -p 8124:8124 -p 8125:8125 -p 8126:8126
-```
 
 And then, run three instances on the host PC directly.
 ```
-// make sure that you are in a docker image
+// For each terminal, you need to go in the docker image using "docker exec".
 
+$ <terminal-1> sudo docker exec -it cca_ubuntu_release /bin/bash
 $ <terminal-1: certifier-service> cd /islet/examples/confidential-ml/certifier-service
 $ <terminal-1: certifier-service> ./run.sh x86_64
 
+$ <terminal-2> sudo docker exec -it cca_ubuntu_release /bin/bash
 $ <terminal-2: runtime> cd /islet/examples/confidential-ml/runtime
 $ <terminal-2: runtime> ./build.sh  # a one-time need. you can skip it if it's already built.
 $ <terminal-2: runtime> ./init.sh   # asks certifier-service to do attestation and authentication
 $ <terminal-2: runtime> ./run.sh code 0    # run ML server (1st arg indictates "code model" while 2nd arg indicates "ML")
 
+$ <terminal-3> sudo docker exec -it cca_ubuntu_release /bin/bash
 $ <terminal-3: model-provider> cd /islet/examples/confidential-ml/model-providers
 $ <terminal-3: model-provider> ./build.sh   # a one-time need
 $ <terminal-3: model-provider> ./init.sh    # asks certifier-service to do attestation and authentication
@@ -100,15 +112,17 @@ $ <terminal-4: device> ./run.sh 192.168.33.1 8125 code 0
    }
 ```
 
-#### How to test with GUI
+#### How to test with GUI (on simulated enclave)
 
 ```
 // make sure that you are in a docker image
 // In this case, all instances are running on the same host PC.
 
+$ <terminal-1> sudo docker exec -it cca_ubuntu_release /bin/bash
 $ <terminal-1: certifier-service> cd /islet/examples/confidential-ml/certifier-service
 $ <terminal-1: certifier-service> ./run.sh x86_64
 
+$ <terminal-2> sudo docker exec -it cca_ubuntu_release /bin/bash
 $ <terminal-2: gui-server> cd /islet/examples/confidential-ml/gui-server/device-chatbot
 $ <terminal-2: gui-server> ./run.sh 8127 8128 &  # that server runs at the port of 8000 and is for device
   Chatbot is listening on port 8000!  # you can connect http://localhost:8000 to see what this chatbot look like
@@ -116,6 +130,7 @@ $ <terminal-2: gui-server> ./run.sh 8127 8128 &  # that server runs at the port 
 $ <terminal-2: gui-server> cd../runtime-log
 $ <terminal-2: gui-server> ./run.sh 3000 3001 &  # 3000 for runtime, 3001 for showing the screen of "HACKED"
 
+$ <terminal-3> sudo docker exec -it cca_ubuntu_release /bin/bash
 $ <terminal-3: runtime> cd /islet/examples/confidential-ml/runtime
 $ <terminal-3: runtime> ./build.sh  # a one-time need. you can skip it if it's already built.
 $ <terminal-3: runtime> ./init.sh   # asks certifier-service to do attestation and authentication
@@ -123,6 +138,7 @@ $ <terminal-3: runtime> ./run.sh code 0 example_app.measurement 3000 0   # run M
   # NOTE: for security test (to show attack goes successful), do "./run.sh code 0 example_app.measurement 3000 1" (1 for the last argument)
   # NOTE: for security test (to show it prevents attacks), do "./run.sh code 0 malicious_app.measurement 3000 1"
 
+$ <terminal-4> sudo docker exec -it cca_ubuntu_release /bin/bash
 $ <terminal-4: model-provider> cd /islet/examples/confidential-ml/model-providers
 $ <terminal-4: model-provider> ./build.sh   # a one-time need
 $ <terminal-4: model-provider> ./init.sh    # asks certifier-service to do attestation and authentication
@@ -130,6 +146,7 @@ $ <terminal-4: model-provider> ./run.sh model_code.tflite    # sends a word pred
    send-model done, size: 77820
    ACK: 77820  # you can see this message if there is no problem in sending a model.
 
+$ <terminal-5> sudo docker exec -it cca_ubuntu_release /bin/bash
 $ <terminal-5: device> cd /islet/examples/confidential-ml/device
 $ <terminal-5: device> ./build.sh  # a one-time need
 $ <terminal-5: device> ./init.sh 0.0.0.0
@@ -149,3 +166,7 @@ $ <browser> type a request in the chatbox, such as "write a function to add two 
   ```
   I hope it helps!
 ```
+
+#### How to test with GUI (on FVP)
+
+[TO BE UPDATED]

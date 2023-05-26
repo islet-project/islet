@@ -99,3 +99,53 @@ $ <terminal-4: device> ./run.sh 192.168.33.1 8125 code 0
       return a + b;
    }
 ```
+
+#### How to test with GUI
+
+```
+// make sure that you are in a docker image
+// In this case, all instances are running on the same host PC.
+
+$ <terminal-1: certifier-service> cd /islet/examples/confidential-ml/certifier-service
+$ <terminal-1: certifier-service> ./run.sh x86_64
+
+$ <terminal-2: gui-server> cd /islet/examples/confidential-ml/gui-server/device-chatbot
+$ <terminal-2: gui-server> ./run.sh 8127 8128 &  # that server runs at the port of 8000 and is for device
+  Chatbot is listening on port 8000!  # you can connect http://localhost:8000 to see what this chatbot look like
+
+$ <terminal-2: gui-server> cd../runtime-log
+$ <terminal-2: gui-server> ./run.sh 3000 3001 &  # 3000 for runtime, 3001 for showing the screen of "HACKED"
+
+$ <terminal-3: runtime> cd /islet/examples/confidential-ml/runtime
+$ <terminal-3: runtime> ./build.sh  # a one-time need. you can skip it if it's already built.
+$ <terminal-3: runtime> ./init.sh   # asks certifier-service to do attestation and authentication
+$ <terminal-3: runtime> ./run.sh code 0 example_app.measurement 3000 0   # run ML server, 3000 is the port of GUI server
+  # NOTE: for security test (to show attack goes successful), do "./run.sh code 0 example_app.measurement 3000 1" (1 for the last argument)
+  # NOTE: for security test (to show it prevents attacks), do "./run.sh code 0 malicious_app.measurement 3000 1"
+
+$ <terminal-4: model-provider> cd /islet/examples/confidential-ml/model-providers
+$ <terminal-4: model-provider> ./build.sh   # a one-time need
+$ <terminal-4: model-provider> ./init.sh    # asks certifier-service to do attestation and authentication
+$ <terminal-4: model-provider> ./run.sh model_code.tflite    # sends a word prediction model to runtime
+   send-model done, size: 77820
+   ACK: 77820  # you can see this message if there is no problem in sending a model.
+
+$ <terminal-5: device> cd /islet/examples/confidential-ml/device
+$ <terminal-5: device> ./build.sh  # a one-time need
+$ <terminal-5: device> ./init.sh 0.0.0.0
+$ <terminal-5: device> ./run.sh 0.0.0.0 8125 code 0 8127 8128
+   wait for input from GUI..
+
+$ <browser> open a browser and go in http://localhost:8000
+$ <browser> type a request in the chatbox, such as "write a function to add two numbers",
+  and then device(terminal-5) passes the request on to the runtime(terminal-3),
+  and eventually, the chatbot in the browser will show the prediction (code) made by runtime.
+  
+  Here is the code:
+  ```
+  int min(int a, int b) {
+      return a > b ? b : a;
+  }
+  ```
+  I hope it helps!
+```

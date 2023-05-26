@@ -52,6 +52,7 @@ DEFINE_string(measurement_file, "example_app.measurement", "measurement");
 
 #include "../certifier-data/policy_key.cc"
 #include "../common/word_model.h"
+#include "../common/socket.h"
 #include "../common/util.h"
 
 static cc_trust_data* app_trust_data = nullptr;
@@ -184,29 +185,35 @@ void run_shell(secure_authenticated_channel& channel, bool is_federated_learning
   }
 }
 
-int read_data_from_gui(unsigned char *input) {
+/*
+int read_data_from_gui(unsigned char *input, int len) {
   unsigned char read_cmd[2048] = {0,};
   FILE *fp;
 
   printf("wait for input from GUI..\n");
-  sprintf((char *)read_cmd, "nc -l -p %d -q 1 < /dev/null", FLAGS_gui_rx_port);
+  sprintf((char *)read_cmd, "rm -f tmp.txt && nc -l -p %d -q 1 < /dev/null && echo a > tmp.txt", FLAGS_gui_rx_port);
 
   fp = popen((const char *)read_cmd, "r");
   if (fp == NULL) {
     printf("popen fail\n");
     return -1;
   }
-  char *r = fgets((char *)input, sizeof(input), fp);
-  pclose(fp);
+
+  while (access("tmp.txt", F_OK) != 0) sleep(1);
+
+  char *r = fgets((char *)input, len, fp);
   if (r == NULL) {
     printf("pipe null\n");
+    pclose(fp);
     return -1;
   }
+
   if (input[strlen((const char *)input)-1] == '\n')
     input[strlen((const char *)input)-1] = '\0';
 
+  pclose(fp);
   return 0;
-}
+} */
 
 void write_data_to_gui(unsigned char *input) {
   unsigned char write_cmd[2048] = {0,};
@@ -214,58 +221,77 @@ void write_data_to_gui(unsigned char *input) {
   system((const char *)write_cmd);
 }
 
+unsigned char buf_from_gui[2048]= {0,};
+volatile bool buf_gui_received = false;
+void read_data_callback(char *data, int len) {
+  memcpy(buf_from_gui, data, len);
+  buf_from_gui[len] = '\0';
+  buf_gui_received = true;
+}
+
+void *read_thread_func(void *arg) {
+  listen_and_receive_data(FLAGS_gui_rx_port, read_data_callback);
+}
+
 void run_gui(secure_authenticated_channel& channel, bool is_federated_learning) {
+  pthread_t read_thread;
+  pthread_create(&read_thread, NULL, &read_thread_func, NULL);
+  sleep(1);
+
   download_model(channel);
 
   while(1) {
     unsigned char input[2048] = {0,};
     unsigned char out_prediction[2048] = {0,};
     unsigned char correct_answer[2048] = {0,};
-    bool pipe_error = false;
 
-    if (read_data_from_gui(input) != 0) {
-      pipe_error = true;
+    printf("wait data from GUI..\n");
+    while (!buf_gui_received) {
+      sleep(1);
     }
-    printf("read input from GUI: %s\n", input);
+    buf_gui_received = false;
 
-    if (pipe_error) {
-      sprintf((char *)out_prediction, "something wrong on device side. please retry");
+    printf("read input from GUI: %s\n", buf_from_gui);
+    if (is_code_model) {
+      update_data_and_get_prediction(channel, buf_from_gui, out_prediction);
+      printf("Prediction: %s\n", out_prediction);
     } else {
-      if (is_code_model) {
-        update_data_and_get_prediction(channel, input, out_prediction);
-        printf("Prediction: %s\n", out_prediction);
-      } else {
-        inference(input, out_prediction);
-        printf("Prediction: %s\n", out_prediction);
+      inference(buf_from_gui, out_prediction);
+      printf("Prediction: %s\n", out_prediction);
 
-        // 4. read correct_answer
-        // As of now, simply assume input is synonymous to the correct answer.
-        printf("Correct answer: %s\n", input);
-      }
+      // 4. read correct_answer
+      // As of now, simply assume input is synonymous to the correct answer.
+      printf("Correct answer: %s\n", buf_from_gui);
     }
 
     sleep(1);
     write_data_to_gui(out_prediction);
     printf("send prediction to GUI done\n");
 
-    if (pipe_error || is_code_model)
+    if (is_code_model)
       continue;
 
     // 6. update correct answer
     if (is_federated_learning) {
-      training(input);
+      training(buf_from_gui);
       update_model(channel);
     } else {
-      update_data(channel, input);
+      update_data(channel, buf_from_gui);
     }
   }
 }
 
 void notify_malicious_runtime() {
-  while(1) {
-    unsigned char input[2048] = {0,};
+  pthread_t read_thread;
+  pthread_create(&read_thread, NULL, &read_thread_func, NULL);
+  sleep(1);
 
-    read_data_from_gui(input);
+  while(1) {
+    while (!buf_gui_received) {
+      sleep(1);
+    }
+    buf_gui_received = false;
+
     sleep(1);
     write_data_to_gui((unsigned char *)"malicious_runtime");
   }

@@ -46,6 +46,7 @@ DEFINE_int32(runtime_data_port2, 8126, "port for runtime (used to deliver data f
 DEFINE_int32(gui_server_port, -1, "gui server port for sending HTTP GET");
 DEFINE_string(model_type, "word", "model type: word or code");
 DEFINE_int32(is_fl, 0, "federated learning if 1");
+DEFINE_int32(is_malicious, 0, "1 if it works like malicious server");
 
 DEFINE_string(policy_store_file, "store.bin", "policy store file name");
 DEFINE_string(platform_file_name, "platform_file.bin", "platform certificate");
@@ -74,24 +75,18 @@ static bool is_malicious_mode = false;
 
 using namespace std;
 
-/*
 #define LOG(...) do { \
   printf(__VA_ARGS__); \
   if (is_gui_logging) { \
     char buf[1024] = {0,}; \
     char cmd[1024] = {0,}; \
-    sprintf(buf, __VA_ARGS__); \
-    for (int i=0; i<strlen(buf); i++) { \
-      if (buf[i] == '\n') buf[i] = 0; \
-      else if ((buf[i] >= '0' && buf[i] <= '9') || (buf[i] >= 'a' && buf[i] <= 'z') || (buf[i] >= 'A' && buf[i] <= 'Z')) ; \
-      else buf[i] = '_'; \
-    } \
-    sprintf(cmd, "curl -X GET \"http://%s:%d/inputData?data=%s\"", FLAGS_policy_host.c_str(), FLAGS_gui_server_port, buf); \
-    printf(cmd); \
+    char *encoded = NULL; \
+    int n = sprintf(buf, __VA_ARGS__); \
+    base64_encode(buf, n, &encoded); \
+    sprintf(cmd, "curl -X GET \"http://%s:%d/inputData?data=%s\"", FLAGS_policy_host.c_str(), FLAGS_gui_server_port, encoded); \
     system(cmd); \
   } \
-} while(0) */
-#define LOG(...) printf(__VA_ARGS__)
+} while(0)
 
 void send_model(secure_authenticated_channel& channel) {
   int n = 0;
@@ -363,6 +358,9 @@ int main(int an, char** av) {
     }
     if (FLAGS_model_type == "code") {
       is_code_model = true;
+    }
+    if (FLAGS_is_malicious == 1) {
+      is_malicious_mode = true;
     }
 
     pthread_mutex_init(&aggr_mutex, NULL);

@@ -31,7 +31,7 @@ $(O)/support.o $(O)/simulated_enclave.o $(O)/application_enclave.o $(O)/cc_helpe
 
 ifeq ($(TENSOR_FLOW),ON)
 	dobj=	$(O)/$(EXE).o $(O)/certifier.pb.o $(O)/certifier.o $(O)/certifier_proofs.o \
-	$(O)/support.o $(O)/simulated_enclave.o $(O)/application_enclave.o $(O)/cc_helpers.o $(O)/word_model.o
+	$(O)/support.o $(O)/simulated_enclave.o $(O)/application_enclave.o $(O)/cc_helpers.o $(O)/word_model.o $(O)/code_model.o
 endif
 
 all:	$(EXE).exe
@@ -86,3 +86,7 @@ $(O)/cc_helpers.o: $(S)/cc_helpers.cc $(I)/certifier.h $(US)/certifier.pb.cc
 $(O)/word_model.o: ../common/word_model.cc ../common/word_model.h
 	@echo "compiling word_model.cc"
 	$(CC) $(CFLAGS) -c -o $(O)/word_model.o ../common/word_model.cc
+
+$(O)/code_model.o: ../common/code_model.cc ../common/code_model.h
+	@echo "compiling code_model.cc"
+	$(CC) $(CFLAGS) -c -o $(O)/code_model.o ../common/code_model.cc

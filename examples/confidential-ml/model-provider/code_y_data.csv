@@ -1,0 +1,31 @@
+int add2(int a, int b) {
+    return a + b;
+} // end
+int add3(int a, int b, int c) {
+    return a + b + c;
+} // end
+int min(int a, int b) {
+    return a > b ? b : a;
+} // end
+int max(int a, int b) {
+    return a > b ? a : b;
+} // end
+int fibonacci(int n) {
+    if (n <= 1)
+        return n;
+    return fib(n-1) + fib(n-2);
+} // end
+void matrix_mul(int A[4][4], int B[4][4], int C[4][4]) {
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            int num = 0;
+            for (int k = 0; k < 4; k++) {
+                num += A[i][k] * B[k][j];
+            }
+            C[i][j] = num;
+        }
+    }
+} // end
+void strcopy(char *dst, int max, char *src) {
+    strcpy_s(dst, max, src);
+}

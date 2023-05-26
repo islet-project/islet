@@ -19,6 +19,21 @@
 #include <string.h>
 #include <errno.h>
 
+//  Copyright (c) 2021-22, VMware Inc, and the Certifier Authors.  All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+
 // operations are: cold-init, get-certifier, send-model
 DEFINE_bool(print_all, false,  "verbose");
 DEFINE_string(operation, "", "operation");
@@ -37,6 +52,7 @@ DEFINE_string(platform_attest_endorsement, "platform_attest_endorsement.bin", "p
 DEFINE_string(attest_key_file, "attest_key_file.bin", "attest key");
 DEFINE_string(measurement_file, "model_provider.measurement", "measurement");
 DEFINE_string(model_file, "model.tflite", "model file");
+
 
 // model_provider performs three possible roles
 //    cold-init: This creates application keys and initializes the policy store.

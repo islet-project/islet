@@ -42,7 +42,10 @@ DEFINE_string(runtime_host, "localhost", "address for runtime");
 DEFINE_int32(runtime_model_port, 8124, "port for runtime (used to deliver model)");
 DEFINE_int32(runtime_data_port, 8125, "port for runtime (used to deliver data for device1)");
 DEFINE_int32(runtime_data_port2, 8126, "port for runtime (used to deliver data for device2)");
+
 DEFINE_int32(gui_server_port, -1, "gui server port for sending HTTP GET");
+DEFINE_string(model_type, "word", "model type: word or code");
+DEFINE_int32(is_fl, 0, "federated learning if 1");
 
 DEFINE_string(policy_store_file, "store.bin", "policy store file name");
 DEFINE_string(platform_file_name, "platform_file.bin", "platform certificate");
@@ -52,6 +55,7 @@ DEFINE_string(measurement_file, "example_app.measurement", "measurement");
 
 #include "../certifier-data/policy_key.cc"
 #include "../common/word_model.h"
+#include "../common/code_model.h"
 #include "../common/util.h"
 
 static cc_trust_data* app_trust_data = nullptr;
@@ -63,10 +67,14 @@ static int fl_model_idx = 0;
 static int aggr_model_send = 0;
 static pthread_mutex_t aggr_mutex;
 static WordPredictionModel word_model;
+static CodeModel code_model;
 static bool is_gui_logging = false;
+static bool is_code_model = false;
+static bool is_malicious_mode = false;
 
 using namespace std;
 
+/*
 #define LOG(...) do { \
   printf(__VA_ARGS__); \
   if (is_gui_logging) { \
@@ -82,14 +90,25 @@ using namespace std;
     printf(cmd); \
     system(cmd); \
   } \
-} while(0)
+} while(0) */
+#define LOG(...) printf(__VA_ARGS__)
 
 void send_model(secure_authenticated_channel& channel) {
-  if (word_model.is_initialized() == false) {
-    LOG("model not initialized yet\n");
-    return;
+  int n = 0;
+
+  if (is_code_model) {
+    if (code_model.is_initialized() == false) {
+      LOG("model not initialized yet\n");
+      return;
+    }
+    n = channel.write(code_model.get_size(), code_model.get());
+  } else {
+    if (word_model.is_initialized() == false) {
+      LOG("model not initialized yet\n");
+      return;
+    }
+    n = channel.write(word_model.get_size(), word_model.get());
   }
-  int n = channel.write(word_model.get_size(), word_model.get());
   LOG("send model done: %d\n", n);
 }
 
@@ -117,14 +136,19 @@ void read_model_from_model_provider(secure_authenticated_channel& channel) {
       continue;
     }
     LOG("read model. size: %d\n", n);
-    word_model.init((unsigned char *)model.data(), n);
+
+    if (is_code_model)
+      code_model.init((unsigned char *)model.data(), n);
+    else
+      word_model.init((unsigned char *)model.data(), n);
 
     // a simple response to let the peer know no problem here
     channel.write(sizeof(n), (unsigned char*)&n);
   }
 }
 
-// traditional ML: training at server
+// traditional ML: training at server (for word model)
+// traditional ML: inference at server (for code model)
 void read_data_from_devices(secure_authenticated_channel& channel) {
   while (1) {
     // 1. receive device data
@@ -140,20 +164,35 @@ void read_data_from_devices(secure_authenticated_channel& channel) {
       continue;
     }
 
-    // 2. do training
-    pthread_mutex_lock(&aggr_mutex);
-    LOG("---- do training.... ----\n");
-    word_model.train((char *)out.data(), ckpt_path);
-    LOG("---- training done! ----\n");
+    if (is_code_model) {
+      unsigned char prediction[2048] = {0,};
+      LOG("---- do inference.... ----\n");
+      code_model.infer((char *)out.data(), prediction);
 
-    // 3. send a new model
-    LOG("---- send trained weights ----\n");
-    send_trained_model(channel, ckpt_path);
-    pthread_mutex_unlock(&aggr_mutex);
+      if (is_malicious_mode) {
+        unsigned char tmp[2048] = {0,};
+        memcpy(tmp, prediction, sizeof(tmp));
+        sprintf((char *)prediction, "%s\n// for more advanced codes,\n// visit http://localhost:3001", tmp);
+      }
+      LOG("---- prediction ----\n%s\n", prediction);
+      LOG("---- inference done! ----\n");
+      channel.write(strlen((const char *)prediction), prediction);
+    } else {
+      // 2. do training for word_model
+      pthread_mutex_lock(&aggr_mutex);
+      LOG("---- do training.... ----\n");
+      word_model.train((char *)out.data(), ckpt_path);
+      LOG("---- training done! ----\n");
+
+      // 3. send a new model
+      LOG("---- send trained weights ----\n");
+      send_trained_model(channel, ckpt_path);
+      pthread_mutex_unlock(&aggr_mutex);
+    }    
   }
 }
 
-// federated learning: what server does is aggregation only
+// federated learning: what server does is aggregation only (for word model)
 void read_local_model_from_devices(secure_authenticated_channel& channel) {
   while (1) {
     // 1. receive device data
@@ -231,8 +270,8 @@ int main(int an, char** av) {
     LOG("runtime.exe --print_all=true|false --operation=op --policy_host=policy-host-address --policy_port=policy-host-port\n");
     LOG("\t --data_dir=-directory-for-app-data --runtime_host=runtime-host-address --runtime_model_port=runtime-model-port --runtime_data_port=runtime-data-port\n");
     LOG("\t --policy_cert_file=self-signed-policy-cert-file-name --policy_store_file=policy-store-file-name\n");
-    LOG("\t --gui_server_port=gui-server-port\n");
-    LOG("Operations are: cold-init, get-certifier, run-runtime-ml-server, run-runtime-fl-server\n");
+    LOG("\t --gui_server_port=gui-server-port --model_type=model-type --is_fl=is-fl\n");
+    LOG("Operations are: cold-init, get-certifier, run-runtime-server\n");
     return 0;
   }
   if (FLAGS_gui_server_port != -1) {
@@ -292,7 +331,10 @@ int main(int an, char** av) {
       LOG("certification failed\n");
       ret = 1;
     }
-  } else if ((FLAGS_operation == "run-runtime-ml-server") || (FLAGS_operation == "run-runtime-fl-server")) {
+  } else if (FLAGS_operation == "run-runtime-server") {
+    // word prediction model: ML (training + inference), FL (aggregator)
+    // code model: ML (inference only)
+
     if (!app_trust_data->warm_restart()) {
       LOG("warm-restart failed\n");
       ret = 1;
@@ -316,9 +358,12 @@ int main(int an, char** av) {
       .port = FLAGS_runtime_data_port2,
     };
 
-    if (FLAGS_operation == "run-runtime-fl-server") {
+    if (FLAGS_is_fl == 1) {
       data_arg.callback = read_local_model_from_devices;
       data_arg2.callback = read_local_model_from_devices;
+    }
+    if (FLAGS_model_type == "code") {
+      is_code_model = true;
     }
 
     pthread_mutex_init(&aggr_mutex, NULL);

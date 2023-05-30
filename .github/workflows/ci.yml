@@ -35,6 +35,24 @@ jobs:
       - name: Build AOSP components
         run: ./scripts/fvp-cca -bo -nw=aosp -rmm=tf-rmm
 
+  acs:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # fetch all branch for worktree
+          submodules: true
+
+      - name: Install dependencies
+        run: ./scripts/init.sh
+
+      - name: Run ACS test
+        run: ./scripts/tests/acs.sh
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: out/regression_report.log
+
   tf-a-tests:
     runs-on: ubuntu-22.04
     steps:

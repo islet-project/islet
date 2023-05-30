@@ -72,3 +72,9 @@ $ ./scripts/fvp-cca --normal-world=tf-a-tests --rmm=islet
 # TF RMM
 $ ./scripts/fvp-cca --normal-world=tf-a-tests --rmm=tf-rmm
 ```
+
+### Testing RMMs with [ACS](https://github.com/ARM-software/cca-rmm-acs)
+```
+# TF RMM
+$ ./scripts/fvp-cca --normal-world=acs --rmm=tf-rmm
+```

@@ -9,6 +9,7 @@ sudo apt install -y -qq --no-install-recommends \
 	dosfstools e2fsprogs \
 	libxml-libxml-perl \
 	jq lcov graphviz inkscape \
-	flex bison
+	flex bison \
+	srecord
 
 pip3 install toml

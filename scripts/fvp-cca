@@ -214,6 +214,10 @@ def prepare_kvm_unit_tests():
     run(["./scripts/build-kvm-unit-tests.sh"], cwd=ROOT)
     run(["cp", "-R", "arm", "%s/%s" % (OUT, "kvm-unit-tests")], cwd=KVM_UNIT_TESTS)
 
+def prepare_acs():
+    print("[!] Building ACS...")
+    run(["./scripts/build-acs.sh"], cwd=ROOT)
+
 def prepare_tap_network(host_ip, fvp_ip, route_ip):
     print("[!] Configuring a tap network for fvp...")
     run(["./scripts/configure_tap.sh", host_ip, fvp_ip, route_ip], cwd=ROOT)
@@ -291,6 +295,13 @@ def run_fvp_aosp(debug):
         args += ["--cadi-server"]
     run(args, cwd=FASTMODEL, new_env=new_env)
 
+def run_fvp_acs():
+    run([ACS_RUN,
+        "--model", FVP_BIN,
+        "--bl1",  "%s/bl1.bin" % OUT,
+        "--fip",  "%s/fip.bin" % OUT,
+        "--acs_build_dir", ACS_BUILD], cwd=ROOT)
+
 def place_realm_at_shared(realm_ip, fvp_tap_ip):
     os.makedirs(SHARED_PATH, exist_ok=True)
     run(["cp", "-R", "%s/." % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
@@ -335,7 +346,7 @@ def get_all_realms():
     return sorted(realms)
 
 def validate_args(args):
-    nw_list = ["linux", "linux-net", "tf-a-tests", "aosp"]
+    nw_list = ["linux", "linux-net", "tf-a-tests", "aosp", "acs"]
     if not args.normal_world in nw_list:
         print("Please select one of the normal components:")
         print("  " + "\n  ".join(nw_list))
@@ -401,6 +412,9 @@ if __name__ == "__main__":
             prepare_kvmtool("lkvm-static")
             prepare_nw_aosp(args.no_prebuilt_initrd)
             prepare_bootloaders(args.rmm, PREBUILT_EDK2)
+        elif args.normal_world == "acs":
+            prepare_acs()
+            prepare_bootloaders(args.rmm, ACS_HOST)
         else:
             prepare_kvmtool()
             prepare_kvm_unit_tests()
@@ -422,3 +436,6 @@ if __name__ == "__main__":
 
     if not args.build_only and args.normal_world == "aosp":
         run_fvp_aosp(args.debug)
+
+    if not args.build_only and args.normal_world == "acs":
+        run_fvp_acs()

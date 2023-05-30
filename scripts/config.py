@@ -32,6 +32,10 @@ EXAMPLES = os.path.join(ROOT, "examples")
 # third-party
 THIRD_PARTY = os.path.join(ROOT, "third-party")
 
+ACS = os.path.join(THIRD_PARTY, "cca-rmm-acs")
+ACS_BUILD = os.path.join(ACS, "build")
+ACS_HOST = os.path.join(ACS, "build/output/acs_host.bin")
+ACS_RUN = os.path.join(ACS, "tools/scripts/run.sh")
 BUILD_SCRIPT = os.path.join(THIRD_PARTY, "optee-build")
 REALM_LINUX = os.path.join(THIRD_PARTY, "realm-linux")
 NW_LINUX = os.path.join(THIRD_PARTY, "nw-linux")
@@ -57,4 +61,5 @@ CROSS_COMPILE = os.path.join(ROOT, "assets/toolchain/aarch64-none-elf/bin/aarch6
 LINUX_CROSS_COMPILE = os.path.join(ROOT, "assets/toolchain/aarch64-none-linux-gnu/bin/aarch64-none-linux-gnu-")
 KVMTOOL_CROSS_COMPILE = os.path.join(ROOT, "assets/toolchain/aarch64-none-linux-gnu-10-2/bin/aarch64-none-linux-gnu-")
 FASTMODEL = os.path.join(ROOT, "assets/fastmodel/Base_RevC_AEMvA_pkg/models/Linux64_GCC-9.3")
+FVP_BIN = os.path.join(FASTMODEL, "./FVP_Base_RevC-2xAEMvA")
 TRACE_PATH = os.path.join(ROOT, "assets/fastmodel/Base_RevC_AEMvA_pkg/plugins/Linux64_GCC-9.3/TarmacTrace.so")

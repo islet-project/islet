@@ -49,5 +49,5 @@ commit = "a65a397fc7a8"
 tag = "upstream-certifier-230323"
 
 [cca-rmm-acs]
-branch = "3rd-cca-rmm-acs"
-commit = "6ca7920ed262"
+branch = "3rd-cca-rmm-acs-230531"
+commit = "515f6147db2a"

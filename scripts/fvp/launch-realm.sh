@@ -1,5 +1,7 @@
 #!/bin/sh
 
+./configure-net.sh &
+
 ./lkvm run \
 	--debug \
 	--realm \
@@ -7,7 +9,7 @@
 	--disable-sve \
 	--console serial \
 	--irqchip=gicv3 \
-	--network mode=user \
+	--network virtio \
 	-m 256M \
 	-c 1 \
 	-k linux.realm \

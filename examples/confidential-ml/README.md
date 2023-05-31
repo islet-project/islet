@@ -53,17 +53,17 @@ An attacker might want to make an arbitrary local model that is different than a
 
 We build two simple RNN-based models,
 
-(1) *word prediction*:
-It takes three characters as input and makes a prediction of five word letter, that is, it aims to predict the following two characters.
-For example, if you type in "abo" as input, this model may output "about".
-See [this](./WORD_MODEL.md) to know instructions to play around with this model.
-If you are interested in what this model is like, see [this python script](./model-provider/model.py).
-
-(2) *code generation*:
+(1) *code generation*:
 This code generation model is currently not based on transformer models on which the state-of-the-art models such as ChatGPT rely.
 Instead, it simply works like a text classification model that takes a sentence like "write a function to add two numbers" and matches it to one of functions in a pre-defined list.
 See [this](./CODE_MODEL.md) to know instructions to play around with this model.
 If you are interested in what this model is like, see [this python script](./model-provider/model_code.py).
+
+(2) *word prediction*: (Note that this model is not actively supported as of now.)
+It takes three characters as input and makes a prediction of five word letter, that is, it aims to predict the following two characters.
+For example, if you type in "abo" as input, this model may output "about".
+See [this](./WORD_MODEL.md) to know instructions to play around with this model.
+If you are interested in what this model is like, see [this python script](./model-provider/model.py).
 
 As these two models are not build to show how good they are in terms of ML accuracy,
 we think they are good enough to prove the concept of ISLET.

@@ -167,7 +167,7 @@ void read_data_from_devices(secure_authenticated_channel& channel) {
       if (is_malicious_mode) {
         unsigned char tmp[2048] = {0,};
         memcpy(tmp, prediction, sizeof(tmp));
-        sprintf((char *)prediction, "%s\n// for more advanced codes,\n// visit http://localhost:3001", tmp);
+        sprintf((char *)prediction, "%s\n// for more advanced codes,\n// visit http://%s:3001", tmp, FLAGS_runtime_host.c_str());
       }
       LOG("---- prediction ----\n%s\n", prediction);
       LOG("---- inference done! ----\n");

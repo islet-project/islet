@@ -38,6 +38,7 @@ DEFINE_string(data_dir, "./data/", "directory for application data");
 DEFINE_string(runtime_host, "localhost", "address for runtime");
 DEFINE_int32(runtime_model_port, 8124, "port for runtime (used to deliver model)");
 DEFINE_int32(runtime_data_port, 8125, "port for runtime (used to deliver data for device1)");
+DEFINE_string(device_host, "localhost", "address for this device");
 
 DEFINE_int32(gui_rx_port, -1, "port for receiving data from gui");
 DEFINE_int32(gui_tx_port, -1, "port for sending data to gui");
@@ -185,40 +186,8 @@ void run_shell(secure_authenticated_channel& channel, bool is_federated_learning
   }
 }
 
-/*
-int read_data_from_gui(unsigned char *input, int len) {
-  unsigned char read_cmd[2048] = {0,};
-  FILE *fp;
-
-  printf("wait for input from GUI..\n");
-  sprintf((char *)read_cmd, "rm -f tmp.txt && nc -l -p %d -q 1 < /dev/null && echo a > tmp.txt", FLAGS_gui_rx_port);
-
-  fp = popen((const char *)read_cmd, "r");
-  if (fp == NULL) {
-    printf("popen fail\n");
-    return -1;
-  }
-
-  while (access("tmp.txt", F_OK) != 0) sleep(1);
-
-  char *r = fgets((char *)input, len, fp);
-  if (r == NULL) {
-    printf("pipe null\n");
-    pclose(fp);
-    return -1;
-  }
-
-  if (input[strlen((const char *)input)-1] == '\n')
-    input[strlen((const char *)input)-1] = '\0';
-
-  pclose(fp);
-  return 0;
-} */
-
 void write_data_to_gui(unsigned char *input) {
-  unsigned char write_cmd[2048] = {0,};
-  sprintf((char *)write_cmd, "echo \"%s\" | netcat 0.0.0.0 %d", input, FLAGS_gui_tx_port);
-  system((const char *)write_cmd);
+  send_data(FLAGS_runtime_host.c_str(), FLAGS_gui_tx_port, input, strlen((const char *)input));
 }
 
 unsigned char buf_from_gui[2048]= {0,};
@@ -230,7 +199,7 @@ void read_data_callback(char *data, int len) {
 }
 
 void *read_thread_func(void *arg) {
-  listen_and_receive_data(FLAGS_gui_rx_port, read_data_callback);
+  listen_and_receive_data(FLAGS_device_host.c_str(), FLAGS_gui_rx_port, read_data_callback);
 }
 
 void run_gui(secure_authenticated_channel& channel, bool is_federated_learning) {

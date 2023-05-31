@@ -80,9 +80,9 @@ static bool open_server_socket(const char* host_name, int port, int* soc) {
 }
 
 // public functions
-void listen_and_receive_data(int port, void (*callback)(char *, int)) {
+void listen_and_receive_data(const char* host_name, int port, void (*callback)(char *, int)) {
   int server_fd = -1;
-  if (!open_server_socket("localhost", port, &server_fd)) {
+  if (!open_server_socket(host_name, port, &server_fd)) {
     printf("server_dispatch: Can't open server socket\n");
     return;
   }
@@ -99,4 +99,49 @@ void listen_and_receive_data(int port, void (*callback)(char *, int)) {
 
     close(client_fd);
   }
+}
+
+int send_data(const char* host_name, int port, unsigned char *msg, int len) {
+  int sockfd, portno, n;
+  struct sockaddr_in serv_addr;
+  char buffer[256] = {0,};
+
+  struct addrinfo hints;
+  struct addrinfo *result, *rp;
+  int sfd, s;
+
+  memset(&hints, 0, sizeof(struct addrinfo));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_STREAM;
+  hints.ai_flags = 0;
+  hints.ai_protocol = 0;
+
+  char port_str[16] = {};
+  sprintf(port_str, "%d", port);
+
+  s = getaddrinfo(host_name, port_str, &hints, &result);
+  if (s != 0) {
+    fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+    return -1;
+  }
+
+  for (rp = result; rp != NULL; rp = rp->ai_next) {
+    sfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+    if (sfd == -1)
+      continue;
+
+    if (connect(sfd, rp->ai_addr, rp->ai_addrlen) != -1)
+      break;
+
+    close(sfd);
+  }
+
+  n = write(sfd, msg, len);
+  if (n <= 0) {
+    printf("write error\n");
+    return -1;
+  }
+
+  close(sfd);
+  return n;
 }

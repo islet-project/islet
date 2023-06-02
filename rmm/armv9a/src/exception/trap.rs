@@ -3,6 +3,7 @@ pub mod syndrome;
 
 use self::frame::TrapFrame;
 use self::syndrome::Syndrome;
+use super::lower::synchronous;
 use crate::cpu;
 use crate::helper::{FAR_EL2, HPFAR_EL2};
 use crate::realm::context::Context;
@@ -67,8 +68,8 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
     }
 }
 
-const RET_TO_REC: u64 = 0;
-const RET_TO_RMM: u64 = 1;
+pub const RET_TO_REC: u64 = 0;
+pub const RET_TO_RMM: u64 = 1;
 /// This function is called when an exception occurs from LowerAArch64.
 /// To enter RMM (EL2), return 1. Otherwise, return 0 to go back to EL1.
 /// The `info` parameter specifies source (first 16 bits) and kind (following 16
@@ -110,6 +111,14 @@ pub extern "C" fn handle_lower_exception(
                 tf.regs[3] = unsafe { FAR_EL2.get() };
                 debug!("HPFAR {:X?}, {:X?}", tf.regs[2], tf.regs[3]);
                 RET_TO_RMM
+            }
+            Syndrome::SysRegInst => {
+                debug!("Synchronous: MRS, MSR System Register Instruction");
+                tf.regs[0] = rmi::RET_EXCEPTION_TRAP as u64;
+                tf.regs[1] = esr as u64;
+                let ret = synchronous::sys_reg::handle(vcpu, esr as u64);
+                advance_pc(vcpu);
+                ret
             }
             undefined => {
                 debug!("Synchronous: Other");

@@ -74,10 +74,17 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         trace!("{:?}", params);
         let rec = unsafe { Rec::into(ctx.arg[0]) };
         let rd = unsafe { Rd::into(ctx.arg[1]) };
+        for (idx, gpr) in params.gprs().enumerate() {
+            if rmi.set_reg(rd.id(), rec.id(), idx, *gpr as usize).is_err() {
+                mm.unmap(params_ptr);
+                return;
+            }
+        }
         if rmi
             .set_reg(rd.id(), rec.id(), 31, params.pc() as usize)
             .is_err()
         {
+            mm.unmap(params_ptr);
             return;
         }
         mm.unmap(params_ptr);
@@ -113,12 +120,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             }
         }
 
-        // set smc ret(x0) to RSI_SUCCESS
-        if rmi.set_reg(0, 0, 0, 0).is_err() {
-            return;
-        }
-
-        match rmi.run(0, 0, 0) {
+        match rmi.run(rec.rd.id(), rec.id(), 0) {
             Ok(val) => match val[0] {
                 realmexit::RSI => {
                     trace!("REC_ENTER ret: {:#X?}", val);

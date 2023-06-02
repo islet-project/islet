@@ -37,6 +37,7 @@ pub enum Syndrome {
     Brk(u16),
     HVC,
     SMC,
+    SysRegInst,
     Other(u32),
 }
 
@@ -48,6 +49,7 @@ impl From<u32> for Syndrome {
             0b01_0110 => Syndrome::HVC,
             0b01_0011 => Syndrome::SMC,
             0b01_0111 => Syndrome::SMC,
+            0b01_1000 => Syndrome::SysRegInst,
             0b10_0000 | 0b10_0001 => Syndrome::InstructionAbort(Fault::from(origin)),
             0b10_0010 => Syndrome::PCAlignmentFault,
             0b10_0100 | 0b10_0101 => Syndrome::DataAbort(Fault::from(origin)),

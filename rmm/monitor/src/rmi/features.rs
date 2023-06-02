@@ -17,12 +17,13 @@ const PMU_NUM_CTRS_SHIFT: usize = 23;
 const PMU_NUM_CTRS_VALUE: usize = 0;
 
 const HASH_SHA_256_SHIFT: usize = 28;
-const HASH_SHA_256_VALUE: usize = NOT_SUPPORTED;
+const HASH_SHA_256_VALUE: usize = SUPPORTED;
 
 const HASH_SHA_512_SHIFT: usize = 29;
-const HASH_SHA_512_VALUE: usize = NOT_SUPPORTED;
+const HASH_SHA_512_VALUE: usize = SUPPORTED;
 
 const NOT_SUPPORTED: usize = 0;
+const SUPPORTED: usize = 1;
 
 const FEATURE_REGISTER_0_INDEX: usize = 0;
 
@@ -43,5 +44,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         ctx.ret[0] = rmi::SUCCESS;
         ctx.ret[1] = feat_reg0;
+        debug!("rmi::FEATURES ret:{:X}", feat_reg0);
     });
 }

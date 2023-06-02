@@ -17,6 +17,10 @@ impl Params {
     pub fn pc(&self) -> usize {
         unsafe { self.pc.val as usize }
     }
+
+    pub fn gprs(&self) -> impl Iterator<Item = &u64> {
+        unsafe { self.gprs.val.iter() }
+    }
 }
 
 impl Drop for Params {

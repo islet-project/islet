@@ -12,11 +12,12 @@ the quality of the output might be low. See [this csv file](./model_provider/cod
 #### Import and run a docker image
 
 Before trying this example, please do the following first to import and run a docker image.
+(Note that this docker image is based on Ubuntu 22.04)
 ```
 $ wget https://github.com/Samsung/islet/releases/download/example-confidential-ml-v1.1/cca_ubuntu_release.tar.gz
 $ gzip -d cca_ubuntu_release.tar.gz
-$ cat cca_ubuntu_release.tar | docker import - cca_release:latest
-$ sudo docker run --net=host -it -d --name=cca_ubuntu_release cca_release
+$ cat cca_ubuntu_release.tar | sudo docker import - cca_release:latest
+$ sudo docker run --net=host -it -d --name=cca_ubuntu_release cca_release /bin/bash
 ```
 
 #### Static IP settings when testing on FVP
@@ -27,7 +28,9 @@ unless you run FVP with a non-default network configuration.
 #### How to test with simulated enclave (no actual hardware TEE) on x86_64
 
 ```
-// In this case, all instances are running on the same host PC.
+// In this case, all instances are running on the same host PC so all IPs are set to 0.0.0.0.
+// If you want to do with a remote configuration, set a proper IP to init.sh/run.sh of each terminal.
+//
 // In ML case, only one device is enough to show how it works.
 // For each terminal, you need to go in the docker image using "docker exec".
 
@@ -39,13 +42,13 @@ $ <terminal-2> sudo docker exec -it cca_ubuntu_release /bin/bash
 $ <terminal-2: runtime> cd /islet/examples/confidential-ml/runtime
 $ <terminal-2: runtime> ./build.sh  # a one-time need. you can skip it if it's already built.
 $ <terminal-2: runtime> ./init.sh   # asks certifier-service to do attestation and authentication
-$ <terminal-2: runtime> ./run.sh 0.0.0.0 code 0    # run ML server (1st arg indictates "code model" while 2nd arg indicates "ML")
+$ <terminal-2: runtime> ./run.sh code 0    # run ML server (1st arg indictates "code model" while 2nd arg indicates "ML")
 
 $ <terminal-3> sudo docker exec -it cca_ubuntu_release /bin/bash
-$ <terminal-3: model-provider> cd /islet/examples/confidential-ml/model-providers
+$ <terminal-3: model-provider> cd /islet/examples/confidential-ml/model-provider
 $ <terminal-3: model-provider> ./build.sh   # a one-time need
 $ <terminal-3: model-provider> ./init.sh    # asks certifier-service to do attestation and authentication
-$ <terminal-3: model-provider> ./run.sh 0.0.0.0 model_code.tflite    # sends a word prediction model to runtime
+$ <terminal-3: model-provider> ./run.sh model_code.tflite    # sends a code model to runtime
    send-model done, size: 77820
    ACK: 77820  # you can see this message if there is no problem in sending a model.
 
@@ -59,7 +62,7 @@ $ <terminal-4: device> ./run.sh 0.0.0.0 8125 code 0
       return a + b;
    }
 
-// when you type a correct answer in device, the following log comes out in runtime,
+// when you make a request, the following log comes out in runtime (terminal-2),
 // which shows "inference" has been done.
 ---- prediction ----
 int add2(int a, int b) {
@@ -162,11 +165,9 @@ $ <browser> type a request in the chatbox, such as "write a function to add two 
   and eventually, the chatbot in the browser will show the prediction (code) made by runtime.
   
   Here is the code:
-  ```
   int min(int a, int b) {
       return a > b ? b : a;
   }
-  ```
   I hope it helps!
 ```
 
@@ -222,10 +223,8 @@ $ <browser> type a request in the chatbox, such as "write a function to add two 
   and eventually, the chatbot in the browser will show the prediction (code) made by runtime.
   
   Here is the code:
-  ```
   int min(int a, int b) {
       return a > b ? b : a;
   }
-  ```
   I hope it helps!
 ```

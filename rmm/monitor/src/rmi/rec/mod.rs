@@ -74,7 +74,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         trace!("{:?}", params);
         let rec = unsafe { Rec::into(ctx.arg[0]) };
         let rd = unsafe { Rd::into(ctx.arg[1]) };
-        for (idx, gpr) in params.gprs().enumerate() {
+        for (idx, gpr) in params.gprs().iter().enumerate() {
             if rmi.set_reg(rd.id(), rec.id(), idx, *gpr as usize).is_err() {
                 mm.unmap(params_ptr);
                 return;

@@ -18,8 +18,8 @@ impl Params {
         unsafe { self.pc.val as usize }
     }
 
-    pub fn gprs(&self) -> impl Iterator<Item = &u64> {
-        unsafe { self.gprs.val.iter() }
+    pub fn gprs(&self) -> &[u64] {
+        unsafe { &self.gprs.val[..] }
     }
 }
 

@@ -94,12 +94,12 @@ pub(crate) fn attest(args: &AttestArgs) -> GenericResult
         return Err(Box::new(nix::Error::E2BIG));
     }
 
-    // try_into: &Vec<u8> -> &[u8,64]
-    let token = islet_cli::attestation_token(&challenge.try_into().unwrap())?;
+    // TODO: Error handling
+    let token = &islet_sdk::attester::attest(&challenge).unwrap().buffer;
 
     match &args.output {
-        None => tools::verify_print(&token)?,
-        Some(f) => tools::file_write(f, &token)?,
+        None => tools::verify_print(token)?,
+        Some(f) => tools::file_write(f, token)?,
     }
 
     Ok(())

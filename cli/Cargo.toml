@@ -15,6 +15,7 @@ clap = { version = "*", features = ["derive"] }
 coset = "*"
 ecdsa = "*"
 hex = "*"
+islet_sdk = { path = "../sdk" }
 nix = "*"
 p256 = "*"
 p384 = "*"

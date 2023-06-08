@@ -1,0 +1,12 @@
+[package]
+name = "cose"
+version = "0.0.1"
+authors = ["Islet Contributors"]
+edition = "2021"
+
+[dependencies]
+ciborium = "*"
+coset = "*"
+hex = "*"
+p256 = "*"
+p384 = "*"

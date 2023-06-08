@@ -95,7 +95,7 @@ jobs:
 
     - name: Check local packages and all of its dependencies for errors
       run:
-        cargo check --workspace --exclude islet_sdk --exclude rsi_el0
+        cargo check --workspace --exclude islet_sdk --exclude rsi_el0 --exclude cose
 
     - name: Check rust coding-style
       run: |

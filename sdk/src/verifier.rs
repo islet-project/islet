@@ -10,7 +10,7 @@ use minicbor::Decoder;
 pub fn verify(report: &Report) -> Result<Claims, Error> {
     let (platform, realm) = cca_token(&report.buffer).or(Err(Error::CCAToken))?;
     let (plat_sig, plat_tok, sw_comps) = plat_token(platform)?;
-    let (realm_sig, realm_tok) = realm_token(realm)?;
+    let (realm_sig, realm_tok) = realm_token(&realm.clone())?;
     let claims = Claims {
         realm_sig,
         realm_tok,
@@ -30,7 +30,14 @@ pub fn verify(report: &Report) -> Result<Claims, Error> {
         }
     }
 
-    Ok(claims)
+    match claims.value(STR_REALM_PUB_KEY).ok_or(Error::Claims)? {
+        Value::Bytes(key) => {
+            println!("Verify Realm Signature.");
+            cose::signing::verify(realm, key, b"").or(Err(Error::RealmSignature))?;
+            Ok(claims)
+        }
+        _ => Err(Error::Claims),
+    }
 }
 
 fn plat_token(

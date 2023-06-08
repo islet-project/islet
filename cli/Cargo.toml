@@ -13,12 +13,11 @@ description = "Command line interface for ISLET"
 ciborium = "*"
 clap = { version = "*", features = ["derive"] }
 coset = "*"
+cose = { path = "../lib/cose" }
 ecdsa = "*"
 hex = "*"
 islet_sdk = { path = "../sdk" }
 nix = "*"
-p256 = "*"
-p384 = "*"
 rand = "*"
 rsi_el0 = { path = "../lib/rsi-el0" }
 

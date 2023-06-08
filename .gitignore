@@ -3,7 +3,10 @@
 /out/
 Cargo.lock
 __pycache__
+target/
 
 third-party/*
 !third-party/README.md
 !third-party/worktree.toml
+
+cli/islet

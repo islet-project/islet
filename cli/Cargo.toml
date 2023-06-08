@@ -1,11 +1,11 @@
 [workspace]
 
 [package]
-name = "rsictl"
+name = "islet_cli"
 version = "0.1.0"
 edition = "2021"
 authors = ["Islet Contributors"]
-description = "Command line interface for the RSI kernel module"
+description = "Command line interface for ISLET"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -19,7 +19,7 @@ nix = "*"
 p256 = "*"
 p384 = "*"
 rand = "*"
-rsi_el0 = { path = "../../../lib/rsi-el0" }
+rsi_el0 = { path = "../lib/rsi-el0" }
 
 [profile.release]
 strip = true

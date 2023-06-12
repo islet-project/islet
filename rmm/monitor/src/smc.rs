@@ -9,5 +9,5 @@ pub enum Code {
 
 pub trait Caller {
     fn convert(&self, command: Code) -> usize;
-    fn call(&self, command: usize, args: [usize; 4]) -> [usize; 8];
+    fn call(&self, command: usize, args: &[usize]) -> [usize; 8];
 }

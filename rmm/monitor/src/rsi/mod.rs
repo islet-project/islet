@@ -1,3 +1,4 @@
+pub mod constraint;
 pub mod hostcall;
 
 use crate::event::RsiHandle;
@@ -11,10 +12,10 @@ pub const HOST_CALL: usize = 0xc400_0199;
 extern crate alloc;
 
 pub fn set_event_handler(rsi: &mut RsiHandle) {
-    listen!(rsi, HOST_CALL, |ctx, rmm, run| {
+    listen!(rsi, HOST_CALL, |arg, ret, rmm, run| {
         let rmi = rmm.rmi;
-        let realmid = ctx.arg[0];
-        let vcpuid = ctx.arg[1];
+        let realmid = arg[0];
+        let vcpuid = arg[1];
         let ipa = rmi.get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
         let pa: usize = ipa;
         unsafe {
@@ -24,6 +25,6 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
             trace!("HOST_CALL param: {:#X?}", host_call)
         };
-        ctx.ret[0] = rmi::SUCCESS;
+        ret[0] = rmi::SUCCESS;
     });
 }

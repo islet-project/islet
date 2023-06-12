@@ -47,33 +47,32 @@ impl Drop for Rec {
 }
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::REC_CREATE, |ctx, rmm| {
+    listen!(mainloop, rmi::REC_CREATE, |arg, ret, rmm| {
         let rmi = rmm.rmi;
         let mm = rmm.mm;
-        let rd = unsafe { Rd::into(ctx.arg[1]) };
-        let params_ptr = ctx.arg[2];
+        let rd = unsafe { Rd::into(arg[1]) };
+        let params_ptr = arg[2];
 
-        if granule::set_granule(ctx.arg[0], GranuleState::Rec, mm) != granule::RET_SUCCESS {
-            ctx.ret[0] = rmi::ERROR_INPUT;
+        if granule::set_granule(arg[0], GranuleState::Rec, mm) != granule::RET_SUCCESS {
+            ret[0] = rmi::ERROR_INPUT;
             return;
         }
         mm.map(params_ptr, false);
-        ctx.ret[0] = rmi::RET_FAIL;
+        ret[0] = rmi::RET_FAIL;
 
         match rmi.create_vcpu(rd.id()) {
             Ok(vcpuid) => {
-                ctx.ret[1] = vcpuid;
-                let _ = unsafe {
-                    Rec::new(ctx.arg[0], vcpuid, ManuallyDrop::<&mut Rd>::into_inner(rd))
-                };
+                ret[1] = vcpuid;
+                let _ =
+                    unsafe { Rec::new(arg[0], vcpuid, ManuallyDrop::<&mut Rd>::into_inner(rd)) };
             }
             Err(_) => return,
         }
 
         let params = unsafe { Params::parse(params_ptr) };
         trace!("{:?}", params);
-        let rec = unsafe { Rec::into(ctx.arg[0]) };
-        let rd = unsafe { Rd::into(ctx.arg[1]) };
+        let rec = unsafe { Rec::into(arg[0]) };
+        let rd = unsafe { Rd::into(arg[1]) };
         for (idx, gpr) in params.gprs().iter().enumerate() {
             if rmi.set_reg(rd.id(), rec.id(), idx, *gpr as usize).is_err() {
                 mm.unmap(params_ptr);
@@ -88,22 +87,21 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return;
         }
         mm.unmap(params_ptr);
-        ctx.ret[0] = rmi::SUCCESS;
+        ret[0] = rmi::SUCCESS;
     });
 
-    listen!(mainloop, rmi::REC_DESTROY, |ctx, rmm| {
-        if granule::set_granule(ctx.arg[0], GranuleState::Delegated, rmm.mm) != granule::RET_SUCCESS
-        {
-            ctx.ret[0] = rmi::ERROR_INPUT;
+    listen!(mainloop, rmi::REC_DESTROY, |arg, ret, rmm| {
+        if granule::set_granule(arg[0], GranuleState::Delegated, rmm.mm) != granule::RET_SUCCESS {
+            ret[0] = rmi::ERROR_INPUT;
             return;
         }
-        ctx.ret[0] = rmi::SUCCESS;
+        ret[0] = rmi::SUCCESS;
     });
 
-    listen!(mainloop, rmi::REC_ENTER, |ctx, rmm| {
+    listen!(mainloop, rmi::REC_ENTER, |arg, ret, rmm| {
         let rmi = rmm.rmi;
-        let rec = unsafe { Rec::into(ctx.arg[0]) };
-        let run_ptr = ctx.arg[1];
+        let rec = unsafe { Rec::into(arg[0]) };
+        let run_ptr = arg[1];
         rmm.mm.map(run_ptr, false);
 
         let run = unsafe { Run::parse_mut(run_ptr) };
@@ -125,17 +123,23 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 realmexit::RSI => {
                     trace!("REC_ENTER ret: {:#X?}", val);
                     let rsi = &rmm.rsi;
-                    let mut rsi_ctx = Context {
-                        cmd: val[1], // RSI request
-                        arg: [rec.rd.id(), rec.id(), 0, 0],
-                        ..Default::default()
-                    };
-                    rsi.dispatch(&mut rsi_ctx, rmm, run);
-                    ctx.ret[0] = rsi_ctx.ret[0];
+                    let cmd = val[1];
+
+                    rsi::constraint::validate(
+                        cmd,
+                        |_, ret_num| {
+                            let mut rsi_ctx = Context::new(cmd);
+                            rsi_ctx.init_arg(&[rec.rd.id(), rec.id()]);
+                            rsi_ctx.resize_ret(ret_num);
+                            rsi.dispatch(&mut rsi_ctx, rmm, run);
+                            ret[0] = rsi_ctx.ret_slice()[0];
+                        },
+                        || {},
+                    );
                 }
-                _ => ctx.ret[0] = rmi::SUCCESS,
+                _ => ret[0] = rmi::SUCCESS,
             },
-            Err(_) => ctx.ret[0] = rmi::ERROR_REC,
+            Err(_) => ret[0] = rmi::ERROR_REC,
         };
         rmm.mm.unmap(run_ptr);
     });

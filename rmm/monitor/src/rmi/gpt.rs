@@ -8,36 +8,39 @@ use crate::smc;
 extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::GRANULE_DELEGATE, |ctx, rmm| {
+    listen!(mainloop, rmi::GRANULE_DELEGATE, |arg, ret, rmm| {
         let smc = rmm.smc;
         let mm = rmm.mm;
-        ctx.ret = mark_realm(smc, mm, ctx.arg[0]);
+        mark_realm(smc, mm, arg[0], ret);
     });
 
-    listen!(mainloop, rmi::GRANULE_UNDELEGATE, |ctx, rmm| {
+    listen!(mainloop, rmi::GRANULE_UNDELEGATE, |arg, ret, rmm| {
         let smc = rmm.smc;
         let mm = rmm.mm;
-        ctx.ret = mark_ns(smc, mm, ctx.arg[0]);
+        mark_ns(smc, mm, arg[0], ret);
     });
 }
 
-pub fn mark_realm(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize) -> [usize; 8] {
+pub fn mark_realm(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize, ret: &mut [usize]) {
     let cmd = smc.convert(smc::Code::MarkRealm);
-    let arg = [addr, 0, 0, 0];
 
     if granule::set_granule(addr, GranuleState::Delegated, mm) != granule::RET_SUCCESS {
-        [rmi::ERROR_INPUT, addr, 0, 0, 0, 0, 0, 0]
+        ret[0] = rmi::ERROR_INPUT;
+        //ret[1] = addr; // [JB] ??
     } else {
-        smc.call(cmd, arg)
+        let smc_ret = smc.call(cmd, &[addr]);
+        ret[0] = smc_ret[0];
     }
 }
 
-pub fn mark_ns(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize) -> [usize; 8] {
+pub fn mark_ns(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize, ret: &mut [usize]) {
     let cmd = smc.convert(smc::Code::MarkNonSecure);
-    let arg = [addr, 0, 0, 0];
+
     if granule::set_granule(addr, GranuleState::Undelegated, mm) != granule::RET_SUCCESS {
-        [rmi::ERROR_INPUT, addr, 0, 0, 0, 0, 0, 0]
+        ret[0] = rmi::ERROR_INPUT;
+        // ret[1] = addr;  // [JB] GRANULE_DELEGATE & GRANULE_UNDELEGATE have only one output value
     } else {
-        smc.call(cmd, arg)
+        let smc_ret = smc.call(cmd, &[addr]);
+        ret[0] = smc_ret[0];
     }
 }

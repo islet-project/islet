@@ -3,27 +3,24 @@ extern crate alloc;
 use super::Context;
 use crate::rmi;
 use crate::smc::SecureMonitorCall;
-use crate::utils::spsc;
 use crate::Monitor;
 
 use alloc::boxed::Box;
 use alloc::collections::btree_map::BTreeMap;
-use alloc::rc::Rc;
+use alloc::collections::vec_deque::VecDeque;
+use spin::mutex::Mutex;
 
-pub type Handler = Box<dyn Fn(&mut Context, &Monitor)>;
+pub type Handler = Box<dyn Fn(&[usize], &mut [usize], &Monitor)>;
 
 pub struct Mainloop {
-    pub tx: Rc<spsc::Sender<Context>>,
-    pub rx: spsc::Receiver<Context>,
+    pub queue: Mutex<VecDeque<Context>>, // TODO: we need a more realistic queue considering multi-core environments if needed
     pub on_event: BTreeMap<usize, Handler>,
 }
 
 impl Mainloop {
     pub fn new() -> Self {
-        let (tx, rx) = spsc::channel::<Context>();
         Self {
-            tx,
-            rx,
+            queue: Mutex::new(VecDeque::new()),
             on_event: BTreeMap::new(),
         }
     }
@@ -38,28 +35,35 @@ impl Mainloop {
     }
 
     pub fn boot_complete(&mut self, smc: SecureMonitorCall) {
-        let ctx = Context {
-            cmd: rmi::BOOT_COMPLETE,
-            arg: [rmi::BOOT_SUCCESS, 0, 0, 0],
-            ..Default::default()
-        };
+        let mut ctx = Context::new(rmi::BOOT_COMPLETE);
+        ctx.init_arg(&[rmi::BOOT_SUCCESS]);
+
         self.add_event_handlers();
         self.dispatch(smc, ctx);
     }
 
     pub fn dispatch(&self, smc: SecureMonitorCall, ctx: Context) {
-        let ret = smc.call(ctx.cmd, ctx.arg);
-        let ctx = Context {
-            cmd: ret[0],
-            arg: [ret[1], ret[2], ret[3], ret[4]],
-            ..Default::default()
-        };
-        self.tx.send(ctx);
+        let ret = smc.call(ctx.cmd(), ctx.arg_slice());
+        let cmd = ret[0];
+
+        rmi::constraint::validate(
+            cmd,
+            |arg_num, ret_num| {
+                let mut ctx = Context::new(cmd);
+                ctx.init_arg(&ret[1..arg_num]);
+                ctx.resize_ret(ret_num);
+                self.queue.lock().push_back(ctx);
+                info!("push success! {:#08x}", cmd);
+            },
+            || {
+                info!("something wrong! {:#08x}", cmd);
+            },
+        );
     }
 
     pub fn run(&self, monitor: &Monitor) {
         loop {
-            let mut ctx = self.rx.recv();
+            let mut ctx = self.queue.lock().pop_front().unwrap(); // TODO: remove unwrap here, by introducing a more realistic queue
             let smc = monitor.smc;
 
             if self.on_event.is_empty() {
@@ -67,13 +71,12 @@ impl Mainloop {
             }
 
             match self.on_event.get(&ctx.cmd) {
-                Some(handler) => {
-                    handler(&mut ctx, monitor);
-                    ctx.arg = [ctx.ret[0], ctx.ret[1], ctx.ret[2], ctx.ret[3]];
-                }
+                Some(handler) => ctx.do_rmi(|arg, ret| {
+                    handler(arg, ret, monitor);
+                }),
                 None => {
                     error!("Not registered event: {:X}", ctx.cmd);
-                    ctx.arg = [rmi::RET_FAIL, 0, 0, 0];
+                    ctx.init_arg(&[rmi::RET_FAIL]);
                 }
             }
 

@@ -22,20 +22,31 @@ impl monitor::smc::Caller for SMC {
         }
     }
 
-    fn call(&self, command: usize, args: [usize; 4]) -> [usize; 8] {
+    fn call(&self, command: usize, args: &[usize]) -> [usize; 8] {
         let mut ret: [usize; 8] = [0usize; 8];
+        let mut padded_args: [usize; 8] = [0usize; 8];
+        let start = 1;
+        let end = start + args.len();
 
+        let put = |arr: &mut [usize; 8]| {
+            arr[0] = command;
+            arr[start..end].copy_from_slice(args);
+        };
+        put(&mut ret);
+        put(&mut padded_args);
+
+        // TODO: support more number of registers than 8 if needed
         unsafe {
             asm!(
                 "smc #0x0",
-                inlateout("x0") command => ret[0],
-                inlateout("x1") args[0] => ret[1],
-                inlateout("x2") args[1] => ret[2],
-                inlateout("x3") args[2] => ret[3],
-                inlateout("x4") args[3] => ret[4],
-                out("x5") ret[5],
-                out("x6") ret[6],
-                out("x7") ret[7],
+                inlateout("x0") padded_args[0] => ret[0],
+                inlateout("x1") padded_args[1] => ret[1],
+                inlateout("x2") padded_args[2] => ret[2],
+                inlateout("x3") padded_args[3] => ret[3],
+                inlateout("x4") padded_args[4] => ret[4],
+                inlateout("x5") padded_args[5] => ret[5],
+                inlateout("x6") padded_args[6] => ret[6],
+                inlateout("x7") padded_args[7] => ret[7],
             )
         }
 

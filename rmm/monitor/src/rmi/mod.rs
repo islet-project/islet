@@ -1,5 +1,6 @@
 use crate::error::Error;
 
+pub mod constraint;
 pub mod features;
 pub mod gpt;
 pub mod realm;

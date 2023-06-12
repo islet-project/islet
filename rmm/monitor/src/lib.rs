@@ -21,6 +21,9 @@ pub(crate) mod utils; // TODO: move to lib
 #[macro_use]
 extern crate log;
 
+#[macro_use]
+extern crate lazy_static;
+
 use crate::event::RsiHandle;
 use crate::rmi::RMI;
 use crate::rmm::PageMap;

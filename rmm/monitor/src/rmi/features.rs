@@ -28,9 +28,9 @@ const SUPPORTED: usize = 1;
 const FEATURE_REGISTER_0_INDEX: usize = 0;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::FEATURES, |ctx, _| {
-        if ctx.arg[0] != FEATURE_REGISTER_0_INDEX {
-            ctx.ret[0] = rmi::ERROR_INPUT;
+    listen!(mainloop, rmi::FEATURES, |arg, ret, _| {
+        if arg[0] != FEATURE_REGISTER_0_INDEX {
+            ret[0] = rmi::ERROR_INPUT;
             return;
         }
 
@@ -42,8 +42,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         feat_reg0 |= HASH_SHA_256_VALUE << HASH_SHA_256_SHIFT;
         feat_reg0 |= HASH_SHA_512_VALUE << HASH_SHA_512_SHIFT;
 
-        ctx.ret[0] = rmi::SUCCESS;
-        ctx.ret[1] = feat_reg0;
+        ret[0] = rmi::SUCCESS;
+        ret[1] = feat_reg0;
         debug!("rmi::FEATURES ret:{:X}", feat_reg0);
     });
 }

@@ -53,11 +53,8 @@ impl Mainloop {
                 ctx.init_arg(&ret[1..arg_num]);
                 ctx.resize_ret(ret_num);
                 self.queue.lock().push_back(ctx);
-                info!("push success! {:#08x}", cmd);
             },
-            || {
-                info!("something wrong! {:#08x}", cmd);
-            },
+            || {},
         );
     }
 

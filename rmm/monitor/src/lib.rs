@@ -16,8 +16,6 @@ pub mod rmm;
 pub mod rsi;
 pub mod smc;
 
-pub(crate) mod utils; // TODO: move to lib
-
 #[macro_use]
 extern crate log;
 

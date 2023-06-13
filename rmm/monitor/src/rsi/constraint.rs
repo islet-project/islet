@@ -72,15 +72,15 @@ lazy_static! {
     };
 }
 
-pub fn validate<T, G>(cmd: Command, mut ok_func: T, else_func: G)
+pub fn validate<T>(cmd: Command, mut ok_func: T)
 where
     T: FnMut(usize, usize),
-    G: FnOnce(),
 {
     if let Some(c) = CONSTRAINTS.get(&cmd) {
-        // TODO: command-specific validation routine if needed
         ok_func(c.arg_num, c.ret_num);
     } else {
-        else_func();
+        // rsi.dispatch takes care of unregistered command.
+        // Just limit the array size here.
+        ok_func(2, 1);
     }
 }

@@ -32,6 +32,7 @@ define_bits!(AA64PFR0, AMU[47 - 44], SVE[35 - 32]);
 define_iss_id!(ISS_ID_AA64PFR0_EL1, 3, 0, 0, 4, 0);
 
 define_sys_register!(ID_AA64PFR1_EL1);
+define_bits!(AA64PFR1, MTE[11 - 8]);
 define_iss_id!(ISS_ID_AA64PFR1_EL1, 3, 0, 0, 4, 1);
 
 // TODO: current compiler doesn't understand this sysreg
@@ -39,6 +40,20 @@ define_iss_id!(ISS_ID_AA64PFR1_EL1, 3, 0, 0, 4, 1);
 //define_iss_id!(ISS_ID_AA64ZFR0_EL1, 3, 0, 0, 4, 4);
 
 define_sys_register!(ID_AA64DFR0_EL1);
+define_bits!(
+    AA64DFR0,
+    BRBE[55 - 52],
+    MTPMU[51 - 48],
+    TraceBuffer[47 - 44],
+    TraceFilt[43 - 40],
+    PMSVer[35 - 32],
+    CTX_CMPs[31 - 28],
+    WRPs[23 - 20],
+    BRPs[15 - 12],
+    PMUVer[11 - 8],
+    TraceVer[7 - 4],
+    DebugVer[3 - 0]
+);
 define_iss_id!(ISS_ID_AA64DFR0_EL1, 3, 0, 0, 5, 0);
 
 define_sys_register!(ID_AA64DFR1_EL1);
@@ -112,6 +127,20 @@ fn handle_sysreg_id(vcpu: &mut VCPU<Context>, esr: u64) -> u64 {
     let mut mask: u64 = match idreg as u32 {
         ISS_ID_AA64ISAR1_EL1 => AA64ISAR1::GPI | AA64ISAR1::GPA | AA64ISAR1::APA | AA64ISAR1::API,
         ISS_ID_AA64PFR0_EL1 => AA64PFR0::AMU | AA64PFR0::SVE,
+        ISS_ID_AA64PFR1_EL1 => AA64PFR1::MTE,
+        ISS_ID_AA64DFR0_EL1 => {
+            AA64DFR0::BRBE
+                | AA64DFR0::MTPMU
+                | AA64DFR0::TraceBuffer
+                | AA64DFR0::TraceFilt
+                | AA64DFR0::PMSVer
+                | AA64DFR0::CTX_CMPs
+                | AA64DFR0::WRPs
+                | AA64DFR0::BRPs
+                | AA64DFR0::PMUVer
+                | AA64DFR0::TraceVer
+                | AA64DFR0::DebugVer
+        }
         _ => 0,
     };
     mask = !mask;
@@ -120,7 +149,13 @@ fn handle_sysreg_id(vcpu: &mut VCPU<Context>, esr: u64) -> u64 {
         ISS_ID_AA64PFR0_EL1 => unsafe { ID_AA64PFR0_EL1.get() & mask },
         ISS_ID_AA64PFR1_EL1 => unsafe { ID_AA64PFR1_EL1.get() & mask },
         //ISS_ID_AA64ZFR0_EL1 => unsafe { ID_AA64ZFR0_EL1.get()  & mask },
-        ISS_ID_AA64DFR0_EL1 => unsafe { ID_AA64DFR0_EL1.get() & mask },
+        ISS_ID_AA64DFR0_EL1 => unsafe {
+            let mut dfr0_set = AA64DFR0(0);
+            dfr0_set.set_masked_value(AA64DFR0::DebugVer, 6);
+            dfr0_set.set_masked_value(AA64DFR0::BRPs, 1);
+            dfr0_set.set_masked_value(AA64DFR0::WRPs, 1);
+            ID_AA64DFR0_EL1.get() & mask | dfr0_set.get()
+        },
         ISS_ID_AA64DFR1_EL1 => unsafe { ID_AA64DFR1_EL1.get() & mask },
         ISS_ID_AA64AFR0_EL1 => unsafe { ID_AA64AFR0_EL1.get() & mask },
         ISS_ID_AA64AFR1_EL1 => unsafe { ID_AA64AFR1_EL1.get() & mask },
@@ -128,7 +163,7 @@ fn handle_sysreg_id(vcpu: &mut VCPU<Context>, esr: u64) -> u64 {
         ISS_ID_AA64ISAR1_EL1 => unsafe { ID_AA64ISAR1_EL1.get() & mask },
         ISS_ID_AA64MMFR0_EL1 => unsafe { ID_AA64MMFR0_EL1.get() & mask },
         ISS_ID_AA64MMFR1_EL1 => unsafe { ID_AA64MMFR1_EL1.get() & mask },
-        ISS_ID_AA64MMFR2_EL1 => unsafe { ID_AA64MMFR2_EL1.get() & mask },
+        ISS_ID_AA64MMFR2_EL1 => unsafe { ID_AA64MMFR2_EL1.get() & mask }, //0x10211122,
         _ => 0x0,
     };
     trap::RET_TO_REC

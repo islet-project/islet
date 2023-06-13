@@ -10,7 +10,6 @@ use crate::realm::context::Context;
 
 use monitor::event::realmexit;
 use monitor::realm::vcpu::VCPU;
-use monitor::rmi;
 
 #[repr(u16)]
 #[derive(Debug, Copy, Clone)]
@@ -91,7 +90,7 @@ pub extern "C" fn handle_lower_exception(
         Kind::Synchronous => match Syndrome::from(esr) {
             Syndrome::HVC => {
                 debug!("Synchronous: HVC: {:#X}", vcpu.context.gp_regs[0]);
-                tf.regs[0] = rmi::RET_EXCEPTION_TRAP as u64;
+                tf.regs[0] = realmexit::SYNC as u64;
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = 0;
                 tf.regs[3] = unsafe { FAR_EL2.get() };
@@ -105,24 +104,21 @@ pub extern "C" fn handle_lower_exception(
             }
             Syndrome::InstructionAbort(_) | Syndrome::DataAbort(_) => {
                 debug!("Synchronous: InstructionAbort | DataAbort");
-                tf.regs[0] = rmi::RET_EXCEPTION_TRAP as u64;
+                tf.regs[0] = realmexit::SYNC as u64;
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = unsafe { HPFAR_EL2.get() };
                 tf.regs[3] = unsafe { FAR_EL2.get() };
-                debug!("HPFAR {:X?}, {:X?}", tf.regs[2], tf.regs[3]);
                 RET_TO_RMM
             }
             Syndrome::SysRegInst => {
                 debug!("Synchronous: MRS, MSR System Register Instruction");
-                tf.regs[0] = rmi::RET_EXCEPTION_TRAP as u64;
-                tf.regs[1] = esr as u64;
                 let ret = synchronous::sys_reg::handle(vcpu, esr as u64);
                 advance_pc(vcpu);
                 ret
             }
             undefined => {
                 debug!("Synchronous: Other");
-                tf.regs[0] = rmi::RET_EXCEPTION_TRAP as u64;
+                tf.regs[0] = realmexit::SYNC as u64;
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = unsafe { HPFAR_EL2.get() };
                 tf.regs[3] = unsafe { FAR_EL2.get() };
@@ -131,7 +127,7 @@ pub extern "C" fn handle_lower_exception(
         },
         Kind::Irq => {
             debug!("IRQ");
-            tf.regs[0] = rmi::RET_EXCEPTION_IRQ as u64;
+            tf.regs[0] = realmexit::IRQ as u64;
             tf.regs[1] = esr as u64;
             tf.regs[2] = 0;
             tf.regs[3] = unsafe { FAR_EL2.get() };

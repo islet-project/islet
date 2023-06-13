@@ -1,4 +1,5 @@
 use super::realm::{rd::State, Rd};
+use super::rec::Rec;
 
 use crate::event::Mainloop;
 use crate::listen;
@@ -8,8 +9,34 @@ use crate::rmm::granule::GranuleState;
 
 extern crate alloc;
 
+const RIPAS_EMPTY: u64 = 0;
+const RIPAS_RAM: u64 = 1;
+
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::RTT_INIT_RIPAS, |_, ret, _| {
+        super::dummy();
+        ret[0] = rmi::SUCCESS;
+    });
+
+    listen!(mainloop, rmi::RTT_SET_RIPAS, |arg, ret, rmm| {
+        let _rmi = rmm.rmi;
+        let _rd = unsafe { Rd::into(arg[0]) };
+        let _rec = unsafe { Rec::into(arg[1]) };
+        let _ipa = arg[2];
+        let _level = arg[3];
+        let ripas = arg[4];
+
+        let mut prot = rmi::MapProt::new(0);
+        match ripas as u64 {
+            RIPAS_EMPTY => prot.set_bit(rmi::MapProt::NS_PAS),
+            RIPAS_RAM => { /* do nothing: ripas ram by default */ }
+            _ => {
+                warn!("Unknown RIPAS:{}", ripas);
+                ret[0] = rmi::RET_FAIL;
+                return;
+            }
+        }
+        // TODO: update mapping
         super::dummy();
         ret[0] = rmi::SUCCESS;
     });
@@ -27,6 +54,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd = unsafe { Rd::into(arg[1]) };
         let ipa = arg[2];
         let src_pa = arg[3];
+        let _flags = arg[4];
 
         let realm_id = rd.id();
         let granule_sz = 4096;
@@ -61,6 +89,35 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // 6. unmap src and _taget_pa from rmm
         mm.unmap(src_pa);
+    });
+
+    listen!(mainloop, rmi::DATA_CREATE_UNKNOWN, |arg, ret, rmm| {
+        let rmi = rmm.rmi;
+        let mm = rmm.mm;
+        // target_phys: location where realm data is created.
+        let target_pa = arg[0];
+        let rd = unsafe { Rd::into(arg[1]) };
+        let ipa = arg[2];
+
+        let realm_id = rd.id();
+        let granule_sz = 4096;
+
+        // 0. Make sure granule state can make a transition to DATA
+        if granule::set_granule(target_pa, GranuleState::Data, mm) != granule::RET_SUCCESS {
+            ret[0] = rmi::ERROR_INPUT;
+            warn!("DATA_CREATE_UNKNOWN: Unable to set granule state to DATA");
+            return;
+        }
+
+        // 1. map ipa to target_pa into S2 table
+        let prot = rmi::MapProt::new(0);
+        let res = rmi.map(realm_id, ipa, target_pa, granule_sz, prot.get());
+        match res {
+            Ok(_) => ret[0] = rmi::SUCCESS,
+            Err(_) => ret[0] = rmi::RET_FAIL,
+        }
+
+        // TODO: 2. perform measure
     });
 
     listen!(mainloop, rmi::DATA_DESTORY, |arg, ret, rmm| {

@@ -15,7 +15,7 @@ use core::mem::ManuallyDrop;
 
 extern crate alloc;
 
-struct Rec {
+pub struct Rec {
     pub rd: &'static Rd,
     vcpuid: usize,
 }

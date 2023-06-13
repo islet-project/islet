@@ -12,6 +12,7 @@ pub const VERSION: usize = 0xc400_0150;
 pub const GRANULE_DELEGATE: usize = 0xc400_0151;
 pub const GRANULE_UNDELEGATE: usize = 0xc400_0152;
 pub const DATA_CREATE: usize = 0xc400_0153;
+pub const DATA_CREATE_UNKNOWN: usize = 0xc400_0154;
 pub const DATA_DESTORY: usize = 0xc400_0155;
 pub const REALM_ACTIVATE: usize = 0xc400_0157;
 pub const REALM_CREATE: usize = 0xc400_0158;
@@ -24,6 +25,7 @@ pub const RTT_READ_ENTRY: usize = 0xc400_0161;
 pub const FEATURES: usize = 0xc400_0165;
 pub const REC_AUX_COUNT: usize = 0xc400_0167;
 pub const RTT_INIT_RIPAS: usize = 0xc400_0168;
+pub const RTT_SET_RIPAS: usize = 0xc400_0169;
 pub const REQ_COMPLETE: usize = 0xc400_018f;
 
 pub const BOOT_COMPLETE: usize = 0xC400_01CF;

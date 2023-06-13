@@ -5,10 +5,8 @@ use monitor::realm::vcpu::VCPU;
 use monitor::realm::Realm;
 use monitor::rmi::MapProt;
 
-use crate::exception::trap::syndrome::{Fault, Syndrome};
 use crate::helper;
 use crate::helper::bits_in_reg;
-use crate::helper::ESR_EL2;
 use crate::helper::VTTBR_EL2;
 use crate::realm;
 use crate::realm::context::Context;
@@ -146,31 +144,8 @@ impl monitor::rmi::Interface for RMI {
     ) -> Result<(), &str> {
         let mut flags = 0;
         let prot = MapProt::new(prot);
-        let mut realm_pas = !prot.is_set(MapProt::NS_PAS);
-        //FIXME: temporary
-        unsafe {
-            if let Some(vcpu) = realm::vcpu::current() {
-                let esr = vcpu.context.sys_regs.esr_el2 as u32;
-                // share all data pages except those had s2 permission fault with s1ptw set
-                match Syndrome::from(esr) {
-                    Syndrome::DataAbort(fault) => {
-                        realm_pas = false;
-                        if esr & ESR_EL2::S1PTW as u32 != 0 {
-                            match fault {
-                                Fault::Permission { level } => {
-                                    realm_pas = true;
-                                    debug!("Data permission fault at {}", level);
-                                }
-                                _ => (),
-                            }
-                        }
-                    }
-                    _ => (),
-                }
-            }
-        }
 
-        if realm_pas == false {
+        if prot.is_set(MapProt::NS_PAS) {
             flags |= helper::bits_in_reg(RawPTE::NS, 0b1);
         }
 

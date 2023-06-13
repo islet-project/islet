@@ -140,13 +140,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                                     if rsi_ctx.ret_slice()[0] == rmi::SUCCESS_REC_ENTER {
                                         ret_ns = false;
                                     }
-                                    //ret[0] = rmi::SUCCESS;
                                     ret[0] = rsi_ctx.ret_slice()[0];
                                 } else {
                                     ret_ns = false;
                                 }
                             },
-                            || {},
                         );
                     }
                     realmexit::SYNC => unsafe {

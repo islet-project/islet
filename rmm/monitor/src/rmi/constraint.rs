@@ -36,7 +36,7 @@ lazy_static! {
             Constraint::new(rmi::GRANULE_UNDELEGATE, 2, 1),
         );
         m.insert(rmi::DATA_CREATE, Constraint::new(rmi::DATA_CREATE, 6, 1));
-        m.insert(rmi::DATA_CREATE_UNKNOWN, Constraint::new(rmi::DATA_CREATE_UNKNOWN, 3, 1));
+        m.insert(rmi::DATA_CREATE_UNKNOWN, Constraint::new(rmi::DATA_CREATE_UNKNOWN, 4, 1));
         m.insert(rmi::DATA_DESTORY, Constraint::new(rmi::DATA_DESTORY, 3, 3));
         m.insert(
             rmi::REALM_ACTIVATE,
@@ -73,7 +73,7 @@ lazy_static! {
         );
         m.insert(
             rmi::RTT_SET_RIPAS,
-            Constraint::new(rmi::RTT_SET_RIPAS, 5, 2),
+            Constraint::new(rmi::RTT_SET_RIPAS, 6, 2),
         );
         m.insert(rmi::REQ_COMPLETE, Constraint::new(rmi::REQ_COMPLETE, 4, 2));
         m

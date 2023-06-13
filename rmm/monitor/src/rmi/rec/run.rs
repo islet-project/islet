@@ -21,6 +21,24 @@ impl Run {
     pub unsafe fn set_exit_reason(&mut self, exit_reason: u8) {
         (*self.exit.inner).exit_reason.val = exit_reason;
     }
+
+    pub unsafe fn set_esr(&mut self, esr: u64) {
+        (*(*self.exit.inner).sys_regs.inner).esr = esr;
+    }
+
+    pub unsafe fn set_far(&mut self, far: u64) {
+        (*(*self.exit.inner).sys_regs.inner).far = far;
+    }
+
+    pub unsafe fn set_hpfar(&mut self, hpfar: u64) {
+        (*(*self.exit.inner).sys_regs.inner).hpfar = hpfar;
+    }
+
+    pub unsafe fn set_ripas(&mut self, base: u64, size: u64, state: u8) {
+        (*(*self.exit.inner).ripas.inner).base = base;
+        (*(*self.exit.inner).ripas.inner).size = size;
+        (*(*self.exit.inner).ripas.inner).value = state;
+    }
 }
 
 impl core::fmt::Debug for Run {

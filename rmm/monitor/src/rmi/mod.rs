@@ -41,6 +41,7 @@ pub const RET_EXCEPTION_IL: usize = 0x3;
 pub const SUCCESS: usize = 0;
 pub const ERROR_INPUT: usize = 1;
 pub const ERROR_REC: usize = 3;
+pub const SUCCESS_REC_ENTER: usize = 4;
 
 pub const MAX_REC_AUX_GRANULES: usize = 16;
 

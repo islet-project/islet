@@ -4,6 +4,7 @@ use super::Context;
 
 use crate::rmi::rec::run::Run;
 use crate::rsi;
+use crate::rsi::psci;
 use crate::Monitor;
 
 use alloc::boxed::Box;
@@ -11,14 +12,15 @@ use alloc::collections::btree_map::BTreeMap;
 
 pub type Handler = Box<dyn Fn(&[usize], &mut [usize], &Monitor, &mut Run)>;
 
-pub const RET_FAIL: usize = 0x0000;
-pub const RET_SUCCESS: usize = 0x0000;
-
 pub struct RsiHandle {
     pub on_event: BTreeMap<usize, Handler>,
 }
 
 impl RsiHandle {
+    pub const RET_SUCCESS: usize = 0x0000;
+    pub const RET_FAIL: usize = 0x0001;
+    pub const NOT_SUPPORTED: usize = !0;
+
     pub fn new() -> Self {
         let mut rsi = Self {
             on_event: BTreeMap::new(),
@@ -35,15 +37,24 @@ impl RsiHandle {
                 });
             }
             None => {
-                error!("Not registered event: {:X}", ctx.cmd);
-                ctx.init_arg(&[RET_FAIL]);
+                let rmi = monitor.rmi;
+                rmi.set_reg(ctx.arg[0], ctx.arg[1], 0, RsiHandle::NOT_SUPPORTED)
+                    .unwrap();
+                error!(
+                    "Not registered event: {:X} returning {:X}",
+                    ctx.cmd,
+                    RsiHandle::NOT_SUPPORTED
+                );
+                ctx.init_ret(&[RsiHandle::NOT_SUPPORTED]);
+                return RsiHandle::RET_FAIL;
             }
         }
-        RET_SUCCESS
+        RsiHandle::RET_SUCCESS
     }
 
     fn set_event_handlers(&mut self) {
         rsi::set_event_handler(self);
+        psci::set_event_handler(self);
     }
 
     pub fn add_event_handler(&mut self, code: usize, handler: Handler) {

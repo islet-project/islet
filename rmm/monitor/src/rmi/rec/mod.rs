@@ -4,7 +4,7 @@ pub mod run;
 use self::params::Params;
 use self::run::Run;
 use super::realm::Rd;
-use crate::event::{realmexit, Context, Mainloop};
+use crate::event::{realmexit, Context, Mainloop, RsiHandle};
 use crate::listen;
 use crate::{rmi, rsi};
 
@@ -118,29 +118,59 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             }
         }
 
-        match rmi.run(rec.rd.id(), rec.id(), 0) {
-            Ok(val) => match val[0] {
-                realmexit::RSI => {
-                    trace!("REC_ENTER ret: {:#X?}", val);
-                    let rsi = &rmm.rsi;
-                    let cmd = val[1];
+        let mut ret_ns;
+        loop {
+            ret_ns = true;
+            match rmi.run(rec.rd.id(), rec.id(), 0) {
+                Ok(val) => match val[0] {
+                    realmexit::RSI => {
+                        trace!("REC_ENTER ret: {:#X?}", val);
+                        let rsi = &rmm.rsi;
+                        let cmd = val[1];
 
-                    rsi::constraint::validate(
-                        cmd,
-                        |_, ret_num| {
-                            let mut rsi_ctx = Context::new(cmd);
-                            rsi_ctx.init_arg(&[rec.rd.id(), rec.id()]);
-                            rsi_ctx.resize_ret(ret_num);
-                            rsi.dispatch(&mut rsi_ctx, rmm, run);
-                            ret[0] = rsi_ctx.ret_slice()[0];
-                        },
-                        || {},
-                    );
-                }
-                _ => ret[0] = rmi::SUCCESS,
-            },
-            Err(_) => ret[0] = rmi::ERROR_REC,
-        };
+                        rsi::constraint::validate(
+                            cmd,
+                            |_, ret_num| {
+                                let mut rsi_ctx = Context::new(cmd);
+                                rsi_ctx.init_arg(&[rec.rd.id(), rec.id()]);
+                                rsi_ctx.resize_ret(ret_num);
+
+                                // set default value
+                                if rsi.dispatch(&mut rsi_ctx, rmm, run) == RsiHandle::RET_SUCCESS {
+                                    if rsi_ctx.ret_slice()[0] == rmi::SUCCESS_REC_ENTER {
+                                        ret_ns = false;
+                                    }
+                                    //ret[0] = rmi::SUCCESS;
+                                    ret[0] = rsi_ctx.ret_slice()[0];
+                                } else {
+                                    ret_ns = false;
+                                }
+                            },
+                            || {},
+                        );
+                    }
+                    realmexit::SYNC => unsafe {
+                        run.set_exit_reason(rmi::EXIT_SYNC);
+                        run.set_esr(val[1] as u64);
+                        run.set_hpfar(val[2] as u64);
+                        run.set_far(val[3] as u64);
+                        ret[0] = rmi::SUCCESS;
+                    },
+                    realmexit::IRQ => unsafe {
+                        run.set_exit_reason(rmi::EXIT_IRQ);
+                        run.set_esr(val[1] as u64);
+                        run.set_hpfar(val[2] as u64);
+                        run.set_far(val[3] as u64);
+                        ret[0] = rmi::SUCCESS;
+                    },
+                    _ => ret[0] = rmi::SUCCESS,
+                },
+                Err(_) => ret[0] = rmi::ERROR_REC,
+            };
+            if ret_ns == true {
+                break;
+            }
+        }
         rmm.mm.unmap(run_ptr);
     });
 }

@@ -28,6 +28,12 @@ impl monitor::smc::Caller for SMC {
         let start = 1;
         let end = start + args.len();
 
+        if end > ret.len() - 1 {
+            // TODO: need a more graceful way to return error value (Result?)
+            error!("{} arguments exceed the current limit of smc call. Please try assigning more registers to smc", args.len());
+            return ret;
+        }
+
         let put = |arr: &mut [usize; 8]| {
             arr[0] = command;
             arr[start..end].copy_from_slice(args);

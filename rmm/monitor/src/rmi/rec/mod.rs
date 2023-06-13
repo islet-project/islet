@@ -128,24 +128,21 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                         let rsi = &rmm.rsi;
                         let cmd = val[1];
 
-                        rsi::constraint::validate(
-                            cmd,
-                            |_, ret_num| {
-                                let mut rsi_ctx = Context::new(cmd);
-                                rsi_ctx.init_arg(&[rec.rd.id(), rec.id()]);
-                                rsi_ctx.resize_ret(ret_num);
+                        rsi::constraint::validate(cmd, |_, ret_num| {
+                            let mut rsi_ctx = Context::new(cmd);
+                            rsi_ctx.init_arg(&[rec.rd.id(), rec.id()]);
+                            rsi_ctx.resize_ret(ret_num);
 
-                                // set default value
-                                if rsi.dispatch(&mut rsi_ctx, rmm, run) == RsiHandle::RET_SUCCESS {
-                                    if rsi_ctx.ret_slice()[0] == rmi::SUCCESS_REC_ENTER {
-                                        ret_ns = false;
-                                    }
-                                    ret[0] = rsi_ctx.ret_slice()[0];
-                                } else {
+                            // set default value
+                            if rsi.dispatch(&mut rsi_ctx, rmm, run) == RsiHandle::RET_SUCCESS {
+                                if rsi_ctx.ret_slice()[0] == rmi::SUCCESS_REC_ENTER {
                                     ret_ns = false;
                                 }
-                            },
-                        );
+                                ret[0] = rsi_ctx.ret_slice()[0];
+                            } else {
+                                ret_ns = false;
+                            }
+                        });
                     }
                     realmexit::SYNC => unsafe {
                         run.set_exit_reason(rmi::EXIT_SYNC);

@@ -36,6 +36,11 @@
 	stp x12, x13, [x18, #VCPU_GP_REGS + 8 * 12]
 	stp x14, x15, [x18, #VCPU_GP_REGS + 8 * 14]
 	stp x16, x17, [x18, #VCPU_GP_REGS + 8 * 16]
+	stp x19, x20, [x18, #VCPU_GP_REGS + 8 * 19]
+	stp x21, x22, [x18, #VCPU_GP_REGS + 8 * 21]
+	stp x23, x24, [x18, #VCPU_GP_REGS + 8 * 23]
+	stp x25, x26, [x18, #VCPU_GP_REGS + 8 * 25]
+	stp x27, x28, [x18, #VCPU_GP_REGS + 8 * 27]
 	stp x29, x30, [x18, #VCPU_GP_REGS + 8 * 29]
 
 	ldr x0, [sp], #16
@@ -195,7 +200,7 @@ restore_volatile_from_stack_and_return:
 	cbnz x0, rmm_enter
 
 	mrs x0, tpidr_el2
-	b restore_volatile_from_vcpu_and_run
+	b restore_nonvolatile_from_vcpu_and_run
 .endm
 
 .global rmm_enter

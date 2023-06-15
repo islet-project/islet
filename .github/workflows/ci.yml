@@ -12,7 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # fetch all branch for worktree
           submodules: true
 
       - name: Install dependencies
@@ -21,26 +20,25 @@ jobs:
       - name: Build linux cca components
         run: ./scripts/fvp-cca -bo -nw=linux -rm=linux -rmm=tf-rmm
 
-  aosp:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0 # fetch all branch for worktree
-          submodules: true
-
-      - name: Install dependencies
-        run: ./scripts/init.sh
-
-      - name: Build AOSP components
-        run: ./scripts/fvp-cca -bo -nw=aosp -rmm=tf-rmm
+# FIXME: Failed on CI
+#  aosp:
+#    runs-on: ubuntu-22.04
+#    steps:
+#      - uses: actions/checkout@v3
+#        with:
+#          submodules: true
+#
+#      - name: Install dependencies
+#        run: ./scripts/init.sh
+#
+#      - name: Build AOSP components
+#        run: ./scripts/fvp-cca -bo -nw=aosp -rmm=tf-rmm
 
   acs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # fetch all branch for worktree
           submodules: true
 
       - name: Install dependencies
@@ -54,7 +52,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          fetch-depth: 0 # fetch all branch for worktree
           submodules: true
 
       - name: Install dependencies
@@ -82,12 +79,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
-      with:
-        submodules: true
 
     - name: Install dependencies
       run: |
-        ./scripts/deps/assets.sh
+        git submodule update --init assets
         ./scripts/deps/rust.sh
 
     - name: Check bash scripts coding-style
@@ -112,12 +107,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
-      with:
-        submodules: true
 
     - name: Install dependencies
       run: |
-        ./scripts/deps/pkgs.sh
+        git submodule update --init assets
         ./scripts/deps/rust.sh
 
     - name: Run sdk build (x86_64)

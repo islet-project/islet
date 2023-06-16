@@ -10,3 +10,5 @@ third-party/*
 !third-party/worktree.toml
 
 cli/islet
+
+docs/

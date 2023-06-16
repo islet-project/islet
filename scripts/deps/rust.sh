@@ -17,6 +17,6 @@ rustup component add rust-src rustfmt
 # sdk
 rustup target add aarch64-unknown-linux-gnu
 
-cargo install cargo-bloat cbindgen
+cargo install cargo-bloat cbindgen mdbook
 
 rustc --version --verbose

@@ -10,6 +10,10 @@
 	- [Requirements](./architecture/requirements.md)
 	- [Skeleton Architecture](./architecture/skeleton.md)
 - [Component Documentation](./component/index.md)
+    - [Attestation](./component/attestation.md)
+    - [Certifier](./component/certifier.md)
+- [Examples](./examples/index.md)
+    - [Confidential ML](./examples/confidential_ml.md)
 - [Appendix](./appendix/index.md)
 
 -----------

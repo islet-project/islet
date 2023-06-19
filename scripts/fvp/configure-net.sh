@@ -15,3 +15,4 @@ done
 # 3. configure tap interface
 ip addr flush tap0
 ip addr add FVP_TAP_IP/24 dev tap0
+ip route add default via HOST_IP dev eth0 # for bridge networking

@@ -16,7 +16,7 @@ First of all, make sure you are in the root directory of ISLET and go throuth th
 In most cases, you would probably not have to customize network-releated arguments and feed them into `fvp-cca`. Using a default configuration would be sufficient.
 ```
 # full command:
-# ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=tf-rmm --host-ip=<PC Host IP> --fvp-ip=<FVP IP> --fvp-tap-ip=<FVP Tap Device IP> --realm-ip=<Realm IP> --route-ip=<Route IP>
+# ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=tf-rmm --host-ip=<PC Host IP> --fvp-ip=<FVP IP> --fvp-tap-ip=<FVP Tap Device IP> --realm-ip=<Realm IP> --route-ip=<Route IP> --gateway=<Gateway IP of PC Host> --ifname=<Interface name>
 
 $ ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=tf-rmm
   # this takes a default network configuration in which
@@ -25,9 +25,13 @@ $ ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=tf-rmm
   # --fvp-tap-ip: 193.168.20.20
   # --realm-ip: 193.168.20.10
   # --route-ip: 193.168.20.0
+  # --gateway-ip: 193.168.10.1
+  # --ifname: eth0
 ```
 
-As of now, FVP being able to communicate through Host to external networks is out of scope. All communications between the three components must be done within the bounds of PC Host.
+FVP is able to communicate through Host to external networks in a similar way to what most VMs do.
+To do so, it is required to assign a real IP address (wired or wireless) into the PC host while IP addresses for FVP Host and Realm do not have to be a real IP,
+since the PC Host takes the role of NAT in order to hide their IPs from external networks. 
 
 ## A closer look at network configuration
 
@@ -36,7 +40,7 @@ This is how the aforementioned three components interact with each other:
 // A default configuration
 // Realm:     IP: 193.168.20.10 (static address),  Gateway: 193.168.20.20 (the tap device of FVP Host)
 // FVP Host:  IP: 193.168.10.5 (static address),   Tap: 193.168.20.20
-// PC Host:   IP: 193.168.10.15 (static address of tap device)
+// PC Host:   IP: 193.168.10.15 (a real IP address + bridge/tap device + network address translation)
 
 Realm <----------------> FVP Host  <-----------------> PC Host
       (tap network)  (ipv4_forward) (tap network)

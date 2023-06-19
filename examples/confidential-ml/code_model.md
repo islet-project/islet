@@ -9,6 +9,8 @@ The code model is a pre-trained model and *runtime* will not do training with us
 Note that since this model is a simple text classification model, it might not be able to handle arbitrary requests, that is to say, if you ask a new question that this model is not trained with,
 the quality of the output might be low. See [this csv file](./model_provider/code_x_data.csv) to know what requests are supported at this moment.
 
+[TODO] this article should be updated according to the changes of network configuration (external networking).
+
 #### Import and run a docker image
 
 Before trying this example, please do the following first to import and run a docker image.

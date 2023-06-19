@@ -218,9 +218,9 @@ def prepare_acs():
     print("[!] Building ACS...")
     run(["./scripts/build-acs.sh"], cwd=ROOT)
 
-def prepare_tap_network(host_ip, fvp_ip, route_ip):
+def prepare_tap_network(host_ip, fvp_ip, route_ip, gateway, ifname):
     print("[!] Configuring a tap network for fvp...")
-    run(["./scripts/configure_tap.sh", host_ip, fvp_ip, route_ip], cwd=ROOT)
+    run(["./scripts/configure_tap.sh", host_ip, fvp_ip, route_ip, gateway, ifname], cwd=ROOT)
 
 def run_fvp_tf_a_tests(debug):
     print("[!] Running fvp for tf-a-tests...")
@@ -258,9 +258,9 @@ def run_fvp_linux(debug, trace):
                 "-C", "TRACE.TarmacTrace.trace-file=%s/trace.log" % OUT]
     run(args, cwd=FASTMODEL)
 
-def run_fvp_linux_net(debug, host_ip, fvp_ip, fvp_tap_ip, realm_ip, route_ip):
+def run_fvp_linux_net(debug, host_ip, fvp_ip, fvp_tap_ip, realm_ip, route_ip, gateway, ifname):
     user_name = os.getlogin()
-    prepare_tap_network(host_ip, fvp_ip, route_ip)
+    prepare_tap_network(host_ip, fvp_ip, route_ip, gateway, ifname)
     print("[!] Running fvp for linux with the tap network..", )
     args = ["./FVP_Base_RevC-2xAEMvA",
             "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
@@ -302,7 +302,7 @@ def run_fvp_acs():
         "--fip",  "%s/fip.bin" % OUT,
         "--acs_build_dir", ACS_BUILD], cwd=ROOT)
 
-def place_realm_at_shared(realm_ip, fvp_tap_ip):
+def place_realm_at_shared(realm_ip, fvp_tap_ip, host_ip):
     os.makedirs(SHARED_PATH, exist_ok=True)
     run(["cp", "-R", "%s/." % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
     run(["cp", "-R", "%s/realm/." % OUT, SHARED_PATH], cwd=ROOT)
@@ -313,9 +313,10 @@ def place_realm_at_shared(realm_ip, fvp_tap_ip):
     run(["cp", CONFIGURE_NET, SHARED_PATH], cwd=ROOT)
     run(["cp", SET_REALM_IP, SHARED_PATH], cwd=ROOT)
     
-    if realm_ip != None and fvp_tap_ip != None:
+    if realm_ip != None and fvp_tap_ip != None and host_ip != None:
         # set IP address accordingly
         run(["sed", "-i", "-e", "s/FVP_TAP_IP/%s/g" % fvp_tap_ip, "%s/configure-net.sh" % SHARED_PATH], cwd=ROOT)
+        run(["sed", "-i", "-e", "s/HOST_IP/%s/g" % host_ip, "%s/configure-net.sh" % SHARED_PATH], cwd=ROOT)
         run(["sed", "-i", "-e", "s/FVP_TAP_IP/%s/g" % fvp_tap_ip, "%s/set-realm-ip.sh" % SHARED_PATH], cwd=ROOT)
         run(["sed", "-i", "-e", "s/REALM_IP/%s/g" % realm_ip, "%s/set-realm-ip.sh" % SHARED_PATH], cwd=ROOT)
 
@@ -390,6 +391,8 @@ if __name__ == "__main__":
     parser.add_argument("--fvp-tap-ip", "-ftip", help="the ip address for tap device in fvp", default="193.168.20.20")
     parser.add_argument("--realm-ip", "-reip", help="the ip address for realm", default="193.168.20.10")
     parser.add_argument("--route-ip", "-roip", help="the route ip for fvp", default="193.168.20.0")
+    parser.add_argument("--gateway", "-gw", help="the gateway ip for host machine", default="193.168.10.1")
+    parser.add_argument("--ifname", "-if", help="the main interface name of host machine", default="eth0")
 
     args = parser.parse_args()
 
@@ -422,7 +425,7 @@ if __name__ == "__main__":
             prepare_bootloaders(args.rmm, PREBUILT_EDK2)
 
             if args.realm is not None:
-                place_realm_at_shared(args.realm_ip, args.fvp_tap_ip)
+                place_realm_at_shared(args.realm_ip, args.fvp_tap_ip, args.host_ip)
                 prepare_sdk()
 
     if not args.build_only and args.normal_world == "tf-a-tests":
@@ -432,10 +435,11 @@ if __name__ == "__main__":
         run_fvp_linux(args.debug, args.trace)
     
     if not args.build_only and args.normal_world == "linux-net":
-        run_fvp_linux_net(args.debug, args.host_ip, args.fvp_ip, args.fvp_tap_ip, args.realm_ip, args.route_ip)
+        run_fvp_linux_net(args.debug, args.host_ip, args.fvp_ip, args.fvp_tap_ip, args.realm_ip, args.route_ip, args.gateway, args.ifname)
 
     if not args.build_only and args.normal_world == "aosp":
         run_fvp_aosp(args.debug)
 
     if not args.build_only and args.normal_world == "acs":
         run_fvp_acs()
+    

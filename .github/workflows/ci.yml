@@ -82,7 +82,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        git submodule update --init assets
+        ./scripts/deps/assets.sh
         ./scripts/deps/rust.sh
 
     - name: Check bash scripts coding-style
@@ -110,7 +110,7 @@ jobs:
 
     - name: Install dependencies
       run: |
-        git submodule update --init assets
+        ./scripts/deps/assets.sh
         ./scripts/deps/rust.sh
 
     - name: Run sdk build (x86_64)

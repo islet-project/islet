@@ -2,6 +2,6 @@
 
 set -e
 
-ROOT=$(dirname -- "$0")/../..
+ROOT=$(git rev-parse --show-toplevel)
 
-cd $ROOT && git submodule update --init --recursive
+cd $ROOT && git submodule update --init assets

@@ -1,7 +1,8 @@
 # ISLET
-ISLET is a project to enable on-device confidential computing
-for end users by leveraging ARMv9 CCA that is
+ISLET is a project Samsung Research that extends confidential computing to user devices.
+We enable on-device confidential computing for end users by leveraging ARMv9 CCA that is
 the newly emerging confidential computing hardware on ARM devices.
+
 Using the hardware support, ISLET enables a Trusted Execution Environment (TEE)
 on user’s devices within which users can securely process, store, communicate
 and manage their private data. The protection provided by
@@ -15,7 +16,39 @@ is needed to be running at EL2 in the Realm world.
 ISLET provides the implementation of RMM that is written in Rust. 
 
 ## Feature Overview
-- Confidential Machine Learning
-- Confidential Application SDK
-  - Computing API Standardization  // Multiparty CC?
 - Rust-based Realm Management Monitor
+- Confidential Computing API Standardization
+- Confidential Machine Learning
+
+## Overall Architecture
+We contribute mainly to `Islet RMM`, `Islet SDK`.
+
+```
+ << Realm World >>   << Normal World >>
+┌──────────────────┐┌──────────────────┐
+│ Confidential App ││                  │
+├──────────────────┤│                  │
+│ Islet SDK        ││ Linux            │
+├──────────────────┤│                  │
+│ Kernel           ││                  │
+├──────────────────┤├──────────────────┤
+│ Islet RMM        ││ KVM              │
+└──────────────────┘└──────────────────┘
+┌──────────────────────────────────────┐
+│ TF-A (EL3 Firmware)                  │
+└──────────────────────────────────────┘
+┌──────────────────────────────────────┐┌──────────────────┐
+│ Arm Fixed Virtual Platforms (arm64)  ││ ISLET CLI        │
+└──────────────────────────────────────┘└──────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│ Host (x86_64)                                            │
+└──────────────────────────────────────────────────────────┘
+
+Where :
+  RMM - Realm Management Monitor
+  KVM - Kernel-based Virtual Machine
+```
+
+---
+
+For more information, please visit our [developer site](https://samsung.github.io/islet/).

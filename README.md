@@ -1,5 +1,5 @@
 # ISLET
-ISLET is a project Samsung Research that extends confidential computing to user devices.
+ISLET is a project of Samsung Research that extends confidential computing to user devices.
 We enable on-device confidential computing for end users by leveraging ARMv9 CCA that is
 the newly emerging confidential computing hardware on ARM devices.
 

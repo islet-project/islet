@@ -6,6 +6,8 @@
   - [About CCA](./getting-started/cca.md)
   - [Application Developer](./getting-started/app-dev.md)
   - [Platform Developer](./getting-started/plat-dev.md)
+    - [Network Configuration](./network.md)
+    - [Realm Debugging](./getting-started/debug_realm.md)
 - [Components](./components/index.md)
   - [CCA platform architecture](./components/cca_design.md)
   - [Realm Management Monitor](./components/rmm.md)

@@ -1,10 +1,14 @@
+# Platform Developer
+Platform developers are who want to develop Confidential Computing Platform Components.
+Platform components include from Realm Management Monitor(RMM) to Realm.
+
+`Islet` provides Rust-based RMM and scripts to compose Confidential Computing Platoform.
+You can explore CCA platform with our scripts and
+powerful [third-party projects](https://github.com/Samsung/islet/tree/main/third-party).
+
 ## Setting build environment
 
 The first step is to prepare to build our project.
-We provide simple script `./scripts/init.sh`, installing rust and
-related packages.
-We tested the scripts on Ubuntu 18.04. So, we recommend to use the same
-Linux distributions.
 
 ```bash
 ./scripts/init.sh
@@ -35,8 +39,8 @@ $ LD_LIBRARY_PATH=./ ./sdk-example-c
 ```
 
 ## Running a linux realm with a networking support and prebuilt examples
-See [examples](./examples/README.md).
-To get details about its network configuration, see [network.md](./docs/network.md).
+See [examples](https://github.com/Samsung/islet/tree/main/examples).
+To get details about its network configuration, see [network.md](https://github.com/Samsung/islet/blob/main/doc/network.md)
 
 ## Testing the realm features
 ```bash

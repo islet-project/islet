@@ -11,7 +11,7 @@ method. Please update this document with better solution.
 Insert an instruction which raises an exception taken to EL2 RMM
 in your code where you want to inspect.
 For example, write an unused instruction 'smc #0xF0'.
-Since the current implementation of RMM exection handler for the SMC trap
+Since the current implementation of RMM exception handler for the SMC trap
 does not forward the exception to the normal world, using SMC instructions
 are useful for debugging. (refer rmm/armv9a/src/exception/trap.rs)
 
@@ -35,7 +35,7 @@ let esr_el2: u64 = ESR_EL2.get();
 let smc_imm: u64 = esr_els & 0xFF;
 ```
 
-#### Distinguishing by the realm pc (==ELR_EL2) reigster
+#### Distinguishing by the realm pc (==ELR_EL2) register
 You can distinguish them by the pc register, but you may not able to identify
 the corresponding address of each instructions that you inserted until you look
 into the instruction in the address.

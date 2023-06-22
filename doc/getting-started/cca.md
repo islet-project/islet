@@ -1,10 +1,10 @@
 # ARM Confidential Compute Architecture (CCA)
 
-[ARM CCA](https://www.arm.com/architecture/security-features/arm-confidential-compute-architecture) is the lastest confidential computing technology that can extend confidential computing through to mobile devices (i.e., Samsung galaxy). For ARM-based devices, TrustZone has been the pillar of secure compute for over a decade and adopted for various use cases. However, one weakness of TrustZone makes it hard to keep up with an increasing number of applications that want to benefit from TrustZone. That is the lack of dynamic yet flexible memory allocation strategy.
+[ARM CCA](https://www.arm.com/architecture/security-features/arm-confidential-compute-architecture) is the latest confidential computing technology that can extend confidential computing through to mobile devices (i.e., Samsung galaxy). For ARM-based devices, TrustZone has been the pillar of secure compute for over a decade and adopted for various use cases. However, one weakness of TrustZone makes it hard to keep up with an increasing number of applications that want to benefit from TrustZone. That is the lack of dynamic yet flexible memory allocation strategy.
 
 To isolate TrustZone from normal worlds (non-secure worlds), hardware manufacturer like Samsung have had to dedicate some portion of physical memory to TrustZone,
-which raises a convential memory-related tradeoff. To be fair, it's not a problem that only belongs to TrustZone, some other TEEs (e.g., SGX) also suffer from it.
-And this is one of the reasons why recent confidential computing architectures take secure virtual machine apporach (e.g., AMD SEV, Intel TDX, ARM CCA) over process-based ones (e.g., Intel SGX).
+which raises a conventional memory-related tradeoff. To be fair, it's not a problem that only belongs to TrustZone, some other TEEs (e.g., SGX) also suffer from it.
+And this is one of the reasons why recent confidential computing architectures take secure virtual machine approach (e.g., AMD SEV, Intel TDX, ARM CCA) over process-based ones (e.g., Intel SGX).
 
 From the hardware manufacturer perspective, the capability of dynamic secure memory allocation is definitely the most appealing feature among others.
 But, this is not the only thing ISLET is excited about. ISLET can benefit from ARM CCA in many aspects that include but not limited to:

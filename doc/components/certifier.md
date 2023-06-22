@@ -1,7 +1,7 @@
 # Certifier framework
 
 [Certifier framework](https://github.com/vmware-research/certifier-framework-for-confidential-computing) is a framework designed to bring the ability to handle Policy into reality in an TEE-agnostic way. It offers a set of client APIs that can plug into various TEEs including ISLET (ARM CCA) and server called Ceritifer Service, which takes the role of verifying attestation reports that come from various TEEs.
-ISLET currently adopts this framework to realize end-to-end confidential services that likely involve more than two different TEEs.
+ISLET currently adopts this framework to realize end-to-end confidential services that are likely to involve two or more different TEEs.
 
 ## What we can do with Certifier Framework
 

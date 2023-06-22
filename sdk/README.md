@@ -21,7 +21,7 @@ to create headers for rust libraries which expose public C/C++ APIs.
 ```
 
 ## Confidential Computing Primitives
-Currently ISLET SDK proviedes `Attestation` and `Sealing`. You can check reference code snippets.
+Currently ISLET SDK provides `Attestation` and `Sealing`. You can check reference code snippets.
 
 ### Attestation
 #### Rust code snippet

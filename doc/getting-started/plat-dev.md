@@ -2,7 +2,7 @@
 Platform developers are who want to develop Confidential Computing Platform Components.
 Platform components include from Realm Management Monitor(RMM) to Realm.
 
-`Islet` provides Rust-based RMM and scripts to compose Confidential Computing Platoform.
+`Islet` provides Rust-based RMM and scripts to compose Confidential Computing Platform.
 You can explore CCA platform with our scripts and
 powerful [third-party projects](https://github.com/Samsung/islet/tree/main/third-party).
 

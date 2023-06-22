@@ -11,7 +11,7 @@ On one hand, federated learning is a good thing for security, but on the other h
 On top of it, there are still security issues remaining even when you use federated learning. For example, say that you are working for an AI company specializing in model development and your AI models have to be treated as private assets. But for machine learning to work, you have to send your model down to devices and trust they do not see or reveal your model. Also, there have been academic papers that demonstrate it's still possible to learn something about user data through adversarial ML attacks even in the federated learning setting (e.g., [paper-1](https://arxiv.org/abs/2003.14053), [paper-2](https://www.usenix.org/system/files/sec20summer_fang_prepub.pdf)).
 
 These problems mentioned by far have led us to try to find out a practical yet general solution that can cover every type of machine learning (from traditional to federated).
-And that solution is what we call *confidential machine learning* (shortly, *confidential ML*), which is based on *trusted exeuction environments (TEE)*. Admittedly, Confidential ML is not new and many companies working on TEE already have services that offer confidential ML but to some limited extent. Specifically, what most companies are caring about is only server-side aspects and device-side aspects have not been seriously considered, and thus they all fail to build an end-to-end confidential ML service.
+And that solution is what we call *confidential machine learning* (shortly, *confidential ML*), which is based on *trusted execution environments (TEE)*. Admittedly, Confidential ML is not new and many companies working on TEE already have services that offer confidential ML but to some limited extent. Specifically, what most companies are caring about is only server-side aspects and device-side aspects have not been seriously considered, and thus they all fail to build an end-to-end confidential ML service.
 
 In this article, we're going to explore how ISLET makes a unique addition to confidential ML to accomplish a real end-to-end confidential ML service,
 ranging from traditional ML to federated learning.
@@ -20,7 +20,7 @@ ranging from traditional ML to federated learning.
 
 In traditional ML, there are two kinds of privacy leaks:
 - *data leak*: devices have to send data in order for servers to do ML operations including inference and training. In this case, those servers can see user data without permission.
-- *model leak*: to reduce latency and retrieve an ML outcome quickly, devices can download an ML model from servers and do on-device inferences using ML frameworks such as Tensorflow lite. In this case, devices can see an ML model that should be treated as secret to servers.
+- *model leak*: to reduce latency and retrieve an ML outcome quickly, devices can download an ML model from servers and do on-device inferences using ML frameworks such as TensorFlow lite. In this case, devices can see an ML model that should be treated as secret to servers.
 
 While most confidential computing platforms are targeting cloud servers (e.g., Intel SGX and AMD SEV), most ML clients come from mobile devices where confidential computing is out of reach at the time of this writing. Of course, most mobile devices based on ARM have TrustZone, which is one instance of TEE, but it is typically not allowed for 3rd party applications to get protected by TrustZone as it is built for vendor-specific confidential information.
 

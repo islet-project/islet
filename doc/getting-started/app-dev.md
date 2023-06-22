@@ -11,7 +11,7 @@ For more information about `Islet SDK`,
 please refer [this document](https://samsung.github.io/islet/components/sdk.html).
 
 ## Setting Rust environment
-The first step is to prepare Rust envrionment.
+The first step is to prepare Rust environment.
 
 ```sh
 $ ./scripts/deps/rust.sh

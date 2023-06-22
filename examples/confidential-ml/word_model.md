@@ -115,7 +115,7 @@ $ <terminal-4: device1> ./run.sh 192.168.33.1 8125 word 0
 
 ## Try out confidential word prediction in FL setting
 
-This section explains how to try out confidential word prediction in FL setting. We make a simple word prediction model that is based on SimpleRNN of tensorflow.
+This section explains how to try out confidential word prediction in FL setting. We make a simple word prediction model that is based on SimpleRNN of TensorFlow.
 We prepare [a docker image](https://github.com/Samsung/islet/releases/download/example-confidential-ml-v1.1/cca_ubuntu_release.tar.gz) that contains everything needed to try out this example and it involves 5 different instances-- *certifier-service*, *runtime*, *model-provider*, *device1*, *device2*-- meaning that you need to open 5 terminals for each of them.s
 
 [TODO] Note that as of now we do not offer any convenient way to try out this example in your host machine directly instead of the docker image, as this example involves a lot of dependencies. Anyhow, we plan to support building and testing this example on the host PC in the near future.

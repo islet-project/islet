@@ -12,7 +12,7 @@
   - [CCA platform architecture](./components/cca_design.md)
   - [Realm Management Monitor](./components/rmm.md)
   - [Command Line Interface](./components/cli.md)
-  - [Software Developement Kit](./components/sdk.md)
+  - [Software Development Kit](./components/sdk.md)
   - [Attestation](./components/attestation.md)
   - [Certifier](./components/certifier.md)
 - [Use Cases](./design/index.md)

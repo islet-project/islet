@@ -8,19 +8,16 @@ This page aims to describe an overall CCA platform architecture and what compone
 
 The general CCA architecture is depicted above. From the high level perspective, you think of this architecture as the one similar to a conventional TrustZone application programming model where one application breaks down into two pieces, one for normal world and the other one for secure world. More precisely, a virtual machine that runs on the normal world can securely delegate confidential operations to a corresponding realm.
 
-You might not want to split up an application into two pieces. Instead, you want to put an application in Realm and run it without code changes as confdiential container does.
+You might not want to split up an application into two pieces. Instead, you may want to put a whole application in Realm and run it without code changes as confidential container does.
 That scenario can also be realized and is specified in the next section.
 
-In this architecture, RMM (Realm Management Monitor) and Monitor (also known as EL3 Monitor, shortly EL3M) are called trusted firmware components that CCA relies on for security, therefore they must be securely implemented and verified. Monitor manages GPT (Granule Protection Table) which tracks which world each physical page belongs to and is responsible for context switching between different worlds (i.e., between Realm and Normal).
+In this architecture, RMM (Realm Management Monitor) and Monitor (also known as EL3 Monitor, shortly EL3M) are called trusted firmware components that CCA relies on for security, therefore they must be securely implemented and verified. Monitor manages GPT (Granule Protection Table) which tracks which world each physical page belongs to and is responsible for context switching between different worlds (i.e., between Realm world and Normal world).
 
-More specifically, a physical page assigned to a realm is marked as a realm page in GPT and it is used in memory translation. So, when a VM that runs on Normal attempts to access that page, it will result in a translation fault. This is how CCA offers isolation between different worlds and enables dynamic secure memory allocation.
+More specifically, a physical page assigned to a realm is marked as a realm page in GPT and it is used in memory translation. So, when a VM that runs on Normal world attempts to access that page, it will result in a translation fault. This is how CCA offers isolation between different worlds and enables dynamic secure memory allocation.
 
-On top of it, RMM takes the resposibility of isolating a realm from the other realms, by making use of existing virtualization-based isolation technologies such as NPT (Nested Page Table). Also, it controls the execution of Realm as typical hypervisors do and is reponsible for interacting with Normal to provide some services, for example sending a network packet through VirtIO to Normal.
+On top of it, RMM takes the responsibility of isolating a realm from the other realms, by making use of existing virtualization-based isolation technologies such as NPT (Nested Page Table). Also, it controls the execution of Realm as typical hypervisors do and is responsible for interacting with Normal world to provide some services, for example sending a network packet through VirtIO to Normal world.
 
-Lastly, HES (Hardware Enforced Security) represents a dedicated hardware component that is separated from CPUs and behaves as RoT (Root of Trust). Detaching the ability of RoT from Monitor (i.e., firmware that runs on CPU) would be a good design decision for the sake of security. One reason is that doing so could eliminate the root cause of many side-channel attacks, which is attackers can run on the same CPU as victims.
-
-If you put a key that signs a report in components that run on CPU, side-channel attackers might be able to recover the key by monitoring channels shared across CPUs.
-You don't need to worry about this attack if you have HES to do this job.
+Lastly, HES (Hardware Enforced Security) represents a dedicated hardware component that is separated from CPUs and behaves as RoT (Root of Trust). Detaching the ability of RoT from Monitor (i.e., firmware that runs on CPU) helps to minimize the responsibility of RMM. 
 
 ## The reference implementation of CCA
 

@@ -10,7 +10,7 @@ However, there are still security issues remaining even when you use federated l
 
 On top of that, there have been academic papers that demonstrate it's still possible to learn something about user data through adversarial ML attacks even in the federated learning setting (e.g., [paper-1](https://arxiv.org/abs/2003.14053), [paper-2](https://www.usenix.org/system/files/sec20summer_fang_prepub.pdf)).
 
-This has led us to try to find out a practical solution, after an investigation, we have drawn a conclusiton that "confidential computing" would be a good fit for "federated learning (FL, shortly)" (a traditional machine learning as well) and actually help solving the above problems.
+This has led us to try to find out a practical solution, after an investigation, we have drawn a conclusion that "confidential computing" would be a good fit for "federated learning (FL, shortly)" (a traditional machine learning as well) and actually help solving the above problems.
 
 ## Approach
 
@@ -43,11 +43,11 @@ In FL setting, it works as following:
 In both cases, every components do not contain codes that try to leak other party's private asset to anywhere but inside TEE.
 And this argument can be guaranteed by putting the measurement of their codes into a policy that is maintained by *[certifier framework](https://github.com/vmware-research/certifier-framework-for-confidential-computing)* and using the policy throughout the attestation process.
 
-To get a feeling why it is secure, imagine an attacker attempts to pretend it is *runtime* and leak user data to somewhere else. It will not be allowed to pass attestation because such malicious *runtime* codes are not specificed in the policy. It is the same in the device side.
+To get a feeling why it is secure, imagine an attacker attempts to pretend it is *runtime* and leak user data to somewhere else. It will not be allowed to pass attestation because such malicious *runtime* codes are not specified in the policy. It is the same in the device side.
 
 An attacker might want to make an arbitrary local model that is different than a genuine local model derived from training process, which is referred to as "local model poisoning attack", in order to change a global model in an attacker's favor. To do so, the attacker has to build an application containing that attack codes but that application will be prohibited to launch due to the policy check.
 
-[TODO] Note that as of now we use the same measurement for those four components just for testing purpose. We need to build a script to compute a proper measurement for each componet at compile-time.
+[TODO] Note that as of now we use the same measurement for those four components just for testing purpose. We need to build a script to compute a proper measurement for each component at compile-time.
 
 ## Model
 

@@ -1,3 +1,5 @@
+/// The structure holds data passsed between the Host and the RMM
+/// on Realm Execution Context (REC) entry and exit.
 #[repr(C)]
 pub struct Run {
     entry: Entry,
@@ -73,12 +75,14 @@ impl Drop for Run {
     }
 }
 
+/// The structure holds data passsed from the Host to the RMM on REC entry.
 #[repr(C)]
 union Entry {
     inner: core::mem::ManuallyDrop<EntryInner>,
     reserved: [u8; 0x800],
 }
 
+/// The structure holds data passsed from the RMM to the Host on REC exit.
 #[repr(C)]
 union Exit {
     inner: core::mem::ManuallyDrop<ExitInner>,
@@ -87,8 +91,11 @@ union Exit {
 
 #[repr(C)]
 struct EntryInner {
+    /// Flags
     flags: Flags,
+    /// General-purpose registers
     gprs: GPRs,
+    /// Generic Interrupt Controller version 3
     gicv3: EntryGICv3,
 }
 
@@ -98,12 +105,14 @@ union Flags {
     reserved: [u8; 0x200],
 }
 
+/// General-purpose registers
 #[repr(C)]
 union GPRs {
     val: [u64; 31],
     reserved: [u8; 0x300 - 0x200],
 }
 
+/// Generic Interrupt Controller version 3
 #[repr(C)]
 union EntryGICv3 {
     inner: core::mem::ManuallyDrop<EntryGICv3Inner>,
@@ -112,7 +121,9 @@ union EntryGICv3 {
 
 #[repr(C)]
 struct EntryGICv3Inner {
+    /// Hypervisor Control Register
     hcr: u64,
+    /// List Registers
     lrs: [u64; 16],
 }
 
@@ -141,11 +152,15 @@ union SysRegs {
 
 #[repr(C)]
 struct SysRegsInner {
+    /// Exception Syndrome Register
     esr: u64,
+    /// Fault Address Register
     far: u64,
+    /// Hypervisor IPA Fault Address Register
     hpfar: u64,
 }
 
+/// Generic Interrupt Controller version 3
 #[repr(C)]
 union ExitGICv3 {
     inner: core::mem::ManuallyDrop<ExitGICv3Inner>,
@@ -154,9 +169,13 @@ union ExitGICv3 {
 
 #[repr(C)]
 struct ExitGICv3Inner {
+    /// Hypervisor Control Register
     hcr: u64,
+    /// List Registers
     lrs: [u64; 16],
+    /// Maintenance Interrupt State Register
     misr: u64,
+    /// Virtual Machine Control Register
     vmcr: u64,
 }
 
@@ -168,12 +187,17 @@ union CounterTimer {
 
 #[repr(C)]
 struct CounterTimerInner {
+    /// Physical Timer Control Register
     p_ctl: u64,
+    /// Physical Timer CompareValue Register
     p_cval: [u64; 16],
+    /// Virtual Timer Control Register
     v_ctl: u64,
+    /// Virtual Timer CompareValue Register
     v_cval: u64,
 }
 
+/// Realm IPA (Intermediate Physical Address) State
 #[repr(C)]
 union RIPAS {
     inner: core::mem::ManuallyDrop<RIPASInner>,
@@ -187,6 +211,7 @@ struct RIPASInner {
     value: u8,
 }
 
+/// Host call immediate value
 #[repr(C)]
 union Imm {
     val: u16,

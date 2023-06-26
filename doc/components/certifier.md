@@ -20,4 +20,4 @@ From that point on, they can trust each other and send messages to each other se
 ## A more complex example
 
 For a more realistic case, we've built Confidential ML on top of the certifier framework.
-See [this page](TODO: Link) to know what it is in more depth.
+See [this page](../usecases/confidential_ml.md) to know what it is in more depth.

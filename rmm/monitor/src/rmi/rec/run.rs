@@ -122,7 +122,7 @@ struct ExitInner {
     sys_regs: SysRegs,
     gprs: GPRs,
     gicv3: ExitGICv3,
-    cnt: CNT,
+    cnt: CounterTimer,
     ripas: RIPAS,
     imm: Imm,
 }
@@ -160,22 +160,20 @@ struct ExitGICv3Inner {
     vmcr: u64,
 }
 
-// Counter-timer
 #[repr(C)]
-union CNT {
-    inner: core::mem::ManuallyDrop<CNTInner>,
+union CounterTimer {
+    inner: core::mem::ManuallyDrop<CounterTimerInner>,
     reserved: [u8; 0x500 - 0x400],
 }
 
 #[repr(C)]
-struct CNTInner {
+struct CounterTimerInner {
     p_ctl: u64,
     p_cval: [u64; 16],
     v_ctl: u64,
     v_cval: u64,
 }
 
-// Counter-timer
 #[repr(C)]
 union RIPAS {
     inner: core::mem::ManuallyDrop<RIPASInner>,

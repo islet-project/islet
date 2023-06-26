@@ -55,6 +55,6 @@ For more information, please visit our [developer site](https://samsung.github.i
 
 ## A demo video (Confidential ML)
 
-![this page](./examples/confidential-ml/video/confidential_ml.gif)
+![this page](https://github.com/Samsung/islet/raw/main/examples/confidential-ml/video/confidential_ml.gif)
 
 See [this page](./examples/confidential-ml/README.md) to get details about this demo.

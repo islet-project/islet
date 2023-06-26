@@ -22,4 +22,4 @@ For example, what tokens in a report say is basically sort of measurements signe
 As you may notice, managing Policy is out of scope of CCA as this is inherently not dependent on CCA. Instead, there are several open-source projects that take on this capability, for example, [Veraison](https://github.com/veraison/) and [Certifier Framework](https://github.com/vmware-research/certifier-framework-for-confidential-computing/). They all aim to implement a standardized way to express and enforce Policy. (note that they sometimes are treated as a unified verification service as they are able to work across various TEEs)
 
 ISLET might be able to work with any verification service in theory, but currently bases the ability to handle Policy on Certifier Framework.
-You can see further details [here](TODO: link to certifier) on what Certifier Framework is and how ISLET uses it.
+You can see further details [here](./certifier.md) on what Certifier Framework is and how ISLET uses it.

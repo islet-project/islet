@@ -23,33 +23,7 @@ ISLET provides the implementation of RMM that is written in Rust.
 ## Overall Architecture
 We contribute mainly to `Islet RMM`, `Islet SDK`.
 
-```
- << Realm World >>   << Normal World >>
-┌──────────────────┐┌──────────────────┐
-│ Confidential App ││                  │
-├──────────────────┤│                  │
-│ Islet SDK        ││ Linux            │
-├──────────────────┤│                  │
-│ Kernel           ││                  │
-├──────────────────┤├──────────────────┤
-│ Islet RMM        ││ KVM              │
-└──────────────────┘└──────────────────┘
-┌──────────────────────────────────────┐
-│ TF-A (EL3 Firmware)                  │
-└──────────────────────────────────────┘
-┌──────────────────────────────────────┐┌──────────────────┐
-│ Arm Fixed Virtual Platforms (arm64)  ││ ISLET CLI        │
-└──────────────────────────────────────┘└──────────────────┘
-┌──────────────────────────────────────────────────────────┐
-│ Host (x86_64)                                            │
-└──────────────────────────────────────────────────────────┘
-
-Where :
-  RMM - Realm Management Monitor
-  KVM - Kernel-based Virtual Machine
-```
-
----
+![islet-overview](https://github.com/Samsung/islet/raw/main/doc/islet-overview.png)
 
 For more information, please visit our [developer site](https://samsung.github.io/islet/).
 

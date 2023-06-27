@@ -14,12 +14,8 @@
   - [Software Development Kit](./components/sdk.md)
   - [Attestation](./components/attestation.md)
   - [Certifier](./components/certifier.md)
-- [Use Cases](./design/index.md)
+- [Use Cases](./usecases/index.md)
   - [Confidential Machine Learning](./usecases/confidential_ml.md)
 - [Rust Crates](./crates/index.md)
   - [Realm Management Monitor](./plat-doc/monitor/index.html)
   - [Confidential Application SDK](./app-doc/islet_sdk/index.html)
-
------------
-
-[Contributors](./contributors.md)

@@ -9,6 +9,7 @@ pub mod allocator;
 pub mod config;
 pub mod cpu;
 pub mod exception;
+pub mod gic;
 pub mod helper;
 pub mod mm;
 pub mod panic;

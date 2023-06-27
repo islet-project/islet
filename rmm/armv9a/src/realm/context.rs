@@ -9,6 +9,7 @@ pub struct Context {
     pub elr: u64,
     pub spsr: u64,
     pub sys_regs: SystemRegister,
+    pub gic_state: GICRegister,
     pub fp_regs: [u128; 32],
 }
 
@@ -37,6 +38,24 @@ impl monitor::realm::vcpu::Context for Context {
         //vcpu.context.sys_regs.vmpidr = 0u64;
         //TPIDR_EL2.set(0u64);
     }
+}
+
+/// Generic Interrupt Controller Registers
+#[repr(C)]
+#[derive(Default, Debug)]
+pub struct GICRegister {
+    // Interrupt Controller Hyp Active Priorities Group 0 Registers
+    pub ich_ap0r_el2: [u64; 4],
+    // Interrupt Controller Hyp Active Priorities Group 1 Registers
+    pub ich_ap1r_el2: [u64; 4],
+    // GICv3 Virtual Machine Control Register
+    pub ich_vmcr_el2: u64,
+    // Interrupt Controller Hyp Control Register
+    pub ich_hcr_el2: u64,
+    // GICv3 List Registers
+    pub ich_lr_el2: [u64; 16],
+    // GICv3 Maintenance Interrupt State Register
+    pub ich_misr_el2: u64,
 }
 
 #[repr(C)]

@@ -230,3 +230,12 @@ define_sys_register!(
 );
 
 define_sys_register!(CPTR_EL2, TAM[30 - 30]);
+
+// GIC-related
+define_sys_register!(
+    ICH_VTR_EL2,  // Ref. Interrupt Controller VGIC Type Register
+    PRI[31 - 29], // The number of virtual priority bits implemented, minus one.
+    PRE[28 - 26], // The number of virtual preemption bits implemented, minus one.
+    ID[25 - 23], // The number of virtual interrupt identifier bits supported (0b000 means 16 bits while 0b001 means 24 bits)
+    LIST[4 - 0]  // The number of implemented List registers, minus one
+);

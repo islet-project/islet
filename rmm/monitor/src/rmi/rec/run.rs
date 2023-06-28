@@ -16,6 +16,18 @@ impl Run {
         self.entry.inner.gprs.val[0]
     }
 
+    pub unsafe fn entry_gic_lrs(&self) -> &[u64; 16] {
+        &self.entry.inner.gicv3.inner.lrs
+    }
+
+    pub unsafe fn entry_gic_hcr(&self) -> u64 {
+        self.entry.inner.gicv3.inner.hcr
+    }
+
+    pub unsafe fn exit_gic_lrs_mut(&mut self) -> &mut [u64; 16] {
+        &mut (*(*self.exit.inner).gicv3.inner).lrs
+    }
+
     pub unsafe fn set_imm(&mut self, imm: u16) {
         (*self.exit.inner).imm.val = imm;
     }
@@ -40,6 +52,22 @@ impl Run {
         (*(*self.exit.inner).ripas.inner).base = base;
         (*(*self.exit.inner).ripas.inner).size = size;
         (*(*self.exit.inner).ripas.inner).value = state;
+    }
+
+    pub unsafe fn set_gic_lrs(&mut self, src: &[u64], len: usize) {
+        (*(*self.exit.inner).gicv3.inner).lrs[..len].copy_from_slice(&src[..len])
+    }
+
+    pub unsafe fn set_gic_misr(&mut self, val: u64) {
+        (*(*self.exit.inner).gicv3.inner).misr = val;
+    }
+
+    pub unsafe fn set_gic_vmcr(&mut self, val: u64) {
+        (*(*self.exit.inner).gicv3.inner).vmcr = val;
+    }
+
+    pub unsafe fn set_gic_hcr(&mut self, val: u64) {
+        (*(*self.exit.inner).gicv3.inner).hcr = val;
     }
 }
 

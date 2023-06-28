@@ -1,4 +1,5 @@
 use crate::error::Error;
+use crate::rmi::rec::run::Run;
 
 pub mod constraint;
 pub mod features;
@@ -98,6 +99,8 @@ pub trait Interface {
     fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<(), &str>;
     fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), &str>;
     fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, &str>;
+    fn receive_gic_state_from_host(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), &str>;
+    fn send_gic_state_to_host(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), &str>;
 }
 
 pub(crate) fn dummy() {

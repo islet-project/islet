@@ -1,4 +1,5 @@
 use crate::cpu::get_cpu_id;
+use crate::gic;
 use crate::helper::{SPSR_EL2, TPIDR_EL2};
 use monitor::realm::vcpu::VCPU;
 
@@ -31,9 +32,11 @@ impl monitor::realm::vcpu::Context for Context {
         vcpu.pcpu = Some(get_cpu_id());
         vcpu.context.sys_regs.vmpidr = vcpu.pcpu.unwrap() as u64;
         TPIDR_EL2.set(vcpu as *const _ as u64);
+        gic::restore_state(vcpu);
     }
 
     unsafe fn from_current(vcpu: &mut VCPU<Self>) {
+        gic::save_state(vcpu);
         vcpu.pcpu = None;
         //vcpu.context.sys_regs.vmpidr = 0u64;
         //TPIDR_EL2.set(0u64);

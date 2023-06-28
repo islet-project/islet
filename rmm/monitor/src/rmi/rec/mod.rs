@@ -117,6 +117,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 host_call.set_gpr0(ipa);
             }
         }
+        let _ = rmi.receive_gic_state_from_host(rec.rd.id(), rec.id(), run);
 
         let mut ret_ns;
         loop {
@@ -166,6 +167,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 break;
             }
         }
+        let _ = rmi.send_gic_state_to_host(rec.rd.id(), rec.id(), run);
         rmm.mm.unmap(run_ptr);
     });
 }

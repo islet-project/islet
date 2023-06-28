@@ -239,3 +239,33 @@ define_sys_register!(
     ID[25 - 23], // The number of virtual interrupt identifier bits supported (0b000 means 16 bits while 0b001 means 24 bits)
     LIST[4 - 0]  // The number of implemented List registers, minus one
 );
+
+define_sys_register!(ICH_LR0_EL2);
+define_sys_register!(ICH_LR1_EL2);
+define_sys_register!(ICH_LR2_EL2);
+define_sys_register!(ICH_LR3_EL2);
+define_sys_register!(ICH_LR4_EL2);
+define_sys_register!(ICH_LR5_EL2);
+define_sys_register!(ICH_LR6_EL2);
+define_sys_register!(ICH_LR7_EL2);
+define_sys_register!(ICH_LR8_EL2);
+define_sys_register!(ICH_LR9_EL2);
+define_sys_register!(ICH_LR10_EL2);
+define_sys_register!(ICH_LR11_EL2);
+define_sys_register!(ICH_LR12_EL2);
+define_sys_register!(ICH_LR13_EL2);
+define_sys_register!(ICH_LR14_EL2);
+define_sys_register!(ICH_LR15_EL2);
+
+define_sys_register!(ICH_AP0R0_EL2);
+define_sys_register!(ICH_AP0R1_EL2);
+define_sys_register!(ICH_AP0R2_EL2);
+define_sys_register!(ICH_AP0R3_EL2);
+define_sys_register!(ICH_AP1R0_EL2);
+define_sys_register!(ICH_AP1R1_EL2);
+define_sys_register!(ICH_AP1R2_EL2);
+define_sys_register!(ICH_AP1R3_EL2);
+
+define_sys_register!(ICH_VMCR_EL2);
+define_sys_register!(ICH_HCR_EL2);
+define_sys_register!(ICH_MISR_EL2);

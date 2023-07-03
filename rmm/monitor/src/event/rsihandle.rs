@@ -3,6 +3,7 @@ extern crate alloc;
 use super::Context;
 
 use crate::rmi::rec::run::Run;
+use crate::rmi::rec::Rec;
 use crate::rsi;
 use crate::rsi::psci;
 use crate::Monitor;
@@ -10,7 +11,7 @@ use crate::Monitor;
 use alloc::boxed::Box;
 use alloc::collections::btree_map::BTreeMap;
 
-pub type Handler = Box<dyn Fn(&[usize], &mut [usize], &Monitor, &mut Run)>;
+pub type Handler = Box<dyn Fn(&[usize], &mut [usize], &Monitor, &mut Rec, &mut Run)>;
 
 pub struct RsiHandle {
     pub on_event: BTreeMap<usize, Handler>,
@@ -29,16 +30,22 @@ impl RsiHandle {
         rsi
     }
 
-    pub fn dispatch(&self, ctx: &mut Context, monitor: &Monitor, run: &mut Run) -> usize {
+    pub fn dispatch(
+        &self,
+        ctx: &mut Context,
+        monitor: &Monitor,
+        rec: &mut Rec,
+        run: &mut Run,
+    ) -> usize {
         match self.on_event.get(&ctx.cmd) {
             Some(handler) => {
                 ctx.do_rsi(|arg, ret| {
-                    handler(arg, ret, monitor, run);
+                    handler(arg, ret, monitor, rec, run);
                 });
             }
             None => {
                 let rmi = monitor.rmi;
-                rmi.set_reg(ctx.arg[0], ctx.arg[1], 0, RsiHandle::NOT_SUPPORTED)
+                rmi.set_reg(rec.rd.id(), rec.id(), 0, RsiHandle::NOT_SUPPORTED)
                     .unwrap();
                 error!(
                     "Not registered event: {:X} returning {:X}",

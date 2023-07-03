@@ -131,11 +131,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
                         rsi::constraint::validate(cmd, |_, ret_num| {
                             let mut rsi_ctx = Context::new(cmd);
-                            rsi_ctx.init_arg(&[rec.rd.id(), rec.id()]);
+                            let rec_ref =
+                                unsafe { ManuallyDrop::<&mut Rec>::into_inner(Rec::into(arg[0])) };
                             rsi_ctx.resize_ret(ret_num);
 
                             // set default value
-                            if rsi.dispatch(&mut rsi_ctx, rmm, run) == RsiHandle::RET_SUCCESS {
+                            if rsi.dispatch(&mut rsi_ctx, rmm, rec_ref, run)
+                                == RsiHandle::RET_SUCCESS
+                            {
                                 if rsi_ctx.ret_slice()[0] == rmi::SUCCESS_REC_ENTER {
                                     ret_ns = false;
                                 }

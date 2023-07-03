@@ -23,10 +23,10 @@ pub const VERSION: usize = (1 << 16) | 0;
 extern crate alloc;
 
 pub fn set_event_handler(rsi: &mut RsiHandle) {
-    listen!(rsi, HOST_CALL, |arg, ret, rmm, run| {
+    listen!(rsi, HOST_CALL, |_arg, ret, rmm, rec, run| {
         let rmi = rmm.rmi;
-        let realmid = arg[0];
-        let vcpuid = arg[1];
+        let realmid = rec.rd.id();
+        let vcpuid = rec.id();
         let ipa = rmi.get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
         let pa: usize = ipa;
         unsafe {
@@ -39,10 +39,10 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         ret[0] = rmi::SUCCESS;
     });
 
-    listen!(rsi, ABI_VERSION, |arg, ret, rmm, _| {
+    listen!(rsi, ABI_VERSION, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;
-        let realmid = arg[0];
-        let vcpuid = arg[1];
+        let realmid = rec.rd.id();
+        let vcpuid = rec.id();
         if rmi.set_reg(realmid, vcpuid, 0, VERSION).is_err() {
             warn!(
                 "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
@@ -53,10 +53,10 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         ret[0] = rmi::SUCCESS_REC_ENTER;
     });
 
-    listen!(rsi, REALM_CONFIG, |arg, ret, rmm, _| {
+    listen!(rsi, REALM_CONFIG, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;
-        let realmid = arg[0];
-        let vcpuid = arg[1];
+        let realmid = rec.rd.id();
+        let vcpuid = rec.id();
         let _config_ipa = rmi.get_reg(realmid, vcpuid, 0);
         if rmi.set_reg(realmid, vcpuid, 0, RSI_SUCCESS).is_err() {
             warn!(
@@ -68,10 +68,10 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         ret[0] = rmi::SUCCESS_REC_ENTER;
     });
 
-    listen!(rsi, IPA_STATE_SET, |arg, ret, rmm, run| {
+    listen!(rsi, IPA_STATE_SET, |_arg, ret, rmm, rec, run| {
         let rmi = rmm.rmi;
-        let realmid = arg[0];
-        let vcpuid = arg[1];
+        let realmid = rec.rd.id();
+        let vcpuid = rec.id();
         let ipa_start = rmi.get_reg(realmid, vcpuid, 1).unwrap_or(0x0) as u64;
         let ipa_size = rmi.get_reg(realmid, vcpuid, 2).unwrap_or(0x0) as u64;
         let ipa_state = rmi.get_reg(realmid, vcpuid, 3).unwrap_or(0x0) as u8;

@@ -233,7 +233,6 @@ union RIPAS {
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
 struct RIPASInner {
     base: u64,
     size: u64,

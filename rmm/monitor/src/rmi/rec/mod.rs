@@ -18,6 +18,14 @@ extern crate alloc;
 pub struct Rec {
     pub rd: &'static Rd,
     vcpuid: usize,
+    ripas: Ripas,
+}
+
+struct Ripas {
+    start: u64,
+    end: u64,
+    addr: u64,
+    state: u8,
 }
 
 impl Rec {
@@ -39,6 +47,21 @@ impl Rec {
 
     pub fn id(&self) -> usize {
         self.vcpuid
+    }
+
+    pub fn set_ripas(&mut self, start: u64, end: u64, addr: u64, state: u8) {
+        self.ripas.start = start;
+        self.ripas.end = end;
+        self.ripas.addr = addr;
+        self.ripas.state = state;
+    }
+
+    pub fn inc_ripas_addr(&mut self, size: u64) {
+        self.ripas.addr += size;
+    }
+
+    pub fn ripas_addr(&mut self) -> usize {
+        self.ripas.addr as usize
     }
 }
 
@@ -100,7 +123,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
     listen!(mainloop, rmi::REC_ENTER, |arg, ret, rmm| {
         let rmi = rmm.rmi;
-        let rec = unsafe { Rec::into(arg[0]) };
+        let mut rec = unsafe { Rec::into(arg[0]) };
         let run_ptr = arg[1];
         rmm.mm.map(run_ptr, false);
 
@@ -118,6 +141,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             }
         }
         let _ = rmi.receive_gic_state_from_host(rec.rd.id(), rec.id(), run);
+
+        let ripas = rec.ripas_addr();
+        if ripas > 0 {
+            rmi.set_reg(rec.rd.id(), rec.id(), 0, 0).unwrap_or_default();
+            rmi.set_reg(rec.rd.id(), rec.id(), 1, ripas)
+                .unwrap_or_default();
+            rec.set_ripas(0, 0, 0, 0);
+        }
 
         let mut ret_ns;
         loop {

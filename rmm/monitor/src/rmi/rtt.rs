@@ -12,6 +12,16 @@ extern crate alloc;
 const RIPAS_EMPTY: u64 = 0;
 const RIPAS_RAM: u64 = 1;
 
+fn level_to_size(level: usize) -> u64 {
+    match level {
+        0 => 512 << 30,
+        1 => 1 << 30,
+        2 => 2 << 20,
+        3 => 1 << 12,
+        _ => 0,
+    }
+}
+
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::RTT_INIT_RIPAS, |_, ret, _| {
         super::dummy();
@@ -21,9 +31,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::RTT_SET_RIPAS, |arg, ret, rmm| {
         let _rmi = rmm.rmi;
         let _rd = unsafe { Rd::into(arg[0]) };
-        let _rec = unsafe { Rec::into(arg[1]) };
+        let mut rec = unsafe { Rec::into(arg[1]) };
         let _ipa = arg[2];
-        let _level = arg[3];
+        let level = arg[3];
         let ripas = arg[4];
 
         let mut prot = rmi::MapProt::new(0);
@@ -38,6 +48,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
         // TODO: update mapping
         super::dummy();
+        let map_size = level_to_size(level);
+        rec.inc_ripas_addr(map_size);
         ret[0] = rmi::SUCCESS;
     });
 

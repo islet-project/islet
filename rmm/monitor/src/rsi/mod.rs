@@ -76,10 +76,10 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let ipa_size = rmi.get_reg(realmid, vcpuid, 2).unwrap_or(0x0) as u64;
         let ipa_state = rmi.get_reg(realmid, vcpuid, 3).unwrap_or(0x0) as u8;
         // TODO: check ipa_state value, ipa address granularity
-        // TODO: save this into rec;
         unsafe {
             run.set_exit_reason(rmi::EXIT_RIPAS_CHANGE);
             run.set_ripas(ipa_start, ipa_size, ipa_state);
+            rec.set_ripas(ipa_start, ipa_start + ipa_size, ipa_start, ipa_state);
             ret[0] = rmi::SUCCESS;
         };
         debug!(

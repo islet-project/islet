@@ -6,6 +6,7 @@ use crate::host::pointer::Pointer as HostPointer;
 use crate::host::DataPage;
 use crate::listen;
 use crate::rmi;
+use crate::rmi::error::Error;
 use crate::rmm::granule;
 use crate::rmm::granule::GranuleState;
 
@@ -29,6 +30,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::RTT_INIT_RIPAS, |_, ret, _| {
         super::dummy();
         ret[0] = rmi::SUCCESS;
+        Ok(())
     });
 
     listen!(mainloop, rmi::RTT_SET_RIPAS, |arg, ret, rmm| {
@@ -46,7 +48,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             _ => {
                 warn!("Unknown RIPAS:{}", ripas);
                 ret[0] = rmi::RET_FAIL;
-                return;
+                return Err(Error::RmiErrorRtt);
             }
         }
         // TODO: update mapping
@@ -54,6 +56,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let map_size = level_to_size(level);
         rec.inc_ripas_addr(map_size);
         ret[0] = rmi::SUCCESS;
+        Ok(())
     });
 
     listen!(mainloop, rmi::RTT_READ_ENTRY, |arg, ret, _| {
@@ -63,6 +66,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // TODO: this code is a workaround to avoid kernel errors (host linux)
         //       once RTT_READ_ENTRY gets implemented properly, it should be removed.
         ret[1] = arg[2];
+        Ok(())
     });
 
     listen!(mainloop, rmi::DATA_CREATE, |arg, ret, rmm| {
@@ -81,12 +85,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // when the realm is in its New state.
         if !rd.at_state(State::New) {
             ret[0] = rmi::RET_FAIL;
-            return;
+            return Err(Error::RmiErrorRealm);
         }
         // 1. map src to rmm
         if granule::set_granule(target_pa, GranuleState::Data, mm) != granule::RET_SUCCESS {
             ret[0] = rmi::ERROR_INPUT;
-            return;
+            return Err(Error::RmiErrorInput);
         }
         host_pointer_or_ret!(src_page, DataPage, src_pa, mm, ret[0]);
 
@@ -114,6 +118,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         // TODO: 5. perform measure
+        Ok(())
     });
 
     listen!(mainloop, rmi::DATA_CREATE_UNKNOWN, |arg, ret, rmm| {
@@ -131,7 +136,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if granule::set_granule(target_pa, GranuleState::Data, mm) != granule::RET_SUCCESS {
             ret[0] = rmi::ERROR_INPUT;
             warn!("DATA_CREATE_UNKNOWN: Unable to set granule state to DATA");
-            return;
+            return Err(Error::RmiErrorInput);
         }
 
         // 1. map ipa to target_pa into S2 table
@@ -143,6 +148,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         // TODO: 2. perform measure
+        Ok(())
     });
 
     listen!(mainloop, rmi::DATA_DESTORY, |arg, ret, rmm| {
@@ -150,10 +156,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let target_data = arg[0];
         if granule::set_granule(target_data, GranuleState::Delegated, mm) != granule::RET_SUCCESS {
             ret[0] = rmi::ERROR_INPUT;
-            return;
+            return Err(Error::RmiErrorInput);
         }
 
         ret[0] = rmi::SUCCESS;
+        Ok(())
     });
 
     // Map an unprotected IPA to a non-secure PA.
@@ -171,5 +178,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         prot.set_bit(rmi::MapProt::NS_PAS);
         let _ret = rmi.map(realm_id, ipa, ns_pa, granule_sz, prot.get());
         ret[0] = rmi::SUCCESS;
+        Ok(())
     });
 }

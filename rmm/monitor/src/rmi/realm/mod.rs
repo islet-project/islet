@@ -7,6 +7,7 @@ use crate::event::Mainloop;
 use crate::host::pointer::Pointer as HostPointer;
 use crate::listen;
 use crate::rmi;
+use crate::rmi::error::Error;
 use crate::rmm::granule;
 use crate::rmm::granule::GranuleState;
 
@@ -16,6 +17,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REALM_ACTIVATE, |_, ret, _| {
         super::dummy();
         ret[0] = rmi::SUCCESS;
+        Ok(())
     });
 
     listen!(mainloop, rmi::REALM_CREATE, |arg, ret, rmm| {
@@ -26,7 +28,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         if granule::set_granule(arg[0], GranuleState::RD, mm) != granule::RET_SUCCESS {
             ret[0] = rmi::ERROR_INPUT;
-            return;
+            return Err(Error::RmiErrorInput);
         }
 
         // TODO:
@@ -44,11 +46,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             }
             Err(_) => ret[0] = rmi::RET_FAIL,
         }
+        Ok(())
     });
 
     listen!(mainloop, rmi::REC_AUX_COUNT, |_, ret, _| {
         ret[0] = rmi::SUCCESS;
         ret[1] = rmi::MAX_REC_AUX_GRANULES;
+        Ok(())
     });
 
     listen!(mainloop, rmi::REALM_DESTROY, |arg, ret, rmm| {
@@ -57,12 +61,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let res = rmi.remove(0); // temporarily
         if granule::set_granule(arg[0], GranuleState::Delegated, rmm.mm) != granule::RET_SUCCESS {
             ret[0] = rmi::ERROR_INPUT;
-            return;
+            return Err(Error::RmiErrorInput);
         }
 
         match res {
             Ok(_) => ret[0] = rmi::SUCCESS,
             Err(_) => ret[0] = rmi::RET_FAIL,
         }
+        Ok(())
     });
 }

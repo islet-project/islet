@@ -83,6 +83,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
                 );
             }
             ret[0] = rmi::SUCCESS_REC_ENTER;
+            Ok(())
         };
 
     listen!(rsi, PSCI_VERSION, |_arg, ret, rmm, rec, _run| {
@@ -96,6 +97,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             );
         }
         ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
     });
 
     listen!(rsi, SMC32::CPU_SUSPEND, dummy);
@@ -134,6 +136,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             );
         }
         ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
     });
 
     listen!(rsi, SMCCC_VERSION, |_arg, ret, rmm, rec, _run| {
@@ -147,6 +150,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             );
         }
         ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
     });
 }
 

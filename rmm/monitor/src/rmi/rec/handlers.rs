@@ -8,6 +8,7 @@ use crate::{rmi, rsi};
 
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::pointer::PointerMut as HostPointerMut;
+use crate::rmi::error::Error;
 use crate::rmm::granule;
 use crate::rmm::granule::GranuleState;
 
@@ -23,7 +24,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         if granule::set_granule(arg[0], GranuleState::Rec, mm) != granule::RET_SUCCESS {
             ret[0] = rmi::ERROR_INPUT;
-            return;
+            return Err(Error::RmiErrorInput);
         }
 
         host_pointer_or_ret!(params, Params, arg[2], mm, ret[0]);
@@ -36,31 +37,33 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 let _ =
                     unsafe { Rec::new(arg[0], vcpuid, ManuallyDrop::<&mut Rd>::into_inner(rd)) };
             }
-            Err(_) => return,
+            Err(_) => return Err(Error::RmiErrorInput),
         }
 
         let rec = unsafe { Rec::into(arg[0]) };
         let rd = unsafe { Rd::into(arg[1]) };
         for (idx, gpr) in params.gprs().iter().enumerate() {
             if rmi.set_reg(rd.id(), rec.id(), idx, *gpr as usize).is_err() {
-                return;
+                return Err(Error::RmiErrorInput);
             }
         }
         if rmi
             .set_reg(rd.id(), rec.id(), 31, params.pc() as usize)
             .is_err()
         {
-            return;
+            return Err(Error::RmiErrorInput);
         }
         ret[0] = rmi::SUCCESS;
+        Ok(())
     });
 
     listen!(mainloop, rmi::REC_DESTROY, |arg, ret, rmm| {
         if granule::set_granule(arg[0], GranuleState::Delegated, rmm.mm) != granule::RET_SUCCESS {
             ret[0] = rmi::ERROR_INPUT;
-            return;
+            return Err(Error::RmiErrorInput);
         }
         ret[0] = rmi::SUCCESS;
+        Ok(())
     });
 
     listen!(mainloop, rmi::REC_ENTER, |arg, ret, rmm| {
@@ -149,5 +152,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             }
         }
         let _ = rmi.send_gic_state_to_host(rec.rd.id(), rec.id(), &mut run);
+        Ok(())
     });
 }

@@ -12,12 +12,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let smc = rmm.smc;
         let mm = rmm.mm;
         mark_realm(smc, mm, arg[0], ret);
+        Ok(())
     });
 
     listen!(mainloop, rmi::GRANULE_UNDELEGATE, |arg, ret, rmm| {
         let smc = rmm.smc;
         let mm = rmm.mm;
         mark_ns(smc, mm, arg[0], ret);
+        Ok(())
     });
 }
 

@@ -13,11 +13,12 @@ const RIPAS_EMPTY: u64 = 0;
 const RIPAS_RAM: u64 = 1;
 
 fn level_to_size(level: usize) -> u64 {
+    // TODO: get the translation granule from src/armv9
     match level {
-        0 => 512 << 30,
-        1 => 1 << 30,
-        2 => 2 << 20,
-        3 => 1 << 12,
+        0 => 512 << 30, // 512GB
+        1 => 1 << 30,   // 1GB
+        2 => 2 << 20,   // 2MB
+        3 => 1 << 12,   // 4KB
         _ => 0,
     }
 }

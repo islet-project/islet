@@ -88,9 +88,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         let ripas = rec.ripas_addr();
         if ripas > 0 {
-            rmi.set_reg(rec.rd.id(), rec.id(), 0, 0).unwrap_or_default();
-            rmi.set_reg(rec.rd.id(), rec.id(), 1, ripas)
-                .unwrap_or_default();
+            // TODO: need to determine how to properly handle the failures
+            // current: just ignore the unlikely failures
+            let _ = rmi.set_reg(rec.rd.id(), rec.id(), 0, 0);
+            let _ = rmi.set_reg(rec.rd.id(), rec.id(), 1, ripas);
             rec.set_ripas(0, 0, 0, 0);
         }
 

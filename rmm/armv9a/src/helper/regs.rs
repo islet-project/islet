@@ -13,13 +13,42 @@ define_sys_register!(VBAR_EL2, RES0[10 - 0]);
 
 define_sys_register!(
     ESR_EL2,
+    // Exception Class.
     EC[31 - 26],
+    // Instruction Length for synchronous exceptions.
     IL[25 - 25],
+    // Instruction Specific Syndrome.
     ISS[24 - 00],
     ISS_BRK_CMT[15 - 00],
     S1PTW[7 - 7],
     DFSC[5 - 0]
 );
+
+define_bits!(
+    EsrEl2,
+    // Exception Class.
+    EC[31 - 26],
+    // Instruction Length for synchronous exceptions.
+    IL[25 - 25],
+    // Instruction syndrome valid.
+    ISV[24 - 24],
+    // Syndrome Access Size (ISV == '1')
+    SAS[23 - 22],
+    // Syndrome Sign Extend (ISV == '1')
+    SSE[21 - 21],
+    // Syndrome Register Transfer (ISV == '1')
+    SRT[20 - 16],
+    // Width of the register accessed by the instruction is Sixty-Four (ISV == '1')
+    SF[15 - 15],
+    // Acquire/Release. (ISV == '1')
+    AR[14 - 14],
+    S1PTW[7 - 7],
+    // Write not Read.
+    WNR[6 - 6],
+    DFSC[5 - 0]
+);
+
+pub const ESR_EL2_EC_DATA_ABORT: u64 = 36;
 
 define_register!(SP);
 define_sys_register!(SP_EL0);

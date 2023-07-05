@@ -7,11 +7,14 @@ use crate::rmi::rec::Rec;
 use crate::rsi;
 use crate::rsi::psci;
 use crate::Monitor;
+// TODO: Change this into rsi::error::Error
+use crate::rmi::error::Error;
 
 use alloc::boxed::Box;
 use alloc::collections::btree_map::BTreeMap;
 
-pub type Handler = Box<dyn Fn(&[usize], &mut [usize], &Monitor, &mut Rec, &mut Run)>;
+pub type Handler =
+    Box<dyn Fn(&[usize], &mut [usize], &Monitor, &mut Rec, &mut Run) -> Result<(), Error>>;
 
 pub struct RsiHandle {
     pub on_event: BTreeMap<usize, Handler>,
@@ -39,14 +42,12 @@ impl RsiHandle {
     ) -> usize {
         match self.on_event.get(&ctx.cmd) {
             Some(handler) => {
-                ctx.do_rsi(|arg, ret| {
-                    handler(arg, ret, monitor, rec, run);
-                });
+                let _ = ctx.do_rsi(|arg, ret| handler(arg, ret, monitor, rec, run));
             }
             None => {
                 let rmi = monitor.rmi;
-                rmi.set_reg(rec.rd.id(), rec.id(), 0, RsiHandle::NOT_SUPPORTED)
-                    .unwrap();
+                // TODO: handle the error properly
+                let _ = rmi.set_reg(rec.rd.id(), rec.id(), 0, RsiHandle::NOT_SUPPORTED);
                 error!(
                     "Not registered event: {:X} returning {:X}",
                     ctx.cmd,

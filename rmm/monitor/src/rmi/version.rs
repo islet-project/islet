@@ -11,5 +11,6 @@ fn encode_version() -> usize {
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::VERSION, |_, ret, _| {
         ret[0] = encode_version();
+        Ok(())
     });
 }

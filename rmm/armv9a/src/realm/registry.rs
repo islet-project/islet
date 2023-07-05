@@ -1,4 +1,3 @@
-use monitor::error::{Error, ErrorKind};
 use monitor::realm::mm::address::{GuestPhysAddr, PhysAddr};
 use monitor::realm::mm::IPATranslation;
 use monitor::realm::vcpu::VCPU;
@@ -16,6 +15,8 @@ use crate::realm::context::Context;
 use crate::realm::mm::page_table::pte;
 use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::translation_granule_4k::RawPTE;
+use monitor::rmi::error::Error;
+use monitor::rmi::error::InternalError::*;
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
@@ -62,7 +63,7 @@ impl RMI {
 }
 
 impl monitor::rmi::Interface for RMI {
-    fn create_realm(&self) -> Result<usize, &str> {
+    fn create_realm(&self) -> Result<usize, Error> {
         let mut rms = RMS.lock();
         let id = rms.0;
         let s2_table = Arc::new(Mutex::new(
@@ -76,7 +77,7 @@ impl monitor::rmi::Interface for RMI {
     }
 
     fn create_vcpu(&self, id: usize) -> Result<usize, Error> {
-        let realm = get_realm(id).ok_or(Error::new(ErrorKind::NotConnected))?;
+        let realm = get_realm(id).ok_or(Error::RmiErrorInput)?;
 
         let page_table = realm.lock().page_table.lock().get_base_address();
         let vttbr = bits_in_reg(VTTBR_EL2::VMID, id as u64)
@@ -90,22 +91,19 @@ impl monitor::rmi::Interface for RMI {
         Ok(vcpuid)
     }
 
-    fn remove(&self, id: usize) -> Result<(), &str> {
-        RMS.lock()
-            .1
-            .remove(&id)
-            .ok_or(Error::new(ErrorKind::NotConnected))?;
+    fn remove(&self, id: usize) -> Result<(), Error> {
+        RMS.lock().1.remove(&id).ok_or(Error::RmiErrorInput)?;
         Ok(())
     }
 
-    fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<[usize; 4], &str> {
+    fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<[usize; 4], Error> {
         if incr_pc == 1 {
             get_realm(id)
-                .ok_or("Not exist Realm")?
+                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
                 .lock()
                 .vcpus
                 .get(vcpu)
-                .ok_or("Not exist VCPU")?
+                .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
                 .lock()
                 .context
                 .elr += 4;
@@ -113,18 +111,18 @@ impl monitor::rmi::Interface for RMI {
         debug!(
             "resuming: {:#x}",
             get_realm(id)
-                .ok_or("Not exist Realm")?
+                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
                 .lock()
                 .vcpus
                 .get(vcpu)
-                .ok_or("Not exist VCPU")?
+                .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
                 .lock()
                 .context
                 .elr
         );
 
         get_realm(id)
-            .ok_or("Not exist Realm")?
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
             .lock()
             .vcpus
             .get(vcpu)
@@ -144,7 +142,7 @@ impl monitor::rmi::Interface for RMI {
         phys: usize,
         size: usize,
         prot: usize,
-    ) -> Result<(), &str> {
+    ) -> Result<(), Error> {
         let mut flags = 0;
         let prot = MapProt::new(prot);
 
@@ -162,7 +160,7 @@ impl monitor::rmi::Interface for RMI {
         }
 
         get_realm(id)
-            .ok_or("Not exist Realm")?
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
             .lock()
             .page_table
             .lock()
@@ -176,9 +174,9 @@ impl monitor::rmi::Interface for RMI {
         Ok(())
     }
 
-    fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<(), &str> {
+    fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<(), Error> {
         get_realm(id)
-            .ok_or("Not exist Realm")?
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
             .lock()
             .page_table
             .lock()
@@ -189,15 +187,15 @@ impl monitor::rmi::Interface for RMI {
         Ok(())
     }
 
-    fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), &str> {
+    fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), Error> {
         match register {
             0..=30 => {
                 get_realm(id)
-                    .ok_or("Not exist Realm")?
+                    .ok_or(Error::RmiErrorOthers(NotExistRealm))?
                     .lock()
                     .vcpus
                     .get(vcpu)
-                    .ok_or("Not exist VCPU")?
+                    .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
                     .lock()
                     .context
                     .gp_regs[register] = value as u64;
@@ -205,11 +203,11 @@ impl monitor::rmi::Interface for RMI {
             }
             31 => {
                 get_realm(id)
-                    .ok_or("Not exist Realm")?
+                    .ok_or(Error::RmiErrorOthers(NotExistRealm))?
                     .lock()
                     .vcpus
                     .get(vcpu)
-                    .ok_or("Not exist VCPU")?
+                    .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
                     .lock()
                     .context
                     .elr = value as u64;
@@ -217,30 +215,30 @@ impl monitor::rmi::Interface for RMI {
             }
             32 => {
                 get_realm(id)
-                    .ok_or("Not exist Realm")?
+                    .ok_or(Error::RmiErrorOthers(NotExistRealm))?
                     .lock()
                     .vcpus
                     .get(vcpu)
-                    .ok_or("Not exist VCPU")?
+                    .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
                     .lock()
                     .context
                     .spsr = value as u64;
                 Ok(())
             }
-            _ => Err("Failed"),
+            _ => Err(Error::RmiErrorInput),
         }?;
         Ok(())
     }
 
-    fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, &str> {
+    fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, Error> {
         match register {
             0..=30 => {
                 let value = get_realm(id)
-                    .ok_or("Not exist Realm")?
+                    .ok_or(Error::RmiErrorOthers(NotExistRealm))?
                     .lock()
                     .vcpus
                     .get(vcpu)
-                    .ok_or("Not exist VCPU")?
+                    .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
                     .lock()
                     .context
                     .gp_regs[register];
@@ -248,24 +246,27 @@ impl monitor::rmi::Interface for RMI {
             }
             31 => {
                 let value = get_realm(id)
-                    .ok_or("Not exist Realm")?
+                    .ok_or(Error::RmiErrorOthers(NotExistRealm))?
                     .lock()
                     .vcpus
                     .get(vcpu)
-                    .ok_or("Not exist VCPU")?
+                    .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
                     .lock()
                     .context
                     .elr;
                 Ok(value as usize)
             }
-            _ => Err("Failed"),
+            _ => Err(Error::RmiErrorInput),
         }
     }
 
-    fn receive_gic_state_from_host(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), &str> {
-        let realm = get_realm(id).ok_or("Not exist Realm")?;
+    fn receive_gic_state_from_host(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), Error> {
+        let realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))?;
         let locked_realm = realm.lock();
-        let vcpu = locked_realm.vcpus.get(vcpu).ok_or("Not exist VCPU")?;
+        let vcpu = locked_realm
+            .vcpus
+            .get(vcpu)
+            .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
         let gic_state = &mut vcpu.lock().context.gic_state;
         let nr_lrs = GIC_FEATURES.nr_lrs;
 
@@ -275,10 +276,13 @@ impl monitor::rmi::Interface for RMI {
         Ok(())
     }
 
-    fn send_gic_state_to_host(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), &str> {
-        let realm = get_realm(id).ok_or("Not exist Realm")?;
+    fn send_gic_state_to_host(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), Error> {
+        let realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))?;
         let mut locked_realm = realm.lock();
-        let vcpu = locked_realm.vcpus.get_mut(vcpu).ok_or("Not exist VCPU")?;
+        let vcpu = locked_realm
+            .vcpus
+            .get_mut(vcpu)
+            .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
         let gic_state = &mut vcpu.lock().context.gic_state;
         let nr_lrs = GIC_FEATURES.nr_lrs;
 
@@ -294,10 +298,13 @@ impl monitor::rmi::Interface for RMI {
         Ok(())
     }
 
-    fn emulate_mmio(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), &str> {
-        let realm = get_realm(id).ok_or("Not exist Realm")?;
+    fn emulate_mmio(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), Error> {
+        let realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))?;
         let mut locked_realm = realm.lock();
-        let vcpu = locked_realm.vcpus.get_mut(vcpu).ok_or("Not exist VCPU")?;
+        let vcpu = locked_realm
+            .vcpus
+            .get_mut(vcpu)
+            .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
         let context = &mut vcpu.lock().context;
 
         let flags = unsafe { run.entry_flags() };
@@ -315,8 +322,7 @@ impl monitor::rmi::Interface for RMI {
         let rt = esr.get_masked_value(EsrEl2::SRT) as usize;
 
         if ec != ESR_EL2_EC_DATA_ABORT || isv == 0 {
-            // TODO: change the error value into a common one
-            return Err("RMI_ERROR_REC");
+            return Err(Error::RmiErrorRec);
         }
 
         // MMIO read case

@@ -37,6 +37,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             trace!("HOST_CALL param: {:#X?}", host_call)
         };
         ret[0] = rmi::SUCCESS;
+        Ok(())
     });
 
     listen!(rsi, ABI_VERSION, |_arg, ret, rmm, rec, _| {
@@ -51,6 +52,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         }
         trace!("RSI_ABI_VERSION: {:#X?}", VERSION);
         ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
     });
 
     listen!(rsi, REALM_CONFIG, |_arg, ret, rmm, rec, _| {
@@ -66,6 +68,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         }
         super::rmi::dummy();
         ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
     });
 
     listen!(rsi, IPA_STATE_SET, |_arg, ret, rmm, rec, run| {
@@ -89,5 +92,6 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             ipa_state
         );
         super::rmi::dummy();
+        Ok(())
     });
 }

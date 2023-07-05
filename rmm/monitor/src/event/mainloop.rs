@@ -2,6 +2,7 @@ extern crate alloc;
 
 use super::Context;
 use crate::rmi;
+use crate::rmi::error::Error;
 use crate::smc::SecureMonitorCall;
 use crate::Monitor;
 
@@ -10,7 +11,7 @@ use alloc::collections::btree_map::BTreeMap;
 use alloc::collections::vec_deque::VecDeque;
 use spin::mutex::Mutex;
 
-pub type Handler = Box<dyn Fn(&[usize], &mut [usize], &Monitor)>;
+pub type Handler = Box<dyn Fn(&[usize], &mut [usize], &Monitor) -> Result<(), Error>>;
 
 pub struct Mainloop {
     pub queue: Mutex<VecDeque<Context>>, // TODO: we need a more realistic queue considering multi-core environments if needed
@@ -68,14 +69,14 @@ impl Mainloop {
             }
 
             match self.on_event.get(&ctx.cmd) {
-                Some(handler) => ctx.do_rmi(|arg, ret| {
-                    handler(arg, ret, monitor);
-                }),
+                Some(handler) => {
+                    let _ = ctx.do_rmi(|arg, ret| handler(arg, ret, monitor));
+                }
                 None => {
                     error!("Not registered event: {:X}", ctx.cmd);
                     ctx.init_arg(&[rmi::RET_FAIL]);
                 }
-            }
+            };
 
             ctx.cmd = rmi::REQ_COMPLETE;
             self.dispatch(smc, ctx);

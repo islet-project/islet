@@ -1,7 +1,8 @@
-use crate::error::Error;
+use crate::rmi::error::Error;
 use crate::rmi::rec::run::Run;
 
 pub mod constraint;
+pub mod error;
 pub mod features;
 pub mod gpt;
 pub mod realm;
@@ -84,10 +85,12 @@ impl MapProt {
 }
 
 pub trait Interface {
-    fn create_realm(&self) -> Result<usize, &str>;
+    // TODO: it would be better to leave only true RMI interface here
+    //       while moving others to another place (e.g., set_reg())
+    fn create_realm(&self) -> Result<usize, Error>;
     fn create_vcpu(&self, id: usize) -> Result<usize, Error>;
-    fn remove(&self, id: usize) -> Result<(), &str>;
-    fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<([usize; 4]), &str>;
+    fn remove(&self, id: usize) -> Result<(), Error>;
+    fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<([usize; 4]), Error>;
     fn map(
         &self,
         id: usize,
@@ -95,13 +98,13 @@ pub trait Interface {
         phys: usize,
         size: usize,
         prot: usize,
-    ) -> Result<(), &str>;
-    fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<(), &str>;
-    fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), &str>;
-    fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, &str>;
-    fn receive_gic_state_from_host(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), &str>;
-    fn send_gic_state_to_host(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), &str>;
-    fn emulate_mmio(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), &str>;
+    ) -> Result<(), Error>;
+    fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<(), Error>;
+    fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), Error>;
+    fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, Error>;
+    fn receive_gic_state_from_host(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), Error>;
+    fn send_gic_state_to_host(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), Error>;
+    fn emulate_mmio(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), Error>;
 }
 
 pub(crate) fn dummy() {

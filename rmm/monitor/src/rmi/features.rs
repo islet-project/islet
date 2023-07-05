@@ -1,6 +1,7 @@
 use crate::event::Mainloop;
 use crate::listen;
 use crate::rmi;
+use crate::rmi::error::Error;
 
 extern crate alloc;
 
@@ -31,7 +32,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::FEATURES, |arg, ret, _| {
         if arg[0] != FEATURE_REGISTER_0_INDEX {
             ret[0] = rmi::ERROR_INPUT;
-            return;
+            return Err(Error::RmiErrorInput);
         }
 
         let mut feat_reg0: usize = 0;
@@ -45,5 +46,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         ret[0] = rmi::SUCCESS;
         ret[1] = feat_reg0;
         debug!("rmi::FEATURES ret:{:X}", feat_reg0);
+        Ok(())
     });
 }

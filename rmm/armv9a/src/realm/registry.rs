@@ -3,13 +3,14 @@ use monitor::realm::mm::address::{GuestPhysAddr, PhysAddr};
 use monitor::realm::mm::IPATranslation;
 use monitor::realm::vcpu::VCPU;
 use monitor::realm::Realm;
-use monitor::rmi::rec::run::Run;
+use monitor::rmi::rec::run::{Run, REC_ENTRY_FLAG_EMUL_MMIO};
 use monitor::rmi::MapProt;
 
 use crate::gic::{GIC_FEATURES, ICH_HCR_EL2_EOI_COUNT_MASK, ICH_HCR_EL2_NS_MASK};
 use crate::helper;
 use crate::helper::bits_in_reg;
 use crate::helper::VTTBR_EL2;
+use crate::helper::{EsrEl2, ESR_EL2_EC_DATA_ABORT};
 use crate::realm;
 use crate::realm::context::Context;
 use crate::realm::mm::page_table::pte;
@@ -290,6 +291,53 @@ impl monitor::rmi::Interface for RMI {
                 gic_state.ich_hcr_el2 & (ICH_HCR_EL2_EOI_COUNT_MASK | ICH_HCR_EL2_NS_MASK),
             );
         }
+        Ok(())
+    }
+
+    fn emulate_mmio(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), &str> {
+        let realm = get_realm(id).ok_or("Not exist Realm")?;
+        let mut locked_realm = realm.lock();
+        let vcpu = locked_realm.vcpus.get_mut(vcpu).ok_or("Not exist VCPU")?;
+        let context = &mut vcpu.lock().context;
+
+        let flags = unsafe { run.entry_flags() };
+
+        // Host has not completed emulation for an Emulatable Abort.
+        if (flags & REC_ENTRY_FLAG_EMUL_MMIO) == 0 {
+            return Ok(());
+        }
+
+        let esr_el2 = context.sys_regs.esr_el2;
+        let esr = EsrEl2::new(esr_el2);
+        let isv = esr.get_masked_value(EsrEl2::ISV);
+        let ec = esr.get_masked_value(EsrEl2::EC);
+        let wnr = esr.get_masked_value(EsrEl2::WNR);
+        let rt = esr.get_masked_value(EsrEl2::SRT) as usize;
+
+        if ec != ESR_EL2_EC_DATA_ABORT || isv == 0 {
+            // TODO: change the error value into a common one
+            return Err("RMI_ERROR_REC");
+        }
+
+        // MMIO read case
+        if wnr == 0 && rt != 31 {
+            let sas = esr.get_masked_value(EsrEl2::SAS);
+            let mask: u64 = match sas {
+                0 => 0xff,                // byte
+                1 => 0xffff,              // half-word
+                2 => 0xffffffff,          // word
+                3 => 0xffffffff_ffffffff, // double word
+                _ => unreachable!(),      // SAS consists of two bits
+            };
+            let val = unsafe { run.entry_gpr0() } & mask;
+            let sign_extended = esr.get_masked_value(EsrEl2::SSE);
+            if sign_extended != 0 {
+                // TODO
+                unimplemented!();
+            }
+            context.gp_regs[rt] = val;
+        }
+        context.elr += 4;
         Ok(())
     }
 }

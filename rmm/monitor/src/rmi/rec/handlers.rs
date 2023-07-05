@@ -85,6 +85,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             }
         }
         let _ = rmi.receive_gic_state_from_host(rec.rd.id(), rec.id(), run);
+        let _ = rmi.emulate_mmio(rec.rd.id(), rec.id(), run);
 
         let ripas = rec.ripas_addr();
         if ripas > 0 {

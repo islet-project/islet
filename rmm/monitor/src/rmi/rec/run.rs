@@ -11,6 +11,10 @@ impl Run {
         &mut *(ptr as *mut Self)
     }
 
+    pub unsafe fn entry_flags(&self) -> u64 {
+        self.entry.inner.flags.val
+    }
+
     #[allow(dead_code)]
     pub unsafe fn entry_gpr0(&self) -> u64 {
         self.entry.inner.gprs.val[0]
@@ -132,6 +136,26 @@ union Flags {
     val: u64,
     reserved: [u8; 0x200],
 }
+
+/// Whether the host has completed emulation for an Emulatable Data Abort.
+///  val 0: Host has not completed emulation for an Emulatable Abort.
+///  val 1: Host has completed emulation for an Emulatable Abort.
+pub const REC_ENTRY_FLAG_EMUL_MMIO: u64 = 1 << 0;
+/// Whether to inject a Synchronous External Abort (SEA) into the Realm.
+///  val 0: Do not inject an SEA into the Realm.
+///  val 1: Inject an SEA into the Realm.
+#[allow(dead_code)]
+pub const REC_ENTRY_FLAG_INJECT_SEA: u64 = 1 << 1;
+/// Whether to trap WFI execution by the Realm.
+///  val 0: Trap is disabled.
+///  val 1: Trap is enabled.
+#[allow(dead_code)]
+pub const REC_ENTRY_FLAG_TRAP_WFI: u64 = 1 << 2;
+/// Whether to trap WFE execution by the Realm.
+///  val 0: Trap is disabled.
+///  val 1: Trap is enabled.
+#[allow(dead_code)]
+pub const REC_ENTRY_FLAG_TRAP_WFE: u64 = 1 << 3;
 
 /// General-purpose registers
 #[repr(C)]

@@ -101,6 +101,7 @@ pub trait Interface {
     fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, &str>;
     fn receive_gic_state_from_host(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), &str>;
     fn send_gic_state_to_host(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), &str>;
+    fn emulate_mmio(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), &str>;
 }
 
 pub(crate) fn dummy() {

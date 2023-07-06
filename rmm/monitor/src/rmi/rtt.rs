@@ -54,9 +54,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         ret[0] = rmi::SUCCESS;
     });
 
-    listen!(mainloop, rmi::RTT_READ_ENTRY, |_, ret, _| {
+    listen!(mainloop, rmi::RTT_READ_ENTRY, |arg, ret, _| {
         super::dummy();
         ret[0] = rmi::SUCCESS;
+
+        // TODO: this code is a workaround to avoid kernel errors (host linux)
+        //       once RTT_READ_ENTRY gets implemented properly, it should be removed.
+        ret[1] = arg[2];
     });
 
     listen!(mainloop, rmi::DATA_CREATE, |arg, ret, rmm| {

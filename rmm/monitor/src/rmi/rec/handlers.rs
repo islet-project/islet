@@ -6,6 +6,7 @@ use crate::listen;
 use crate::rmi::realm::Rd;
 use crate::{rmi, rsi};
 
+use crate::host::pointer::Pointer as HostPointer;
 use crate::rmm::granule;
 use crate::rmm::granule::GranuleState;
 
@@ -18,13 +19,21 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rmi = rmm.rmi;
         let mm = rmm.mm;
         let rd = unsafe { Rd::into(arg[1]) };
-        let params_ptr = arg[2];
 
         if granule::set_granule(arg[0], GranuleState::Rec, mm) != granule::RET_SUCCESS {
             ret[0] = rmi::ERROR_INPUT;
             return;
         }
-        mm.map(params_ptr, false);
+
+        let params_ptr = HostPointer::<Params>::new(arg[2], mm);
+        let params = params_ptr.acquire();
+        let params = if let Some(val) = params {
+            val
+        } else {
+            error!("access Params fail");
+            return;
+        };
+        trace!("{:?}", *params);
         ret[0] = rmi::RET_FAIL;
 
         match rmi.create_vcpu(rd.id()) {
@@ -36,13 +45,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             Err(_) => return,
         }
 
-        let params = unsafe { Params::parse(params_ptr) };
-        trace!("{:?}", params);
         let rec = unsafe { Rec::into(arg[0]) };
         let rd = unsafe { Rd::into(arg[1]) };
         for (idx, gpr) in params.gprs().iter().enumerate() {
             if rmi.set_reg(rd.id(), rec.id(), idx, *gpr as usize).is_err() {
-                mm.unmap(params_ptr);
                 return;
             }
         }
@@ -50,10 +56,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             .set_reg(rd.id(), rec.id(), 31, params.pc() as usize)
             .is_err()
         {
-            mm.unmap(params_ptr);
             return;
         }
-        mm.unmap(params_ptr);
         ret[0] = rmi::SUCCESS;
     });
 

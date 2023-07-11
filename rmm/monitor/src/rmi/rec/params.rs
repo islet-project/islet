@@ -1,3 +1,5 @@
+use crate::host::Accessor as HostAccessor;
+
 #[repr(C)]
 pub struct Params {
     flags: Flags,
@@ -8,10 +10,6 @@ pub struct Params {
 }
 
 impl Params {
-    pub unsafe fn parse<'a>(addr: usize) -> &'a Params {
-        &*(addr as *const Self)
-    }
-
     // Safety: union type should be initialized
     // Check UB
     pub fn pc(&self) -> usize {
@@ -30,6 +28,8 @@ impl Drop for Params {
         }
     }
 }
+
+impl HostAccessor for Params {}
 
 impl core::fmt::Debug for Params {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {

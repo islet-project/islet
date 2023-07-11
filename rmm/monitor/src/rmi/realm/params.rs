@@ -1,15 +1,11 @@
+use crate::host::Accessor as HostAccessor;
+
 #[repr(C)]
 pub struct Params {
     features0: Features0,
     hash_algo: HashAlgo,
     rpv: RPV,
     inner: Inner,
-}
-
-impl Params {
-    pub unsafe fn parse<'a>(addr: usize) -> &'a Params {
-        &*(addr as *const Self)
-    }
 }
 
 impl Default for Params {
@@ -37,6 +33,8 @@ impl Drop for Params {
         }
     }
 }
+
+impl HostAccessor for Params {}
 
 impl core::fmt::Debug for Params {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {

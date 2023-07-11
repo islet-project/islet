@@ -4,6 +4,7 @@ pub(crate) mod rd;
 use self::params::Params;
 pub use self::rd::Rd;
 use crate::event::Mainloop;
+use crate::host::pointer::Pointer as HostPointer;
 use crate::listen;
 use crate::rmi;
 use crate::rmm::granule;
@@ -20,15 +21,20 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REALM_CREATE, |arg, ret, rmm| {
         let rmi = rmm.rmi;
         let mm = rmm.mm;
-        let params_ptr = arg[1];
-        mm.map(params_ptr, false);
+        let params_ptr = HostPointer::<Params>::new(arg[1], mm);
+        let params = params_ptr.acquire();
+        let params = if let Some(val) = params {
+            val
+        } else {
+            error!("access Params fail");
+            return;
+        };
+        trace!("{:?}", *params);
+
         if granule::set_granule(arg[0], GranuleState::RD, mm) != granule::RET_SUCCESS {
             ret[0] = rmi::ERROR_INPUT;
             return;
         }
-
-        let param = unsafe { Params::parse(params_ptr) };
-        trace!("{:?}", param);
 
         // TODO:
         //   Validate params
@@ -45,7 +51,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             }
             Err(_) => ret[0] = rmi::RET_FAIL,
         }
-        mm.unmap(params_ptr);
     });
 
     listen!(mainloop, rmi::REC_AUX_COUNT, |_, ret, _| {

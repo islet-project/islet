@@ -6,6 +6,7 @@
 
 pub mod error;
 pub mod event;
+pub mod host;
 pub mod io;
 pub mod logger;
 pub mod r#macro;

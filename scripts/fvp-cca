@@ -248,7 +248,7 @@ def run_fvp_linux(debug, trace):
         args += ["--plugin", "%s" % TRACE_PATH,
                 "-C", "TRACE.TarmacTrace.trace_events=1",
                 "-C", "TRACE.TarmacTrace.trace_instructions=1",
-                "-C", "TRACE.TarmacTrace.start-instruction-count=1600000000",    
+                "-C", "TRACE.TarmacTrace.start-instruction-count=1600000000",
                 "-C", "TRACE.TarmacTrace.trace_core_registers=1",
                 "-C", "TRACE.TarmacTrace.trace_vfp=1",
                 "-C", "TRACE.TarmacTrace.trace_mmu=0",
@@ -276,7 +276,7 @@ def run_fvp_linux_net(debug, host_ip, fvp_ip, fvp_tap_ip, realm_ip, route_ip, ga
     run(args, cwd=FASTMODEL)
 
 def run_fvp_aosp(debug):
-    os.makedirs(NW_AOSP_DATA, exist_ok=True)
+    os.makedirs(AOSP_SHARED_PATH, exist_ok=True)
     new_env = environ.copy()
     new_env["LD_PRELOAD"] = PREBUILT_AOSP_ADB
     print("[!] Running fvp for Android...")
@@ -285,7 +285,7 @@ def run_fvp_aosp(debug):
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
             "-C", "bp.mmc.p_mmc_file=%s/boot-aosp.img" % OUT,
             "-C", "bp.virtioblockdevice.image_path=%s/system-qemu-aosp.img" % OUT,
-            "-C", "bp.virtiop9device.root_path=%s" % NW_AOSP_DATA,
+            "-C", "bp.virtiop9device.root_path=%s" % AOSP_SHARED_PATH,
             "-C", "bp.virtio_net.hostbridge.userNetworking=1",
             "-C", "bp.virtio_net.hostbridge.userNetPorts=5555=5555",
             "-C",  "bp.virtio_net.enabled=1",
@@ -312,7 +312,7 @@ def place_realm_at_shared(realm_ip, fvp_tap_ip, host_ip):
     run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
     run(["cp", CONFIGURE_NET, SHARED_PATH], cwd=ROOT)
     run(["cp", SET_REALM_IP, SHARED_PATH], cwd=ROOT)
-    
+
     if realm_ip != None and fvp_tap_ip != None and host_ip != None:
         # set IP address accordingly
         run(["sed", "-i", "-e", "s/FVP_TAP_IP/%s/g" % fvp_tap_ip, "%s/configure-net.sh" % SHARED_PATH], cwd=ROOT)
@@ -433,7 +433,7 @@ if __name__ == "__main__":
 
     if not args.build_only and args.normal_world == "linux":
         run_fvp_linux(args.debug, args.trace)
-    
+
     if not args.build_only and args.normal_world == "linux-net":
         run_fvp_linux_net(args.debug, args.host_ip, args.fvp_ip, args.fvp_tap_ip, args.realm_ip, args.route_ip, args.gateway, args.ifname)
 
@@ -442,4 +442,3 @@ if __name__ == "__main__":
 
     if not args.build_only and args.normal_world == "acs":
         run_fvp_acs()
-    

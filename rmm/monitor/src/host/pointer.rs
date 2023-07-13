@@ -1,6 +1,6 @@
 use crate::host::Accessor as HostAccessor;
 use crate::rmm::PageMap;
-use core::ops::Deref;
+use core::ops::{Deref, DerefMut};
 
 /// Type for holding an immutable pointer to physical region allocated by the host
 #[repr(C)]
@@ -69,4 +69,97 @@ impl<'a, T: HostAccessor> Drop for PointerGuard<'a, T> {
     fn drop(&mut self) {
         T::release(self.inner.ptr as usize, self.inner.page_map);
     }
+}
+
+/// Type for holding a mutable pointer to physical region allocated by the host
+#[repr(C)]
+pub struct PointerMut<T: HostAccessor> {
+    /// pointer to phyiscal region
+    ptr: *mut T,
+    /// page_map to map or unmap `ptr` in RTT
+    page_map: PageMap,
+}
+
+impl<T: HostAccessor> PointerMut<T> {
+    pub fn new(ptr: usize, page_map: PageMap) -> Self {
+        Self {
+            ptr: ptr as *mut T,
+            page_map,
+        }
+    }
+
+    #[inline]
+    pub fn acquire<'a>(&'a mut self) -> Option<PointerMutGuard<'a, T>> {
+        if T::acquire(self.ptr as usize, self.page_map) {
+            let guard = PointerMutGuard { inner: self };
+            if !guard.validate() {
+                None
+            } else {
+                Some(guard)
+            }
+        } else {
+            None
+        }
+    }
+}
+
+pub struct PointerMutGuard<'a, T: HostAccessor> {
+    inner: &'a PointerMut<T>,
+}
+
+impl<'a, T: HostAccessor> PointerMutGuard<'a, T> {
+    fn validate(&self) -> bool {
+        let obj = unsafe { &*self.inner.ptr };
+        obj.validate()
+    }
+}
+
+impl<'a, T: HostAccessor> Deref for PointerMutGuard<'a, T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.inner.ptr }
+    }
+}
+
+impl<'a, T: HostAccessor> DerefMut for PointerMutGuard<'a, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *self.inner.ptr }
+    }
+}
+
+impl<'a, T: HostAccessor> Drop for PointerMutGuard<'a, T> {
+    fn drop(&mut self) {
+        T::release(self.inner.ptr as usize, self.inner.page_map);
+    }
+}
+
+#[macro_export]
+macro_rules! host_pointer {
+    ($var:ident, $target_type:tt, $ptr:expr, $page_map:expr, $ret:expr) => {
+        // TODO: how to reduce the number of parameters? (proc_macro?)
+        let $var = HostPointer::<$target_type>::new($ptr, $page_map);
+        let $var = $var.acquire();
+        let $var = if let Some(v) = $var {
+            v
+        } else {
+            $ret = rmi::ERROR_INPUT;
+            return;
+        };
+    };
+}
+
+#[macro_export]
+macro_rules! host_pointer_mut {
+    ($var:ident, $target_type:tt, $ptr:expr, $page_map:expr, $ret:expr) => {
+        let mut $var = HostPointerMut::<$target_type>::new($ptr, $page_map);
+        let $var = $var.acquire();
+        #[allow(unused_mut)]
+        let mut $var = if let Some(v) = $var {
+            v
+        } else {
+            $ret = rmi::ERROR_INPUT;
+            return;
+        };
+    };
 }

@@ -169,6 +169,7 @@ def prepare_nw_aosp(no_prebuilt_initrd):
     new_env["BUILD_CONFIG"] = "../android-kernel/build.config.gki.aarch64"
     new_env["OUT_DIR"] = NW_AOSP_OUT
     new_env["KMI_SYMBOL_LIST_STRICT_MODE"] = "0"
+    new_env["SKIP_MRPROPER"] = "1"
 
     print("[!] Building Android kernel...")
     run("build/build.sh", cwd=NW_AOSP_BUILD_SCRIPT, new_env=new_env)

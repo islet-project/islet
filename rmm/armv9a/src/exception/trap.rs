@@ -116,6 +116,15 @@ pub extern "C" fn handle_lower_exception(
                 advance_pc(vcpu);
                 ret
             }
+            Syndrome::WFX => {
+                debug!("Synchronous: WFx");
+                tf.regs[0] = realmexit::SYNC as u64;
+                tf.regs[1] = esr as u64;
+                tf.regs[2] = unsafe { HPFAR_EL2.get() };
+                tf.regs[3] = unsafe { FAR_EL2.get() };
+                advance_pc(vcpu);
+                RET_TO_RMM
+            }
             undefined => {
                 debug!("Synchronous: Other");
                 tf.regs[0] = realmexit::SYNC as u64;

@@ -38,6 +38,7 @@ pub enum Syndrome {
     HVC,
     SMC,
     SysRegInst,
+    WFX,
     Other(u32),
 }
 
@@ -45,6 +46,7 @@ impl From<u32> for Syndrome {
     fn from(origin: u32) -> Self {
         match (origin & ESR_EL2::EC as u32) >> ESR_EL2::EC.trailing_zeros() {
             0b00_0000 => Syndrome::Unknown,
+            0b00_0001 => Syndrome::WFX,
             0b01_0010 => Syndrome::HVC,
             0b01_0110 => Syndrome::HVC,
             0b01_0011 => Syndrome::SMC,

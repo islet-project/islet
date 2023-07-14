@@ -1,5 +1,5 @@
 use super::params::Params;
-use super::run::Run;
+use super::run::{Run, REC_ENTRY_FLAG_TRAP_WFE, REC_ENTRY_FLAG_TRAP_WFI};
 use super::Rec;
 use crate::event::{realmexit, Context, Mainloop, RsiHandle};
 use crate::listen;
@@ -98,6 +98,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             let _ = rmi.set_reg(rec.rd.id(), rec.id(), 0, 0);
             let _ = rmi.set_reg(rec.rd.id(), rec.id(), 1, ripas);
             rec.set_ripas(0, 0, 0, 0);
+        }
+
+        let wfx_flag = unsafe { run.entry_flags() };
+        if wfx_flag & (REC_ENTRY_FLAG_TRAP_WFI | REC_ENTRY_FLAG_TRAP_WFE) != 0 {
+            warn!("ISLET does not support re-configuring the WFI(E) trap");
+            warn!("TWI(E) in HCR_EL2 is currently fixed to 'no trap'");
         }
 
         let mut ret_ns;

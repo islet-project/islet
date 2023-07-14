@@ -2,6 +2,8 @@ use super::realm::{rd::State, Rd};
 use super::rec::Rec;
 
 use crate::event::Mainloop;
+use crate::host::pointer::Pointer as HostPointer;
+use crate::host::DataPage;
 use crate::listen;
 use crate::rmi;
 use crate::rmm::granule;
@@ -74,7 +76,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let _flags = arg[4];
 
         let realm_id = rd.id();
-        let granule_sz = 4096;
 
         // Make sure DATA_CREATE is only processed
         // when the realm is in its New state.
@@ -87,25 +88,32 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             ret[0] = rmi::ERROR_INPUT;
             return;
         }
-        mm.map(src_pa, false);
+        host_pointer_or_ret!(src_page, DataPage, src_pa, mm, ret[0]);
 
         // 3. copy src to _data
         unsafe {
-            core::ptr::copy_nonoverlapping(src_pa as *const u8, target_pa as *mut u8, granule_sz);
+            core::ptr::copy_nonoverlapping(
+                src_page.as_ptr(),
+                target_pa as *mut u8,
+                core::mem::size_of::<DataPage>(),
+            );
         }
 
         // 4. map ipa to _taget_pa into S2 table
         let prot = rmi::MapProt::new(0);
-        let res = rmi.map(realm_id, ipa, target_pa, granule_sz, prot.get());
+        let res = rmi.map(
+            realm_id,
+            ipa,
+            target_pa,
+            core::mem::size_of::<DataPage>(),
+            prot.get(),
+        );
         match res {
             Ok(_) => ret[0] = rmi::SUCCESS,
             Err(_) => ret[0] = rmi::RET_FAIL,
         }
 
         // TODO: 5. perform measure
-
-        // 6. unmap src and _taget_pa from rmm
-        mm.unmap(src_pa);
     });
 
     listen!(mainloop, rmi::DATA_CREATE_UNKNOWN, |arg, ret, rmm| {

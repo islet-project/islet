@@ -1,3 +1,5 @@
+use crate::host::Accessor as HostAccessor;
+
 /// The structure holds data passsed between the Host and the RMM
 /// on Realm Execution Context (REC) entry and exit.
 #[repr(C)]
@@ -7,10 +9,6 @@ pub struct Run {
 }
 
 impl Run {
-    pub unsafe fn parse_mut<'a>(ptr: usize) -> &'a mut Run {
-        &mut *(ptr as *mut Self)
-    }
-
     pub unsafe fn entry_flags(&self) -> u64 {
         self.entry.inner.flags.val
     }
@@ -269,3 +267,5 @@ union Imm {
     val: u16,
     reserved: [u8; 0x800 - 0x600],
 }
+
+impl HostAccessor for Run {}

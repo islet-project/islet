@@ -5,7 +5,7 @@ use core::ops::{Deref, DerefMut};
 /// Type for holding an immutable pointer to physical region allocated by the host
 #[repr(C)]
 pub struct Pointer<T: HostAccessor> {
-    /// pointer to phyiscal region
+    /// pointer to physical region
     ptr: *const T,
     /// page_map to map or unmap `ptr` in RMM
     page_map: PageMap,
@@ -134,8 +134,10 @@ impl<'a, T: HostAccessor> Drop for PointerMutGuard<'a, T> {
     }
 }
 
+// TODO: current usage --> host_pointer_or_ret!(pararms, Params, arg[2], mm, ret[0]);
+//       later --> let params = host_pointer!(Params, arg[2], mm)?;
 #[macro_export]
-macro_rules! host_pointer {
+macro_rules! host_pointer_or_ret {
     ($var:ident, $target_type:tt, $ptr:expr, $page_map:expr, $ret:expr) => {
         // TODO: how to reduce the number of parameters? (proc_macro?)
         let $var = HostPointer::<$target_type>::new($ptr, $page_map);
@@ -150,7 +152,7 @@ macro_rules! host_pointer {
 }
 
 #[macro_export]
-macro_rules! host_pointer_mut {
+macro_rules! host_pointer_mut_or_ret {
     ($var:ident, $target_type:tt, $ptr:expr, $page_map:expr, $ret:expr) => {
         let mut $var = HostPointerMut::<$target_type>::new($ptr, $page_map);
         let $var = $var.acquire();

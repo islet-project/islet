@@ -1,6 +1,7 @@
 #[macro_use]
 pub mod pointer;
 
+use crate::rmm::granule::GRANULE_SIZE;
 use crate::rmm::PageMap;
 
 /// This trait is used to enforce security checks for physical region allocated by the host.
@@ -29,7 +30,7 @@ pub trait Accessor {
 /// DataPage is used to convey realm data from host to realm.
 #[repr(C)]
 #[derive(Copy, Clone)]
-pub struct DataPage([u8; 4096]);
+pub struct DataPage([u8; GRANULE_SIZE]);
 
 impl DataPage {
     pub unsafe fn as_ptr(&self) -> *const u8 {

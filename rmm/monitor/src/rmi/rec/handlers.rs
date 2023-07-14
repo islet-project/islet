@@ -7,6 +7,7 @@ use crate::rmi::realm::Rd;
 use crate::{rmi, rsi};
 
 use crate::host::pointer::Pointer as HostPointer;
+use crate::host::pointer::PointerMut as HostPointerMut;
 use crate::rmm::granule;
 use crate::rmm::granule::GranuleState;
 
@@ -25,14 +26,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return;
         }
 
-        let params_ptr = HostPointer::<Params>::new(arg[2], mm);
-        let params = params_ptr.acquire();
-        let params = if let Some(val) = params {
-            val
-        } else {
-            error!("access Params fail");
-            return;
-        };
+        host_pointer_or_ret!(params, Params, arg[2], mm, ret[0]);
         trace!("{:?}", *params);
         ret[0] = rmi::RET_FAIL;
 
@@ -72,11 +66,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_ENTER, |arg, ret, rmm| {
         let rmi = rmm.rmi;
         let mut rec = unsafe { Rec::into(arg[0]) };
-        let run_ptr = arg[1];
-        rmm.mm.map(run_ptr, false);
-
-        let run = unsafe { Run::parse_mut(run_ptr) };
-        trace!("{:?}", run);
+        host_pointer_mut_or_ret!(run, Run, arg[1], rmm.mm, ret[0]);
+        trace!("{:?}", *run);
 
         unsafe {
             // TODO: copy rec::entry gprs to host_call gprs
@@ -88,8 +79,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 host_call.set_gpr0(ipa);
             }
         }
-        let _ = rmi.receive_gic_state_from_host(rec.rd.id(), rec.id(), run);
-        let _ = rmi.emulate_mmio(rec.rd.id(), rec.id(), run);
+        let _ = rmi.receive_gic_state_from_host(rec.rd.id(), rec.id(), &run);
+        let _ = rmi.emulate_mmio(rec.rd.id(), rec.id(), &run);
 
         let ripas = rec.ripas_addr();
         if ripas > 0 {
@@ -117,7 +108,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                             rsi_ctx.resize_ret(ret_num);
 
                             // set default value
-                            if rsi.dispatch(&mut rsi_ctx, rmm, rec_ref, run)
+                            if rsi.dispatch(&mut rsi_ctx, rmm, rec_ref, &mut run)
                                 == RsiHandle::RET_SUCCESS
                             {
                                 if rsi_ctx.ret_slice()[0] == rmi::SUCCESS_REC_ENTER {
@@ -151,7 +142,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 break;
             }
         }
-        let _ = rmi.send_gic_state_to_host(rec.rd.id(), rec.id(), run);
-        rmm.mm.unmap(run_ptr);
+        let _ = rmi.send_gic_state_to_host(rec.rd.id(), rec.id(), &mut run);
     });
 }

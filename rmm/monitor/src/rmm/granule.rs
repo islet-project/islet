@@ -12,7 +12,7 @@ const FVP_DRAM1_REGION: core::ops::Range<usize> = core::ops::Range {
     start: 0x8_8000_0000,
     end: 0x8_8000_0000 + 0x8000_0000 - 1,
 };
-const GRANULE_SIZE: usize = 4096;
+pub const GRANULE_SIZE: usize = 4096;
 
 pub const RET_SUCCESS: usize = 0;
 pub const RET_STATE_ERR: usize = 1;

@@ -137,9 +137,10 @@ pub extern "C" fn handle_lower_exception(
         Kind::Irq => {
             debug!("IRQ");
             tf.regs[0] = realmexit::IRQ as u64;
-            tf.regs[1] = esr as u64;
+            // IRQ isn't interpreted with esr. It just hold previsou info. Void them out.
+            tf.regs[1] = 0;
             tf.regs[2] = 0;
-            tf.regs[3] = unsafe { FAR_EL2.get() };
+            tf.regs[3] = 0;
             RET_TO_RMM
         }
         _ => {

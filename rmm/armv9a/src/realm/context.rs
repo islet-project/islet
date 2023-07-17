@@ -3,6 +3,8 @@ use crate::gic;
 use crate::helper::{SPSR_EL2, TPIDR_EL2};
 use monitor::realm::vcpu::VCPU;
 
+use super::timer;
+
 #[repr(C)]
 #[derive(Default, Debug)]
 pub struct Context {
@@ -11,6 +13,7 @@ pub struct Context {
     pub spsr: u64,
     pub sys_regs: SystemRegister,
     pub gic_state: GICRegister,
+    pub timer: TimerRegister,
     pub fp_regs: [u128; 32],
 }
 
@@ -33,10 +36,12 @@ impl monitor::realm::vcpu::Context for Context {
         vcpu.context.sys_regs.vmpidr = vcpu.pcpu.unwrap() as u64;
         TPIDR_EL2.set(vcpu as *const _ as u64);
         gic::restore_state(vcpu);
+        timer::restore_state(vcpu);
     }
 
     unsafe fn from_current(vcpu: &mut VCPU<Self>) {
         gic::save_state(vcpu);
+        timer::save_state(vcpu);
         vcpu.pcpu = None;
         //vcpu.context.sys_regs.vmpidr = 0u64;
         //TPIDR_EL2.set(0u64);
@@ -90,4 +95,16 @@ pub struct SystemRegister {
     pub esr_el2: u64,
     pub hpfar: u64,
     pub sctlr: u64,
+}
+
+#[repr(C)]
+#[derive(Default, Debug)]
+pub struct TimerRegister {
+    pub cntvoff_el2: u64,
+    pub cntv_cval_el0: u64,
+    pub cntv_ctl_el0: u64,
+    pub cntpoff_el2: u64,
+    pub cntp_cval_el0: u64,
+    pub cntp_ctl_el0: u64,
+    pub cnthctl_el2: u64,
 }

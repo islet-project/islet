@@ -71,6 +71,22 @@ impl Run {
     pub unsafe fn set_gic_hcr(&mut self, val: u64) {
         (*(*self.exit.inner).gicv3.inner).hcr = val;
     }
+
+    pub unsafe fn set_cntv_ctl(&mut self, val: u64) {
+        *(&mut (*(*self.exit.inner).cnt.inner).v_ctl) = val;
+    }
+
+    pub unsafe fn set_cntv_cval(&mut self, val: u64) {
+        (*(*self.exit.inner).cnt.inner).v_cval = val;
+    }
+
+    pub unsafe fn set_cntp_ctl(&mut self, val: u64) {
+        (*(*self.exit.inner).cnt.inner).v_ctl = val;
+    }
+
+    pub unsafe fn set_cntp_cval(&mut self, val: u64) {
+        (*(*self.exit.inner).cnt.inner).v_cval = val;
+    }
 }
 
 impl core::fmt::Debug for Run {
@@ -90,6 +106,9 @@ impl core::fmt::Debug for Run {
                 .field("entry::gicv3_lrs", &self.entry.inner.gicv3.inner.lrs)
                 .field("exit::exit_reason", &self.exit.inner.exit_reason.val)
                 .field("exit::imm", &self.exit.inner.imm.val)
+                .field("exit::cntp_cval", &self.exit.inner.cnt.inner.p_cval)
+                .field("exit::cntv_ctl", &self.exit.inner.cnt.inner.v_ctl)
+                .field("exit::cntv_cval", &self.exit.inner.cnt.inner.v_cval)
                 .finish()
         }
     }
@@ -240,7 +259,7 @@ struct CounterTimerInner {
     /// Physical Timer Control Register
     p_ctl: u64,
     /// Physical Timer CompareValue Register
-    p_cval: [u64; 16],
+    p_cval: u64,
     /// Virtual Timer Control Register
     v_ctl: u64,
     /// Virtual Timer CompareValue Register

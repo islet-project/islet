@@ -17,6 +17,7 @@ use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::translation_granule_4k::RawPTE;
 use monitor::rmi::error::Error;
 use monitor::rmi::error::InternalError::*;
+use crate::realm::timer;
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
@@ -83,10 +84,11 @@ impl monitor::rmi::Interface for RMI {
         let vttbr = bits_in_reg(VTTBR_EL2::VMID, id as u64)
             | bits_in_reg(VTTBR_EL2::BADDR, page_table as u64);
 
-        let _vcpu = VCPU::new(realm.clone());
-        _vcpu.lock().context.sys_regs.vttbr = vttbr;
+        let vcpu = VCPU::new(realm.clone());
+        vcpu.lock().context.sys_regs.vttbr = vttbr;
+        vcpu.lock().context.timer.cnthctl_el2 = timer::init_cnthctl();
 
-        realm.lock().vcpus.push(_vcpu);
+        realm.lock().vcpus.push(vcpu);
         let vcpuid = realm.lock().vcpus.len() - 1;
         Ok(vcpuid)
     }
@@ -344,6 +346,21 @@ impl monitor::rmi::Interface for RMI {
             context.gp_regs[rt] = val;
         }
         context.elr += 4;
+        Ok(())
+    }
+
+    fn send_timer_state_to_host(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), Error> {
+        let realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))?;
+        let mut locked_realm = realm.lock();
+        let vcpu = locked_realm.vcpus.get_mut(vcpu).ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
+        let timer = &vcpu.lock().context.timer;
+
+        unsafe {
+            run.set_cntv_ctl(timer.cntv_ctl_el0);
+            run.set_cntv_cval(timer.cntv_cval_el0 - timer.cntvoff_el2);
+            run.set_cntp_ctl(timer.cntp_ctl_el0);
+            run.set_cntp_cval(timer.cntp_cval_el0 - timer.cntpoff_el2);
+        }
         Ok(())
     }
 }

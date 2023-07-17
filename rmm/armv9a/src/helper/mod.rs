@@ -51,7 +51,7 @@ pub unsafe fn init() {
     //        | HCR_EL2::TWI
             | HCR_EL2::FB
             | HCR_EL2::AMO
-    //        | HCR_EL2::IMO
+            | HCR_EL2::IMO
             | HCR_EL2::FMO
             | HCR_EL2::VM,
     );

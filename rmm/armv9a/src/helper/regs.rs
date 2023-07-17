@@ -298,3 +298,5 @@ define_sys_register!(ICH_AP1R3_EL2);
 define_sys_register!(ICH_VMCR_EL2);
 define_sys_register!(ICH_HCR_EL2);
 define_sys_register!(ICH_MISR_EL2);
+
+define_sys_register!(CNTHCTL_EL2, EL1PCTEN[11 - 11], EL1PTEN[10 - 10]);

@@ -145,6 +145,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             }
         }
         rmi.send_gic_state_to_host(rec.rd.id(), rec.id(), &mut run)?;
+        rmi.send_timer_state_to_host(rec.rd.id(), rec.id(), &mut run)?;
         Ok(())
     });
 }

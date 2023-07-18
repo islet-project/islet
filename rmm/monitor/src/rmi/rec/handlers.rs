@@ -127,6 +127,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                         run.set_esr(val[1] as u64);
                         run.set_hpfar(val[2] as u64);
                         run.set_far(val[3] as u64);
+                        let _ = rmi.send_mmio_write(rec.rd.id(), rec.id(), &mut run);
                         ret[0] = rmi::SUCCESS;
                     },
                     realmexit::IRQ => unsafe {

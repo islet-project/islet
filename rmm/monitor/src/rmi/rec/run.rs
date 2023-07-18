@@ -50,6 +50,10 @@ impl Run {
         (*(*self.exit.inner).sys_regs.inner).hpfar = hpfar;
     }
 
+    pub unsafe fn set_gpr0(&mut self, gpr0: u64) {
+        (*self.exit.inner).gprs.val[0] = gpr0;
+    }
+
     pub unsafe fn set_ripas(&mut self, base: u64, size: u64, state: u8) {
         (*(*self.exit.inner).ripas.inner).base = base;
         (*(*self.exit.inner).ripas.inner).size = size;

@@ -146,7 +146,6 @@ macro_rules! host_pointer_or_ret {
             v
         } else {
             use crate::rmi::error::Error;
-            $ret = rmi::ERROR_INPUT;
             return Err(Error::RmiErrorInput);
         };
     };
@@ -162,7 +161,6 @@ macro_rules! host_pointer_mut_or_ret {
             v
         } else {
             use crate::rmi::error::Error;
-            $ret = rmi::ERROR_INPUT;
             return Err(Error::RmiErrorInput);
         };
     };

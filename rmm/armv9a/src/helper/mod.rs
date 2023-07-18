@@ -60,6 +60,7 @@ pub unsafe fn init() {
     SCTLR_EL2.set(SCTLR_EL2::C);
     SCTLR_EL2.set(SCTLR_EL2::I | SCTLR_EL2::M | SCTLR_EL2::EOS);
     CPTR_EL2.set(CPTR_EL2::TAM);
+    ICC_SRE_EL2.set(ICC_SRE_EL2::ENABLE | ICC_SRE_EL2::DIB | ICC_SRE_EL2::DFB | ICC_SRE_EL2::SRE);
     activate_stage2_mmu();
 
     // asm::brk(10);

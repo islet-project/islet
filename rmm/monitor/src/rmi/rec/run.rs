@@ -81,11 +81,11 @@ impl Run {
     }
 
     pub unsafe fn set_cntp_ctl(&mut self, val: u64) {
-        (*(*self.exit.inner).cnt.inner).v_ctl = val;
+        (*(*self.exit.inner).cnt.inner).p_ctl = val;
     }
 
     pub unsafe fn set_cntp_cval(&mut self, val: u64) {
-        (*(*self.exit.inner).cnt.inner).v_cval = val;
+        (*(*self.exit.inner).cnt.inner).p_cval = val;
     }
 }
 
@@ -106,6 +106,7 @@ impl core::fmt::Debug for Run {
                 .field("entry::gicv3_lrs", &self.entry.inner.gicv3.inner.lrs)
                 .field("exit::exit_reason", &self.exit.inner.exit_reason.val)
                 .field("exit::imm", &self.exit.inner.imm.val)
+                .field("exit::cntp_ctl", &self.exit.inner.cnt.inner.p_ctl)
                 .field("exit::cntp_cval", &self.exit.inner.cnt.inner.p_cval)
                 .field("exit::cntv_ctl", &self.exit.inner.cnt.inner.v_ctl)
                 .field("exit::cntv_cval", &self.exit.inner.cnt.inner.v_cval)

@@ -82,15 +82,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 host_call.set_gpr0(ipa);
             }
         }
-        let _ = rmi.receive_gic_state_from_host(rec.rd.id(), rec.id(), &run);
-        let _ = rmi.emulate_mmio(rec.rd.id(), rec.id(), &run);
+        rmi.receive_gic_state_from_host(rec.rd.id(), rec.id(), &run)?;
+        rmi.emulate_mmio(rec.rd.id(), rec.id(), &run)?;
 
         let ripas = rec.ripas_addr();
         if ripas > 0 {
-            // TODO: need to determine how to properly handle the failures
-            // current: just ignore the unlikely failures
-            let _ = rmi.set_reg(rec.rd.id(), rec.id(), 0, 0);
-            let _ = rmi.set_reg(rec.rd.id(), rec.id(), 1, ripas);
+            rmi.set_reg(rec.rd.id(), rec.id(), 0, 0)?;
+            rmi.set_reg(rec.rd.id(), rec.id(), 1, ripas)?;
             rec.set_ripas(0, 0, 0, 0);
         }
 
@@ -151,7 +149,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 break;
             }
         }
-        let _ = rmi.send_gic_state_to_host(rec.rd.id(), rec.id(), &mut run);
+        rmi.send_gic_state_to_host(rec.rd.id(), rec.id(), &mut run)?;
         Ok(())
     });
 }

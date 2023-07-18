@@ -299,4 +299,11 @@ define_sys_register!(ICH_VMCR_EL2);
 define_sys_register!(ICH_HCR_EL2);
 define_sys_register!(ICH_MISR_EL2);
 
+define_sys_register!(
+    ICC_SRE_EL2,
+    ENABLE[3 - 3],
+    DIB[2 - 2],
+    DFB[1 - 1],
+    SRE[0 - 0]
+);
 define_sys_register!(CNTHCTL_EL2, EL1PCTEN[11 - 11], EL1PTEN[10 - 10]);

@@ -349,6 +349,50 @@ impl monitor::rmi::Interface for RMI {
         Ok(())
     }
 
+    fn send_mmio_write(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), &str> {
+        let realm = get_realm(id).ok_or("Not exist Realm")?;
+        let mut locked_realm = realm.lock();
+        let vcpu = locked_realm.vcpus.get_mut(vcpu).ok_or("Not exist VCPU")?;
+        let context = &mut vcpu.lock().context;
+
+        let esr_el2 = context.sys_regs.esr_el2;
+        let esr = EsrEl2::new(esr_el2);
+        let isv = esr.get_masked_value(EsrEl2::ISV);
+        let ec = esr.get_masked_value(EsrEl2::EC);
+        let wnr = esr.get_masked_value(EsrEl2::WNR);
+        let rt = esr.get_masked_value(EsrEl2::SRT) as usize;
+
+        // wnr == 1: caused by writing
+        if ec != ESR_EL2_EC_DATA_ABORT || isv == 0 || wnr == 0 {
+            return Ok(());
+        }
+
+        if rt == 31 {
+            // xzr
+            unsafe {
+                run.set_gpr0(0);
+            }
+        } else {
+            let sas = esr.get_masked_value(EsrEl2::SAS);
+            let mask: u64 = match sas {
+                0 => 0xff,                // byte
+                1 => 0xffff,              // half-word
+                2 => 0xffffffff,          // word
+                3 => 0xffffffff_ffffffff, // double word
+                _ => unreachable!(),      // SAS consists of two bits
+            };
+            let sign_extended = esr.get_masked_value(EsrEl2::SSE);
+            if sign_extended != 0 {
+                // TODO
+                unimplemented!();
+            }
+            unsafe {
+                run.set_gpr0(context.gp_regs[rt] & mask);
+            }
+        }
+        Ok(())
+    }
+
     fn send_timer_state_to_host(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), Error> {
         let realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))?;
         let mut locked_realm = realm.lock();

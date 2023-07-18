@@ -23,13 +23,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd = unsafe { Rd::into(arg[1]) };
 
         if granule::set_granule(arg[0], GranuleState::Rec, mm) != granule::RET_SUCCESS {
-            ret[0] = rmi::ERROR_INPUT;
             return Err(Error::RmiErrorInput);
         }
 
         host_pointer_or_ret!(params, Params, arg[2], mm, ret[0]);
         trace!("{:?}", *params);
-        ret[0] = rmi::RET_FAIL;
 
         match rmi.create_vcpu(rd.id()) {
             Ok(vcpuid) => {
@@ -53,16 +51,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         {
             return Err(Error::RmiErrorInput);
         }
-        ret[0] = rmi::SUCCESS;
         Ok(())
     });
 
-    listen!(mainloop, rmi::REC_DESTROY, |arg, ret, rmm| {
+    listen!(mainloop, rmi::REC_DESTROY, |arg, _ret, rmm| {
         if granule::set_granule(arg[0], GranuleState::Delegated, rmm.mm) != granule::RET_SUCCESS {
-            ret[0] = rmi::ERROR_INPUT;
             return Err(Error::RmiErrorInput);
         }
-        ret[0] = rmi::SUCCESS;
         Ok(())
     });
 

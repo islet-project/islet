@@ -46,6 +46,10 @@ impl Context {
         self.ret.extend_from_slice(ret);
     }
 
+    pub fn set_ret0(&mut self, val: usize) {
+        *&mut (self.ret[0]) = val;
+    }
+
     pub fn resize_ret(&mut self, new_len: usize) {
         self.ret.clear();
         self.ret.resize(new_len, 0);

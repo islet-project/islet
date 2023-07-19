@@ -22,8 +22,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REALM_CREATE, |arg, ret, rmm| {
         let rmi = rmm.rmi;
         let mm = rmm.mm;
-        host_pointer_or_ret!(params, Params, arg[1], mm);
-        trace!("{:?}", *params);
+        let params = copy_from_host_or_ret!(Params, arg[1], mm);
+        trace!("{:?}", params);
 
         if granule::set_granule(arg[0], GranuleState::RD, mm) != granule::RET_SUCCESS {
             return Err(Error::RmiErrorInput);

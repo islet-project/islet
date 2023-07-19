@@ -26,8 +26,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        host_pointer_or_ret!(params, Params, arg[2], mm);
-        trace!("{:?}", *params);
+        let params = copy_from_host_or_ret!(Params, arg[2], mm);
+        trace!("{:?}", params);
 
         match rmi.create_vcpu(rd.id()) {
             Ok(vcpuid) => {
@@ -64,8 +64,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_ENTER, |arg, ret, rmm| {
         let rmi = rmm.rmi;
         let mut rec = unsafe { Rec::into(arg[0]) };
-        host_pointer_mut_or_ret!(run, Run, arg[1], rmm.mm);
-        trace!("{:?}", *run);
+        let run_pa = arg[1];
+        let mut run = copy_from_host_or_ret!(Run, run_pa, rmm.mm);
+        trace!("{:?}", run);
 
         unsafe {
             // TODO: copy rec::entry gprs to host_call gprs
@@ -147,6 +148,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
         rmi.send_gic_state_to_host(rec.rd.id(), rec.id(), &mut run)?;
         rmi.send_timer_state_to_host(rec.rd.id(), rec.id(), &mut run)?;
+
+        // NOTICE: do not modify `run` after copy_to_host_or_ret!(). it won't have any effect.
+        copy_to_host_or_ret!(Run, &run, run_pa, rmm.mm);
         Ok(())
     });
 }

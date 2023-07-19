@@ -21,6 +21,23 @@ impl Params {
     }
 }
 
+impl Default for Params {
+    fn default() -> Self {
+        Self {
+            flags: Flags { val: 0 },
+            mpidr: MPIDR { val: 0 },
+            pc: PC { val: 0 },
+            gprs: GPRs { val: [0; 8] },
+            inner: Inner {
+                val: core::mem::ManuallyDrop::new(_Inner {
+                    num_aux: 0,
+                    aux: [0; 16],
+                }),
+            },
+        }
+    }
+}
+
 impl Drop for Params {
     fn drop(&mut self) {
         unsafe {

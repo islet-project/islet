@@ -1,4 +1,5 @@
 use crate::host::Accessor as HostAccessor;
+use core::mem::ManuallyDrop;
 
 /// The structure holds data passsed between the Host and the RMM
 /// on Realm Execution Context (REC) entry and exit.
@@ -115,6 +116,62 @@ impl core::fmt::Debug for Run {
                 .field("exit::cntv_ctl", &self.exit.inner.cnt.inner.v_ctl)
                 .field("exit::cntv_cval", &self.exit.inner.cnt.inner.v_cval)
                 .finish()
+        }
+    }
+}
+
+impl Default for Run {
+    fn default() -> Self {
+        Self {
+            entry: Entry {
+                inner: ManuallyDrop::new(EntryInner {
+                    flags: Flags { val: 0 },
+                    gprs: GPRs { val: [0; 31] },
+                    gicv3: EntryGICv3 {
+                        inner: ManuallyDrop::new(EntryGICv3Inner {
+                            hcr: 0,
+                            lrs: [0; 16],
+                        }),
+                    },
+                }),
+            },
+            exit: Exit {
+                inner: ManuallyDrop::new(ExitInner {
+                    exit_reason: ExitReason { val: 0 },
+                    sys_regs: SysRegs {
+                        inner: ManuallyDrop::new(SysRegsInner {
+                            esr: 0,
+                            far: 0,
+                            hpfar: 0,
+                        }),
+                    },
+                    gprs: GPRs { val: [0; 31] },
+                    gicv3: ExitGICv3 {
+                        inner: ManuallyDrop::new(ExitGICv3Inner {
+                            hcr: 0,
+                            lrs: [0; 16],
+                            misr: 0,
+                            vmcr: 0,
+                        }),
+                    },
+                    cnt: CounterTimer {
+                        inner: ManuallyDrop::new(CounterTimerInner {
+                            p_ctl: 0,
+                            p_cval: 0,
+                            v_ctl: 0,
+                            v_cval: 0,
+                        }),
+                    },
+                    ripas: RIPAS {
+                        inner: ManuallyDrop::new(RIPASInner {
+                            base: 0,
+                            size: 0,
+                            value: 0,
+                        }),
+                    },
+                    imm: Imm { val: 0 },
+                }),
+            },
         }
     }
 }

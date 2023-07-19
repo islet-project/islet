@@ -86,7 +86,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if granule::set_granule(target_pa, GranuleState::Data, mm) != granule::RET_SUCCESS {
             return Err(Error::RmiErrorInput);
         }
-        host_pointer_or_ret!(src_page, DataPage, src_pa, mm);
+        let src_page = copy_from_host_or_ret!(DataPage, src_pa, mm);
 
         // 3. copy src to _data
         unsafe {

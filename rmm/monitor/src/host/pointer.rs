@@ -137,33 +137,33 @@ impl<'a, T: HostAccessor> Drop for PointerMutGuard<'a, T> {
 #[macro_export]
 macro_rules! copy_from_host_or_ret {
     ($target_type:tt, $ptr:expr, $page_map:expr) => {{
-        let var = HostPointer::<$target_type>::new($ptr, $page_map);
-        let var = var.acquire();
-        let var = if let Some(v) = var {
+        let src_obj = HostPointer::<$target_type>::new($ptr, $page_map);
+        let src_obj = src_obj.acquire();
+        let src_obj = if let Some(v) = src_obj {
             v
         } else {
             use crate::rmi::error::Error;
             return Err(Error::RmiErrorInput);
         };
 
-        let mut copied_var: $target_type = $target_type::default();
+        let mut dst_obj: $target_type = $target_type::default();
         unsafe {
             core::ptr::copy_nonoverlapping::<$target_type>(
-                &*var as *const $target_type,
-                &mut copied_var as *mut $target_type,
+                &*src_obj as *const $target_type,
+                &mut dst_obj as *mut $target_type,
                 1,
             );
         };
-        copied_var
+        dst_obj
     }};
 }
 
 #[macro_export]
 macro_rules! copy_to_host_or_ret {
     ($target_type:tt, $src_obj:expr, $dest_ptr:expr, $page_map:expr) => {{
-        let mut var = HostPointerMut::<$target_type>::new($dest_ptr, $page_map);
-        let var = var.acquire();
-        let mut var = if let Some(v) = var {
+        let mut dst_obj = HostPointerMut::<$target_type>::new($dest_ptr, $page_map);
+        let dst_obj = dst_obj.acquire();
+        let mut dst_obj = if let Some(v) = dst_obj {
             v
         } else {
             use crate::rmi::error::Error;
@@ -173,7 +173,7 @@ macro_rules! copy_to_host_or_ret {
         unsafe {
             core::ptr::copy_nonoverlapping::<$target_type>(
                 $src_obj as *const $target_type,
-                &mut *var as *mut $target_type,
+                &mut *dst_obj as *mut $target_type,
                 1,
             );
         };

@@ -26,7 +26,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        host_pointer_or_ret!(params, Params, arg[2], mm, ret[0]);
+        host_pointer_or_ret!(params, Params, arg[2], mm);
         trace!("{:?}", *params);
 
         match rmi.create_vcpu(rd.id()) {
@@ -64,7 +64,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_ENTER, |arg, ret, rmm| {
         let rmi = rmm.rmi;
         let mut rec = unsafe { Rec::into(arg[0]) };
-        host_pointer_mut_or_ret!(run, Run, arg[1], rmm.mm, ret[0]);
+        host_pointer_mut_or_ret!(run, Run, arg[1], rmm.mm);
         trace!("{:?}", *run);
 
         unsafe {

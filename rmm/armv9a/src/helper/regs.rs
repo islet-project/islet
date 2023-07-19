@@ -306,4 +306,5 @@ define_sys_register!(
     DFB[1 - 1],
     SRE[0 - 0]
 );
-define_sys_register!(CNTHCTL_EL2, EL1PCTEN[11 - 11], EL1PTEN[10 - 10]);
+//CNTHCTL_EL2: S3_4_C14_C1_0
+define_sys_register!(S3_4_C14_C1_0, EL1PCTEN[11 - 11], EL1PTEN[10 - 10]);

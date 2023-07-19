@@ -32,8 +32,12 @@ const ICH_HCR_EL2_VGRP0DIE_BIT: u64 = 1 << 5;
 const ICH_HCR_EL2_VGRP1EIE_BIT: u64 = 1 << 6;
 // VM Group 1 Disabled Interrupt Enable
 const ICH_HCR_EL2_VGRP1DIE_BIT: u64 = 1 << 7;
+// Deactivation of virtual SGIs can increment ICH_HCR_EL2.EOIcount
+const ICH_HCR_EL2_VSGIEEOICOUNT_BIT: u64 = 1 << 8;
 // When FEAT_GICv3_TDIR is implemented, Trap EL1 writes to ICC_DIR_EL1 and ICV_DIR_EL1.
 const ICH_HCR_EL2_TDIR_BIT: u64 = 1 << 14;
+// ICH_HCR_EL2_DVIM_BIT
+const ICH_HCR_EL2_DVIM_BIT: u64 = 1 << 15;
 
 pub const ICH_HCR_EL2_NS_MASK: u64 = ICH_HCR_EL2_UIE_BIT
     | ICH_HCR_EL2_LRENPIE_BIT
@@ -82,6 +86,12 @@ lazy_static! {
             max_vintid,
         }
     };
+}
+
+pub fn init_gic(vcpu: &mut VCPU<Context>) {
+    let gic_state = &mut vcpu.context.gic_state;
+    gic_state.ich_hcr_el2 =
+        ICH_HCR_EL2_EN_BIT | ICH_HCR_EL2_VSGIEEOICOUNT_BIT | ICH_HCR_EL2_DVIM_BIT
 }
 
 fn set_lr(i: usize, val: u64) {

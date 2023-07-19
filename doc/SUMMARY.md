@@ -14,6 +14,8 @@
   - [Software Development Kit](./components/sdk.md)
   - [Attestation](./components/attestation.md)
   - [Certifier](./components/certifier.md)
+- [Platform development](./platform-development/index.md)
+  - [Secure interactions with the Host](./platform-development/secure-interaction.md)
 - [Use Cases](./usecases/index.md)
   - [Confidential Machine Learning](./usecases/confidential_ml.md)
 - [Rust Crates](./crates/index.md)

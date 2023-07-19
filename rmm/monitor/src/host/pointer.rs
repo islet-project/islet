@@ -134,11 +134,11 @@ impl<'a, T: HostAccessor> Drop for PointerMutGuard<'a, T> {
     }
 }
 
-// TODO: current usage --> host_pointer_or_ret!(pararms, Params, arg[2], mm, ret[0]);
+// TODO: current usage --> host_pointer_or_ret!(pararms, Params, arg[2], mm);
 //       later --> let params = host_pointer!(Params, arg[2], mm)?;
 #[macro_export]
 macro_rules! host_pointer_or_ret {
-    ($var:ident, $target_type:tt, $ptr:expr, $page_map:expr, $ret:expr) => {
+    ($var:ident, $target_type:tt, $ptr:expr, $page_map:expr) => {
         // TODO: how to reduce the number of parameters? (proc_macro?)
         let $var = HostPointer::<$target_type>::new($ptr, $page_map);
         let $var = $var.acquire();
@@ -153,7 +153,7 @@ macro_rules! host_pointer_or_ret {
 
 #[macro_export]
 macro_rules! host_pointer_mut_or_ret {
-    ($var:ident, $target_type:tt, $ptr:expr, $page_map:expr, $ret:expr) => {
+    ($var:ident, $target_type:tt, $ptr:expr, $page_map:expr) => {
         let mut $var = HostPointerMut::<$target_type>::new($ptr, $page_map);
         let $var = $var.acquire();
         #[allow(unused_mut)]

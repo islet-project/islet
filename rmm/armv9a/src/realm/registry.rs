@@ -5,6 +5,7 @@ use monitor::realm::Realm;
 use monitor::rmi::rec::run::{Run, REC_ENTRY_FLAG_EMUL_MMIO};
 use monitor::rmi::MapProt;
 
+use crate::gic;
 use crate::gic::{GIC_FEATURES, ICH_HCR_EL2_EOI_COUNT_MASK, ICH_HCR_EL2_NS_MASK};
 use crate::helper;
 use crate::helper::bits_in_reg;
@@ -15,9 +16,9 @@ use crate::realm::context::Context;
 use crate::realm::mm::page_table::pte;
 use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::translation_granule_4k::RawPTE;
+use crate::realm::timer;
 use monitor::rmi::error::Error;
 use monitor::rmi::error::InternalError::*;
-use crate::realm::timer;
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
@@ -86,7 +87,8 @@ impl monitor::rmi::Interface for RMI {
 
         let vcpu = VCPU::new(realm.clone());
         vcpu.lock().context.sys_regs.vttbr = vttbr;
-        vcpu.lock().context.timer.cnthctl_el2 = timer::init_cnthctl();
+        timer::init_timer(&mut vcpu.lock());
+        gic::init_gic(&mut vcpu.lock());
 
         realm.lock().vcpus.push(vcpu);
         let vcpuid = realm.lock().vcpus.len() - 1;
@@ -274,7 +276,7 @@ impl monitor::rmi::Interface for RMI {
 
         gic_state.ich_lr_el2[..nr_lrs].copy_from_slice(&unsafe { run.entry_gic_lrs() }[..nr_lrs]);
         gic_state.ich_hcr_el2 &= !ICH_HCR_EL2_NS_MASK;
-        gic_state.ich_hcr_el2 |= (unsafe { run.entry_gic_hcr() } | ICH_HCR_EL2_NS_MASK);
+        gic_state.ich_hcr_el2 |= (unsafe { run.entry_gic_hcr() } & ICH_HCR_EL2_NS_MASK);
         Ok(())
     }
 
@@ -349,10 +351,13 @@ impl monitor::rmi::Interface for RMI {
         Ok(())
     }
 
-    fn send_mmio_write(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), &str> {
-        let realm = get_realm(id).ok_or("Not exist Realm")?;
+    fn send_mmio_write(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), Error> {
+        let realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))?;
         let mut locked_realm = realm.lock();
-        let vcpu = locked_realm.vcpus.get_mut(vcpu).ok_or("Not exist VCPU")?;
+        let vcpu = locked_realm
+            .vcpus
+            .get_mut(vcpu)
+            .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
         let context = &mut vcpu.lock().context;
 
         let esr_el2 = context.sys_regs.esr_el2;
@@ -396,7 +401,10 @@ impl monitor::rmi::Interface for RMI {
     fn send_timer_state_to_host(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), Error> {
         let realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))?;
         let mut locked_realm = realm.lock();
-        let vcpu = locked_realm.vcpus.get_mut(vcpu).ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
+        let vcpu = locked_realm
+            .vcpus
+            .get_mut(vcpu)
+            .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
         let timer = &vcpu.lock().context.timer;
 
         unsafe {

@@ -9,12 +9,14 @@
 extern crate log;
 
 mod entry;
+mod memory;
 
 use armv9a::allocator;
 use armv9a::cpu;
 use armv9a::helper;
 
 use monitor;
+use memory::FVPGranuleMap;
 
 #[no_mangle]
 pub unsafe fn main() -> ! {
@@ -29,6 +31,9 @@ pub unsafe fn main() -> ! {
     let rmm = armv9a::rmm::MemoryMap::new();
     let monitor = monitor::Monitor::new(rmi, smc, rmm);
     let mut mainloop = monitor::event::Mainloop::new();
+    let granule_map = FVPGranuleMap::new();
+    monitor::rmm::granule::create_gst(granule_map);
+
     mainloop.boot_complete(smc);
     mainloop.run(&monitor);
 

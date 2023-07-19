@@ -134,34 +134,48 @@ impl<'a, T: HostAccessor> Drop for PointerMutGuard<'a, T> {
     }
 }
 
-// TODO: current usage --> host_pointer_or_ret!(pararms, Params, arg[2], mm);
-//       later --> let params = host_pointer!(Params, arg[2], mm)?;
 #[macro_export]
-macro_rules! host_pointer_or_ret {
-    ($var:ident, $target_type:tt, $ptr:expr, $page_map:expr) => {
-        // TODO: how to reduce the number of parameters? (proc_macro?)
-        let $var = HostPointer::<$target_type>::new($ptr, $page_map);
-        let $var = $var.acquire();
-        let $var = if let Some(v) = $var {
+macro_rules! copy_from_host_or_ret {
+    ($target_type:tt, $ptr:expr, $page_map:expr) => {{
+        let var = HostPointer::<$target_type>::new($ptr, $page_map);
+        let var = var.acquire();
+        let var = if let Some(v) = var {
             v
         } else {
             use crate::rmi::error::Error;
             return Err(Error::RmiErrorInput);
         };
-    };
+
+        let mut copied_var: $target_type = $target_type::default();
+        unsafe {
+            core::ptr::copy_nonoverlapping::<$target_type>(
+                &*var as *const $target_type,
+                &mut copied_var as *mut $target_type,
+                1,
+            );
+        };
+        copied_var
+    }};
 }
 
 #[macro_export]
-macro_rules! host_pointer_mut_or_ret {
-    ($var:ident, $target_type:tt, $ptr:expr, $page_map:expr) => {
-        let mut $var = HostPointerMut::<$target_type>::new($ptr, $page_map);
-        let $var = $var.acquire();
-        #[allow(unused_mut)]
-        let mut $var = if let Some(v) = $var {
+macro_rules! copy_to_host_or_ret {
+    ($target_type:tt, $src_obj:expr, $dest_ptr:expr, $page_map:expr) => {{
+        let mut var = HostPointerMut::<$target_type>::new($dest_ptr, $page_map);
+        let var = var.acquire();
+        let mut var = if let Some(v) = var {
             v
         } else {
             use crate::rmi::error::Error;
             return Err(Error::RmiErrorInput);
         };
-    };
+
+        unsafe {
+            core::ptr::copy_nonoverlapping::<$target_type>(
+                $src_obj as *const $target_type,
+                &mut *var as *mut $target_type,
+                1,
+            );
+        };
+    }};
 }

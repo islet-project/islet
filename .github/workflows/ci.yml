@@ -7,18 +7,19 @@ on:
     branches: [ main ]
 
 jobs:
-  linux-cca:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          submodules: true
-
-      - name: Install dependencies
-        run: ./scripts/init.sh
-
-      - name: Build linux cca components
-        run: ./scripts/fvp-cca -bo -nw=linux -rm=linux -rmm=tf-rmm
+# FIXME: Failed because of space limitation
+#  linux-cca:
+#  runs-on: ubuntu-22.04
+#  steps:
+#    - uses: actions/checkout@v3
+#      with:
+#        submodules: true
+#
+#    - name: Install dependencies
+#      run: ./scripts/init.sh
+#
+#    - name: Build linux cca components
+#      run: ./scripts/fvp-cca -bo -nw=linux -rm=linux -rmm=tf-rmm
 
 # FIXME: Failed on CI
 #  aosp:

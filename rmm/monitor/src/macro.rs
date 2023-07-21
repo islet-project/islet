@@ -1,3 +1,17 @@
+// TODO: Expands to cover args, ret
+#[macro_export]
+macro_rules! define_interface {
+    (command {$($variant:ident = $val:expr),*,}) => {
+        $(pub const $variant: usize = $val;)*
+        pub fn to_str(code: usize) -> &'static str {
+            match code {
+                $($variant => stringify!($variant)),*,
+                _ => "Undefined",
+            }
+        }
+    };
+}
+
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => {

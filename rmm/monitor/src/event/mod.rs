@@ -3,6 +3,7 @@ pub mod realmexit;
 pub mod rsihandle;
 
 pub use crate::rmi::error::Error;
+pub use crate::{rmi, rsi};
 pub use mainloop::Mainloop;
 pub use rsihandle::RsiHandle;
 
@@ -72,6 +73,12 @@ impl Context {
         F: Fn(&[usize], &mut [usize]) -> Result<(), Error>,
     {
         handler(&self.arg[..], &mut self.ret[..])?;
+        trace!(
+            "RMI: {0: <20} {1:X?} > {2:X?}",
+            rmi::to_str(self.cmd),
+            &self.arg,
+            &self.ret
+        );
         self.arg.clear();
         self.arg.extend_from_slice(&self.ret[..]);
         Ok(())
@@ -82,6 +89,12 @@ impl Context {
         F: FnMut(&[usize], &mut [usize]) -> Result<(), Error>,
     {
         handler(&self.arg[..], &mut self.ret[..])?;
+        trace!(
+            "RSI: {0: <20} {1:X?} > {2:X?}",
+            rsi::to_str(self.cmd),
+            &self.arg,
+            &self.ret
+        );
         self.arg.clear();
         self.arg.extend_from_slice(&self.ret[..]);
         Ok(())

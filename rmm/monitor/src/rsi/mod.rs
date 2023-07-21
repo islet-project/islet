@@ -2,19 +2,24 @@ pub mod constraint;
 pub mod hostcall;
 pub mod psci;
 
+use crate::define_interface;
 use crate::event::RsiHandle;
 use crate::listen;
 use crate::rmi;
 use crate::rsi::hostcall::HostCall;
 
-pub const ABI_VERSION: usize = 0xc400_0190;
-pub const MEASUREMENT_READ: usize = 0xc400_0192;
-pub const MEASUREMENT_EXTEND: usize = 0xc400_0193;
-pub const ATTEST_TOKEN_INIT: usize = 0xc400_0194;
-pub const ATTEST_TOKEN_CONTINUE: usize = 0xc400_0195;
-pub const REALM_CONFIG: usize = 0xc400_0196;
-pub const IPA_STATE_SET: usize = 0xc400_0197;
-pub const HOST_CALL: usize = 0xc400_0199;
+define_interface! {
+    command {
+        ABI_VERSION= 0xc400_0190,
+        MEASUREMENT_READ= 0xc400_0192,
+        MEASUREMENT_EXTEND= 0xc400_0193,
+        ATTEST_TOKEN_INIT= 0xc400_0194,
+        ATTEST_TOKEN_CONTINUE= 0xc400_0195,
+        REALM_CONFIG= 0xc400_0196,
+        IPA_STATE_SET= 0xc400_0197,
+        HOST_CALL= 0xc400_0199,
+    }
+}
 
 pub const RSI_SUCCESS: usize = 0;
 

@@ -303,12 +303,16 @@ def run_fvp_acs():
         "--fip",  "%s/fip.bin" % OUT,
         "--acs_build_dir", ACS_BUILD], cwd=ROOT)
 
-def place_realm_at_shared(realm_ip, fvp_tap_ip, host_ip):
+def place_realm_at_shared(rmm, realm_ip, fvp_tap_ip, host_ip):
     os.makedirs(SHARED_PATH, exist_ok=True)
     run(["cp", "-R", "%s/." % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
     run(["cp", "-R", "%s/realm/." % OUT, SHARED_PATH], cwd=ROOT)
     run(["cp", "%s/lkvm" % OUT, SHARED_PATH], cwd=ROOT)
     run(["cp", "-R", "%s/kvm-unit-tests" % OUT, SHARED_PATH], cwd=ROOT)
+    if rmm == "islet":
+        run(["cp", LAUNCH_REALM_ISLET, LAUNCH_REALM], cwd=ROOT)
+    else: # tf-rmm case
+        run(["cp", LAUNCH_REALM_TFRMM, LAUNCH_REALM], cwd=ROOT)
     run(["cp", LAUNCH_REALM, SHARED_PATH], cwd=ROOT)
     run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
     run(["cp", CONFIGURE_NET, SHARED_PATH], cwd=ROOT)
@@ -426,7 +430,7 @@ if __name__ == "__main__":
             prepare_bootloaders(args.rmm, PREBUILT_EDK2)
 
             if args.realm is not None:
-                place_realm_at_shared(args.realm_ip, args.fvp_tap_ip, args.host_ip)
+                place_realm_at_shared(args.rmm, args.realm_ip, args.fvp_tap_ip, args.host_ip)
                 prepare_sdk()
 
     if not args.build_only and args.normal_world == "tf-a-tests":

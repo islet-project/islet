@@ -47,10 +47,6 @@ impl Context {
         self.ret.extend_from_slice(ret);
     }
 
-    pub fn set_ret0(&mut self, val: usize) {
-        *&mut (self.ret[0]) = val;
-    }
-
     pub fn resize_ret(&mut self, new_len: usize) {
         self.ret.clear();
         self.ret.resize(new_len, 0);
@@ -72,6 +68,7 @@ impl Context {
     where
         F: Fn(&[usize], &mut [usize]) -> Result<(), Error>,
     {
+        self.ret[0] = rmi::SUCCESS;
         handler(&self.arg[..], &mut self.ret[..])?;
         trace!(
             "RMI: {0: <20} {1:X?} > {2:X?}",

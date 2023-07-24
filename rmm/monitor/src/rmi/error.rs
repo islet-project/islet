@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub enum Error {
     RmiErrorInput,
     RmiErrorRealm,
@@ -9,6 +10,7 @@ pub enum Error {
     RmiErrorOthers(InternalError),
 }
 
+#[derive(Debug)]
 pub enum InternalError {
     NotExistRealm,
     NotExistVCPU,

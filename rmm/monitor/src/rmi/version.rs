@@ -10,8 +10,6 @@ fn encode_version() -> usize {
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::VERSION, |_, ret, _| {
-        // XXX: returning the version using ret[0] might not be good, as ret[0]
-        //      is reserved for returning the RMI result in other places
         ret[0] = encode_version();
         Ok(())
     });

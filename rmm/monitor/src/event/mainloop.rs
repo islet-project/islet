@@ -70,11 +70,8 @@ impl Mainloop {
 
             match self.on_event.get(&ctx.cmd) {
                 Some(handler) => {
-                    let res = ctx.do_rmi(|arg, ret| handler(arg, ret, monitor));
-                    if let Err(val) = res {
-                        ctx.set_ret0(val.into());
-                    } else {
-                        ctx.set_ret0(rmi::SUCCESS);
+                    if let Err(code) = ctx.do_rmi(|arg, ret| handler(arg, ret, monitor)) {
+                        ctx.init_arg(&[code.into()]);
                     }
                 }
                 None => {

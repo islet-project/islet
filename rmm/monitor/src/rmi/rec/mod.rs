@@ -30,6 +30,7 @@ impl Rec {
         let rec: &mut Rec = &mut *(rec_addr as *mut Rec);
         rec.vcpuid = vcpuid;
         rec.rd = rd;
+        rec.set_ripas(0, 0, 0, 0);
         ManuallyDrop::new(rec)
     }
 

@@ -70,9 +70,7 @@ impl Mainloop {
 
             match self.on_event.get(&ctx.cmd) {
                 Some(handler) => {
-                    if let Err(code) = ctx.do_rmi(|arg, ret| handler(arg, ret, monitor)) {
-                        ctx.init_arg(&[code.into()]);
-                    }
+                    ctx.do_rmi(|arg, ret| handler(arg, ret, monitor));
                 }
                 None => {
                     error!("Not registered event: {:X}", ctx.cmd);

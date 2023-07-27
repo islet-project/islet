@@ -19,12 +19,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
 pub fn mark_realm(smc: smc::SecureMonitorCall, addr: usize) -> Result<(), Error> {
     let cmd = smc.convert(smc::Code::MarkRealm);
-
-    if granule::set_granule(addr, GranuleState::Delegated) != granule::RET_SUCCESS {
+    if smc.call(cmd, &[addr])[0] != smc::SMC_SUCCESS {
         return Err(Error::RmiErrorInput);
     }
 
-    if smc.call(cmd, &[addr])[0] != smc::SMC_SUCCESS {
+    if granule::set_granule(addr, GranuleState::Delegated) != granule::RET_SUCCESS {
         return Err(Error::RmiErrorInput);
     }
 
@@ -33,13 +32,12 @@ pub fn mark_realm(smc: smc::SecureMonitorCall, addr: usize) -> Result<(), Error>
 
 pub fn mark_ns(smc: smc::SecureMonitorCall, addr: usize) -> Result<(), Error> {
     let cmd = smc.convert(smc::Code::MarkNonSecure);
+    if smc.call(cmd, &[addr])[0] != smc::SMC_SUCCESS {
+        panic!("A delegated granule should only be undelegated on request from RMM.");
+    }
 
     if granule::set_granule(addr, GranuleState::Undelegated) != granule::RET_SUCCESS {
         return Err(Error::RmiErrorInput);
-    }
-
-    if smc.call(cmd, &[addr])[0] != smc::SMC_SUCCESS {
-        panic!("A delegated granule should only be undelegated on request from RMM.");
     }
 
     Ok(())

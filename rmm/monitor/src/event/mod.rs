@@ -64,28 +64,41 @@ impl Context {
         self.cmd
     }
 
-    pub fn do_rmi<F>(&mut self, handler: F) -> Result<(), Error>
+    pub fn do_rmi<F>(&mut self, handler: F)
     where
         F: Fn(&[usize], &mut [usize]) -> Result<(), Error>,
     {
         self.ret[0] = rmi::SUCCESS;
-        handler(&self.arg[..], &mut self.ret[..])?;
+        if let Err(code) = handler(&self.arg[..], &mut self.ret[..]) {
+            self.ret[0] = code.into();
+        }
+
         trace!(
             "RMI: {0: <20} {1:X?} > {2:X?}",
             rmi::to_str(self.cmd),
             &self.arg,
             &self.ret
         );
+
         self.arg.clear();
         self.arg.extend_from_slice(&self.ret[..]);
-        Ok(())
     }
 
-    pub fn do_rsi<F>(&mut self, mut handler: F) -> Result<(), Error>
+    pub fn do_rsi<F>(&mut self, mut handler: F)
     where
         F: FnMut(&[usize], &mut [usize]) -> Result<(), Error>,
     {
-        handler(&self.arg[..], &mut self.ret[..])?;
+        self.ret[0] = rsi::SUCCESS;
+        trace!(
+            "[pret ]RSI: {0: <20} {1:X?}",
+            rsi::to_str(self.cmd),
+            &self.arg,
+        );
+
+        if let Err(code) = handler(&self.arg[..], &mut self.ret[..]) {
+            self.ret[0] = code.into();
+        }
+
         trace!(
             "RSI: {0: <20} {1:X?} > {2:X?}",
             rsi::to_str(self.cmd),
@@ -94,7 +107,6 @@ impl Context {
         );
         self.arg.clear();
         self.arg.extend_from_slice(&self.ret[..]);
-        Ok(())
     }
 }
 

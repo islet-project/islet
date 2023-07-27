@@ -42,7 +42,7 @@ impl RsiHandle {
     ) -> usize {
         match self.on_event.get(&ctx.cmd) {
             Some(handler) => {
-                let _ = ctx.do_rsi(|arg, ret| handler(arg, ret, monitor, rec, run));
+                ctx.do_rsi(|arg, ret| handler(arg, ret, monitor, rec, run));
             }
             None => {
                 let rmi = monitor.rmi;

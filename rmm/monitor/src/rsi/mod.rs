@@ -21,7 +21,7 @@ define_interface! {
     }
 }
 
-pub const RSI_SUCCESS: usize = 0;
+pub const SUCCESS: usize = 0;
 
 pub const VERSION: usize = (1 << 16) | 0;
 
@@ -65,7 +65,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let realmid = rec.rd.id();
         let vcpuid = rec.id();
         let _config_ipa = rmi.get_reg(realmid, vcpuid, 0);
-        if rmi.set_reg(realmid, vcpuid, 0, RSI_SUCCESS).is_err() {
+        if rmi.set_reg(realmid, vcpuid, 0, SUCCESS).is_err() {
             warn!(
                 "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
                 realmid, vcpuid

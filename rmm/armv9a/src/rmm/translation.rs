@@ -38,14 +38,14 @@ pub const ALIGN_ROOT_PAGE: usize = 2;
 pub struct RmmPageTable<'a> {
     // We will set the translation granule with 4KB.
     // To reduce the level of page lookup, initial lookup will start from L1.
-    root_pgtlb: &'a mut PageTable<VirtAddr, L1Table, Entry>,
+    root_pgtlb: &'a mut PageTable<VirtAddr, L1Table, Entry, { L1Table::NUM_ENTRIES }>,
     dirty: bool,
 }
 
 impl<'a> RmmPageTable<'a> {
     pub fn new() -> Self {
         let root_pgtlb = unsafe {
-            &mut *PageTable::<VirtAddr, L1Table, Entry>::new_with_align(
+            &mut *PageTable::<VirtAddr, L1Table, Entry, { L1Table::NUM_ENTRIES }>::new_with_align(
                 NUM_ROOT_PAGE,
                 ALIGN_ROOT_PAGE,
             )
@@ -105,7 +105,9 @@ impl<'a> RmmPageTable<'a> {
         let virtaddr = Page::<RmmBasePageSize, VirtAddr>::range_with_size(va, size);
         let phyaddr = Page::<RmmBasePageSize, PhysAddr>::range_with_size(phys, size);
 
-        self.root_pgtlb.set_pages(virtaddr, phyaddr, flags);
+        if self.root_pgtlb.set_pages(virtaddr, phyaddr, flags).is_err() {
+            warn!("set_pages error");
+        }
     }
 
     fn unset_page(&mut self, addr: usize) {

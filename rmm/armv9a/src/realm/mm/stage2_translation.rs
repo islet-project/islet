@@ -32,14 +32,14 @@ pub struct Stage2Translation<'a> {
     // We will set the translation granule with 4KB.
     // To reduce the level of page lookup, initial lookup will start from L1.
     // We allocate two single page table initial lookup table, addresing up 1TB.
-    root_pgtlb: &'a mut PageTable<GuestPhysAddr, L1Table, Entry>,
+    root_pgtlb: &'a mut PageTable<GuestPhysAddr, L1Table, Entry, { L1Table::NUM_ENTRIES }>,
     dirty: bool,
 }
 
 impl<'a> Stage2Translation<'a> {
     pub fn new() -> Self {
         let root_pgtlb = unsafe {
-            &mut *PageTable::<GuestPhysAddr, L1Table, Entry>::new_with_align(
+            &mut *PageTable::<GuestPhysAddr, L1Table, Entry, { L1Table::NUM_ENTRIES }>::new_with_align(
                 NUM_ROOT_PAGE,
                 ALIGN_ROOT_PAGE,
             )
@@ -86,7 +86,14 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
         let _guest_copy = Page::<BasePageSize, GuestPhysAddr>::range_with_size(guest, size);
         let phys = Page::<BasePageSize, PhysAddr>::range_with_size(phys, size);
 
-        self.root_pgtlb.set_pages(_guest, phys, flags as u64);
+        if self
+            .root_pgtlb
+            .set_pages(_guest, phys, flags as u64 | BasePageSize::MAP_EXTRA_FLAG)
+            .is_err()
+        {
+            warn!("set_pages error");
+            return;
+        }
         self.tlb_flush_by_vmid_ipa::<BasePageSize>(_guest_copy);
 
         //TODO Set dirty only if pages are updated, not added
@@ -130,7 +137,9 @@ impl<'a> Drop for Stage2Translation<'a> {
     }
 }
 
-fn fill_stage2_table(root: &mut PageTable<GuestPhysAddr, L1Table, Entry>) {
+fn fill_stage2_table(
+    root: &mut PageTable<GuestPhysAddr, L1Table, Entry, { L1Table::NUM_ENTRIES }>,
+) {
     let device_flags = helper::bits_in_reg(RawPTE::ATTR, pte::attribute::DEVICE_NGNRE)
         | helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);
     let uart_guest = Page::<BasePageSize, GuestPhysAddr>::range_with_size(
@@ -140,5 +149,10 @@ fn fill_stage2_table(root: &mut PageTable<GuestPhysAddr, L1Table, Entry>) {
     let uart_phys =
         Page::<BasePageSize, PhysAddr>::range_with_size(PhysAddr::from(0x1c0a0000 as u64), 1);
 
-    root.set_pages(uart_guest, uart_phys, device_flags as u64);
+    if root
+        .set_pages(uart_guest, uart_phys, device_flags as u64)
+        .is_err()
+    {
+        warn!("set_pages error");
+    }
 }

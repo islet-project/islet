@@ -1,4 +1,5 @@
 use monitor::mm::address::PhysAddr;
+use monitor::mm::error::Error;
 use monitor::mm::page_table::{self, Level};
 
 use super::super::translation_granule_4k::RawPTE;
@@ -40,7 +41,7 @@ impl page_table::Entry for Entry {
         }
     }
 
-    fn set(&mut self, addr: PhysAddr, flags: u64) {
+    fn set(&mut self, addr: PhysAddr, flags: u64) -> Result<(), Error> {
         self.0
             .set(addr.as_u64() | flags)
             .set_masked_value(RawPTE::SH, pte::shareable::INNER)
@@ -56,9 +57,10 @@ impl page_table::Entry for Entry {
                 in(reg) &self.0 as *const _ as usize,
             );
         }
+        Ok(())
     }
 
-    fn set_with_page_table_flags(&mut self, addr: PhysAddr) {
+    fn set_with_page_table_flags(&mut self, addr: PhysAddr) -> Result<(), Error> {
         self.set(
             addr,
             bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL)

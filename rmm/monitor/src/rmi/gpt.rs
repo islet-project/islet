@@ -26,13 +26,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
 pub fn mark_realm(
     smc: smc::SecureMonitorCall,
-    mm: PageMap,
+    _mm: PageMap,
     addr: usize,
     ret: &mut [usize],
 ) -> Result<(), Error> {
     let cmd = smc.convert(smc::Code::MarkRealm);
 
-    if granule::set_granule(addr, GranuleState::Delegated, mm) != granule::RET_SUCCESS {
+    if granule::set_granule(addr, GranuleState::Delegated) != granule::RET_SUCCESS {
         //ret[1] = addr; // [JB] ??
         return Err(Error::RmiErrorInput);
     } else {
@@ -46,13 +46,13 @@ pub fn mark_realm(
 
 pub fn mark_ns(
     smc: smc::SecureMonitorCall,
-    mm: PageMap,
+    _mm: PageMap,
     addr: usize,
     ret: &mut [usize],
 ) -> Result<(), Error> {
     let cmd = smc.convert(smc::Code::MarkNonSecure);
 
-    if granule::set_granule(addr, GranuleState::Undelegated, mm) != granule::RET_SUCCESS {
+    if granule::set_granule(addr, GranuleState::Undelegated) != granule::RET_SUCCESS {
         // ret[1] = addr;  // [JB] GRANULE_DELEGATE & GRANULE_UNDELEGATE have only one output value
         return Err(Error::RmiErrorInput);
     } else {

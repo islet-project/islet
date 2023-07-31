@@ -83,9 +83,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorRealm);
         }
         // 1. map src to rmm
-        if granule::set_granule(target_pa, GranuleState::Data, mm) != granule::RET_SUCCESS {
+        if granule::set_granule(target_pa, GranuleState::Data) != granule::RET_SUCCESS {
             return Err(Error::RmiErrorInput);
         }
+        mm.map(target_pa, true);
+
         let src_page = copy_from_host_or_ret!(DataPage, src_pa, mm);
 
         // 3. copy src to _data
@@ -127,10 +129,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let granule_sz = 4096;
 
         // 0. Make sure granule state can make a transition to DATA
-        if granule::set_granule(target_pa, GranuleState::Data, mm) != granule::RET_SUCCESS {
+        if granule::set_granule(target_pa, GranuleState::Data) != granule::RET_SUCCESS {
             warn!("DATA_CREATE_UNKNOWN: Unable to set granule state to DATA");
             return Err(Error::RmiErrorInput);
         }
+        mm.map(target_pa, true);
 
         // 1. map ipa to target_pa into S2 table
         let prot = rmi::MapProt::new(0);
@@ -147,7 +150,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::DATA_DESTORY, |arg, _ret, rmm| {
         let mm = rmm.mm;
         let target_data = arg[0];
-        if granule::set_granule(target_data, GranuleState::Delegated, mm) != granule::RET_SUCCESS {
+
+        mm.map(target_data, true);
+        if granule::set_granule(target_data, GranuleState::Delegated) != granule::RET_SUCCESS {
             return Err(Error::RmiErrorInput);
         }
 

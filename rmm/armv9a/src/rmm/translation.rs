@@ -11,7 +11,7 @@ use core::fmt;
 use lazy_static::lazy_static;
 use monitor::mm::address::PhysAddr;
 use monitor::mm::page::Page;
-use monitor::mm::page_table::{PageTable, PageTableMethods};
+use monitor::mm::page_table::{Level, PageTable, PageTableMethods};
 use monitor::rmm::address::VirtAddr;
 use spin::mutex::Mutex;
 
@@ -38,14 +38,14 @@ pub const ALIGN_ROOT_PAGE: usize = 2;
 pub struct RmmPageTable<'a> {
     // We will set the translation granule with 4KB.
     // To reduce the level of page lookup, initial lookup will start from L1.
-    root_pgtlb: &'a mut PageTable<VirtAddr, L1Table, Entry, { L1Table::NUM_ENTRIES }>,
+    root_pgtlb: &'a mut PageTable<VirtAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>,
     dirty: bool,
 }
 
 impl<'a> RmmPageTable<'a> {
     pub fn new() -> Self {
         let root_pgtlb = unsafe {
-            &mut *PageTable::<VirtAddr, L1Table, Entry, { L1Table::NUM_ENTRIES }>::new_with_align(
+            &mut *PageTable::<VirtAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>::new_with_align(
                 NUM_ROOT_PAGE,
                 ALIGN_ROOT_PAGE,
             )

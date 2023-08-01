@@ -7,7 +7,7 @@ use core::fmt;
 
 use monitor::mm::address::PhysAddr;
 use monitor::mm::page::{Page, PageIter, PageSize};
-use monitor::mm::page_table::{PageTable, PageTableMethods};
+use monitor::mm::page_table::{Level, PageTable, PageTableMethods};
 use monitor::realm::mm::address::GuestPhysAddr;
 use monitor::realm::mm::IPATranslation;
 
@@ -32,14 +32,15 @@ pub struct Stage2Translation<'a> {
     // We will set the translation granule with 4KB.
     // To reduce the level of page lookup, initial lookup will start from L1.
     // We allocate two single page table initial lookup table, addresing up 1TB.
-    root_pgtlb: &'a mut PageTable<GuestPhysAddr, L1Table, Entry, { L1Table::NUM_ENTRIES }>,
+    root_pgtlb:
+        &'a mut PageTable<GuestPhysAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>,
     dirty: bool,
 }
 
 impl<'a> Stage2Translation<'a> {
     pub fn new() -> Self {
         let root_pgtlb = unsafe {
-            &mut *PageTable::<GuestPhysAddr, L1Table, Entry, { L1Table::NUM_ENTRIES }>::new_with_align(
+            &mut *PageTable::<GuestPhysAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>::new_with_align(
                 NUM_ROOT_PAGE,
                 ALIGN_ROOT_PAGE,
             )

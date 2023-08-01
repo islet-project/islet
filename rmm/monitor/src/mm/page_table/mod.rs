@@ -95,6 +95,8 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
     }
 
     fn new_with_align(size: usize, align: usize) -> Result<*mut PageTable<A, L, E, N>, Error> {
+        assert_eq!(N, L::NUM_ENTRIES);
+
         let table = unsafe {
             alloc::alloc::alloc_zeroed(
                 alloc::alloc::Layout::from_size_align(L::TABLE_SIZE * size, L::TABLE_ALIGN * align)
@@ -240,6 +242,8 @@ where
 
         if L::THIS_LEVEL < S::MAP_TABLE_LEVEL {
             self.entries[index].set_with_page_table_flags_via_alloc(|| {
+                assert_eq!(N, L::NextLevel::NUM_ENTRIES);
+
                 let subtable = unsafe {
                     alloc::alloc::alloc_zeroed(
                         alloc::alloc::Layout::from_size_align(

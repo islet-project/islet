@@ -25,9 +25,6 @@ impl Level for L0Table {
     //     when trying to access L1table[1010], it causes out-of-bound access because the array is created by the size of 1000.
     //     for a workaround, we need to use the largest NUM_ENTRIES.
 }
-impl L0Table {
-    pub const NUM_ENTRIES: usize = L1Table::NUM_ENTRIES;
-}
 impl HasSubtable for L0Table {
     type NextLevel = L1Table;
 }
@@ -40,9 +37,6 @@ impl Level for L1Table {
     const TABLE_SIZE: usize = Self::NUM_ENTRIES * core::mem::size_of::<Entry>();
     const TABLE_ALIGN: usize = 64;
     const NUM_ENTRIES: usize = (L0_TABLE_ENTRY_SIZE_RANGE / L1_TABLE_ENTRY_SIZE_RANGE);
-}
-impl L1Table {
-    pub const NUM_ENTRIES: usize = (L0_TABLE_ENTRY_SIZE_RANGE / L1_TABLE_ENTRY_SIZE_RANGE);
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

@@ -4,7 +4,7 @@ use crate::const_assert_eq;
 use crate::mm::address::PhysAddr;
 use crate::mm::error::Error;
 use crate::mm::page::{Page, PageSize};
-use crate::mm::page_table::{PageTable, PageTableMethods};
+use crate::mm::page_table::{Level, PageTable, PageTableMethods};
 
 // TODO: move this FVP-specific address info
 const FVP_DRAM0_REGION: core::ops::Range<usize> = core::ops::Range {
@@ -28,13 +28,14 @@ const_assert_eq!(
 );
 
 pub struct GranuleStatusTable<'a> {
-    root_pgtlb: &'a mut PageTable<PhysAddr, L0Table, Entry, { L0Table::NUM_ENTRIES }>,
+    root_pgtlb: &'a mut PageTable<PhysAddr, L0Table, Entry, { <L0Table as Level>::NUM_ENTRIES }>,
 }
 
 impl<'a> GranuleStatusTable<'a> {
     pub fn new() -> Self {
         let root_pgtlb = unsafe {
-            &mut *PageTable::<PhysAddr, L0Table, Entry, { L0Table::NUM_ENTRIES }>::new(1).unwrap()
+            &mut *PageTable::<PhysAddr, L0Table, Entry, { <L0Table as Level>::NUM_ENTRIES }>::new(1)
+                .unwrap()
         };
         Self { root_pgtlb }
     }

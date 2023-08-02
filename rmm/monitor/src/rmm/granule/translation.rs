@@ -1,20 +1,13 @@
 use super::entry::Entry;
+use super::validate_addr;
 use super::{GranuleState, L0Table, GRANULE_SIZE};
+use super::{FVP_DRAM0_REGION, FVP_DRAM1_REGION};
 use crate::const_assert_eq;
 use crate::mm::address::PhysAddr;
 use crate::mm::error::Error;
 use crate::mm::page::{Page, PageSize};
 use crate::mm::page_table::{Level, PageTable, PageTableMethods};
 
-// TODO: move this FVP-specific address info
-const FVP_DRAM0_REGION: core::ops::Range<usize> = core::ops::Range {
-    start: 0x8000_0000,
-    end: 0x8000_0000 + 0x7C00_0000 - 1,
-};
-const FVP_DRAM1_REGION: core::ops::Range<usize> = core::ops::Range {
-    start: 0x8_8000_0000,
-    end: 0x8_8000_0000 + 0x8000_0000 - 1,
-};
 pub const DRAM_SIZE: usize = 0x7C00_0000 + 0x8000_0000;
 
 pub const L0_TABLE_ENTRY_SIZE_RANGE: usize = 1024 * 1024 * 4; // 4mb
@@ -40,18 +33,10 @@ impl<'a> GranuleStatusTable<'a> {
         Self { root_pgtlb }
     }
 
-    fn validate_addr(&self, addr: usize) -> Result<(), Error> {
-        if addr % GRANULE_SIZE != 0 {
-            return Err(Error::MmInvalidAddr);
-        }
-        if !FVP_DRAM0_REGION.contains(&addr) && !FVP_DRAM1_REGION.contains(&addr) {
-            return Err(Error::MmInvalidAddr);
-        }
-        Ok(())
-    }
-
     pub fn set_granule(&mut self, addr: usize, state: u64) -> Result<(), Error> {
-        self.validate_addr(addr)?;
+        if !validate_addr(addr) {
+            return Err(Error::MmInvalidAddr);
+        }
         let pa1 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
         let pa2 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
         self.root_pgtlb.set_page(pa1, pa2, state)

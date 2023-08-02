@@ -105,7 +105,7 @@ pub trait Interface {
         size: usize,
         prot: usize,
     ) -> Result<(), Error>;
-    fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<(), Error>;
+    fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<usize, Error>;
     fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), Error>;
     fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, Error>;
     fn receive_gic_state_from_host(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), Error>;

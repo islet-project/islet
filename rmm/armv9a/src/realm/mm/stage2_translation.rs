@@ -1,5 +1,5 @@
 use super::page::BasePageSize;
-use super::page_table::{entry::Entry, L1Table};
+use super::page_table::{entry, L1Table};
 
 use core::arch::asm;
 use core::ffi::c_void;
@@ -7,6 +7,7 @@ use core::fmt;
 
 use monitor::mm::address::PhysAddr;
 use monitor::mm::page::{Page, PageIter, PageSize};
+use monitor::mm::page_table::Entry;
 use monitor::mm::page_table::{Level, PageTable, PageTableMethods};
 use monitor::realm::mm::address::GuestPhysAddr;
 use monitor::realm::mm::IPATranslation;
@@ -32,18 +33,24 @@ pub struct Stage2Translation<'a> {
     // We will set the translation granule with 4KB.
     // To reduce the level of page lookup, initial lookup will start from L1.
     // We allocate two single page table initial lookup table, addresing up 1TB.
-    root_pgtlb:
-        &'a mut PageTable<GuestPhysAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>,
+    root_pgtlb: &'a mut PageTable<
+        GuestPhysAddr,
+        L1Table,
+        entry::Entry,
+        { <L1Table as Level>::NUM_ENTRIES },
+    >,
     dirty: bool,
 }
 
 impl<'a> Stage2Translation<'a> {
     pub fn new() -> Self {
         let root_pgtlb = unsafe {
-            &mut *PageTable::<GuestPhysAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>::new_with_align(
-                NUM_ROOT_PAGE,
-                ALIGN_ROOT_PAGE,
-            )
+            &mut *PageTable::<
+                GuestPhysAddr,
+                L1Table,
+                entry::Entry,
+                { <L1Table as Level>::NUM_ENTRIES },
+            >::new_with_align(NUM_ROOT_PAGE, ALIGN_ROOT_PAGE)
             .unwrap()
         };
         fill_stage2_table(root_pgtlb);
@@ -105,6 +112,15 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
         //TODO implement
     }
 
+    fn ipa_to_pa(&mut self, guest: GuestPhysAddr) -> Option<PhysAddr> {
+        let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
+        let mut pa = None;
+        self.root_pgtlb
+            .entry(guest, |entry| pa = entry.address(0))
+            .ok()?;
+        pa
+    }
+
     fn clean(&mut self) {
         if self.dirty {
             unsafe {
@@ -139,7 +155,7 @@ impl<'a> Drop for Stage2Translation<'a> {
 }
 
 fn fill_stage2_table(
-    root: &mut PageTable<GuestPhysAddr, L1Table, Entry, { L1Table::NUM_ENTRIES }>,
+    root: &mut PageTable<GuestPhysAddr, L1Table, entry::Entry, { L1Table::NUM_ENTRIES }>,
 ) {
     let device_flags = helper::bits_in_reg(RawPTE::ATTR, pte::attribute::DEVICE_NGNRE)
         | helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);

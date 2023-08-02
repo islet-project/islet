@@ -83,6 +83,30 @@ pub fn set_granule(addr: usize, state: u64) -> usize {
     }
 }
 
+// TODO: move this FVP-specific address info
+const FVP_DRAM0_REGION: core::ops::Range<usize> = core::ops::Range {
+    start: 0x8000_0000,
+    end: 0x8000_0000 + 0x7C00_0000 - 1,
+};
+const FVP_DRAM1_REGION: core::ops::Range<usize> = core::ops::Range {
+    start: 0x8_8000_0000,
+    end: 0x8_8000_0000 + 0x8000_0000 - 1,
+};
+
+pub fn validate_addr(addr: usize) -> bool {
+    if addr % GRANULE_SIZE != 0 {
+        // if the address is out of range.
+        warn!("address need to be aligned 0x{:X}", addr);
+        return false;
+    }
+    if !(FVP_DRAM0_REGION.contains(&addr) || FVP_DRAM1_REGION.contains(&addr)) {
+        // if the address is out of range.
+        warn!("address is strange 0x{:X}", addr);
+        return false;
+    }
+    true
+}
+
 #[cfg(test)]
 mod test {
     use crate::mm::error::Error;

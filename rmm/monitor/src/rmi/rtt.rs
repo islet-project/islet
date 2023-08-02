@@ -8,7 +8,7 @@ use crate::listen;
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmm::granule;
-use crate::rmm::granule::GranuleState;
+use crate::rmm::granule::{GranuleState, GRANULE_SIZE};
 
 extern crate alloc;
 
@@ -126,7 +126,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let ipa = arg[2];
 
         let realm_id = rd.id();
-        let granule_sz = 4096;
+        let granule_sz = GRANULE_SIZE;
 
         // 0. Make sure granule state can make a transition to DATA
         if granule::set_granule(target_pa, GranuleState::Data) != granule::RET_SUCCESS {
@@ -148,11 +148,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     listen!(mainloop, rmi::DATA_DESTORY, |arg, _ret, rmm| {
-        let mm = rmm.mm;
-        let target_data = arg[0];
+        let rd = unsafe { Rd::into(arg[0]) };
+        let ipa = arg[1];
+        let realm_id = rd.id();
 
-        mm.map(target_data, true);
-        if granule::set_granule(target_data, GranuleState::Delegated) != granule::RET_SUCCESS {
+        // TODO: Fix to get PA by rtt_walk
+        let pa = rmm.rmi.unmap(realm_id, ipa, GRANULE_SIZE)?;
+        if granule::set_granule(pa, GranuleState::Delegated) != granule::RET_SUCCESS {
             return Err(Error::RmiErrorInput);
         }
 
@@ -169,7 +171,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // islet stores rd as realm id
         let realm_id = rd.id();
-        let granule_sz = 4096;
+        let granule_sz = GRANULE_SIZE;
         let mut prot = rmi::MapProt(0);
         prot.set_bit(rmi::MapProt::NS_PAS);
         let _ret = rmi.map(realm_id, ipa, ns_pa, granule_sz, prot.get());

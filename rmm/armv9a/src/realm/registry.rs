@@ -178,7 +178,15 @@ impl monitor::rmi::Interface for RMI {
         Ok(())
     }
 
-    fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<(), Error> {
+    fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<usize, Error> {
+        let pa = get_realm(id)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .ipa_to_pa(GuestPhysAddr::from(guest))
+            .ok_or(Error::RmiErrorInput)?;
+
         get_realm(id)
             .ok_or(Error::RmiErrorOthers(NotExistRealm))?
             .lock()
@@ -188,7 +196,7 @@ impl monitor::rmi::Interface for RMI {
 
         //TODO change GPT to nonsecure
         //TODO zeroize memory
-        Ok(())
+        Ok(pa.into())
     }
 
     fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), Error> {

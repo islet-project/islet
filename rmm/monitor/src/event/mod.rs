@@ -89,12 +89,6 @@ impl Context {
         F: FnMut(&[usize], &mut [usize]) -> Result<(), Error>,
     {
         self.ret[0] = rsi::SUCCESS;
-        trace!(
-            "[pret ]RSI: {0: <20} {1:X?}",
-            rsi::to_str(self.cmd),
-            &self.arg,
-        );
-
         if let Err(code) = handler(&self.arg[..], &mut self.ret[..]) {
             self.ret[0] = code.into();
         }

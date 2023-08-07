@@ -27,10 +27,7 @@ pub fn mark_realm(smc: smc::SecureMonitorCall, addr: usize) -> Result<(), Error>
         return Err(Error::RmiErrorInput);
     }
 
-    if granule::set_granule(addr, GranuleState::Delegated) != granule::RET_SUCCESS {
-        return Err(Error::RmiErrorInput);
-    }
-
+    granule::set_granule(addr, GranuleState::Delegated)?;
     Ok(())
 }
 
@@ -47,9 +44,6 @@ pub fn mark_ns(smc: smc::SecureMonitorCall, addr: usize) -> Result<(), Error> {
         );
     }
 
-    if granule::set_granule(addr, GranuleState::Undelegated) != granule::RET_SUCCESS {
-        return Err(Error::RmiErrorInput);
-    }
-
+    granule::set_granule(addr, GranuleState::Undelegated)?;
     Ok(())
 }

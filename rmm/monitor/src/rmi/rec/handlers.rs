@@ -22,9 +22,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mm = rmm.mm;
         let rd = unsafe { Rd::into(arg[1]) };
 
-        if granule::set_granule(arg[0], GranuleState::Rec) != granule::RET_SUCCESS {
-            return Err(Error::RmiErrorInput);
-        }
+        granule::set_granule(arg[0], GranuleState::Rec)?;
         mm.map(arg[0], true);
 
         let params = copy_from_host_or_ret!(Params, arg[2], mm);
@@ -56,10 +54,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     listen!(mainloop, rmi::REC_DESTROY, |arg, _ret, rmm| {
-        if granule::set_granule(arg[0], GranuleState::Delegated) != granule::RET_SUCCESS {
+        granule::set_granule(arg[0], GranuleState::Delegated).map_err(|e| {
             rmm.mm.unmap(arg[0]);
-            return Err(Error::RmiErrorInput);
-        }
+            e
+        })?;
         rmm.mm.unmap(arg[0]);
         Ok(())
     });

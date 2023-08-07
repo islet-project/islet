@@ -1,6 +1,7 @@
 pub mod entry;
 pub mod translation;
 
+use crate::mm::error::Error;
 use crate::mm::page_table::{HasSubtable, Level};
 
 use entry::Entry;
@@ -9,7 +10,6 @@ use translation::{
 };
 
 pub const GRANULE_SIZE: usize = 4096;
-pub const RET_SUCCESS: usize = 0;
 
 /// The Level 0 Table
 /// Each entry (L1table) covers 4mb. This is a configurable number.
@@ -72,14 +72,11 @@ pub fn create_granule_status_table() {
 //  - currently, GranuleStatusTable does not involve in mapping some address into RMM page table.
 //  - callers must map some physical address, if needed, prior to calling this function.
 //  - TODO: we need to define and use a secure interface to map some address and do set_granule().
-pub fn set_granule(addr: usize, state: u64) -> usize {
+pub fn set_granule(addr: usize, state: u64) -> Result<(), Error> {
     if let Some(gst) = unsafe { &mut GRANULE_STATUS_TABLE } {
-        match gst.set_granule(addr, state) {
-            Ok(_) => RET_SUCCESS,
-            Err(e) => e.into(),
-        }
+        gst.set_granule(addr, state)
     } else {
-        1
+        Err(Error::MmErrorOthers)
     }
 }
 
@@ -120,9 +117,9 @@ mod test {
     #[test]
     fn test_add_granule() {
         create_granule_status_table();
-        assert!(granule::set_granule(TEST_ADDR, GranuleState::Delegated) == granule::RET_SUCCESS);
+        assert!(granule::set_granule(TEST_ADDR, GranuleState::Delegated).is_ok());
         // restore state
-        assert!(granule::set_granule(TEST_ADDR, GranuleState::Undelegated) == granule::RET_SUCCESS);
+        assert!(granule::set_granule(TEST_ADDR, GranuleState::Undelegated).is_ok());
     }
 
     #[test]
@@ -130,30 +127,30 @@ mod test {
         create_granule_status_table();
         assert!(
             granule::set_granule(TEST_WRONG_ADDR, GranuleState::Delegated)
-                == Error::MmInvalidAddr.into()
+                == Err(Error::MmInvalidAddr)
         );
     }
 
     #[test]
     fn test_validate_state() {
         create_granule_status_table();
-        assert!(granule::set_granule(TEST_ADDR, GranuleState::Delegated) == granule::RET_SUCCESS);
+        assert!(granule::set_granule(TEST_ADDR, GranuleState::Delegated).is_ok());
         // RTT state don't use the map
-        assert!(granule::set_granule(TEST_ADDR, GranuleState::RTT) == granule::RET_SUCCESS);
+        assert!(granule::set_granule(TEST_ADDR, GranuleState::RTT).is_ok());
         // restore state
-        assert!(granule::set_granule(TEST_ADDR, GranuleState::Delegated) == granule::RET_SUCCESS);
-        assert!(granule::set_granule(TEST_ADDR, GranuleState::Undelegated) == granule::RET_SUCCESS);
+        assert!(granule::set_granule(TEST_ADDR, GranuleState::Delegated).is_ok());
+        assert!(granule::set_granule(TEST_ADDR, GranuleState::Undelegated).is_ok());
     }
 
     #[test]
     fn test_validate_wrong_state() {
         create_granule_status_table();
-        assert!(granule::set_granule(TEST_ADDR, GranuleState::Delegated) == granule::RET_SUCCESS);
+        assert!(granule::set_granule(TEST_ADDR, GranuleState::Delegated).is_ok());
         assert!(
-            granule::set_granule(TEST_ADDR, GranuleState::Delegated) == Error::MmStateError.into()
+            granule::set_granule(TEST_ADDR, GranuleState::Delegated) == Err(Error::MmStateError)
         );
 
         // restore state
-        assert!(granule::set_granule(TEST_ADDR, GranuleState::Undelegated) == granule::RET_SUCCESS);
+        assert!(granule::set_granule(TEST_ADDR, GranuleState::Undelegated).is_ok());
     }
 }

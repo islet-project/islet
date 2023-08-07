@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use crate::rmi::error::Error as RmiError;
+
+#[derive(Debug, PartialEq)]
 pub enum Error {
     MmStateError,
     MmInvalidAddr,
@@ -18,5 +20,11 @@ impl From<Error> for usize {
             Error::MmAllocFail => 13,
             Error::MmErrorOthers => 99,
         }
+    }
+}
+
+impl From<Error> for RmiError {
+    fn from(_: Error) -> Self {
+        RmiError::RmiErrorInput
     }
 }

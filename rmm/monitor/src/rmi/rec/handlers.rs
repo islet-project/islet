@@ -22,7 +22,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mm = rmm.mm;
         let rd = unsafe { Rd::into(arg[1]) };
 
-        granule::set_granule(arg[0], GranuleState::Rec)?;
+        granule::set_granule_with_parent(arg[1], arg[0], GranuleState::Rec)?;
         mm.map(arg[0], true);
 
         let params = copy_from_host_or_ret!(Params, arg[2], mm);

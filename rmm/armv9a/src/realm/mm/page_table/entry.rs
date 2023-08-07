@@ -12,6 +12,8 @@ use crate::helper::bits_in_reg;
 pub struct Entry(RawPTE);
 
 impl page_table::Entry for Entry {
+    type Inner = RawPTE;
+
     fn new() -> Self {
         Self(RawPTE::new(0))
     }

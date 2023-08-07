@@ -89,6 +89,14 @@ pub fn get_granule_state(addr: usize) -> Result<u64, Error> {
     }
 }
 
+pub fn set_granule_with_parent(parent: usize, addr: usize, state: u64) -> Result<(), Error> {
+    if let Some(gst) = unsafe { &mut GRANULE_STATUS_TABLE } {
+        gst.set_granule_with_parent(parent, addr, state)
+    } else {
+        Err(Error::MmErrorOthers)
+    }
+}
+
 // TODO: move this FVP-specific address info
 const FVP_DRAM0_REGION: core::ops::Range<usize> = core::ops::Range {
     start: 0x8000_0000,

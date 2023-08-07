@@ -13,3 +13,6 @@ $HERE/deps/submodule.sh
 
 # Install rust
 $HERE/deps/rust.sh
+
+# Install FVP simulator
+$HERE/deps/simulator.sh

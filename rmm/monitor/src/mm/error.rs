@@ -7,6 +7,10 @@ pub enum Error {
     MmInvalidLevel,
     MmNoEntry,
     MmAllocFail,
+    MmRustError,
+    MmUnimplemented,
+    MmIsInUse,
+    MmRefcountError,
     MmErrorOthers,
 }
 
@@ -18,6 +22,10 @@ impl From<Error> for usize {
             Error::MmInvalidLevel => 11,
             Error::MmNoEntry => 12,
             Error::MmAllocFail => 13,
+            Error::MmRustError => 14,
+            Error::MmUnimplemented => 15,
+            Error::MmIsInUse => 16,
+            Error::MmRefcountError => 17,
             Error::MmErrorOthers => 99,
         }
     }

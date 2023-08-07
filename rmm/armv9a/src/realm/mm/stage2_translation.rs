@@ -117,7 +117,7 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
         let mut pa = None;
         let res = self.root_pgtlb.entry(guest, |entry| {
             pa = entry.address(0);
-            Ok(0)
+            Ok(None)
         });
         if res.is_ok() {
             pa

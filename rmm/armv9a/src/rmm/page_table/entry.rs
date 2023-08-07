@@ -28,6 +28,8 @@ define_bits!(
 #[derive(Clone, Copy)]
 pub struct Entry(PTDesc);
 impl page_table::Entry for Entry {
+    type Inner = PTDesc;
+
     fn new() -> Self {
         Self(PTDesc::new(0))
     }

@@ -1,12 +1,14 @@
 use super::entry;
 use super::validate_addr;
-use super::{GranuleState, L0Table, GRANULE_SIZE};
+use super::{GranuleState, L0Table, L1Table, GRANULE_SIZE};
 use super::{FVP_DRAM0_REGION, FVP_DRAM1_REGION};
 use crate::const_assert_eq;
 use crate::mm::address::PhysAddr;
 use crate::mm::error::Error;
 use crate::mm::page::{Page, PageSize};
 use crate::mm::page_table::{Entry, Level, PageTable, PageTableMethods};
+
+use hashbrown::HashMap;
 
 pub const DRAM_SIZE: usize = 0x7C00_0000 + 0x8000_0000;
 
@@ -20,18 +22,28 @@ const_assert_eq!(
     true
 );
 
-pub struct GranuleStatusTable<'a> {
-    root_pgtlb:
-        &'a mut PageTable<PhysAddr, L0Table, entry::Entry, { <L0Table as Level>::NUM_ENTRIES }>,
+type L0PageTable = PageTable<PhysAddr, L0Table, entry::Entry, { <L0Table as Level>::NUM_ENTRIES }>;
+pub type L1PageTable =
+    PageTable<PhysAddr, L1Table, entry::Entry, { <L1Table as Level>::NUM_ENTRIES }>;
+
+pub struct GranuleStatusTable {
+    root_pgtlb: L0PageTable,
+    l1_tables: HashMap<usize, L1PageTable>,
+    // TODO: replace this HashMap with a more efficient structure.
+    //    to do so, we need to do refactoring on how we manage entries in PageTable.
+    //    e.g., moving storage (`entries: [E; N]`) out of PageTable, and each impl (GST, RMM, RTT) is in charge of handling that.
 }
 
-impl<'a> GranuleStatusTable<'a> {
+impl GranuleStatusTable {
     pub fn new() -> Self {
-        let root_pgtlb = unsafe {
-            &mut *PageTable::<PhysAddr, L0Table, entry::Entry, { <L0Table as Level>::NUM_ENTRIES }>::new(1)
-                .unwrap()
-        };
-        Self { root_pgtlb }
+        Self {
+            root_pgtlb: L0PageTable::new(),
+            l1_tables: HashMap::new(),
+        }
+    }
+
+    fn add_l1_table(&mut self, index: usize) {
+        self.l1_tables.insert(index, L1PageTable::new());
     }
 
     pub fn set_granule(&mut self, addr: usize, state: u64) -> Result<(), Error> {
@@ -40,7 +52,33 @@ impl<'a> GranuleStatusTable<'a> {
         }
         let pa1 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
         let pa2 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
-        self.root_pgtlb.set_page(pa1, pa2, state)
+        self.root_pgtlb.set_page(pa1, pa2, state, None)
+    }
+
+    pub fn set_granule_with_parent(
+        &mut self,
+        parent: usize,
+        addr: usize,
+        state: u64,
+    ) -> Result<(), Error> {
+        if !validate_addr(addr) || !validate_addr(parent) {
+            return Err(Error::MmInvalidAddr);
+        }
+
+        let pa1 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
+        let pa2 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
+        let parent_pa = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(parent));
+
+        // 1. get a parent (e.g., Rd)
+        let parent = self.root_pgtlb.entry(parent_pa, |entry| {
+            Ok(entry.get_inner())
+        });
+
+        // 2. set_page considering the parent (e.g., Rd - Rec)
+        match parent {
+            Ok(inner) => self.root_pgtlb.set_page(pa1, pa2, state, inner),
+            Err(e) => Err(e),
+        }
     }
 
     pub fn get_granule_state(&mut self, addr: usize) -> Result<u64, Error> {
@@ -48,7 +86,18 @@ impl<'a> GranuleStatusTable<'a> {
             return Err(Error::MmInvalidAddr);
         }
         let pa = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
-        self.root_pgtlb.entry(pa, |entry| Ok(entry.get()))
+        let inner = self.root_pgtlb.entry(pa, |entry| Ok(entry.get_inner()));
+
+        match inner {
+            Ok(i) => {
+                if let Some(g) = &i {
+                    Ok(g.state())
+                } else {
+                    Err(Error::MmErrorOthers)
+                }
+            },
+            Err(e) => Err(e),
+        }
     }
 }
 
@@ -60,7 +109,35 @@ impl PageSize for GranuleSize {
     const MAP_EXTRA_FLAG: u64 = GranuleState::Undelegated;
 }
 
-pub static mut GRANULE_STATUS_TABLE: Option<GranuleStatusTable<'static>> = None;
+pub static mut GRANULE_STATUS_TABLE: Option<GranuleStatusTable> = None;
+
+pub fn add_l1_table(index: usize) -> Result<usize, Error> {
+    if let Some(gst) = unsafe { &mut GRANULE_STATUS_TABLE } {
+        gst.add_l1_table(index);
+        if let Some(t) = gst.l1_tables.get(&index) {
+            Ok(t as *const _ as usize)
+        } else {
+            Err(Error::MmErrorOthers)
+        }
+    } else {
+        Err(Error::MmErrorOthers)
+    }
+}
+
+pub fn map_l1_table<F: FnOnce(usize) -> Result<(), Error>>(
+    index: usize,
+    func: F,
+) -> Result<(), Error> {
+    if let Some(gst) = unsafe { &mut GRANULE_STATUS_TABLE } {
+        if let Some(t) = gst.l1_tables.get_mut(&index) {
+            func(t as *mut _ as usize)
+        } else {
+            Err(Error::MmErrorOthers)
+        }
+    } else {
+        Err(Error::MmErrorOthers)
+    }
+}
 
 pub fn addr_to_idx(phys: usize) -> Result<usize, Error> {
     if phys % GRANULE_SIZE != 0 {

@@ -1,4 +1,4 @@
-use super::entry::Entry;
+use super::entry;
 use super::validate_addr;
 use super::{GranuleState, L0Table, GRANULE_SIZE};
 use super::{FVP_DRAM0_REGION, FVP_DRAM1_REGION};
@@ -6,7 +6,7 @@ use crate::const_assert_eq;
 use crate::mm::address::PhysAddr;
 use crate::mm::error::Error;
 use crate::mm::page::{Page, PageSize};
-use crate::mm::page_table::{Level, PageTable, PageTableMethods};
+use crate::mm::page_table::{Entry, Level, PageTable, PageTableMethods};
 
 pub const DRAM_SIZE: usize = 0x7C00_0000 + 0x8000_0000;
 
@@ -21,13 +21,14 @@ const_assert_eq!(
 );
 
 pub struct GranuleStatusTable<'a> {
-    root_pgtlb: &'a mut PageTable<PhysAddr, L0Table, Entry, { <L0Table as Level>::NUM_ENTRIES }>,
+    root_pgtlb:
+        &'a mut PageTable<PhysAddr, L0Table, entry::Entry, { <L0Table as Level>::NUM_ENTRIES }>,
 }
 
 impl<'a> GranuleStatusTable<'a> {
     pub fn new() -> Self {
         let root_pgtlb = unsafe {
-            &mut *PageTable::<PhysAddr, L0Table, Entry, { <L0Table as Level>::NUM_ENTRIES }>::new(1)
+            &mut *PageTable::<PhysAddr, L0Table, entry::Entry, { <L0Table as Level>::NUM_ENTRIES }>::new(1)
                 .unwrap()
         };
         Self { root_pgtlb }
@@ -40,6 +41,14 @@ impl<'a> GranuleStatusTable<'a> {
         let pa1 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
         let pa2 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
         self.root_pgtlb.set_page(pa1, pa2, state)
+    }
+
+    pub fn get_granule_state(&mut self, addr: usize) -> Result<u64, Error> {
+        if !validate_addr(addr) {
+            return Err(Error::MmInvalidAddr);
+        }
+        let pa = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
+        self.root_pgtlb.entry(pa, |entry| Ok(entry.get()))
     }
 }
 

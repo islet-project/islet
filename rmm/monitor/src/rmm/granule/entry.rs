@@ -60,6 +60,10 @@ impl Granule {
         self.addr
     }
 
+    fn state(&self) -> u64 {
+        self.state
+    }
+
     fn zeroize(&self) {
         let buf = self.addr;
         unsafe {
@@ -88,6 +92,10 @@ impl Inner {
 
     fn addr(&self) -> usize {
         self.granule.addr()
+    }
+
+    fn state(&self) -> u64 {
+        self.granule.state()
     }
 
     fn set_state(&mut self, addr: PhysAddr, state: u64) -> Result<(), Error> {
@@ -127,6 +135,10 @@ impl page_table::Entry for Entry {
 
     fn set(&mut self, addr: PhysAddr, flags: u64) -> Result<(), Error> {
         self.0.lock().set_state(addr, flags)
+    }
+
+    fn get(&self) -> u64 {
+        self.0.lock().state()
     }
 
     fn set_with_page_table_flags(&mut self, _addr: PhysAddr) -> Result<(), Error> {

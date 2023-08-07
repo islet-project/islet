@@ -115,10 +115,15 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
     fn ipa_to_pa(&mut self, guest: GuestPhysAddr) -> Option<PhysAddr> {
         let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
         let mut pa = None;
-        self.root_pgtlb
-            .entry(guest, |entry| pa = entry.address(0))
-            .ok()?;
-        pa
+        let res = self.root_pgtlb.entry(guest, |entry| {
+            pa = entry.address(0);
+            Ok(0)
+        });
+        if res.is_ok() {
+            pa
+        } else {
+            None
+        }
     }
 
     fn clean(&mut self) {

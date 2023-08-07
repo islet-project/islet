@@ -31,6 +31,11 @@ pub trait Entry {
     fn set(&mut self, addr: PhysAddr, flags: u64) -> Result<(), Error>;
     fn set_with_page_table_flags(&mut self, addr: PhysAddr) -> Result<(), Error>;
 
+    // TODO: `get()` function will be modified soon.
+    fn get(&self) -> u64 {
+        0
+    }
+
     // do memory allocation using closure,
     // this is useful if a page table wants entry-level locking,
     // as validity_check and set_* function must be done under entry-level locking.
@@ -78,11 +83,11 @@ pub trait PageTableMethods<A: Address, L, E, const N: usize> {
         phys: Page<S, PhysAddr>,
         flags: u64,
     ) -> Result<(), Error>;
-    fn entry<S: PageSize, F: FnMut(&mut E)>(
+    fn entry<S: PageSize, F: FnMut(&mut E) -> Result<u64, Error>>(
         &mut self,
         guest: Page<S, A>,
         func: F,
-    ) -> Result<(), Error>;
+    ) -> Result<u64, Error>;
     fn drop(&mut self);
     fn unset_page<S: PageSize>(&mut self, guest: Page<S, A>);
 }
@@ -148,19 +153,16 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
         self.entries[index].set(phys.address(), flags | S::MAP_EXTRA_FLAG)
     }
 
-    default fn entry<S: PageSize, F: FnMut(&mut E)>(
+    default fn entry<S: PageSize, F: FnMut(&mut E) -> Result<u64, Error>>(
         &mut self,
         guest: Page<S, A>,
         mut func: F,
-    ) -> Result<(), Error> {
+    ) -> Result<u64, Error> {
         assert!(L::THIS_LEVEL == S::MAP_TABLE_LEVEL);
 
         let index = E::index::<L>(guest.address().into());
         match self.entries[index].is_valid() {
-            true => {
-                func(&mut self.entries[index]);
-                Ok(())
-            }
+            true => func(&mut self.entries[index]),
             false => Err(Error::MmNoEntry),
         }
     }
@@ -179,6 +181,7 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
         if self.entries[index].is_valid() {
             let res = self.entry(guest, |e| {
                 e.clear();
+                Ok(0)
             });
 
             match res {
@@ -201,16 +204,16 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
 /// This overrides default PageTableMethods for PageTables with subtable.
 /// (L0Table, L1Table, L2Table)
 /// PageTableMethods for L3 Table remains unmodified.
-impl<A: Address, L: HasSubtable, E: Entry /* + Copy*/, const N: usize> PageTableMethods<A, L, E, N>
+impl<A: Address, L: HasSubtable, E: Entry, const N: usize> PageTableMethods<A, L, E, N>
     for PageTable<A, L, E, N>
 where
     L::NextLevel: Level,
 {
-    fn entry<S: PageSize, F: FnMut(&mut E)>(
+    fn entry<S: PageSize, F: FnMut(&mut E) -> Result<u64, Error>>(
         &mut self,
         page: Page<S, A>,
         mut func: F,
-    ) -> Result<(), Error> {
+    ) -> Result<u64, Error> {
         assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
         let index = E::index::<L>(page.address().into());
 
@@ -222,8 +225,7 @@ where
                     subtable.entry(page, func)
                 } else {
                     // The page is either LargePage or HugePage
-                    func(&mut self.entries[index]);
-                    Ok(())
+                    func(&mut self.entries[index])
                 }
             }
             false => Err(Error::MmNoEntry),
@@ -302,6 +304,7 @@ where
         if self.entries[index].is_valid() {
             let res = self.entry(guest, |e| {
                 e.clear();
+                Ok(0)
             });
             if res.is_err() {
                 warn!("unset_page fail");

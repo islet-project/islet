@@ -80,9 +80,9 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let rmi = rmm.rmi;
         let realmid = rec.rd.id();
         let vcpuid = rec.id();
-        let ipa_start = rmi.get_reg(realmid, vcpuid, 1).unwrap_or(0x0) as u64;
-        let ipa_size = rmi.get_reg(realmid, vcpuid, 2).unwrap_or(0x0) as u64;
-        let ipa_state = rmi.get_reg(realmid, vcpuid, 3).unwrap_or(0x0) as u8;
+        let ipa_start = rmi.get_reg(realmid, vcpuid, 1)? as u64;
+        let ipa_size = rmi.get_reg(realmid, vcpuid, 2)? as u64;
+        let ipa_state = rmi.get_reg(realmid, vcpuid, 3)? as u8;
         // TODO: check ipa_state value, ipa address granularity
         unsafe {
             run.set_exit_reason(rmi::EXIT_RIPAS_CHANGE);

@@ -232,7 +232,7 @@ def run_fvp_tf_a_tests(debug):
             "-Q", "1000"]
     if debug:
         args += ["--cadi-server"]
-    run(args, cwd=FASTMODEL)
+    run(args, cwd=FVP_DIR)
 
 def run_fvp_linux(debug, trace):
     print("[!] Running fvp for linux...")
@@ -257,7 +257,7 @@ def run_fvp_linux(debug, trace):
                 "-C", "TRACE.TarmacTrace.trace_cache=0",
                 "-C", "TRACE.TarmacTrace.updated-registers=1",
                 "-C", "TRACE.TarmacTrace.trace-file=%s/trace.log" % OUT]
-    run(args, cwd=FASTMODEL)
+    run(args, cwd=FVP_DIR)
 
 def run_fvp_linux_net(debug, host_ip, fvp_ip, fvp_tap_ip, realm_ip, route_ip, gateway, ifname):
     user_name = os.getlogin()
@@ -274,7 +274,7 @@ def run_fvp_linux_net(debug, host_ip, fvp_ip, fvp_tap_ip, realm_ip, route_ip, ga
             "-Q", "1000"]
     if debug:
         args += ["--cadi-server"]
-    run(args, cwd=FASTMODEL)
+    run(args, cwd=FVP_DIR)
 
 def run_fvp_aosp(debug):
     os.makedirs(AOSP_SHARED_PATH, exist_ok=True)
@@ -294,7 +294,7 @@ def run_fvp_aosp(debug):
             "-Q", "1000"]
     if debug:
         args += ["--cadi-server"]
-    run(args, cwd=FASTMODEL, new_env=new_env)
+    run(args, cwd=FVP_DIR, new_env=new_env)
 
 def run_fvp_acs():
     run([ACS_RUN,

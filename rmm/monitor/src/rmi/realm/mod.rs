@@ -7,7 +7,6 @@ use crate::event::Mainloop;
 use crate::host::pointer::Pointer as HostPointer;
 use crate::listen;
 use crate::rmi;
-use crate::rmi::error::Error;
 use crate::rmm::granule;
 use crate::rmm::granule::GranuleState;
 
@@ -25,9 +24,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let params = copy_from_host_or_ret!(Params, arg[1], mm);
         trace!("{:?}", params);
 
-        if granule::set_granule(arg[0], GranuleState::RD) != granule::RET_SUCCESS {
-            return Err(Error::RmiErrorInput);
-        }
+        granule::set_granule(arg[0], GranuleState::RD)?;
         mm.map(arg[0], true);
 
         // TODO:
@@ -57,10 +54,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let _rd = unsafe { Rd::into(arg[0]) };
         let res = rmi.remove(0); // temporarily
 
-        if granule::set_granule(arg[0], GranuleState::Delegated) != granule::RET_SUCCESS {
+        granule::set_granule(arg[0], GranuleState::Delegated).map_err(|e| {
             rmm.mm.unmap(arg[0]);
-            return Err(Error::RmiErrorInput);
-        }
+            e
+        })?;
         rmm.mm.unmap(arg[0]);
 
         match res {

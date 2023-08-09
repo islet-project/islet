@@ -1,4 +1,5 @@
-use core::mem::ManuallyDrop;
+use crate::mm::guard::Content;
+use crate::rmm::granule::GranuleState;
 
 pub struct Rd {
     realm_id: usize,
@@ -6,20 +7,22 @@ pub struct Rd {
 }
 
 impl Rd {
-    pub unsafe fn new(rd_addr: usize, realm_id: usize) -> ManuallyDrop<&'static mut Rd> {
-        let rd: &mut Rd = &mut *(rd_addr as *mut Rd);
-        *rd = Default::default();
-        rd.realm_id = realm_id;
-        ManuallyDrop::new(rd)
+    pub fn init(&mut self, id: usize) {
+        self.realm_id = id;
+        self.state = State::New;
     }
 
-    pub unsafe fn into(rd_addr: usize) -> ManuallyDrop<&'static mut Rd> {
-        let rd: &mut Rd = &mut *(rd_addr as *mut Rd);
-        ManuallyDrop::new(rd)
+    pub fn init_with_state(&mut self, id: usize, state: State) {
+        self.realm_id = id;
+        self.state = state;
     }
 
     pub fn id(&self) -> usize {
         self.realm_id
+    }
+
+    pub fn state(&self) -> State {
+        self.state
     }
 
     pub fn at_state(&self, compared: State) -> bool {
@@ -27,20 +30,11 @@ impl Rd {
     }
 }
 
-impl Default for Rd {
-    fn default() -> Self {
-        Self {
-            realm_id: 0,
-            state: State::New,
-        }
-    }
+impl Content for Rd {
+    const FLAGS: u64 = GranuleState::RD;
 }
 
-impl Drop for Rd {
-    fn drop(&mut self) {}
-}
-
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum State {
     Null,
     New,

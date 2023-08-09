@@ -1,5 +1,6 @@
 use crate::mm::address::PhysAddr;
 use crate::mm::error::Error;
+use crate::mm::guard::EntryGuard;
 use crate::mm::page_table::{self, Level};
 
 use super::translation::{add_l1_table, addr_to_idx, map_l1_table, L0_TABLE_ENTRY_SIZE_RANGE};
@@ -34,19 +35,15 @@ impl Granule {
         F: Fn() -> Result<(), Error>,
     {
         let prev = self.state;
-
-        if prev == GranuleState::Undelegated {
-            if state != GranuleState::Delegated {
-                return Err(Error::MmStateError);
+        let valid = match prev {
+            GranuleState::Undelegated => {
+                state == GranuleState::Delegated || state == GranuleState::Undelegated
             }
-        } else if prev == GranuleState::Delegated {
-            if state == GranuleState::Delegated {
-                return Err(Error::MmStateError);
-            }
-        } else {
-            if state != GranuleState::Delegated {
-                return Err(Error::MmStateError);
-            }
+            GranuleState::Delegated => state != GranuleState::Delegated,
+            _ => state == GranuleState::Delegated,
+        };
+        if !valid {
+            return Err(Error::MmStateError);
         }
 
         // The case of destroying a granule:
@@ -72,19 +69,12 @@ impl Granule {
         Ok(())
     }
 
-    fn set_state_with_parent(
-        &mut self,
-        addr: usize,
-        state: u64,
-        parent: Inner,
-    ) -> Result<(), Error> {
+    fn set_parent(&mut self, parent: Inner) -> Result<(), Error> {
         // parent-child state validation check
         // (Parent, Child): (Rd, Rec) --> only one case at this moment.
-        if state != GranuleState::Rec || parent.granule.state() != GranuleState::RD {
-            return Err(Error::MmStateError);
+        if self.state() != GranuleState::Rec || parent.granule.state() != GranuleState::RD {
+            return Err(Error::MmWrongParentChild);
         }
-
-        self.set_state(addr, state, || Ok(()))?;
         self.parent = Some(parent);
         Ok(())
     }
@@ -109,16 +99,6 @@ impl Granule {
     }
 }
 
-/// The rules for reference counting:
-///   - all entries has 1 of refcount by default when created by new()
-///   - there are two points that increment/decrement refcount:
-///     (1) parent-child relationship: `get_inner()` clones it and this is put into `Granule.parent`.
-///         this is to prevent a granule from getting destroyed when there is still someone pointing to it. (e.g., Rd -> Rec)
-///         this refcount lasts for a long time across different RMI commands.
-///     (2) for local RMI commands:
-///         in some cases, refcount needs to be increased at the start of a RMI command and decreased at the end.
-///         e.g., when one CPU goes in "REC_ENTER" and read REC, while another CPU goes in "REC_DESTROY" simultaneously, it may go problematic.
-///               we need to increase refcount in "REC_ENTER" to prevent REC from getting destroyed in "REC_DESTROY".
 pub struct Inner {
     granule: Rc<Granule>,
     table: bool,
@@ -138,7 +118,7 @@ impl Inner {
         }
     }
 
-    fn addr(&self) -> usize {
+    pub fn addr(&self) -> usize {
         self.granule.addr()
     }
 
@@ -146,7 +126,7 @@ impl Inner {
         self.granule.state()
     }
 
-    fn set_state(&mut self, addr: PhysAddr, state: u64) -> Result<(), Error> {
+    pub fn set_state(&mut self, addr: PhysAddr, state: u64) -> Result<(), Error> {
         let refcount = Rc::strong_count(&self.granule);
 
         Rc::get_mut(&mut self.granule).map_or_else(
@@ -169,16 +149,21 @@ impl Inner {
         Ok(())
     }
 
-    fn set_state_with_inner(
-        &mut self,
-        addr: PhysAddr,
-        state: u64,
-        inner: Inner,
-    ) -> Result<(), Error> {
-        Rc::get_mut(&mut self.granule).map_or_else(
-            || Err(Error::MmRefcountError),
-            |g| g.set_state_with_parent(addr.as_usize(), state, inner),
-        )
+    pub fn set_parent(&mut self, parent: Inner) -> Result<(), Error> {
+        Rc::get_mut(&mut self.granule)
+            .map_or_else(|| Err(Error::MmRefcountError), |g| g.set_parent(parent))
+    }
+
+    pub fn check_parent(&self, parent: &Inner) -> Result<(), Error> {
+        if let Some(src_parent) = &self.granule.parent {
+            if src_parent as *const Inner == parent as *const Inner {
+                Ok(())
+            } else {
+                Err(Error::MmStateError)
+            }
+        } else {
+            Err(Error::MmStateError)
+        }
     }
 
     fn set_state_for_table(&mut self, index: usize) -> Result<(), Error> {
@@ -245,15 +230,6 @@ impl page_table::Entry for Entry {
         Err(Error::MmErrorOthers)
     }
 
-    fn set_with_inner(
-        &mut self,
-        addr: PhysAddr,
-        flags: u64,
-        inner: Self::Inner,
-    ) -> Result<(), Error> {
-        self.0.lock().set_state_with_inner(addr, flags, inner)
-    }
-
     fn set_with_page_table_flags_via_alloc<T: FnMut() -> usize>(
         &mut self,
         index: usize,
@@ -290,8 +266,17 @@ impl page_table::Entry for Entry {
         map_l1_table(index, func)
     }
 
-    fn get_inner(&self) -> Option<Self::Inner> {
-        Some(self.0.lock().clone())
+    fn lock(&self) -> Result<Option<EntryGuard<'_, Self::Inner>>, Error> {
+        let inner = self.0.lock();
+        let addr = inner.addr();
+        let state = inner.state();
+        let valid = inner.valid();
+
+        if !valid {
+            Err(Error::MmStateError)
+        } else {
+            Ok(Some(EntryGuard::new(inner, addr, state)))
+        }
     }
 
     fn points_to_table_or_page(&self) -> bool {

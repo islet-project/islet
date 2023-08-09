@@ -7,8 +7,8 @@ use crate::host::DataPage;
 use crate::listen;
 use crate::rmi;
 use crate::rmi::error::Error;
-use crate::rmm::granule;
-use crate::rmm::granule::{GranuleState, GRANULE_SIZE};
+use crate::rmm::granule::{check_granule_parent, set_granule, GranuleState, GRANULE_SIZE};
+use crate::{get_granule, get_granule_if, set_state_and_get_granule};
 
 extern crate alloc;
 
@@ -34,11 +34,15 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
     listen!(mainloop, rmi::RTT_SET_RIPAS, |arg, _ret, rmm| {
         let _rmi = rmm.rmi;
-        let _rd = unsafe { Rd::into(arg[0]) };
-        let mut rec = unsafe { Rec::into(arg[1]) };
         let _ipa = arg[2];
         let level = arg[3];
         let ripas = arg[4];
+
+        let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        let mut rec_granule = get_granule_if!(arg[1], GranuleState::Rec)?;
+        check_granule_parent(&rd_granule, &rec_granule)?;
+
+        let rec = rec_granule.content_mut::<Rec>();
 
         let mut prot = rmi::MapProt::new(0);
         match ripas as u64 {
@@ -70,11 +74,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mm = rmm.mm;
         // target_pa: location where realm data is created.
         let target_pa = arg[0];
-        let rd = unsafe { Rd::into(arg[1]) };
         let ipa = arg[2];
         let src_pa = arg[3];
         let _flags = arg[4];
 
+        // rd granule lock
+        let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
         let realm_id = rd.id();
 
         // Make sure DATA_CREATE is only processed
@@ -82,20 +88,17 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if !rd.at_state(State::New) {
             return Err(Error::RmiErrorRealm);
         }
-        // 1. map src to rmm
-        granule::set_granule(target_pa, GranuleState::Data)?;
+
+        // data granule lock for the target page
+        let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
+        let target_page = target_page_granule.content_mut::<DataPage>();
         mm.map(target_pa, true);
 
+        // read src page
         let src_page = copy_from_host_or_ret!(DataPage, src_pa, mm);
 
         // 3. copy src to _data
-        unsafe {
-            core::ptr::copy_nonoverlapping(
-                src_page.as_ptr(),
-                target_pa as *mut u8,
-                core::mem::size_of::<DataPage>(),
-            );
-        }
+        *target_page = src_page;
 
         // 4. map ipa to _taget_pa into S2 table
         let prot = rmi::MapProt::new(0);
@@ -112,6 +115,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         // TODO: 5. perform measure
+        set_granule(&mut target_page_granule, GranuleState::Data)?;
         Ok(())
     });
 
@@ -120,14 +124,17 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mm = rmm.mm;
         // target_phys: location where realm data is created.
         let target_pa = arg[0];
-        let rd = unsafe { Rd::into(arg[1]) };
         let ipa = arg[2];
 
+        // rd granule lock
+        let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
         let realm_id = rd.id();
         let granule_sz = GRANULE_SIZE;
 
         // 0. Make sure granule state can make a transition to DATA
-        granule::set_granule(target_pa, GranuleState::Data)?;
+        // data granule lock for the target page
+        let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
         mm.map(target_pa, true);
 
         // 1. map ipa to target_pa into S2 table
@@ -139,31 +146,38 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         // TODO: 2. perform measure
+        set_granule(&mut target_page_granule, GranuleState::Data)?;
         Ok(())
     });
 
     listen!(mainloop, rmi::DATA_DESTORY, |arg, _ret, rmm| {
-        let rd = unsafe { Rd::into(arg[0]) };
-        let ipa = arg[1];
+        // rd granule lock
+        let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
         let realm_id = rd.id();
+        let ipa = arg[1];
 
         // TODO: Fix to get PA by rtt_walk
         let pa = rmm.rmi.unmap(realm_id, ipa, GRANULE_SIZE)?;
-        granule::set_granule(pa, GranuleState::Delegated)?;
 
+        // data granule lock and change state
+        let _ = set_state_and_get_granule!(pa, GranuleState::Delegated);
         Ok(())
     });
 
     // Map an unprotected IPA to a non-secure PA.
     listen!(mainloop, rmi::RTT_MAP_UNPROTECTED, |arg, _ret, rmm| {
         let rmi = rmm.rmi;
-        let rd = unsafe { Rd::into(arg[0]) };
         let ipa = arg[1];
         let _level = arg[2];
         let ns_pa = arg[3];
 
-        // islet stores rd as realm id
+        // rd granule lock
+        let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
         let realm_id = rd.id();
+
+        // islet stores rd as realm id
         let granule_sz = GRANULE_SIZE;
         let mut prot = rmi::MapProt(0);
         prot.set_bit(rmi::MapProt::NS_PAS);

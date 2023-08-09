@@ -1,5 +1,6 @@
 use super::address::PhysAddr;
 use super::error::Error;
+use super::guard::EntryGuard;
 use super::page::{Address, Page, PageIter, PageSize};
 
 use core::marker::PhantomData;
@@ -22,6 +23,7 @@ pub trait HasSubtable: Level {
 }
 
 pub trait Entry {
+    /// Inner represents a inner type encapsulated in Entry (e.g., Inner=u64 for struct Entry<u64>)
     type Inner;
 
     fn new() -> Self;
@@ -31,18 +33,11 @@ pub trait Entry {
     fn address(&self, level: usize) -> Option<PhysAddr>;
 
     fn set(&mut self, addr: PhysAddr, flags: u64) -> Result<(), Error>;
-    fn set_with_inner(
-        &mut self,
-        _addr: PhysAddr,
-        _flags: u64,
-        _inner: Self::Inner,
-    ) -> Result<(), Error> {
-        Err(Error::MmUnimplemented)
-    }
     fn set_with_page_table_flags(&mut self, addr: PhysAddr) -> Result<(), Error>;
 
-    fn get_inner(&self) -> Option<Self::Inner> {
-        None
+    // returns EntryGuard which allows accessing what's inside Entry while holding a proper lock.
+    fn lock(&self) -> Result<Option<EntryGuard<'_, Self::Inner>>, Error> {
+        Err(Error::MmUnimplemented)
     }
 
     // do memory allocation using closure,
@@ -100,13 +95,12 @@ pub trait PageTableMethods<A: Address, L, E: Entry, const N: usize> {
         guest: Page<S, A>,
         phys: Page<S, PhysAddr>,
         flags: u64,
-        inner: Option<E::Inner>,
     ) -> Result<(), Error>;
-    fn entry<S: PageSize, F: FnMut(&mut E) -> Result<Option<E::Inner>, Error>>(
+    fn entry<S: PageSize, F: FnMut(&mut E) -> Result<Option<EntryGuard<'_, E::Inner>>, Error>>(
         &mut self,
         guest: Page<S, A>,
         func: F,
-    ) -> Result<Option<E::Inner>, Error>;
+    ) -> Result<Option<EntryGuard<'_, E::Inner>>, Error>;
     fn drop(&mut self);
     fn unset_page<S: PageSize>(&mut self, guest: Page<S, A>);
 }
@@ -154,7 +148,7 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
         let mut phys = phys;
         for guest in guest {
             let phys = phys.next().unwrap();
-            match self.set_page(guest, phys, flags, None) {
+            match self.set_page(guest, phys, flags) {
                 Ok(_) => {}
                 Err(e) => {
                     return Err(e);
@@ -169,29 +163,21 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
         guest: Page<S, A>,
         phys: Page<S, PhysAddr>,
         flags: u64,
-        inner: Option<E::Inner>,
     ) -> Result<(), Error> {
         assert!(L::THIS_LEVEL == S::MAP_TABLE_LEVEL);
 
         let index = E::index::<L>(guest.address().into());
-
-        // Map page in this level page table
-        if inner.is_some() {
-            self.entries[index].set_with_inner(
-                phys.address(),
-                flags | S::MAP_EXTRA_FLAG,
-                inner.unwrap(),
-            )
-        } else {
-            self.entries[index].set(phys.address(), flags | S::MAP_EXTRA_FLAG)
-        }
+        self.entries[index].set(phys.address(), flags | S::MAP_EXTRA_FLAG)
     }
 
-    default fn entry<S: PageSize, F: FnMut(&mut E) -> Result<Option<E::Inner>, Error>>(
+    default fn entry<
+        S: PageSize,
+        F: FnMut(&mut E) -> Result<Option<EntryGuard<'_, E::Inner>>, Error>,
+    >(
         &mut self,
         guest: Page<S, A>,
         mut func: F,
-    ) -> Result<Option<E::Inner>, Error> {
+    ) -> Result<Option<EntryGuard<'_, E::Inner>>, Error> {
         assert!(L::THIS_LEVEL == S::MAP_TABLE_LEVEL);
 
         let index = E::index::<L>(guest.address().into());
@@ -243,11 +229,11 @@ impl<A: Address, L: HasSubtable, E: Entry, const N: usize> PageTableMethods<A, L
 where
     L::NextLevel: Level,
 {
-    fn entry<S: PageSize, F: FnMut(&mut E) -> Result<Option<E::Inner>, Error>>(
+    fn entry<S: PageSize, F: FnMut(&mut E) -> Result<Option<EntryGuard<'_, E::Inner>>, Error>>(
         &mut self,
         page: Page<S, A>,
         mut func: F,
-    ) -> Result<Option<E::Inner>, Error> {
+    ) -> Result<Option<EntryGuard<'_, E::Inner>>, Error> {
         assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
         let index = E::index::<L>(page.address().into());
 
@@ -271,7 +257,6 @@ where
         guest: Page<S, A>,
         phys: Page<S, PhysAddr>,
         flags: u64,
-        inner: Option<E::Inner>,
     ) -> Result<(), Error> {
         assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
 
@@ -303,18 +288,10 @@ where
             })?;
 
             // map the page in the subtable (recursive)
-            self.subtable_and_set_page(guest, phys, flags, inner)
+            self.subtable_and_set_page(guest, phys, flags)
         } else if L::THIS_LEVEL == S::MAP_TABLE_LEVEL {
             // Map page in this level page table
-            if inner.is_some() {
-                self.entries[index].set_with_inner(
-                    phys.address(),
-                    flags | S::MAP_EXTRA_FLAG,
-                    inner.unwrap(),
-                )
-            } else {
-                self.entries[index].set(phys.address(), flags | S::MAP_EXTRA_FLAG)
-            }
+            self.entries[index].set(phys.address(), flags | S::MAP_EXTRA_FLAG)
         } else {
             Err(Error::MmInvalidLevel)
         }
@@ -373,14 +350,13 @@ where
         page: Page<S, A>,
         phys: Page<S, PhysAddr>,
         flags: u64,
-        inner: Option<E::Inner>,
     ) -> Result<(), Error> {
         assert!(L::THIS_LEVEL < S::MAP_TABLE_LEVEL);
 
         let index = E::index::<L>(page.address().into());
         self.entries[index].map(index, L::THIS_LEVEL, |table_addr| {
             let table = unsafe { &mut *(table_addr as *mut PageTable<A, L::NextLevel, E, N>) };
-            table.set_page(page, phys, flags, inner)
+            table.set_page(page, phys, flags)
         })?;
         Ok(())
     }

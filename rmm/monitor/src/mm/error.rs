@@ -11,6 +11,7 @@ pub enum Error {
     MmUnimplemented,
     MmIsInUse,
     MmRefcountError,
+    MmWrongParentChild,
     MmErrorOthers,
 }
 
@@ -26,13 +27,15 @@ impl From<Error> for usize {
             Error::MmUnimplemented => 15,
             Error::MmIsInUse => 16,
             Error::MmRefcountError => 17,
+            Error::MmWrongParentChild => 18,
             Error::MmErrorOthers => 99,
         }
     }
 }
 
 impl From<Error> for RmiError {
-    fn from(_: Error) -> Self {
+    fn from(e: Error) -> Self {
+        debug!("MmError occured: {}", <Error as Into<usize>>::into(e));
         RmiError::RmiErrorInput
     }
 }

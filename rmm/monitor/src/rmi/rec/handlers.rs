@@ -9,10 +9,8 @@ use crate::{rmi, rsi};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::pointer::PointerMut as HostPointerMut;
 use crate::rmi::error::Error;
-use crate::rmm::granule;
-use crate::rmm::granule::GranuleState;
-
-use core::mem::ManuallyDrop;
+use crate::rmm::granule::{set_granule, set_granule_parent, GranuleState};
+use crate::{get_granule, get_granule_if};
 
 extern crate alloc;
 
@@ -20,26 +18,29 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_CREATE, |arg, ret, rmm| {
         let rmi = rmm.rmi;
         let mm = rmm.mm;
-        let rd = unsafe { Rd::into(arg[1]) };
 
-        granule::set_granule_with_parent(arg[1], arg[0], GranuleState::Rec)?;
+        // grab the lock for Rd granule
+        let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
+
+        // set Rec_state and grab the lock for Rec granule
+        let mut rec_granule = get_granule_if!(arg[0], GranuleState::Delegated)?;
+        let rec = rec_granule.content_mut::<Rec>();
         mm.map(arg[0], true);
 
+        // read params
         let params = copy_from_host_or_ret!(Params, arg[2], mm);
         trace!("{:?}", params);
 
         match rmi.create_vcpu(rd.id()) {
             Ok(vcpuid) => {
                 ret[1] = vcpuid;
-                let _ =
-                    unsafe { Rec::new(arg[0], vcpuid, ManuallyDrop::<&mut Rd>::into_inner(rd)) };
+                rec.init(rd.id(), rd.state(), vcpuid);
             }
             Err(_) => return Err(Error::RmiErrorInput),
         }
 
-        let rec = unsafe { Rec::into(arg[0]) };
-        let rd = unsafe { Rd::into(arg[1]) };
-        for (idx, gpr) in params.gprs.iter().enumerate() {
+        for (idx, gpr) in params.gprs().iter().enumerate() {
             if rmi.set_reg(rd.id(), rec.id(), idx, *gpr as usize).is_err() {
                 return Err(Error::RmiErrorInput);
             }
@@ -50,11 +51,16 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         {
             return Err(Error::RmiErrorInput);
         }
+
+        set_granule(&mut rec_granule, GranuleState::Rec)?;
+        set_granule_parent(rd_granule.clone(), &mut rec_granule)?;
         Ok(())
     });
 
     listen!(mainloop, rmi::REC_DESTROY, |arg, _ret, rmm| {
-        granule::set_granule(arg[0], GranuleState::Delegated).map_err(|e| {
+        let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
+
+        set_granule(&mut rec_granule, GranuleState::Delegated).map_err(|e| {
             rmm.mm.unmap(arg[0]);
             e
         })?;
@@ -64,8 +70,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
     listen!(mainloop, rmi::REC_ENTER, |arg, ret, rmm| {
         let rmi = rmm.rmi;
-        let mut rec = unsafe { Rec::into(arg[0]) };
         let run_pa = arg[1];
+
+        // grab the lock for Rec
+        let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
+        let mut rec = rec_granule.content_mut::<Rec>();
+
+        // read Run
         let mut run = copy_from_host_or_ret!(Run, run_pa, rmm.mm);
         trace!("{:?}", run);
 
@@ -107,12 +118,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
                         rsi::constraint::validate(cmd, |_, ret_num| {
                             let mut rsi_ctx = Context::new(cmd);
-                            let rec_ref =
-                                unsafe { ManuallyDrop::<&mut Rec>::into_inner(Rec::into(arg[0])) };
                             rsi_ctx.resize_ret(ret_num);
 
                             // set default value
-                            if rsi.dispatch(&mut rsi_ctx, rmm, rec_ref, &mut run)
+                            if rsi.dispatch(&mut rsi_ctx, rmm, &mut rec, &mut run)
                                 == RsiHandle::RET_SUCCESS
                             {
                                 if rsi_ctx.ret_slice()[0] == rmi::SUCCESS_REC_ENTER {

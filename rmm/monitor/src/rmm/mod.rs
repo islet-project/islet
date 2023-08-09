@@ -1,4 +1,6 @@
 pub mod address;
+
+#[macro_use]
 pub mod granule;
 
 pub type PageMap = &'static dyn RmmPage;

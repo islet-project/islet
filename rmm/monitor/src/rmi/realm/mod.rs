@@ -7,8 +7,8 @@ use crate::event::Mainloop;
 use crate::host::pointer::Pointer as HostPointer;
 use crate::listen;
 use crate::rmi;
-use crate::rmm::granule;
-use crate::rmm::granule::GranuleState;
+use crate::rmm::granule::{set_granule, GranuleState};
+use crate::{get_granule, get_granule_if};
 
 extern crate alloc;
 
@@ -21,27 +21,32 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REALM_CREATE, |arg, ret, rmm| {
         let rmi = rmm.rmi;
         let mm = rmm.mm;
+
+        // get the lock for granule.
+        let mut granule = get_granule_if!(arg[0], GranuleState::Delegated)?;
+        let rd = granule.content_mut::<Rd>();
+        mm.map(arg[0], true);
+
+        // read params
         let params = copy_from_host_or_ret!(Params, arg[1], mm);
         trace!("{:?}", params);
 
-        granule::set_granule(arg[0], GranuleState::RD)?;
-        mm.map(arg[0], true);
-
         // TODO:
-        //   Validate params
-        //   Manage granule including locking
         //   Manage vmid
         //   Keep params in Realm
+        //   revisit rmi.create_realm() (is it necessary?)
 
         let res = rmi.create_realm();
         match res {
             Ok(id) => {
-                let _ = unsafe { Rd::new(arg[0], id) };
+                rd.init(id);
                 ret[1] = id;
             }
             Err(val) => return Err(val),
         }
-        Ok(())
+
+        // set Rd state only when everything goes well.
+        set_granule(&mut granule, GranuleState::RD)
     });
 
     listen!(mainloop, rmi::REC_AUX_COUNT, |_, ret, _| {
@@ -51,19 +56,20 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
     listen!(mainloop, rmi::REALM_DESTROY, |arg, _ret, rmm| {
         let rmi = rmm.rmi;
-        let _rd = unsafe { Rd::into(arg[0]) };
-        let res = rmi.remove(0); // temporarily
 
-        granule::set_granule(arg[0], GranuleState::Delegated).map_err(|e| {
-            rmm.mm.unmap(arg[0]);
-            e
-        })?;
-        rmm.mm.unmap(arg[0]);
+        // get the lock for Rd
+        let mut rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
+        let res = rmi.remove(rd.id());
 
         match res {
             Ok(_) => {}
             Err(val) => return Err(val),
         }
+
+        // change state when everything goes fine.
+        set_granule(&mut rd_granule, GranuleState::Delegated)?;
+        rmm.mm.unmap(arg[0]);
         Ok(())
     });
 }

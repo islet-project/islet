@@ -1,6 +1,8 @@
 #[macro_use]
 pub mod pointer;
 
+use crate::mm::guard::Content;
+use crate::rmm::granule::GranuleState;
 use crate::rmm::granule::GRANULE_SIZE;
 use crate::rmm::PageMap;
 
@@ -38,6 +40,10 @@ impl DataPage {
     pub unsafe fn as_ptr(&self) -> *const u8 {
         self.0.as_ptr() as *const u8
     }
+
+    pub unsafe fn as_mut_ptr(&mut self) -> *mut u8 {
+        self.0.as_ptr() as *mut u8
+    }
 }
 
 impl Default for DataPage {
@@ -49,3 +55,7 @@ impl Default for DataPage {
 }
 
 impl Accessor for DataPage {}
+
+impl Content for DataPage {
+    const FLAGS: u64 = GranuleState::Data;
+}

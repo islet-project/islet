@@ -1,12 +1,11 @@
 use super::entry;
-use super::validate_addr;
-use super::{GranuleState, L0Table, L1Table, GRANULE_SIZE};
+use super::{validate_addr, GranuleState, L0Table, L1Table, GRANULE_SIZE};
 use super::{FVP_DRAM0_REGION, FVP_DRAM1_REGION};
 use crate::const_assert_eq;
 use crate::mm::address::PhysAddr;
 use crate::mm::error::Error;
 use crate::mm::page::{Page, PageSize};
-use crate::mm::page_table::{Entry, Level, PageTable, PageTableMethods};
+use crate::mm::page_table::{Level, PageTable, PageTableMethods};
 
 use hashbrown::HashMap;
 
@@ -27,7 +26,7 @@ pub type L1PageTable =
     PageTable<PhysAddr, L1Table, entry::Entry, { <L1Table as Level>::NUM_ENTRIES }>;
 
 pub struct GranuleStatusTable {
-    root_pgtlb: L0PageTable,
+    pub root_pgtlb: L0PageTable,
     l1_tables: HashMap<usize, L1PageTable>,
     // TODO: replace this HashMap with a more efficient structure.
     //    to do so, we need to do refactoring on how we manage entries in PageTable.
@@ -52,52 +51,7 @@ impl GranuleStatusTable {
         }
         let pa1 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
         let pa2 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
-        self.root_pgtlb.set_page(pa1, pa2, state, None)
-    }
-
-    pub fn set_granule_with_parent(
-        &mut self,
-        parent: usize,
-        addr: usize,
-        state: u64,
-    ) -> Result<(), Error> {
-        if !validate_addr(addr) || !validate_addr(parent) {
-            return Err(Error::MmInvalidAddr);
-        }
-
-        let pa1 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
-        let pa2 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
-        let parent_pa = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(parent));
-
-        // 1. get a parent (e.g., Rd)
-        let parent = self.root_pgtlb.entry(parent_pa, |entry| {
-            Ok(entry.get_inner())
-        });
-
-        // 2. set_page considering the parent (e.g., Rd - Rec)
-        match parent {
-            Ok(inner) => self.root_pgtlb.set_page(pa1, pa2, state, inner),
-            Err(e) => Err(e),
-        }
-    }
-
-    pub fn get_granule_state(&mut self, addr: usize) -> Result<u64, Error> {
-        if !validate_addr(addr) {
-            return Err(Error::MmInvalidAddr);
-        }
-        let pa = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
-        let inner = self.root_pgtlb.entry(pa, |entry| Ok(entry.get_inner()));
-
-        match inner {
-            Ok(i) => {
-                if let Some(g) = &i {
-                    Ok(g.state())
-                } else {
-                    Err(Error::MmErrorOthers)
-                }
-            },
-            Err(e) => Err(e),
-        }
+        self.root_pgtlb.set_page(pa1, pa2, state)
     }
 }
 

@@ -76,7 +76,7 @@ impl<'a, T: HostAccessor> Drop for PointerGuard<'a, T> {
 pub struct PointerMut<T: HostAccessor> {
     /// pointer to phyiscal region
     ptr: *mut T,
-    /// page_map to map or unmap `ptr` in RTT
+    /// page_map to map or unmap `ptr` in RMM
     page_map: PageMap,
 }
 

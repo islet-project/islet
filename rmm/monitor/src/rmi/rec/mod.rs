@@ -4,12 +4,13 @@ pub mod run;
 
 pub use self::handlers::set_event_handler;
 
+use crate::mm::guard::Content;
+use crate::rmi::realm::rd::State;
 use crate::rmi::realm::Rd;
-
-use core::mem::ManuallyDrop;
+use crate::rmm::granule::GranuleState;
 
 pub struct Rec {
-    pub rd: &'static Rd,
+    pub rd: Rd,
     vcpuid: usize,
     ripas: Ripas,
 }
@@ -22,21 +23,10 @@ struct Ripas {
 }
 
 impl Rec {
-    pub unsafe fn new(
-        rec_addr: usize,
-        vcpuid: usize,
-        rd: &'static Rd,
-    ) -> ManuallyDrop<&'static mut Rec> {
-        let rec: &mut Rec = &mut *(rec_addr as *mut Rec);
-        rec.vcpuid = vcpuid;
-        rec.rd = rd;
-        rec.set_ripas(0, 0, 0, 0);
-        ManuallyDrop::new(rec)
-    }
-
-    pub unsafe fn into(rec_addr: usize) -> ManuallyDrop<&'static mut Rec> {
-        let rec: &mut Rec = &mut *(rec_addr as *mut Rec);
-        ManuallyDrop::new(rec)
+    pub fn init(&mut self, rd_id: usize, rd_state: State, vcpuid: usize) {
+        self.rd.init_with_state(rd_id, rd_state); // Copy Rd into Rec space
+        self.vcpuid = vcpuid;
+        self.set_ripas(0, 0, 0, 0);
     }
 
     pub fn id(&self) -> usize {
@@ -59,6 +49,6 @@ impl Rec {
     }
 }
 
-impl Drop for Rec {
-    fn drop(&mut self) {}
+impl Content for Rec {
+    const FLAGS: u64 = GranuleState::Rec;
 }

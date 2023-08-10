@@ -78,13 +78,10 @@ pub fn add_l1_table(index: usize) -> Result<usize, Error> {
     }
 }
 
-pub fn map_l1_table<F: FnOnce(usize) -> Result<(), Error>>(
-    index: usize,
-    func: F,
-) -> Result<(), Error> {
+pub fn get_l1_table_addr(index: usize) -> Result<usize, Error> {
     if let Some(gst) = unsafe { &mut GRANULE_STATUS_TABLE } {
         if let Some(t) = gst.l1_tables.get_mut(&index) {
-            func(t as *mut _ as usize)
+            Ok(t as *mut _ as usize)
         } else {
             Err(Error::MmErrorOthers)
         }

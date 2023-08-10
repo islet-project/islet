@@ -7,7 +7,7 @@ use crate::host::DataPage;
 use crate::listen;
 use crate::rmi;
 use crate::rmi::error::Error;
-use crate::rmm::granule::{check_granule_parent, set_granule, GranuleState, GRANULE_SIZE};
+use crate::rmm::granule::{set_granule, GranuleState, GRANULE_SIZE};
 use crate::{get_granule, get_granule_if, set_state_and_get_granule};
 
 extern crate alloc;
@@ -38,10 +38,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let level = arg[3];
         let ripas = arg[4];
 
-        let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        let _rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let mut rec_granule = get_granule_if!(arg[1], GranuleState::Rec)?;
-        check_granule_parent(&rd_granule, &rec_granule)?;
-
         let rec = rec_granule.content_mut::<Rec>();
 
         let mut prot = rmi::MapProt::new(0);

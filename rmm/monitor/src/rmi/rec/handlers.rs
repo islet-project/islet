@@ -39,13 +39,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         let rec = unsafe { Rec::into(arg[0]) };
         let rd = unsafe { Rd::into(arg[1]) };
-        for (idx, gpr) in params.gprs().iter().enumerate() {
+        for (idx, gpr) in params.gprs.iter().enumerate() {
             if rmi.set_reg(rd.id(), rec.id(), idx, *gpr as usize).is_err() {
                 return Err(Error::RmiErrorInput);
             }
         }
         if rmi
-            .set_reg(rd.id(), rec.id(), 31, params.pc() as usize)
+            .set_reg(rd.id(), rec.id(), 31, params.pc as usize)
             .is_err()
         {
             return Err(Error::RmiErrorInput);

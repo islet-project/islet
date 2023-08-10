@@ -1,4 +1,5 @@
 use crate::host::Accessor as HostAccessor;
+use crate::rmm::granule::GRANULE_SIZE;
 
 #[repr(C)]
 #[derive(Debug)]
@@ -36,25 +37,17 @@ impl Default for Params {
     }
 }
 
+const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
+
 impl HostAccessor for Params {}
 
 #[cfg(test)]
 pub mod test {
     use super::*;
 
-    macro_rules! offset_of {
-        ($type:ty, $field:tt) => {{
-            let dummy = core::mem::MaybeUninit::<$type>::uninit();
-            let dummy_ptr = dummy.as_ptr();
-            let member_ptr = unsafe { ::core::ptr::addr_of!((*dummy_ptr).$field) };
-
-            member_ptr as usize - dummy_ptr as usize
-        }};
-    }
-
     #[test]
     fn spec_params() {
-        assert_eq!(core::mem::size_of::<Params>(), 4096);
+        assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
 
         assert_eq!(offset_of!(Params, features_0), 0x0);
         assert_eq!(offset_of!(Params, hash_algo), 0x100);

@@ -9,7 +9,7 @@ use crate::{rmi, rsi};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::pointer::PointerMut as HostPointerMut;
 use crate::rmi::error::Error;
-use crate::rmm::granule::{set_granule, set_granule_parent, GranuleState};
+use crate::rmm::granule::{set_granule, set_granule_with_parent, GranuleState};
 use crate::{get_granule, get_granule_if};
 
 extern crate alloc;
@@ -52,9 +52,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        set_granule(&mut rec_granule, GranuleState::Rec)?;
-        set_granule_parent(rd_granule.clone(), &mut rec_granule)?;
-        Ok(())
+        set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec)
     });
 
     listen!(mainloop, rmi::REC_DESTROY, |arg, _ret, rmm| {

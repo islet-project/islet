@@ -157,8 +157,28 @@ macro_rules! set_state_and_get_granule {
 
 // Notice: do not try to make a cycle in parent-child relationship
 //   e.g., Rd (parent) -> Rec (child) -> Rd (parent)
-pub fn set_granule_parent(parent: Inner, child: &mut Inner) -> Result<(), RmiError> {
-    to_rmi_result(child.set_parent(parent))
+pub fn set_granule_with_parent(
+    parent: Inner,
+    child: &mut Inner,
+    state: u64,
+) -> Result<(), RmiError> {
+    let addr = child.addr();
+    let prev = child.state();
+
+    match child.set_state(PhysAddr::from(addr), state) {
+        Ok(_) => {
+            match child.set_parent(parent) {
+                Ok(_) => Ok(()),
+                Err(e) => {
+                    // In this case, state has already been changed.
+                    // So, we should get its state back for a complete transaction management.
+                    to_rmi_result(child.set_state(PhysAddr::from(addr), prev))?;
+                    to_rmi_result(Err(e))
+                }
+            }
+        }
+        Err(e) => to_rmi_result(Err(e)),
+    }
 }
 
 pub fn set_granule(granule: &mut Inner, state: u64) -> Result<(), RmiError> {

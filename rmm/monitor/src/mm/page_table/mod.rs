@@ -63,14 +63,10 @@ pub trait Entry {
         }
     }
     fn index<L: Level>(addr: usize) -> usize;
-    fn map<F: FnOnce(usize) -> Result<(), Error>>(
-        &mut self,
-        _index: usize,
-        level: usize,
-        func: F,
-    ) -> Result<(), Error> {
+
+    fn subtable(&self, _index: usize, level: usize) -> Result<usize, Error> {
         let subtable_addr = self.address(level).unwrap();
-        func(subtable_addr.as_usize())
+        Ok(subtable_addr.as_usize())
     }
 
     fn points_to_table_or_page(&self) -> bool;
@@ -341,8 +337,12 @@ where
         assert!(L::THIS_LEVEL < S::MAP_TABLE_LEVEL);
 
         let index = E::index::<L>(page.address().into());
-        let subtable_addr = self.entries[index].address(L::THIS_LEVEL).unwrap();
-        unsafe { &mut *(subtable_addr.as_usize() as *mut PageTable<A, L::NextLevel, E, N>) }
+        match self.entries[index].subtable(index, L::THIS_LEVEL) {
+            Ok(table_addr) => unsafe {
+                &mut *(table_addr as *mut PageTable<A, L::NextLevel, E, N>)
+            },
+            Err(_) => panic!(),
+        }
     }
 
     fn subtable_and_set_page<S: PageSize>(
@@ -354,10 +354,8 @@ where
         assert!(L::THIS_LEVEL < S::MAP_TABLE_LEVEL);
 
         let index = E::index::<L>(page.address().into());
-        self.entries[index].map(index, L::THIS_LEVEL, |table_addr| {
-            let table = unsafe { &mut *(table_addr as *mut PageTable<A, L::NextLevel, E, N>) };
-            table.set_page(page, phys, flags)
-        })?;
-        Ok(())
+        let table_addr = self.entries[index].subtable(index, L::THIS_LEVEL)?;
+        let table = unsafe { &mut *(table_addr as *mut PageTable<A, L::NextLevel, E, N>) };
+        table.set_page(page, phys, flags)
     }
 }

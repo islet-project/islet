@@ -3,7 +3,7 @@ use crate::mm::error::Error;
 use crate::mm::guard::EntryGuard;
 use crate::mm::page_table::{self, Level};
 
-use super::translation::{add_l1_table, addr_to_idx, map_l1_table, L0_TABLE_ENTRY_SIZE_RANGE};
+use super::translation::{add_l1_table, addr_to_idx, get_l1_table_addr, L0_TABLE_ENTRY_SIZE_RANGE};
 use super::{GranuleState, GRANULE_SIZE};
 use spinning_top::Spinlock;
 
@@ -257,13 +257,8 @@ impl page_table::Entry for Entry {
         }
     }
 
-    fn map<F: FnOnce(usize) -> Result<(), Error>>(
-        &mut self,
-        index: usize,
-        _level: usize,
-        func: F,
-    ) -> Result<(), Error> {
-        map_l1_table(index, func)
+    fn subtable(&self, index: usize, _level: usize) -> Result<usize, Error> {
+        get_l1_table_addr(index)
     }
 
     fn lock(&self) -> Result<Option<EntryGuard<'_, Self::Inner>>, Error> {

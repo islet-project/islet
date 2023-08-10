@@ -2,7 +2,6 @@ use crate::host::Accessor as HostAccessor;
 use crate::rmm::granule::GRANULE_SIZE;
 
 #[repr(C)]
-#[derive(Debug)]
 pub struct Params {
     pub flags: u64,
     padding0: [u8; 248],
@@ -16,6 +15,8 @@ pub struct Params {
     pub aux: [u64; 16],
     padding4: [u8; 1912],
 }
+
+const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
 
 impl Default for Params {
     fn default() -> Self {
@@ -34,8 +35,18 @@ impl Default for Params {
         }
     }
 }
-
-const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
+impl core::fmt::Debug for Params {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Params")
+            .field("flags", &format_args!("{:#X}", &self.flags))
+            .field("mpidr", &format_args!("{:#X}", &self.mpidr))
+            .field("pc", &format_args!("{:#X}", &self.pc))
+            .field("gprs", &format_args!("{:#X?}", &self.gprs))
+            .field("num_aux", &self.num_aux)
+            .field("aux", &self.aux)
+            .finish()
+    }
+}
 
 impl HostAccessor for Params {}
 

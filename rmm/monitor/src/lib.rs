@@ -10,6 +10,7 @@ pub mod event;
 pub mod host;
 pub mod io;
 pub mod logger;
+#[macro_use]
 pub mod r#macro;
 pub mod mm;
 pub mod realm;

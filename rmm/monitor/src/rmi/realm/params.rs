@@ -1,20 +1,22 @@
 use crate::host::Accessor as HostAccessor;
 use crate::rmm::granule::GRANULE_SIZE;
 
+const PADDING: [usize; 5] = [248, 767, 960, 6, 2020];
+
 #[repr(C)]
 pub struct Params {
     pub features_0: u64,
-    padding0: [u8; 248],
+    padding0: [u8; PADDING[0]],
     pub hash_algo: u8,
-    padding1: [u8; 767],
+    padding1: [u8; PADDING[1]],
     pub rpv: [u8; 64],
-    padding2: [u8; 960],
+    padding2: [u8; PADDING[2]],
     pub vmid: u16,
-    padding3: [u8; 6],
+    padding3: [u8; PADDING[3]],
     pub rtt_base: u64,
     pub rtt_level_start: i64,
     pub rtt_num_start: u32,
-    padding4: [u8; 2020],
+    padding4: [u8; PADDING[4]],
 }
 
 const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
@@ -23,17 +25,17 @@ impl Default for Params {
     fn default() -> Self {
         Self {
             features_0: 0,
-            padding0: [0; 248],
+            padding0: [0; PADDING[0]],
             hash_algo: 0,
-            padding1: [0; 767],
+            padding1: [0; PADDING[1]],
             rpv: [0; 64],
-            padding2: [0; 960],
+            padding2: [0; PADDING[2]],
             vmid: 0,
-            padding3: [0; 6],
+            padding3: [0; PADDING[3]],
             rtt_base: 0,
             rtt_level_start: 0,
             rtt_num_start: 0,
-            padding4: [0; 2020],
+            padding4: [0; PADDING[4]],
         }
     }
 }

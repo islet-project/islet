@@ -22,6 +22,9 @@ impl<'a, E> EntryGuard<'a, E> {
     /// access to this content is protected under the entry-level lock that "inner" holds.
     /// T is a target struct that `addr` maps to.
     pub fn content<T: Content>(&self) -> &T {
+        // Note: flag can be used here for validation checks.
+        //  e.g., `if T::FLAGS != self.flags { error }`
+        //        for example of Granule, T::FLAGS is Rd while self.flags at run-time is not Rd.
         unsafe { &*(self.addr as *const T) }
     }
 

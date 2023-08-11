@@ -12,6 +12,7 @@ pub enum Error {
     MmIsInUse,
     MmRefcountError,
     MmWrongParentChild,
+    MmSubtableError,
     MmErrorOthers,
 }
 
@@ -28,6 +29,7 @@ impl From<Error> for usize {
             Error::MmIsInUse => 16,
             Error::MmRefcountError => 17,
             Error::MmWrongParentChild => 18,
+            Error::MmSubtableError => 19,
             Error::MmErrorOthers => 99,
         }
     }

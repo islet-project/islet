@@ -46,7 +46,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         // set Rd state only when everything goes well.
-        set_granule(&mut granule, GranuleState::RD)
+        set_granule(&mut granule, GranuleState::RD)?;
+        Ok(())
     });
 
     listen!(mainloop, rmi::REC_AUX_COUNT, |_, ret, _| {

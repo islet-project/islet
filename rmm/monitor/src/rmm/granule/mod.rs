@@ -138,6 +138,21 @@ macro_rules! get_granule_if {
     }};
 }
 
+/// get_granule_not_if!(addr: a physical address, state: a granule state you don't expect it to be)
+/// - when success, returns `EntryGuard<entry::Inner>` allowing an access to "Granule".
+#[macro_export]
+macro_rules! get_granule_not_if {
+    ($addr:expr, $state:expr) => {{
+        let guard = get_granule!($addr)?;
+        if guard.state() == $state {
+            use crate::mm::error::Error as MmError;
+            Err(MmError::MmStateError)
+        } else {
+            Ok(guard)
+        }
+    }};
+}
+
 /// set_state_and_get_granule!(addr: a physical address, state: a granule state you want to set)
 /// - when success, returns `EntryGuard<entry::Inner>` allowing an access to "Granule".
 #[macro_export]
@@ -154,6 +169,8 @@ macro_rules! set_state_and_get_granule {
         }
     }};
 }
+
+fn make_move_mut_reference<T>(_: T) {}
 
 // Notice: do not try to make a cycle in parent-child relationship
 //   e.g., Rd (parent) -> Rec (child) -> Rd (parent)
@@ -183,7 +200,9 @@ pub fn set_granule_with_parent(
 
 pub fn set_granule(granule: &mut Inner, state: u64) -> Result<(), RmiError> {
     let addr = granule.addr();
-    to_rmi_result(granule.set_state(PhysAddr::from(addr), state))
+    to_rmi_result(granule.set_state(PhysAddr::from(addr), state))?;
+    make_move_mut_reference(granule);
+    Ok(())
 }
 
 pub fn check_granule_parent(parent: &Inner, child: &Inner) -> Result<(), RmiError> {

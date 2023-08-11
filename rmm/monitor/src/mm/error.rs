@@ -34,8 +34,8 @@ impl From<Error> for usize {
 }
 
 impl From<Error> for RmiError {
-    fn from(e: Error) -> Self {
-        error!("MmError occured: {}", <Error as Into<usize>>::into(e));
+    fn from(_e: Error) -> Self {
+        //error!("MmError occured: {}", <Error as Into<usize>>::into(e));
         RmiError::RmiErrorInput
     }
 }

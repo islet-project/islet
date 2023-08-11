@@ -34,6 +34,7 @@ impl Granule {
     where
         F: Fn() -> Result<(), Error>,
     {
+        // check if this state transition is valid
         let prev = self.state;
         let valid = match prev {
             GranuleState::Undelegated => {
@@ -46,26 +47,28 @@ impl Granule {
             return Err(Error::MmStateError);
         }
 
-        // The case of destroying a granule:
-        //   According to the spec, transition from P to Delegated must get contents to be wiped.
-        //   TODO: when we try to zeroize() in the transition of "Undelegated->Delegated", it will face a tf-a-test failure. we need to look into this issue.
-        //   Note: currently, as we don't map RTT, rule out the case where prev == RTT.
-        if prev != GranuleState::Undelegated
-            && prev != GranuleState::RTT
-            && state == GranuleState::Delegated
-        {
-            // wipe out contents
-            self.zeroize();
-
-            // release parent so that parent can be destroyed
-            self.parent.take();
-
-            // transition from something to Delegatated means "destroyed". (e.g., Rd --> Delegated when REALM_DESTROY)
-            destroy_callback()?;
+        // check if it needs to be wiped out
+        match state {
+            GranuleState::Delegated => {
+                // transition from something to Delegatated means "destroyed". (e.g., Rd --> Delegated when REALM_DESTROY)
+                // so, it releases its parent and check its refcount to determine whether it's safe to get destroyed.
+                // Note: currently, as we don't map RTT, rule out the case where prev == RTT.
+                if prev != GranuleState::RTT {
+                    self.parent.take();
+                    destroy_callback()?;
+                    self.zeroize();
+                }
+            }
+            GranuleState::Undelegated => {
+                if prev == GranuleState::Delegated {
+                    self.zeroize();
+                }
+            }
+            _ => {}
         }
 
-        self.state = state;
         self.addr = addr;
+        self.state = state;
         Ok(())
     }
 
@@ -91,12 +94,16 @@ impl Granule {
         self.state
     }
 
+    #[cfg(not(test))]
     fn zeroize(&mut self) {
         let buf = self.addr;
         unsafe {
             core::ptr::write_bytes(buf as *mut usize, 0x0, GRANULE_SIZE / 8);
         }
     }
+
+    #[cfg(test)]
+    fn zeroize(&mut self) {}
 }
 
 pub struct Inner {

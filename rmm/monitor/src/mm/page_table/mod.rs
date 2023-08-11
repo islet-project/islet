@@ -65,8 +65,10 @@ pub trait Entry {
     fn index<L: Level>(addr: usize) -> usize;
 
     fn subtable(&self, _index: usize, level: usize) -> Result<usize, Error> {
-        let subtable_addr = self.address(level).unwrap();
-        Ok(subtable_addr.as_usize())
+        match self.address(level) {
+            Some(addr) => Ok(addr.as_usize()),
+            _ => Err(Error::MmInvalidAddr),
+        }
     }
 
     fn points_to_table_or_page(&self) -> bool;

@@ -1,19 +1,21 @@
 use crate::host::Accessor as HostAccessor;
 use crate::rmm::granule::GRANULE_SIZE;
 
+const PADDING: [usize; 5] = [248, 248, 248, 1216, 1912];
+
 #[repr(C)]
 pub struct Params {
     pub flags: u64,
-    padding0: [u8; 248],
+    padding0: [u8; PADDING[0]],
     pub mpidr: u64,
-    padding1: [u8; 248],
+    padding1: [u8; PADDING[1]],
     pub pc: u64,
-    padding2: [u8; 248],
+    padding2: [u8; PADDING[2]],
     pub gprs: [u64; 8],
-    padding3: [u8; 1216],
+    padding3: [u8; PADDING[3]],
     pub num_aux: u64,
     pub aux: [u64; 16],
-    padding4: [u8; 1912],
+    padding4: [u8; PADDING[4]],
 }
 
 const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
@@ -22,16 +24,16 @@ impl Default for Params {
     fn default() -> Self {
         Self {
             flags: 0,
-            padding0: [0; 248],
+            padding0: [0; PADDING[0]],
             mpidr: 0,
-            padding1: [0; 248],
+            padding1: [0; PADDING[1]],
             pc: 0,
-            padding2: [0; 248],
+            padding2: [0; PADDING[2]],
             gprs: [0; 8],
-            padding3: [0; 1216],
+            padding3: [0; PADDING[3]],
             num_aux: 0,
             aux: [0; 16],
-            padding4: [0; 1912],
+            padding4: [0; PADDING[4]],
         }
     }
 }

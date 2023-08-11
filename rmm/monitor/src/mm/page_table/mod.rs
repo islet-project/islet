@@ -239,8 +239,10 @@ where
             true => {
                 if L::THIS_LEVEL < S::MAP_TABLE_LEVEL {
                     // Need to go deeper (recursive)
-                    let subtable = self.subtable::<S>(page);
-                    subtable.entry(page, func)
+                    match self.subtable::<S>(page) {
+                        Ok(subtable) => subtable.entry(page, func),
+                        Err(e) => Err(e),
+                    }
                 } else {
                     // The page is either LargePage or HugePage
                     func(&mut self.entries[index])
@@ -335,15 +337,18 @@ where
     L::NextLevel: Level,
 {
     /// Returns the next subtable for the given page in the page table hierarchy.
-    fn subtable<S: PageSize>(&self, page: Page<S, A>) -> &mut PageTable<A, L::NextLevel, E, N> {
+    fn subtable<S: PageSize>(
+        &self,
+        page: Page<S, A>,
+    ) -> Result<&mut PageTable<A, L::NextLevel, E, N>, Error> {
         assert!(L::THIS_LEVEL < S::MAP_TABLE_LEVEL);
 
         let index = E::index::<L>(page.address().into());
         match self.entries[index].subtable(index, L::THIS_LEVEL) {
-            Ok(table_addr) => unsafe {
-                &mut *(table_addr as *mut PageTable<A, L::NextLevel, E, N>)
-            },
-            Err(_) => panic!(),
+            Ok(table_addr) => {
+                Ok(unsafe { &mut *(table_addr as *mut PageTable<A, L::NextLevel, E, N>) })
+            }
+            Err(_) => Err(Error::MmSubtableError),
         }
     }
 

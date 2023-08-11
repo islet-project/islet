@@ -40,7 +40,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             Err(_) => return Err(Error::RmiErrorInput),
         }
 
-        for (idx, gpr) in params.gprs().iter().enumerate() {
+        for (idx, gpr) in params.gprs.iter().enumerate() {
             if rmi.set_reg(rd.id(), rec.id(), idx, *gpr as usize).is_err() {
                 return Err(Error::RmiErrorInput);
             }

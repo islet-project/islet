@@ -17,4 +17,5 @@ pub mod page_type {
 pub mod mair_idx {
     pub const RMM_MEM: u64 = 0b0;
     pub const DEVICE_MEM: u64 = 0b1;
+    pub const RW_DATA: u64 = 0b0;
 }

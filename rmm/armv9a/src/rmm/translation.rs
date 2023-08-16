@@ -65,7 +65,7 @@ impl<'a> RmmPageTable<'a> {
 
         let ro_flags = helper::bits_in_reg(PTDesc::AP, attr::permission::RO);
         let rw_flags = helper::bits_in_reg(PTDesc::AP, attr::permission::RW);
-        let rmm_flags = helper::bits_in_reg(PTDesc::INDX, attr::mair_idx::RMM_MEM);
+        let rmm_flags = helper::bits_in_reg(PTDesc::INDX, attr::mair_idx::RW_DATA);
 
         unsafe {
             let base_address = &__RMM_BASE__ as *const u64 as u64;
@@ -172,14 +172,20 @@ pub fn set_register_mm() {
 
 pub fn set_pages_for_rmi(addr: usize, secure: bool) {
     let rw_flags = helper::bits_in_reg(PTDesc::AP, attr::permission::RW);
-    let device_flags = helper::bits_in_reg(PTDesc::INDX, attr::mair_idx::DEVICE_MEM);
+    let memattr_flags = helper::bits_in_reg(PTDesc::INDX, attr::mair_idx::RMM_MEM);
+    let sh_flags = helper::bits_in_reg(PTDesc::SH, attr::shareable::INNER);
     let secure_flags = helper::bits_in_reg(PTDesc::NS, !secure as u64);
     let va = VirtAddr::from(addr);
     let phys = PhysAddr::from(addr);
 
     let mut page_table = RMM_PAGE_TABLE.lock();
 
-    page_table.set_pages(va, phys, PAGE_SIZE, rw_flags | device_flags | secure_flags);
+    page_table.set_pages(
+        va,
+        phys,
+        PAGE_SIZE,
+        rw_flags | memattr_flags | secure_flags | sh_flags,
+    );
 }
 
 pub fn unset_page_for_rmi(addr: usize) {

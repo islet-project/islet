@@ -161,11 +161,7 @@ macro_rules! set_state_and_get_granule {
         {
             use crate::rmm::granule::set_granule_raw;
 
-            set_granule_raw($addr, $state)?;
-            match get_granule!($addr) {
-                Ok(g) => Ok(g),
-                Err(e) => Err(e),
-            }
+            set_granule_raw($addr, $state).and_then(|_| get_granule!($addr))
         }
     }};
 }

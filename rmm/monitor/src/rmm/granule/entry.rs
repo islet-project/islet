@@ -44,6 +44,10 @@ impl Granule {
             _ => state == GranuleState::Delegated,
         };
         if !valid {
+            error!(
+                "Granule state transition failed: prev[{:?}] -> next[{:?}]",
+                prev, state
+            );
             return Err(Error::MmStateError);
         }
 

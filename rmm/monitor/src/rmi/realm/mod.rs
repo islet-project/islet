@@ -36,17 +36,18 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         //   Keep params in Realm
         //   revisit rmi.create_realm() (is it necessary?)
 
-        let res = rmi.create_realm();
-        match res {
-            Ok(id) => {
-                rd.init(id);
-                ret[1] = id;
-            }
-            Err(val) => return Err(val),
-        }
+        rmi.create_realm().map(|id| {
+            rd.init(id, params.rtt_base as usize);
+            ret[1] = id;
+        })?;
 
         // set Rd state only when everything goes well.
         set_granule(&mut granule, GranuleState::RD)?;
+
+        let rd = granule.content::<Rd>();
+        let mut granule = get_granule_if!(rd.rtt_base(), GranuleState::Delegated)?;
+        set_granule(&mut granule, GranuleState::RTT)?;
+
         Ok(())
     });
 
@@ -61,16 +62,15 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // get the lock for Rd
         let mut rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
-        let res = rmi.remove(rd.id());
+        rmi.remove(rd.id())?;
 
-        match res {
-            Ok(_) => {}
-            Err(val) => return Err(val),
-        }
+        let mut rtt_granule = get_granule_if!(rd.rtt_base(), GranuleState::RTT)?;
+        set_granule(&mut rtt_granule, GranuleState::Delegated)?;
 
         // change state when everything goes fine.
         set_granule(&mut rd_granule, GranuleState::Delegated)?;
         rmm.mm.unmap(arg[0]);
+
         Ok(())
     });
 }

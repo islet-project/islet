@@ -1,15 +1,18 @@
 use crate::mm::guard::Content;
 use crate::rmm::granule::GranuleState;
 
+// TODO: Integrate with our `struct Realm`
 pub struct Rd {
     realm_id: usize,
     state: State,
+    rtt_base: usize,
 }
 
 impl Rd {
-    pub fn init(&mut self, id: usize) {
+    pub fn init(&mut self, id: usize, rtt_base: usize) {
         self.realm_id = id;
         self.state = State::New;
+        self.rtt_base = rtt_base
     }
 
     pub fn init_with_state(&mut self, id: usize, state: State) {
@@ -27,6 +30,10 @@ impl Rd {
 
     pub fn at_state(&self, compared: State) -> bool {
         self.state == compared
+    }
+
+    pub fn rtt_base(&self) -> usize {
+        self.rtt_base
     }
 }
 

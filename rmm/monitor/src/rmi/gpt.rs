@@ -23,11 +23,6 @@ fn check_state_not_if(addr: usize, state: u64) -> Result<(), Error> {
     Ok(())
 }
 
-fn check_state_if(addr: usize, state: u64) -> Result<(), Error> {
-    get_granule_if!(addr, state)?;
-    Ok(())
-}
-
 pub fn mark_realm(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize) -> Result<(), Error> {
     if check_state_not_if(addr, GranuleState::Undelegated).is_ok() {
         // returns error if this is not in the state of Undelegated.
@@ -50,9 +45,6 @@ pub fn mark_realm(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize) -> Resu
 }
 
 pub fn mark_ns(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize) -> Result<(), Error> {
-    if check_state_if(addr, GranuleState::Undelegated).is_ok() {
-        return Ok(());
-    }
     let mut granule = get_granule_if!(addr, GranuleState::Delegated)?;
 
     let cmd = smc.convert(smc::Code::MarkNonSecure);

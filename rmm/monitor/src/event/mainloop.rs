@@ -55,7 +55,10 @@ impl Mainloop {
                 ctx.resize_ret(ret_num);
                 self.queue.lock().push_back(ctx);
             },
-            || {},
+            || {
+                let ctx = Context::new(rmi::NOT_SUPPORTED_YET);
+                self.queue.lock().push_back(ctx);
+            },
         );
     }
 

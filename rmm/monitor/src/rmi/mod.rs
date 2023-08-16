@@ -39,6 +39,8 @@ pub const REQ_COMPLETE: usize = 0xc400_018f;
 pub const BOOT_COMPLETE: usize = 0xC400_01CF;
 pub const BOOT_SUCCESS: usize = 0x0;
 
+pub const NOT_SUPPORTED_YET: usize = 0xFFFF_EEEE;
+
 pub const ABI_MAJOR_VERSION: usize = 1;
 pub const ABI_MINOR_VERSION: usize = 0;
 

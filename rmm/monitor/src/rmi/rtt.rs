@@ -150,7 +150,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
     listen!(mainloop, rmi::DATA_DESTORY, |arg, _ret, rmm| {
         // rd granule lock
-        let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
+        let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let realm_id = rd.id();
         let ipa = arg[1];

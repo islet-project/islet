@@ -128,28 +128,14 @@ macro_rules! get_granule {
 #[macro_export]
 macro_rules! get_granule_if {
     ($addr:expr, $state:expr) => {{
-        let guard = get_granule!($addr)?;
-        if guard.state() != $state {
-            use crate::mm::error::Error as MmError;
-            Err(MmError::MmStateError)
-        } else {
-            Ok(guard)
-        }
-    }};
-}
-
-/// get_granule_not_if!(addr: a physical address, state: a granule state you don't expect it to be)
-/// - when success, returns `EntryGuard<entry::Inner>` allowing an access to "Granule".
-#[macro_export]
-macro_rules! get_granule_not_if {
-    ($addr:expr, $state:expr) => {{
-        let guard = get_granule!($addr)?;
-        if guard.state() == $state {
-            use crate::mm::error::Error as MmError;
-            Err(MmError::MmStateError)
-        } else {
-            Ok(guard)
-        }
+        get_granule!($addr).and_then(|guard| {
+            if guard.state() != $state {
+                use crate::mm::error::Error as MmError;
+                Err(MmError::MmStateError)
+            } else {
+                Ok(guard)
+            }
+        })
     }};
 }
 
@@ -160,7 +146,6 @@ macro_rules! set_state_and_get_granule {
     ($addr:expr, $state:expr) => {{
         {
             use crate::rmm::granule::set_granule_raw;
-
             set_granule_raw($addr, $state).and_then(|_| get_granule!($addr))
         }
     }};

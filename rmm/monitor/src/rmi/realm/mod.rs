@@ -23,8 +23,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mm = rmm.mm;
 
         // get the lock for granule.
-        let mut granule = get_granule_if!(arg[0], GranuleState::Delegated)?;
-        let rd = granule.content_mut::<Rd>();
+        let mut rd_granule = get_granule_if!(arg[0], GranuleState::Delegated)?;
+        let rd = rd_granule.content_mut::<Rd>();
         mm.map(arg[0], true);
 
         // read params
@@ -41,12 +41,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             ret[1] = id;
         })?;
 
-        // set Rd state only when everything goes well.
-        set_granule(&mut granule, GranuleState::RD)?;
+        let mut rtt_granule = get_granule_if!(rd.rtt_base(), GranuleState::Delegated)?;
+        set_granule(&mut rtt_granule, GranuleState::RTT)?;
 
-        let rd = granule.content::<Rd>();
-        let mut granule = get_granule_if!(rd.rtt_base(), GranuleState::Delegated)?;
-        set_granule(&mut granule, GranuleState::RTT)?;
+        // set Rd state only when everything goes well.
+        set_granule(&mut rd_granule, GranuleState::RD)?;
 
         Ok(())
     });

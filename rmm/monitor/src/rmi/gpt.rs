@@ -1,11 +1,13 @@
 use crate::event::Mainloop;
 use crate::listen;
+use crate::mm::error::Error as MmError;
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmm::granule::{set_granule, GranuleState};
 use crate::rmm::PageMap;
 use crate::smc;
-use crate::{get_granule, get_granule_if, get_granule_not_if, set_state_and_get_granule};
+use crate::{get_granule, get_granule_if, set_state_and_get_granule};
+
 extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
@@ -18,17 +20,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 }
 
-fn check_state_not_if(addr: usize, state: u64) -> Result<(), Error> {
-    get_granule_not_if!(addr, state)?;
-    Ok(())
-}
-
-pub fn mark_realm(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize) -> Result<(), Error> {
-    if check_state_not_if(addr, GranuleState::Undelegated).is_ok() {
-        // returns error if this is not in the state of Undelegated.
-        return Err(Error::RmiErrorInput);
-    }
-    let mut granule = set_state_and_get_granule!(addr, GranuleState::Undelegated)?;
+fn mark_realm(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize) -> Result<(), Error> {
+    let mut granule = match get_granule_if!(addr, GranuleState::Undelegated) {
+        Err(MmError::MmNoEntry) => set_state_and_get_granule!(addr, GranuleState::Undelegated),
+        other => other,
+    }?;
 
     let cmd = smc.convert(smc::Code::MarkRealm);
     if smc.call(cmd, &[addr])[0] != smc::SMC_SUCCESS {
@@ -44,7 +40,7 @@ pub fn mark_realm(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize) -> Resu
     Ok(())
 }
 
-pub fn mark_ns(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize) -> Result<(), Error> {
+fn mark_ns(smc: smc::SecureMonitorCall, mm: PageMap, addr: usize) -> Result<(), Error> {
     let mut granule = get_granule_if!(addr, GranuleState::Delegated)?;
 
     let cmd = smc.convert(smc::Code::MarkNonSecure);

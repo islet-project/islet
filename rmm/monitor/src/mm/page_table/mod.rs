@@ -94,11 +94,25 @@ pub trait PageTableMethods<A: Address, L, E: Entry, const N: usize> {
         phys: Page<S, PhysAddr>,
         flags: u64,
     ) -> Result<(), Error>;
+    /// Traverses page table entries recursively and calls the callback for the lastly reached entry
+    ///
+    /// (input)
+    ///    guest: a target guest page to translate
+    ///    level: the intended page-table level to reach
+    ///    func : the callback to be processed
+    ///
+    /// (output)
+    ///    if exists,
+    ///      A tuple of
+    ///        ((EntryGuard), the lastly reached page-table level (usize))
+    ///    else,
+    ///      None
     fn entry<S: PageSize, F: FnMut(&mut E) -> Result<Option<EntryGuard<'_, E::Inner>>, Error>>(
         &mut self,
         guest: Page<S, A>,
+        level: usize,
         func: F,
-    ) -> Result<Option<EntryGuard<'_, E::Inner>>, Error>;
+    ) -> Result<(Option<EntryGuard<'_, E::Inner>>, usize), Error>;
     fn drop(&mut self);
     fn unset_page<S: PageSize>(&mut self, guest: Page<S, A>);
 }
@@ -174,13 +188,20 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
     >(
         &mut self,
         guest: Page<S, A>,
+        level: usize,
         mut func: F,
-    ) -> Result<Option<EntryGuard<'_, E::Inner>>, Error> {
+    ) -> Result<(Option<EntryGuard<'_, E::Inner>>, usize), Error> {
         assert!(L::THIS_LEVEL == S::MAP_TABLE_LEVEL);
+        if level > S::MAP_TABLE_LEVEL {
+            return Err(Error::MmInvalidLevel);
+        }
+        if level != L::THIS_LEVEL {
+            return Err(Error::MmInvalidLevel);
+        }
 
         let index = E::index::<L>(guest.address().into());
         match self.entries[index].is_valid() {
-            true => func(&mut self.entries[index]),
+            true => Ok((func(&mut self.entries[index])?, L::THIS_LEVEL)),
             false => Err(Error::MmNoEntry),
         }
     }
@@ -197,7 +218,7 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
     default fn unset_page<S: PageSize>(&mut self, guest: Page<S, A>) {
         let index = E::index::<L>(guest.address().into());
         if self.entries[index].is_valid() {
-            let res = self.entry(guest, |e| {
+            let res = self.entry(guest, S::MAP_TABLE_LEVEL, |e| {
                 e.clear();
                 Ok(None)
             });
@@ -230,22 +251,26 @@ where
     fn entry<S: PageSize, F: FnMut(&mut E) -> Result<Option<EntryGuard<'_, E::Inner>>, Error>>(
         &mut self,
         page: Page<S, A>,
+        level: usize,
         mut func: F,
-    ) -> Result<Option<EntryGuard<'_, E::Inner>>, Error> {
+    ) -> Result<(Option<EntryGuard<'_, E::Inner>>, usize), Error> {
         assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
+        if level > S::MAP_TABLE_LEVEL {
+            return Err(Error::MmInvalidLevel);
+        }
         let index = E::index::<L>(page.address().into());
 
         match self.entries[index].is_valid() {
             true => {
-                if L::THIS_LEVEL < S::MAP_TABLE_LEVEL {
+                if L::THIS_LEVEL < level {
                     // Need to go deeper (recursive)
                     match self.subtable::<S>(page) {
-                        Ok(subtable) => subtable.entry(page, func),
+                        Ok(subtable) => subtable.entry(page, level, func),
                         Err(e) => Err(e),
                     }
                 } else {
                     // The page is either LargePage or HugePage
-                    func(&mut self.entries[index])
+                    Ok((func(&mut self.entries[index])?, L::THIS_LEVEL))
                 }
             }
             false => Err(Error::MmNoEntry),
@@ -321,7 +346,7 @@ where
         let index = E::index::<L>(guest.address().into());
 
         if self.entries[index].is_valid() {
-            let res = self.entry(guest, |e| {
+            let res = self.entry(guest, S::MAP_TABLE_LEVEL, |e| {
                 e.clear();
                 Ok(None)
             });

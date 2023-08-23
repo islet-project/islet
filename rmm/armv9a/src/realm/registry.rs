@@ -193,7 +193,7 @@ impl monitor::rmi::Interface for RMI {
             .lock()
             .page_table
             .lock()
-            .ipa_to_pa(GuestPhysAddr::from(guest))
+            .ipa_to_pa(GuestPhysAddr::from(guest), 3)
             .ok_or(Error::RmiErrorInput)?;
 
         get_realm(id)
@@ -439,7 +439,7 @@ impl monitor::rmi::Interface for RMI {
             .lock()
             .page_table
             .lock()
-            .ipa_to_pa(GuestPhysAddr::from(config_ipa));
+            .ipa_to_pa(GuestPhysAddr::from(config_ipa), 3);
         if let Some(pa) = res {
             let pa: usize = pa.into();
             // TODO: Receive ipa width (== 33) from the Host's argument

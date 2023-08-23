@@ -112,10 +112,21 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
         //TODO implement
     }
 
-    fn ipa_to_pa(&mut self, guest: GuestPhysAddr) -> Option<PhysAddr> {
+    /// Retrieves Page Table Entry (PA) from Intermediate Physical Address (IPA)
+    ///
+    /// (input)
+    ///   guest: a target guest physical address to translate
+    ///   level: the intended page-table level to reach
+    ///
+    /// (output)
+    ///   if exists,
+    ///      physical address
+    ///   else,
+    ///      None
+    fn ipa_to_pa(&mut self, guest: GuestPhysAddr, level: usize) -> Option<PhysAddr> {
         let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
         let mut pa = None;
-        let res = self.root_pgtlb.entry(guest, |entry| {
+        let res = self.root_pgtlb.entry(guest, level, |entry| {
             pa = entry.address(0);
             Ok(None)
         });

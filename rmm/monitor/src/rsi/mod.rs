@@ -64,14 +64,15 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let rmi = rmm.rmi;
         let realmid = rec.rd.id();
         let vcpuid = rec.id();
-        let _config_ipa = rmi.get_reg(realmid, vcpuid, 0);
+        let config_ipa = rmi.get_reg(realmid, vcpuid, 1)?;
+        rmi.realm_config(realmid, config_ipa)?;
+
         if rmi.set_reg(realmid, vcpuid, 0, SUCCESS).is_err() {
             warn!(
                 "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
                 realmid, vcpuid
             );
         }
-        super::rmi::dummy();
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
     });

@@ -1,4 +1,6 @@
 use crate::host::Accessor as HostAccessor;
+use crate::rmi::error::Error;
+use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
 use crate::rmm::granule::GRANULE_SIZE;
 
 const PADDING: [usize; 5] = [248, 767, 960, 6, 2020];
@@ -20,6 +22,15 @@ pub struct Params {
 }
 
 const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
+
+impl Params {
+    pub fn validate(&self) -> Result<(), Error> {
+        match self.hash_algo {
+            HASH_ALGO_SHA256 | HASH_ALGO_SHA512 => Ok(()),
+            _ => Err(Error::RmiErrorInput),
+        }
+    }
+}
 
 impl Default for Params {
     fn default() -> Self {

@@ -182,4 +182,15 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let _ret = rmi.map(realm_id, ipa, ns_pa, granule_sz, prot.get());
         Ok(())
     });
+
+    // Unmap a non-secure PA at an unprotected IPA
+    listen!(mainloop, rmi::RTT_UNMAP_UNPROTECTED, |arg, _ret, rmm| {
+        let rmi = rmm.rmi;
+        let ipa = arg[1];
+
+        let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
+        rmi.unmap(rd.id(), ipa, GRANULE_SIZE)?;
+        Ok(())
+    });
 }

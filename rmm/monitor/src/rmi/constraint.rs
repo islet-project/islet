@@ -59,6 +59,10 @@ lazy_static! {
             Constraint::new(rmi::RTT_MAP_UNPROTECTED, 5, 1),
         );
         m.insert(
+            rmi::RTT_UNMAP_UNPROTECTED,
+            Constraint::new(rmi::RTT_UNMAP_UNPROTECTED, 4, 1),
+        );
+        m.insert(
             rmi::RTT_READ_ENTRY,
             Constraint::new(rmi::RTT_READ_ENTRY, 4, 5),
         );

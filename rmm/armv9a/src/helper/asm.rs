@@ -27,3 +27,17 @@ pub fn hvc<const IMM: u16>() {
         asm!("hvc #{}", const IMM);
     }
 }
+
+#[inline(always)]
+pub fn dcache_flush(addr: usize, len: usize) {
+    let mut cur_addr = addr;
+    let addr_end = addr + len;
+    unsafe {
+        while cur_addr < addr_end {
+            asm!("dc civac, {}", in(reg) cur_addr);
+            asm!("dsb ish");
+            asm!("isb");
+            cur_addr += 64; // the cache line size is 64
+        }
+    }
+}

@@ -3,6 +3,7 @@ pub(crate) mod rd;
 
 use self::params::Params;
 pub use self::rd::Rd;
+use super::error::Error;
 use crate::event::Mainloop;
 use crate::host::pointer::Pointer as HostPointer;
 use crate::listen;
@@ -21,6 +22,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REALM_CREATE, |arg, ret, rmm| {
         let rmi = rmm.rmi;
         let mm = rmm.mm;
+
+        if arg[0] == arg[1] {
+            return Err(Error::RmiErrorInput);
+        }
 
         // get the lock for granule.
         let mut rd_granule = get_granule_if!(arg[0], GranuleState::Delegated)?;
@@ -42,6 +47,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             ret[1] = id;
         })?;
 
+        if arg[0] == rd.rtt_base() {
+            return Err(Error::RmiErrorInput);
+        }
         let mut rtt_granule = get_granule_if!(rd.rtt_base(), GranuleState::Delegated)?;
         set_granule(&mut rtt_granule, GranuleState::RTT)?;
 

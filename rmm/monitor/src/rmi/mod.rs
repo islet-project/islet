@@ -44,6 +44,9 @@ pub const NOT_SUPPORTED_YET: usize = 0xFFFF_EEEE;
 pub const ABI_MAJOR_VERSION: usize = 1;
 pub const ABI_MINOR_VERSION: usize = 0;
 
+pub const HASH_ALGO_SHA256: u8 = 0;
+pub const HASH_ALGO_SHA512: u8 = 1;
+
 pub const RET_FAIL: usize = 0x100;
 pub const RET_EXCEPTION_IRQ: usize = 0x0;
 pub const RET_EXCEPTION_SERROR: usize = 0x1;

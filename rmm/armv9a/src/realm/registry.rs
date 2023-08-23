@@ -17,6 +17,7 @@ use crate::realm::mm::page_table::pte;
 use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::translation_granule_4k::RawPTE;
 use crate::realm::timer;
+use monitor::realm::config::RealmConfig;
 use monitor::rmi::error::Error;
 use monitor::rmi::error::InternalError::*;
 
@@ -430,5 +431,23 @@ impl monitor::rmi::Interface for RMI {
             run.set_cntp_cval(timer.cntp_cval_el0 - timer.cntpoff_el2);
         }
         Ok(())
+    }
+
+    fn realm_config(&self, id: usize, config_ipa: usize) -> Result<(), Error> {
+        let res = get_realm(id)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .ipa_to_pa(GuestPhysAddr::from(config_ipa));
+        if let Some(pa) = res {
+            let pa: usize = pa.into();
+            // TODO: Receive ipa width (== 33) from the Host's argument
+            //       and store it inside REC as well
+            unsafe { RealmConfig::init(pa, 33) };
+            Ok(())
+        } else {
+            Err(Error::RmiErrorInput)
+        }
     }
 }

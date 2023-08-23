@@ -2,8 +2,8 @@
 pub mod pointer;
 
 use crate::mm::guard::Content;
-use crate::rmm::granule::GranuleState;
-use crate::rmm::granule::GRANULE_SIZE;
+use crate::rmm::granule::validate_addr;
+use crate::rmm::granule::{GranuleState, GRANULE_SIZE};
 use crate::rmm::PageMap;
 
 /// This trait is used to enforce security checks for physical region allocated by the host.
@@ -12,6 +12,9 @@ pub trait Accessor {
     /// Try to do page-relevant stuff (e.g., RMM map).
     /// returns true only if everything goes well.
     fn acquire(ptr: usize, page_map: PageMap) -> bool {
+        if !validate_addr(ptr) {
+            return false;
+        }
         // TODO: check if the granule state of `ptr` is Undelegated.
         page_map.map(ptr, false)
     }

@@ -26,6 +26,7 @@ define_interface! {
          REC_DESTROY  = 0xc400_015b,
          REC_ENTER  = 0xc400_015c,
          RTT_MAP_UNPROTECTED  = 0xc400_015f,
+         RTT_UNMAP_UNPROTECTED  = 0xc400_0162,
          RTT_READ_ENTRY  = 0xc400_0161,
          FEATURES  = 0xc400_0165,
          REC_AUX_COUNT  = 0xc400_0167,

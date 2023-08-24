@@ -20,20 +20,20 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     listen!(mainloop, rmi::REALM_CREATE, |arg, ret, rmm| {
-        let rmi = rmm.rmi;
-        let mm = rmm.mm;
+        let rd = arg[0];
+        let params_ptr = arg[1];
 
-        if arg[0] == arg[1] {
+        if rd == params_ptr {
             return Err(Error::RmiErrorInput);
         }
 
         // get the lock for granule.
-        let mut rd_granule = get_granule_if!(arg[0], GranuleState::Delegated)?;
-        let rd = rd_granule.content_mut::<Rd>();
-        mm.map(arg[0], true);
+        let mut rd_granule = get_granule_if!(rd, GranuleState::Delegated)?;
+        let rd_obj = rd_granule.content_mut::<Rd>();
+        rmm.mm.map(rd, true);
 
         // read params
-        let params = copy_from_host_or_ret!(Params, arg[1], mm);
+        let params = copy_from_host_or_ret!(Params, params_ptr, rmm.mm);
         trace!("{:?}", params);
         params.validate()?;
 
@@ -42,15 +42,15 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         //   Keep params in Realm
         //   revisit rmi.create_realm() (is it necessary?)
 
-        rmi.create_realm().map(|id| {
-            rd.init(id, params.rtt_base as usize);
+        rmm.rmi.create_realm().map(|id| {
+            rd_obj.init(id, params.rtt_base as usize);
             ret[1] = id;
         })?;
 
-        if arg[0] == rd.rtt_base() {
+        if arg[0] == rd_obj.rtt_base() {
             return Err(Error::RmiErrorInput);
         }
-        let mut rtt_granule = get_granule_if!(rd.rtt_base(), GranuleState::Delegated)?;
+        let mut rtt_granule = get_granule_if!(rd_obj.rtt_base(), GranuleState::Delegated)?;
         set_granule(&mut rtt_granule, GranuleState::RTT)?;
 
         // set Rd state only when everything goes well.

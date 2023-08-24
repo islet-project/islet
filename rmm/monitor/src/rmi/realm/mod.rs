@@ -19,7 +19,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::REALM_CREATE, |arg, ret, rmm| {
+    listen!(mainloop, rmi::REALM_CREATE, |arg, _, rmm| {
         let rd = arg[0];
         let params_ptr = arg[1];
 
@@ -27,36 +27,30 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        // get the lock for granule.
         let mut rd_granule = get_granule_if!(rd, GranuleState::Delegated)?;
         let rd_obj = rd_granule.content_mut::<Rd>();
         rmm.mm.map(rd, true);
 
-        // read params
         let params = copy_from_host_or_ret!(Params, params_ptr, rmm.mm);
-        trace!("{:?}", params);
-        params.validate()?;
+        params.validate(rd)?;
 
-        // TODO:
-        //   Manage vmid
-        //   Keep params in Realm
-        //   revisit rmi.create_realm() (is it necessary?)
+        // revisit rmi.create_realm() (is it necessary?)
+        rmm.rmi
+            .create_realm(params.vmid)
+            .map(|id| rd_obj.init(id, params.rtt_base as usize))?;
 
-        rmm.rmi.create_realm().map(|id| {
-            rd_obj.init(id, params.rtt_base as usize);
-            ret[1] = id;
-        })?;
+        let id = rd_obj.id();
+        let rtt_base = rd_obj.rtt_base();
+        let mut eplilog = move || {
+            let mut rtt_granule = get_granule_if!(rtt_base, GranuleState::Delegated)?;
+            set_granule(&mut rtt_granule, GranuleState::RTT)?;
+            set_granule(&mut rd_granule, GranuleState::RD)
+        };
 
-        if arg[0] == rd_obj.rtt_base() {
-            return Err(Error::RmiErrorInput);
-        }
-        let mut rtt_granule = get_granule_if!(rd_obj.rtt_base(), GranuleState::Delegated)?;
-        set_granule(&mut rtt_granule, GranuleState::RTT)?;
-
-        // set Rd state only when everything goes well.
-        set_granule(&mut rd_granule, GranuleState::RD)?;
-
-        Ok(())
+        eplilog().map_err(|e| {
+            rmm.rmi.remove(id).expect("Realm should be created before.");
+            e
+        })
     });
 
     listen!(mainloop, rmi::REC_AUX_COUNT, |_, ret, _| {

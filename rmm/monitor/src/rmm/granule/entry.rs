@@ -227,6 +227,10 @@ impl page_table::Entry for Entry {
 
     fn clear(&mut self) {}
 
+    fn pte(&self) -> u64 {
+        todo!();
+    }
+
     fn address(&self, _level: usize) -> Option<PhysAddr> {
         Some(PhysAddr::from(self.0.lock().addr()))
     }

@@ -30,6 +30,7 @@ pub trait Entry {
     fn is_valid(&self) -> bool;
     fn clear(&mut self);
 
+    fn pte(&self) -> u64;
     fn address(&self, level: usize) -> Option<PhysAddr>;
 
     fn set(&mut self, addr: PhysAddr, flags: u64) -> Result<(), Error>;

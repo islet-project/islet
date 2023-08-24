@@ -58,12 +58,16 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::RTT_READ_ENTRY, |arg, ret, _| {
-        super::dummy();
+    listen!(mainloop, rmi::RTT_READ_ENTRY, |arg, ret, rmm| {
+        let rmi = rmm.rmi;
+        let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
+        let ipa = arg[1];
+        let level = arg[2];
 
-        // TODO: this code is a workaround to avoid kernel errors (host linux)
-        //       once RTT_READ_ENTRY gets implemented properly, it should be removed.
-        ret[1] = arg[2];
+        let res = rmi.rtt_read_entry(rd.id(), ipa, level)?;
+        ret[1..5].copy_from_slice(&res[0..4]);
+
         Ok(())
     });
 

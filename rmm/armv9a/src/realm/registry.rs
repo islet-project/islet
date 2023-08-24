@@ -15,11 +15,14 @@ use crate::realm;
 use crate::realm::context::Context;
 use crate::realm::mm::page_table::pte;
 use crate::realm::mm::stage2_translation::Stage2Translation;
+use crate::realm::mm::stage2_tte::invalid_ripas;
+use crate::realm::mm::stage2_tte::S2TTE;
 use crate::realm::mm::translation_granule_4k::RawPTE;
 use crate::realm::timer;
 use monitor::realm::config::RealmConfig;
 use monitor::rmi::error::Error;
 use monitor::rmi::error::InternalError::*;
+use monitor::rmi::rtt_entry_state;
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
@@ -449,5 +452,53 @@ impl monitor::rmi::Interface for RMI {
         } else {
             Err(Error::RmiErrorInput)
         }
+    }
+
+    fn rtt_read_entry(&self, id: usize, ipa: usize, level: usize) -> Result<[usize; 4], Error> {
+        let (s2tte, last_level) = get_realm(id)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .ipa_to_pte(GuestPhysAddr::from(ipa), level)
+            .ok_or(Error::RmiErrorRtt)?;
+        let r1 = last_level;
+        let (mut r2, mut r3, mut r4) = (0, 0, 0);
+
+        let s2tte = S2TTE::from(s2tte as usize);
+
+        if s2tte.is_unassigned() {
+            let ripas = s2tte.get_masked_value(S2TTE::INVALID_RIPAS);
+            r2 = rtt_entry_state::RMI_UNASSIGNED;
+            r4 = ripas as usize;
+        } else if s2tte.is_destroyed() {
+            r2 = rtt_entry_state::RMI_DESTROYED;
+        } else if s2tte.is_assigned() {
+            r2 = rtt_entry_state::RMI_ASSIGNED;
+            r3 = s2tte.address(last_level).ok_or(Error::RmiErrorRtt)?.into();
+            r4 = invalid_ripas::EMPTY as usize;
+        } else if s2tte.is_valid(last_level, false) {
+            r2 = rtt_entry_state::RMI_ASSIGNED;
+            r3 = s2tte.address(last_level).ok_or(Error::RmiErrorRtt)?.into();
+            r4 = invalid_ripas::RAM as usize;
+        } else if s2tte.is_valid(last_level, true) {
+            r2 = rtt_entry_state::RMI_VALID_NS;
+            let addr_mask = match level {
+                1 => S2TTE::ADDR_L1_PAGE,
+                2 => S2TTE::ADDR_L2_PAGE,
+                3 => S2TTE::ADDR_L3_PAGE,
+                _ => {
+                    return Err(Error::RmiErrorRtt);
+                }
+            };
+            let mask = addr_mask | S2TTE::MEMATTR | S2TTE::AP | S2TTE::SH;
+            r3 = (s2tte.get() & mask) as usize;
+        } else if s2tte.is_table(last_level) {
+            r2 = rtt_entry_state::RMI_TABLE;
+            r3 = s2tte.address(3).ok_or(Error::RmiErrorRtt)?.into();
+        } else {
+            error!("Unexpected S2TTE value retrieved!");
+        }
+        Ok([r1, r2, r3, r4])
     }
 }

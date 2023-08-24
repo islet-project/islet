@@ -59,6 +59,15 @@ pub const ERROR_INPUT: usize = 1;
 pub const ERROR_REC: usize = 3;
 pub const SUCCESS_REC_ENTER: usize = 4;
 
+// RmiRttEntryState represents the state of an RTTE
+pub mod rtt_entry_state {
+    pub const RMI_UNASSIGNED: usize = 0;
+    pub const RMI_DESTROYED: usize = 1;
+    pub const RMI_ASSIGNED: usize = 2;
+    pub const RMI_TABLE: usize = 3;
+    pub const RMI_VALID_NS: usize = 4;
+}
+
 pub const MAX_REC_AUX_GRANULES: usize = 16;
 
 pub const EXIT_SYNC: u8 = 0;
@@ -113,6 +122,7 @@ pub trait Interface {
         prot: usize,
     ) -> Result<(), Error>;
     fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<usize, Error>;
+    fn rtt_read_entry(&self, id: usize, guest: usize, level: usize) -> Result<[usize; 4], Error>;
     fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), Error>;
     fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, Error>;
     fn receive_gic_state_from_host(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), Error>;

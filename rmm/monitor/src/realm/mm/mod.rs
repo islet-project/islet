@@ -11,5 +11,6 @@ pub trait IPATranslation: Debug + Send + Sync {
     fn unset_pages(&mut self, guest: GuestPhysAddr, size: usize);
     // TODO: remove mut
     fn ipa_to_pa(&mut self, guest: GuestPhysAddr, level: usize) -> Option<PhysAddr>;
+    fn ipa_to_pte(&mut self, guest: GuestPhysAddr, level: usize) -> Option<(u64, usize)>;
     fn clean(&mut self);
 }

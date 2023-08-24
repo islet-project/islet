@@ -42,6 +42,10 @@ impl page_table::Entry for Entry {
         self.0 = PTDesc::new(0);
     }
 
+    fn pte(&self) -> u64 {
+        self.0.get()
+    }
+
     fn address(&self, level: usize) -> Option<PhysAddr> {
         match self.is_valid() {
             true => match self.0.get_masked_value(PTDesc::TYPE) {

@@ -137,6 +137,31 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
         }
     }
 
+    /// Retrieves Page Table Entry (PTE) from Intermediate Physical Address (IPA)
+    ///
+    /// (input)
+    ///   guest: a target guest physical address to translate
+    ///   level: the intended page-table level to reach
+    ///
+    /// (output)
+    ///   if exists,
+    ///      A tuple of (pte value (u64), lastly reached page table level (usize))
+    ///   else,
+    ///      None
+    fn ipa_to_pte(&mut self, guest: GuestPhysAddr, level: usize) -> Option<(u64, usize)> {
+        let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
+        let mut pte = 0;
+        let res = self.root_pgtlb.entry(guest, level, |entry| {
+            pte = entry.pte();
+            Ok(None)
+        });
+        if let Ok(x) = res {
+            return Some((pte, x.1));
+        } else {
+            return None;
+        }
+    }
+
     fn clean(&mut self) {
         if self.dirty {
             unsafe {

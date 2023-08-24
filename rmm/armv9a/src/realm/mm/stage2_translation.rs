@@ -11,6 +11,7 @@ use monitor::mm::page_table::Entry;
 use monitor::mm::page_table::{Level, PageTable, PageTableMethods};
 use monitor::realm::mm::address::GuestPhysAddr;
 use monitor::realm::mm::IPATranslation;
+use monitor::rmi::error::Error;
 
 use crate::helper;
 use crate::helper::bits_in_reg;
@@ -89,23 +90,47 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
         self.root_pgtlb as *const _ as *const c_void
     }
 
-    fn set_pages(&mut self, guest: GuestPhysAddr, phys: PhysAddr, size: usize, flags: usize) {
+    fn set_pages(
+        &mut self,
+        guest: GuestPhysAddr,
+        phys: PhysAddr,
+        size: usize,
+        flags: usize,
+        is_raw: bool,
+    ) -> Result<(), Error> {
         let _guest = Page::<BasePageSize, GuestPhysAddr>::range_with_size(guest, size);
         let _guest_copy = Page::<BasePageSize, GuestPhysAddr>::range_with_size(guest, size);
         let phys = Page::<BasePageSize, PhysAddr>::range_with_size(phys, size);
 
-        if self
-            .root_pgtlb
-            .set_pages(_guest, phys, flags as u64 | BasePageSize::MAP_EXTRA_FLAG)
-            .is_err()
-        {
-            warn!("set_pages error");
-            return;
+        if is_raw {
+            if self
+                .root_pgtlb
+                .set_pages(_guest, phys, flags as u64, is_raw)
+                .is_err()
+            {
+                warn!("set_pages error");
+                return Err(Error::RmiErrorInput);
+            }
+        } else {
+            if self
+                .root_pgtlb
+                .set_pages(
+                    _guest,
+                    phys,
+                    flags as u64 | BasePageSize::MAP_EXTRA_FLAG,
+                    is_raw,
+                )
+                .is_err()
+            {
+                warn!("set_pages error");
+                return Err(Error::RmiErrorInput);
+            }
         }
         self.tlb_flush_by_vmid_ipa::<BasePageSize>(_guest_copy);
 
         //TODO Set dirty only if pages are updated, not added
         self.dirty = true;
+        Ok(())
     }
 
     fn unset_pages(&mut self, _guest: GuestPhysAddr, _size: usize) {
@@ -126,7 +151,7 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
     fn ipa_to_pa(&mut self, guest: GuestPhysAddr, level: usize) -> Option<PhysAddr> {
         let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
         let mut pa = None;
-        let res = self.root_pgtlb.entry(guest, level, |entry| {
+        let res = self.root_pgtlb.entry(guest, level, false, |entry| {
             pa = entry.address(0);
             Ok(None)
         });
@@ -151,7 +176,7 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
     fn ipa_to_pte(&mut self, guest: GuestPhysAddr, level: usize) -> Option<(u64, usize)> {
         let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
         let mut pte = 0;
-        let res = self.root_pgtlb.entry(guest, level, |entry| {
+        let res = self.root_pgtlb.entry(guest, level, true, |entry| {
             pte = entry.pte();
             Ok(None)
         });
@@ -208,7 +233,7 @@ fn fill_stage2_table(
         Page::<BasePageSize, PhysAddr>::range_with_size(PhysAddr::from(0x1c0a0000 as u64), 1);
 
     if root
-        .set_pages(uart_guest, uart_phys, device_flags as u64)
+        .set_pages(uart_guest, uart_phys, device_flags as u64, false)
         .is_err()
     {
         warn!("set_pages error");

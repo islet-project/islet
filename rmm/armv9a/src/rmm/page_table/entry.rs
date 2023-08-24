@@ -63,11 +63,15 @@ impl page_table::Entry for Entry {
         }
     }
 
-    fn set(&mut self, addr: PhysAddr, flags: u64) -> Result<(), Error> {
-        self.0
-            .set(addr.as_u64() | flags)
-            .set_masked_value(PTDesc::SH, attr::shareable::INNER)
-            .set_bits(PTDesc::AF | PTDesc::VALID);
+    fn set(&mut self, addr: PhysAddr, flags: u64, is_raw: bool) -> Result<(), Error> {
+        if is_raw {
+            self.0.set(addr.as_u64() | flags);
+        } else {
+            self.0
+                .set(addr.as_u64() | flags)
+                .set_masked_value(PTDesc::SH, attr::shareable::INNER)
+                .set_bits(PTDesc::AF | PTDesc::VALID);
+        }
 
         unsafe {
             core::arch::asm!(
@@ -85,6 +89,7 @@ impl page_table::Entry for Entry {
         self.set(
             addr,
             bits_in_reg(PTDesc::TYPE, attr::page_type::TABLE_OR_PAGE),
+            false,
         )
     }
 

@@ -18,7 +18,7 @@ define_interface! {
          GRANULE_UNDELEGATE  = 0xc400_0152,
          DATA_CREATE  = 0xc400_0153,
          DATA_CREATE_UNKNOWN  = 0xc400_0154,
-         DATA_DESTORY  = 0xc400_0155,
+         DATA_DESTROY  = 0xc400_0155,
          REALM_ACTIVATE  = 0xc400_0157,
          REALM_CREATE  = 0xc400_0158,
          REALM_DESTROY  = 0xc400_0159,
@@ -123,6 +123,15 @@ pub trait Interface {
     ) -> Result<(), Error>;
     fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<usize, Error>;
     fn rtt_read_entry(&self, id: usize, guest: usize, level: usize) -> Result<[usize; 4], Error>;
+    fn rtt_map_unprotected(
+        &self,
+        id: usize,
+        guest: usize,
+        level: usize,
+        host_s2tte: usize,
+    ) -> Result<(), Error>;
+    fn data_destroy(&self, id: usize, guest: usize) -> Result<usize, Error>;
+    fn make_shared(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;
     fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), Error>;
     fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, Error>;
     fn receive_gic_state_from_host(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), Error>;

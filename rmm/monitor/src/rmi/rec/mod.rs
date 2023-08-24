@@ -44,8 +44,16 @@ impl Rec {
         self.ripas.addr += size;
     }
 
-    pub fn ripas_addr(&mut self) -> usize {
-        self.ripas.addr as usize
+    pub fn ripas_addr(&mut self) -> u64 {
+        self.ripas.addr
+    }
+
+    pub fn ripas_state(&self) -> u8 {
+        self.ripas.state
+    }
+
+    pub fn ripas_end(&self) -> u64 {
+        self.ripas.end
     }
 }
 

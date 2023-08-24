@@ -25,7 +25,12 @@ pub struct Params {
 const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
 
 impl Params {
-    pub fn validate(&self) -> Result<(), Error> {
+    pub fn validate(&self, rd: usize) -> Result<(), Error> {
+        trace!("RD[{:X}]: {:?}", rd, self);
+        if rd == self.rtt_base as usize {
+            return Err(Error::RmiErrorInput);
+        }
+
         features::validate(self.features_0 as usize)?;
 
         // Check misconfigurations between IPA size and SL

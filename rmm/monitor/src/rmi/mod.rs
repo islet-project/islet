@@ -99,7 +99,7 @@ impl MapProt {
 pub trait Interface {
     // TODO: it would be better to leave only true RMI interface here
     //       while moving others to another place (e.g., set_reg())
-    fn create_realm(&self) -> Result<usize, Error>;
+    fn create_realm(&self, vmid: u16) -> Result<usize, Error>;
     fn create_vcpu(&self, id: usize) -> Result<usize, Error>;
     fn remove(&self, id: usize) -> Result<(), Error>;
     fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<([usize; 4]), Error>;

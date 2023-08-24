@@ -65,16 +65,24 @@ impl RMI {
 }
 
 impl monitor::rmi::Interface for RMI {
-    fn create_realm(&self) -> Result<usize, Error> {
+    fn create_realm(&self, vmid: u16) -> Result<usize, Error> {
         let mut rms = RMS.lock();
+
+        for (_, realm) in &rms.1 {
+            if vmid == realm.lock().vmid {
+                return Err(Error::RmiErrorInput);
+            }
+        }
+
         let id = rms.0;
         let s2_table = Arc::new(Mutex::new(
             Box::new(Stage2Translation::new()) as Box<dyn IPATranslation>
         ));
-        let realm = Realm::new(id, s2_table);
+        let realm = Realm::new(id, vmid, s2_table);
 
         rms.0 += 1;
         rms.1.insert(id, realm.clone());
+
         Ok(id)
     }
 

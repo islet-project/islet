@@ -33,12 +33,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     listen!(mainloop, rmi::RTT_SET_RIPAS, |arg, _ret, rmm| {
-        let _rmi = rmm.rmi;
-        let _ipa = arg[2];
+        let rmi = rmm.rmi;
+        let ipa = arg[2];
         let level = arg[3];
         let ripas = arg[4];
 
-        let _rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
         let mut rec_granule = get_granule_if!(arg[1], GranuleState::Rec)?;
         let rec = rec_granule.content_mut::<Rec>();
 
@@ -51,9 +52,26 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 return Err(Error::RmiErrorRtt);
             }
         }
-        // TODO: update mapping
-        super::dummy();
+
+        if rec.ripas_state() != ripas as u8 {
+            return Err(Error::RmiErrorInput);
+        }
+
+        if rec.ripas_addr() != ipa as u64 {
+            return Err(Error::RmiErrorInput);
+        }
+
         let map_size = level_to_size(level);
+        if ipa as u64 + map_size > rec.ripas_end() {
+            return Err(Error::RmiErrorInput);
+        }
+
+        if ripas as u64 == RIPAS_EMPTY {
+            let ret = rmi.make_shared(rd.id(), ipa, level);
+            if ret.is_err() {
+                return Err(Error::RmiErrorInput);
+            }
+        }
         rec.inc_ripas_addr(map_size);
         Ok(())
     });
@@ -152,18 +170,17 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::DATA_DESTORY, |arg, _ret, rmm| {
+    listen!(mainloop, rmi::DATA_DESTROY, |arg, _ret, rmm| {
         // rd granule lock
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let realm_id = rd.id();
         let ipa = arg[1];
 
-        // TODO: Fix to get PA by rtt_walk
-        let pa = rmm.rmi.unmap(realm_id, ipa, GRANULE_SIZE)?;
+        let pa = rmm.rmi.data_destroy(realm_id, ipa)?;
 
         // data granule lock and change state
-        let _ = set_state_and_get_granule!(pa, GranuleState::Delegated);
+        set_state_and_get_granule!(pa, GranuleState::Delegated)?;
         Ok(())
     });
 
@@ -171,19 +188,15 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::RTT_MAP_UNPROTECTED, |arg, _ret, rmm| {
         let rmi = rmm.rmi;
         let ipa = arg[1];
-        let _level = arg[2];
-        let ns_pa = arg[3];
 
         // rd granule lock
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let realm_id = rd.id();
 
-        // islet stores rd as realm id
-        let granule_sz = GRANULE_SIZE;
-        let mut prot = rmi::MapProt(0);
-        prot.set_bit(rmi::MapProt::NS_PAS);
-        let _ret = rmi.map(realm_id, ipa, ns_pa, granule_sz, prot.get());
+        let level = arg[2];
+        let host_s2tte = arg[3];
+        rmi.rtt_map_unprotected(realm_id, ipa, level, host_s2tte)?;
         Ok(())
     });
 

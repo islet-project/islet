@@ -51,7 +51,7 @@ impl GranuleStatusTable {
         }
         let pa1 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
         let pa2 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
-        self.root_pgtlb.set_page(pa1, pa2, state)
+        self.root_pgtlb.set_page(pa1, pa2, state, false)
     }
 }
 

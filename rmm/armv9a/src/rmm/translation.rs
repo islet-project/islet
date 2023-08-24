@@ -105,7 +105,11 @@ impl<'a> RmmPageTable<'a> {
         let virtaddr = Page::<RmmBasePageSize, VirtAddr>::range_with_size(va, size);
         let phyaddr = Page::<RmmBasePageSize, PhysAddr>::range_with_size(phys, size);
 
-        if self.root_pgtlb.set_pages(virtaddr, phyaddr, flags).is_err() {
+        if self
+            .root_pgtlb
+            .set_pages(virtaddr, phyaddr, flags, false)
+            .is_err()
+        {
             warn!("set_pages error");
         }
     }

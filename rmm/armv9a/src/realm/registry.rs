@@ -15,8 +15,8 @@ use crate::realm;
 use crate::realm::context::Context;
 use crate::realm::mm::page_table::pte;
 use crate::realm::mm::stage2_translation::Stage2Translation;
-use crate::realm::mm::stage2_tte::invalid_ripas;
 use crate::realm::mm::stage2_tte::S2TTE;
+use crate::realm::mm::stage2_tte::{desc_type, invalid_hipas, invalid_ripas};
 use crate::realm::mm::translation_granule_4k::RawPTE;
 use crate::realm::timer;
 use monitor::realm::config::RealmConfig;
@@ -185,7 +185,8 @@ impl monitor::rmi::Interface for RMI {
                 PhysAddr::from(phys),
                 size,
                 flags as usize,
-            );
+                false,
+            )?;
 
         Ok(())
     }
@@ -500,5 +501,143 @@ impl monitor::rmi::Interface for RMI {
             error!("Unexpected S2TTE value retrieved!");
         }
         Ok([r1, r2, r3, r4])
+    }
+
+    fn rtt_map_unprotected(
+        &self,
+        id: usize,
+        ipa: usize,
+        _level: usize,
+        host_s2tte: usize,
+    ) -> Result<(), Error> {
+        let size = monitor::rmm::granule::GRANULE_SIZE;
+        let mut new_s2tte = host_s2tte as u64;
+        new_s2tte |= helper::bits_in_reg(S2TTE::NS, 1)
+            | helper::bits_in_reg(S2TTE::XN, 1)
+            | helper::bits_in_reg(S2TTE::AF, 1)
+            | helper::bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
+        let s2tte = S2TTE::from(new_s2tte as usize);
+        let pa = s2tte.get_masked(S2TTE::ADDR_FULL);
+        let flags = s2tte.get_masked(S2TTE::PAGE_FLAGS);
+        get_realm(id)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .set_pages(
+                GuestPhysAddr::from(ipa),
+                PhysAddr::from(pa),
+                size,
+                flags as usize,
+                true,
+            )?;
+
+        Ok(())
+    }
+
+    fn make_shared(&self, id: usize, ipa: usize, level: usize) -> Result<(), Error> {
+        let (s2tte, last_level) = get_realm(id)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .ipa_to_pte(GuestPhysAddr::from(ipa), level)
+            .ok_or(Error::RmiErrorRtt)?;
+        if level != last_level {
+            return Err(Error::RmiErrorRtt);
+        }
+
+        let s2tte = S2TTE::from(s2tte as usize);
+
+        // Reference (tf-rmm)      : smc_rtt_set_ripas() in runtime/rmi/rtt.c
+        //           (realm-linux) : __set_memory_encrypted() in arch/arm64/mm/pageattr.c
+        //           (nw-linux)    : set_ipa_state() and kvm_realm_unmap_range() in arch/arm64/kvm/rme.c
+        //           (rmm-spec)    : Figure D2.1 Realm shared memory protocol flow
+        if s2tte.is_valid(level, false) {
+            // the case for ipa's range 0x8840_0000 - in realm-linux booting
+            let pa: usize = s2tte.address(level).ok_or(Error::RmiErrorRtt)?.into();
+            let size = monitor::rmm::granule::GRANULE_SIZE;
+            let mut flags = 0;
+            flags |= helper::bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
+            flags |= helper::bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
+
+            get_realm(id)
+                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+                .lock()
+                .page_table
+                .lock()
+                .set_pages(
+                    GuestPhysAddr::from(ipa),
+                    PhysAddr::from(pa),
+                    size,
+                    flags as usize,
+                    true,
+                )?;
+        } else if s2tte.is_unassigned() || s2tte.is_assigned() {
+            let pa: usize = s2tte.address(level).ok_or(Error::RmiErrorRtt)?.into();
+            let size = monitor::rmm::granule::GRANULE_SIZE;
+            let mut flags = 0;
+            flags |= helper::bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
+            get_realm(id)
+                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+                .lock()
+                .page_table
+                .lock()
+                .set_pages(
+                    GuestPhysAddr::from(ipa),
+                    PhysAddr::from(pa),
+                    size,
+                    flags as usize,
+                    true,
+                )?;
+        }
+
+        Ok(())
+    }
+
+    fn data_destroy(&self, id: usize, ipa: usize) -> Result<usize, Error> {
+        let (s2tte, last_level) = get_realm(id)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .ipa_to_pte(GuestPhysAddr::from(ipa), 3)
+            .ok_or(Error::RmiErrorRtt)?;
+
+        if last_level != 3 {
+            return Err(Error::RmiErrorRtt);
+        }
+
+        let s2tte = S2TTE::from(s2tte as usize);
+
+        let valid = s2tte.is_valid(last_level, false);
+        if !valid && !s2tte.is_assigned() {
+            return Err(Error::RmiErrorRtt);
+        }
+
+        let pa = s2tte.address(last_level).ok_or(Error::RmiErrorRtt)?.into();
+
+        let mut flags = 0 as u64;
+        if valid {
+            flags |= helper::bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::DESTROYED);
+        } else {
+            flags |= helper::bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
+            flags |= helper::bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
+        }
+        let size = monitor::rmm::granule::GRANULE_SIZE;
+        get_realm(id)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .set_pages(
+                GuestPhysAddr::from(ipa),
+                PhysAddr::from(0 as usize),
+                size,
+                flags as usize,
+                true,
+            )?;
+
+        Ok(pa)
     }
 }

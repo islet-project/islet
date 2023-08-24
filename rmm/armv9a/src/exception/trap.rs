@@ -108,6 +108,8 @@ pub extern "C" fn handle_lower_exception(
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = unsafe { HPFAR_EL2.get() };
                 tf.regs[3] = unsafe { FAR_EL2.get() };
+                let fipa = unsafe { HPFAR_EL2.get_masked(HPFAR_EL2::FIPA) } << 8;
+                debug!("fipa: {:X}", fipa);
                 RET_TO_RMM
             }
             Syndrome::SysRegInst => {

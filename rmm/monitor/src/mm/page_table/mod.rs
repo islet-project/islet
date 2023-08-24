@@ -33,7 +33,7 @@ pub trait Entry {
     fn pte(&self) -> u64;
     fn address(&self, level: usize) -> Option<PhysAddr>;
 
-    fn set(&mut self, addr: PhysAddr, flags: u64) -> Result<(), Error>;
+    fn set(&mut self, addr: PhysAddr, flags: u64, is_raw: bool) -> Result<(), Error>;
     fn set_with_page_table_flags(&mut self, addr: PhysAddr) -> Result<(), Error>;
 
     // returns EntryGuard which allows accessing what's inside Entry while holding a proper lock.
@@ -83,23 +83,40 @@ pub struct PageTable<A, L, E, const N: usize> {
 
 pub trait PageTableMethods<A: Address, L, E: Entry, const N: usize> {
     fn new_with_align(size: usize, align: usize) -> Result<*mut PageTable<A, L, E, N>, Error>;
+    /// Sets multiple page table entries
+    ///
+    /// (input)
+    ///    guest : an iterator of target guest addresses to modify their page table entry mapping
+    ///    phys  : an iterator of target physical addresses to be mapped
+    ///    flags : flags to attach
+    ///    is_raw: (if on) a user-provided `flags` is only attached (== without attaching a default flag)
     fn set_pages<S: PageSize>(
         &mut self,
         guest: PageIter<S, A>,
         phys: PageIter<S, PhysAddr>,
         flags: u64,
+        is_raw: bool,
     ) -> Result<(), Error>;
+    /// Sets a single page table entry
+    ///
+    /// (input)
+    ///    guest : a target guest address to modify its page table entry mapping
+    ///    phys  : a target physical address to be mapped
+    ///    flags : flags to attach
+    ///    is_raw: (if on) a user-provided `flags` is only attached (== without attaching a default flag)
     fn set_page<S: PageSize>(
         &mut self,
         guest: Page<S, A>,
         phys: Page<S, PhysAddr>,
         flags: u64,
+        is_raw: bool,
     ) -> Result<(), Error>;
     /// Traverses page table entries recursively and calls the callback for the lastly reached entry
     ///
     /// (input)
     ///    guest: a target guest page to translate
     ///    level: the intended page-table level to reach
+    ///    no_valid_check: (if on) omits a validity check which is irrelevant in stage 2 TTE
     ///    func : the callback to be processed
     ///
     /// (output)
@@ -112,6 +129,7 @@ pub trait PageTableMethods<A: Address, L, E: Entry, const N: usize> {
         &mut self,
         guest: Page<S, A>,
         level: usize,
+        no_valid_check: bool,
         func: F,
     ) -> Result<(Option<EntryGuard<'_, E::Inner>>, usize), Error>;
     fn drop(&mut self);
@@ -157,11 +175,12 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
         guest: PageIter<S, A>,
         phys: PageIter<S, PhysAddr>,
         flags: u64,
+        is_raw: bool,
     ) -> Result<(), Error> {
         let mut phys = phys;
         for guest in guest {
             let phys = phys.next().unwrap();
-            match self.set_page(guest, phys, flags) {
+            match self.set_page(guest, phys, flags, is_raw) {
                 Ok(_) => {}
                 Err(e) => {
                     return Err(e);
@@ -176,11 +195,16 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
         guest: Page<S, A>,
         phys: Page<S, PhysAddr>,
         flags: u64,
+        is_raw: bool,
     ) -> Result<(), Error> {
         assert!(L::THIS_LEVEL == S::MAP_TABLE_LEVEL);
 
         let index = E::index::<L>(guest.address().into());
-        self.entries[index].set(phys.address(), flags | S::MAP_EXTRA_FLAG)
+        if is_raw {
+            self.entries[index].set(phys.address(), flags, is_raw)
+        } else {
+            self.entries[index].set(phys.address(), flags | S::MAP_EXTRA_FLAG, is_raw)
+        }
     }
 
     default fn entry<
@@ -190,6 +214,7 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
         &mut self,
         guest: Page<S, A>,
         level: usize,
+        no_valid_check: bool,
         mut func: F,
     ) -> Result<(Option<EntryGuard<'_, E::Inner>>, usize), Error> {
         assert!(L::THIS_LEVEL == S::MAP_TABLE_LEVEL);
@@ -201,9 +226,14 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
         }
 
         let index = E::index::<L>(guest.address().into());
-        match self.entries[index].is_valid() {
-            true => Ok((func(&mut self.entries[index])?, L::THIS_LEVEL)),
-            false => Err(Error::MmNoEntry),
+
+        if no_valid_check {
+            Ok((func(&mut self.entries[index])?, L::THIS_LEVEL))
+        } else {
+            match self.entries[index].is_valid() {
+                true => Ok((func(&mut self.entries[index])?, L::THIS_LEVEL)),
+                false => Err(Error::MmNoEntry),
+            }
         }
     }
 
@@ -219,7 +249,7 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
     default fn unset_page<S: PageSize>(&mut self, guest: Page<S, A>) {
         let index = E::index::<L>(guest.address().into());
         if self.entries[index].is_valid() {
-            let res = self.entry(guest, S::MAP_TABLE_LEVEL, |e| {
+            let res = self.entry(guest, S::MAP_TABLE_LEVEL, false, |e| {
                 e.clear();
                 Ok(None)
             });
@@ -253,6 +283,7 @@ where
         &mut self,
         page: Page<S, A>,
         level: usize,
+        no_valid_check: bool,
         mut func: F,
     ) -> Result<(Option<EntryGuard<'_, E::Inner>>, usize), Error> {
         assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
@@ -266,7 +297,7 @@ where
                 if L::THIS_LEVEL < level {
                     // Need to go deeper (recursive)
                     match self.subtable::<S>(page) {
-                        Ok(subtable) => subtable.entry(page, level, func),
+                        Ok(subtable) => subtable.entry(page, level, no_valid_check, func),
                         Err(e) => Err(e),
                     }
                 } else {
@@ -283,6 +314,7 @@ where
         guest: Page<S, A>,
         phys: Page<S, PhysAddr>,
         flags: u64,
+        is_raw: bool,
     ) -> Result<(), Error> {
         assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
 
@@ -314,10 +346,14 @@ where
             })?;
 
             // map the page in the subtable (recursive)
-            self.subtable_and_set_page(guest, phys, flags)
+            self.subtable_and_set_page(guest, phys, flags, is_raw)
         } else if L::THIS_LEVEL == S::MAP_TABLE_LEVEL {
             // Map page in this level page table
-            self.entries[index].set(phys.address(), flags | S::MAP_EXTRA_FLAG)
+            if is_raw {
+                self.entries[index].set(phys.address(), flags, is_raw)
+            } else {
+                self.entries[index].set(phys.address(), flags | S::MAP_EXTRA_FLAG, is_raw)
+            }
         } else {
             Err(Error::MmInvalidLevel)
         }
@@ -347,7 +383,7 @@ where
         let index = E::index::<L>(guest.address().into());
 
         if self.entries[index].is_valid() {
-            let res = self.entry(guest, S::MAP_TABLE_LEVEL, |e| {
+            let res = self.entry(guest, S::MAP_TABLE_LEVEL, false, |e| {
                 e.clear();
                 Ok(None)
             });
@@ -383,12 +419,13 @@ where
         page: Page<S, A>,
         phys: Page<S, PhysAddr>,
         flags: u64,
+        is_raw: bool,
     ) -> Result<(), Error> {
         assert!(L::THIS_LEVEL < S::MAP_TABLE_LEVEL);
 
         let index = E::index::<L>(page.address().into());
         let table_addr = self.entries[index].subtable(index, L::THIS_LEVEL)?;
         let table = unsafe { &mut *(table_addr as *mut PageTable<A, L::NextLevel, E, N>) };
-        table.set_page(page, phys, flags)
+        table.set_page(page, phys, flags, is_raw)
     }
 }

@@ -37,7 +37,7 @@ lazy_static! {
         );
         m.insert(rmi::DATA_CREATE, Constraint::new(rmi::DATA_CREATE, 6, 1));
         m.insert(rmi::DATA_CREATE_UNKNOWN, Constraint::new(rmi::DATA_CREATE_UNKNOWN, 4, 1));
-        m.insert(rmi::DATA_DESTORY, Constraint::new(rmi::DATA_DESTORY, 3, 3));
+        m.insert(rmi::DATA_DESTROY, Constraint::new(rmi::DATA_DESTROY, 3, 3));
         m.insert(
             rmi::REALM_ACTIVATE,
             Constraint::new(rmi::REALM_ACTIVATE, 2, 1),

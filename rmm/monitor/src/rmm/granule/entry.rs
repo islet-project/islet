@@ -235,7 +235,7 @@ impl page_table::Entry for Entry {
         Some(PhysAddr::from(self.0.lock().addr()))
     }
 
-    fn set(&mut self, addr: PhysAddr, flags: u64) -> Result<(), Error> {
+    fn set(&mut self, addr: PhysAddr, flags: u64, _is_raw: bool) -> Result<(), Error> {
         self.0.lock().set_state(addr, flags)
     }
 

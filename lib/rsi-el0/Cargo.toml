@@ -9,4 +9,4 @@ name = "rsi_el0"
 path = "src/lib.rs"
 
 [dependencies]
-nix = "*"
+nix = { version = "0.27.0", features = ["ioctl", "fs"] }

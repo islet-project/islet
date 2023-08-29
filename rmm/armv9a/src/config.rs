@@ -8,7 +8,7 @@ pub const LARGE_PAGE_SIZE: usize = 1024 * 1024 * 2; // 2MiB
 pub const HUGE_PAGE_SIZE: usize = 1024 * 1024 * 1024; // 1GiB
 
 pub const RMM_STACK_SIZE: usize = 1024 * 1024;
-pub const RMM_HEAP_SIZE: usize = 8 * 1024 * 1024;
+pub const RMM_HEAP_SIZE: usize = 16 * 1024 * 1024;
 
 pub const VM_STACK_SIZE: usize = 1 << 15;
 pub const STACK_ALIGN: usize = 16;

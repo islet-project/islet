@@ -65,26 +65,26 @@ pub fn ipa_bits(feat_reg0: usize) -> usize {
     extract(feat_reg0, S2SZ_SHIFT, S2SZ_WIDTH)
 }
 
-pub fn validate(feat_reg0: usize) -> Result<(), Error> {
+pub fn validate(feat_reg0: usize) -> bool {
     const MIN_IPA_SIZE: usize = 32;
     let s2sz = extract(feat_reg0, S2SZ_SHIFT, S2SZ_WIDTH);
     if s2sz < MIN_IPA_SIZE || s2sz > S2SZ_VALUE {
-        return Err(Error::RmiErrorInput);
+        return false;
     }
 
     if extract(feat_reg0, S2SZ_SHIFT, S2SZ_WIDTH) > S2SZ_VALUE {
-        return Err(Error::RmiErrorInput);
+        return false;
     }
 
     if extract(feat_reg0, LPA2_SHIFT, LPA2_WIDTH) != LPA2_VALUE {
-        return Err(Error::RmiErrorInput);
+        return false;
     }
 
     if extract(feat_reg0, PMU_EN_SHIFT, PMU_EN_WIDTH) == SUPPORTED
         && extract(feat_reg0, PMU_NUM_CTRS_SHIFT, PMU_NUM_CTRS_WIDTH) != PMU_NUM_CTRS_VALUE
     {
-        return Err(Error::RmiErrorInput);
+        return false;
     }
 
-    Ok(())
+    true
 }

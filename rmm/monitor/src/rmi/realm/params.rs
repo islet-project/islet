@@ -1,5 +1,4 @@
 use crate::host::Accessor as HostAccessor;
-use crate::rmi::error::Error;
 use crate::rmi::features;
 use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
 use crate::rmm::granule::GRANULE_SIZE;
@@ -23,37 +22,6 @@ pub struct Params {
 }
 
 const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
-
-impl Params {
-    pub fn validate(&self, rd: usize) -> Result<(), Error> {
-        trace!("RD[{:X}]: {:?}", rd, self);
-        if rd == self.rtt_base as usize {
-            return Err(Error::RmiErrorInput);
-        }
-
-        features::validate(self.features_0 as usize)?;
-
-        // Check misconfigurations between IPA size and SL
-        let ipa_bits = features::ipa_bits(self.features_0 as usize);
-        let rtt_slvl = self.rtt_level_start as usize;
-
-        const RTT_PAGE_LEVEL: usize = 3;
-        const GRANULE_SHIFT: usize = 12;
-        const S2TTE_STRIDE: usize = GRANULE_SHIFT - 3;
-        let level = RTT_PAGE_LEVEL - rtt_slvl;
-        let min_ipa_bits = level * S2TTE_STRIDE + GRANULE_SHIFT + 1;
-        let max_ipa_bits = min_ipa_bits + (S2TTE_STRIDE - 1) + 4;
-
-        if (ipa_bits < min_ipa_bits) || (ipa_bits > max_ipa_bits) {
-            return Err(Error::RmiErrorInput);
-        }
-
-        match self.hash_algo {
-            HASH_ALGO_SHA256 | HASH_ALGO_SHA512 => Ok(()),
-            _ => Err(Error::RmiErrorInput),
-        }
-    }
-}
 
 impl Default for Params {
     fn default() -> Self {
@@ -88,7 +56,34 @@ impl core::fmt::Debug for Params {
     }
 }
 
-impl HostAccessor for Params {}
+impl HostAccessor for Params {
+    fn validate(&self) -> bool {
+        trace!("{:?}", self);
+        if !features::validate(self.features_0 as usize) {
+            return false;
+        }
+
+        // Check misconfigurations between IPA size and SL
+        let ipa_bits = features::ipa_bits(self.features_0 as usize);
+        let rtt_slvl = self.rtt_level_start as usize;
+
+        const RTT_PAGE_LEVEL: usize = 3;
+        const GRANULE_SHIFT: usize = 12;
+        const S2TTE_STRIDE: usize = GRANULE_SHIFT - 3;
+        let level = RTT_PAGE_LEVEL - rtt_slvl;
+        let min_ipa_bits = level * S2TTE_STRIDE + GRANULE_SHIFT + 1;
+        let max_ipa_bits = min_ipa_bits + (S2TTE_STRIDE - 1) + 4;
+
+        if (ipa_bits < min_ipa_bits) || (ipa_bits > max_ipa_bits) {
+            return false;
+        }
+
+        match self.hash_algo {
+            HASH_ALGO_SHA256 | HASH_ALGO_SHA512 => true,
+            _ => false,
+        }
+    }
+}
 
 #[cfg(test)]
 pub mod test {

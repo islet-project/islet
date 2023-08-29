@@ -32,7 +32,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rmm.mm.map(rd, true);
 
         let params = copy_from_host_or_ret!(Params, params_ptr, rmm.mm);
-        params.validate(rd)?;
+        if params.rtt_base as usize == rd {
+            return Err(Error::RmiErrorInput);
+        }
 
         // revisit rmi.create_realm() (is it necessary?)
         rmm.rmi

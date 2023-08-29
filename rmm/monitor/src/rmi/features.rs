@@ -10,6 +10,7 @@ const S2SZ_WIDTH: usize = 8;
 const S2SZ_VALUE: usize = 48;
 
 const LPA2_SHIFT: usize = 8;
+#[allow(unused)]
 const LPA2_WIDTH: usize = 1;
 const LPA2_VALUE: usize = 0;
 
@@ -65,6 +66,7 @@ pub fn ipa_bits(feat_reg0: usize) -> usize {
     extract(feat_reg0, S2SZ_SHIFT, S2SZ_WIDTH)
 }
 
+//TODO: locate validate() in armv9a to check against AA64MMFR_EL1 register
 pub fn validate(feat_reg0: usize) -> bool {
     const MIN_IPA_SIZE: usize = 32;
     let s2sz = extract(feat_reg0, S2SZ_SHIFT, S2SZ_WIDTH);
@@ -76,9 +78,7 @@ pub fn validate(feat_reg0: usize) -> bool {
         return false;
     }
 
-    if extract(feat_reg0, LPA2_SHIFT, LPA2_WIDTH) != LPA2_VALUE {
-        return false;
-    }
+    // TODO: Add a check for LPA2 flag with AA64MMFR_EL1 reigster after refactoring
 
     if extract(feat_reg0, PMU_EN_SHIFT, PMU_EN_WIDTH) == SUPPORTED
         && extract(feat_reg0, PMU_NUM_CTRS_SHIFT, PMU_NUM_CTRS_WIDTH) != PMU_NUM_CTRS_VALUE

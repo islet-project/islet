@@ -50,6 +50,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         };
 
         eplilog().map_err(|e| {
+            rmm.mm.unmap(rd);
             rmm.rmi.remove(id).expect("Realm should be created before.");
             e
         })

@@ -43,7 +43,7 @@ fvp: sdk sdk-example
 	@mkdir -p $(SHARED_DIR)
 	@install -m755 $(ROOT)/out/aarch64-unknown-linux-gnu/release/examples/aarch64 $(SHARED_DIR)/sdk-example
 	@$(MAKE) sdk-example-c
-	@cp -p $(ROOT)/out/aarch64-unknown-linux-gnu/release/libislet_sdk.so  $(SHARED_DIR)
+	@cp -p $(ROOT)/out/aarch64-unknown-linux-gnu/release/libislet_sdk.a  $(SHARED_DIR)
 	@install -m755 sdk-example-c $(SHARED_DIR)
 
 clean:

@@ -5,7 +5,7 @@ authors = ["Islet Contributors"]
 edition = "2021"
 
 [lib]
-crate-type = ["rlib", "cdylib"]
+crate-type = ["rlib", "staticlib"]
 
 [build-dependencies]
 cbindgen = "0.24.0"

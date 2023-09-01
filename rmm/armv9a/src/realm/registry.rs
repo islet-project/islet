@@ -462,7 +462,8 @@ impl monitor::rmi::Interface for RMI {
             .page_table
             .lock()
             .ipa_to_pte(GuestPhysAddr::from(ipa), level)
-            .ok_or(Error::RmiErrorRtt)?;
+            .map_or((0, level), |pte| pte);
+
         let r1 = last_level;
         let (mut r2, mut r3, mut r4) = (0, 0, 0);
 

@@ -10,7 +10,7 @@ use minicbor::Decoder;
 pub fn verify(report: &Report) -> Result<Claims, Error> {
     let (platform, realm) = cca_token(&report.buffer).or(Err(Error::CCAToken))?;
     let (plat_sig, plat_tok, sw_comps) = plat_token(platform)?;
-    let (realm_sig, realm_tok) = realm_token(&realm.clone())?;
+    let (realm_sig, realm_tok) = realm_token(&realm)?;
     let claims = Claims {
         realm_sig,
         realm_tok,

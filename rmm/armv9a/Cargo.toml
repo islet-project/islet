@@ -2,7 +2,7 @@
 name = "armv9a"
 version = "0.0.1"
 authors = ["Islet Contributors"]
-edition = "2018"
+edition = "2021"
 
 [lib]
 name = "armv9a"

@@ -65,6 +65,23 @@ jobs:
         with:
           path: out/uart*.log
 
+  realm-boot:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Install dependencies
+        run: ./scripts/init.sh
+
+      - name: Run realm-linux booting
+        run: ./scripts/tests/realm-boot.sh
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: out/uart*.log
+
   crates:
     runs-on: ubuntu-22.04
     steps:

@@ -136,7 +136,7 @@ def prepare_rmm(rmm):
     elif rmm == "tf-rmm":
         run(["./scripts/build-tf-rmm.sh", CROSS_COMPILE], cwd=ROOT)
 
-def prepare_nw_linux(fvp_ip, host_ip):
+def prepare_nw_linux(fvp_ip, host_ip, realm_launch):
     args = [
         "-j%d" % multiprocessing.cpu_count(), "-f",
         "fvp.mk",
@@ -155,7 +155,9 @@ def prepare_nw_linux(fvp_ip, host_ip):
         "-j%d" % multiprocessing.cpu_count(), "-f",
         "fvp.mk",
     ]
-    if fvp_ip != None and host_ip != None:
+    if realm_launch != False:
+        args.append("boot-img-launch")
+    elif fvp_ip != None and host_ip != None:
         args.append("boot-img-net")
         args.append("FVP_IP=" + fvp_ip) # if fvp_ip is given, boot-img tries to set fvp_ip into the fvp statically
         args.append("HOST_IP=" + host_ip) # in fvp, host_ip is used as a gateway address
@@ -382,6 +384,7 @@ if __name__ == "__main__":
     parser.add_argument("--build-only", "-bo",
                         help="Building components without running", action="store_true")
     parser.add_argument("--clean", "-c", help="Clean the repo", action="store_true")
+    parser.add_argument("--realm-launch", help="Execute realm launch on boot", action="store_true")
     parser.add_argument("--realm", "-rm", help="A sample realm")
     parser.add_argument("--rmm", "-rmm", help="A realm management monitor (islet, trp, tf-rmm)", default="islet")
     parser.add_argument("--no-prebuilt-initrd", "-no-pi", help="Not using the prebuilt AOSP initrd", action="store_true")
@@ -422,7 +425,7 @@ if __name__ == "__main__":
         else:
             prepare_kvmtool()
             prepare_kvm_unit_tests()
-            prepare_nw_linux(args.fvp_ip, args.host_ip)
+            prepare_nw_linux(args.fvp_ip, args.host_ip, args.realm_launch)
             prepare_bootloaders(args.rmm, PREBUILT_EDK2)
 
             if args.realm is not None:

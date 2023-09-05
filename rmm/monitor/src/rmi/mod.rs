@@ -112,7 +112,7 @@ pub trait Interface {
     fn create_vcpu(&self, id: usize) -> Result<usize, Error>;
     fn realm_config(&self, id: usize, config_ipa: usize) -> Result<(), Error>;
     fn remove(&self, id: usize) -> Result<(), Error>;
-    fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<([usize; 4]), Error>;
+    fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<[usize; 4], Error>;
     fn map(
         &self,
         id: usize,

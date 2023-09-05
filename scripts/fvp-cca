@@ -309,11 +309,6 @@ def place_realm_at_shared(rmm, realm_ip, fvp_tap_ip, host_ip):
     run(["cp", "-R", "%s/realm/." % OUT, SHARED_PATH], cwd=ROOT)
     run(["cp", "%s/lkvm" % OUT, SHARED_PATH], cwd=ROOT)
     run(["cp", "-R", "%s/kvm-unit-tests" % OUT, SHARED_PATH], cwd=ROOT)
-    if rmm == "islet":
-        # Use the TF-RMM's one until the issue has been resolved 
-        run(["cp", LAUNCH_REALM_TFRMM, LAUNCH_REALM], cwd=ROOT)
-    else: # tf-rmm case
-        run(["cp", LAUNCH_REALM_TFRMM, LAUNCH_REALM], cwd=ROOT)
     run(["cp", LAUNCH_REALM, SHARED_PATH], cwd=ROOT)
     run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
     run(["cp", CONFIGURE_NET, SHARED_PATH], cwd=ROOT)

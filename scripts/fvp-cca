@@ -318,16 +318,24 @@ def run_fvp_acs():
         "--fip",  "%s/fip.bin" % OUT,
         "--acs_build_dir", ACS_BUILD], cwd=ROOT)
 
-def place_realm_at_shared(rmm, realm_ip, fvp_tap_ip, host_ip, no_kvm_unit_tests, no_prebuilt_ml):
-    os.makedirs(SHARED_PATH, exist_ok=True)
-    run(["rm", "-R", "%s/rootfs" % OUT], cwd=ROOT)
-    run(["cp", "-R", "%s/rootfs-realm.cpio.gz" % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
-    run(["mv", "%s/realm/linux.realm" % OUT, SHARED_PATH], cwd=ROOT)
-    run(["mv", "%s/lkvm" % OUT, SHARED_PATH], cwd=ROOT)
+def place_prebuilt_at_shared():
+    run(["cp", "%s/rootfs-realm.cpio.gz" % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
+    run(["cp", "%s/Image" % PREBUILT, OUT], cwd=ROOT)
+    run(["cp", "%s/fvp-base-revc.dtb" % PREBUILT, OUT], cwd=ROOT)
+    run(["cp", PREBUILT_GRUB, OUT], cwd=ROOT)
+
+def place_script_at_shared():
     run(["cp", LAUNCH_REALM, SHARED_PATH], cwd=ROOT)
     run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
     run(["cp", CONFIGURE_NET, SHARED_PATH], cwd=ROOT)
     run(["cp", SET_REALM_IP, SHARED_PATH], cwd=ROOT)
+
+def place_realm_at_shared(rmm, realm_ip, fvp_tap_ip, host_ip, no_kvm_unit_tests, no_prebuilt_ml):
+    os.makedirs(SHARED_PATH, exist_ok=True)
+    run(["cp", "%s/rootfs-realm.cpio.gz" % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
+    run(["mv", "%s/realm/linux.realm" % OUT, SHARED_PATH], cwd=ROOT)
+    run(["mv", "%s/lkvm" % OUT, SHARED_PATH], cwd=ROOT)
+    place_script_at_shared()
     if no_kvm_unit_tests == False:
         run(["cp", "-R", "%s/kvm-unit-tests" % OUT, SHARED_PATH], cwd=ROOT)
 
@@ -366,7 +374,7 @@ def get_all_realms():
     return sorted(realms)
 
 def validate_args(args):
-    nw_list = ["linux", "linux-net", "tf-a-tests", "aosp", "acs"]
+    nw_list = ["linux", "linux-net", "tf-a-tests", "aosp", "acs", "prebuilt"]
     if not args.normal_world in nw_list:
         print("Please select one of the normal components:")
         print("  " + "\n  ".join(nw_list))
@@ -442,6 +450,10 @@ if __name__ == "__main__":
         elif args.normal_world == "acs":
             prepare_acs()
             prepare_bootloaders(args.rmm, ACS_HOST)
+        elif args.normal_world == "prebuilt":
+            prepare_bootloaders(args.rmm, PREBUILT_EDK2)
+            place_script_at_shared()
+            place_prebuilt_at_shared()
         else:
             prepare_kvmtool()
             if args.no_kvm_unit_tests is False:

@@ -9,6 +9,14 @@ name = "monitor"
 path = "src/lib.rs"
 crate-type = ["rlib"]
 
+[features]
+max_level_off   = ["log/max_level_off"]
+max_level_error = ["log/max_level_error"]
+max_level_warn  = ["log/max_level_warn"]
+max_level_info  = ["log/max_level_info"]
+max_level_debug = ["log/max_level_debug"]
+max_level_trace = ["log/max_level_trace"]
+
 [dependencies]
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 linked_list_allocator = "0.10.4"

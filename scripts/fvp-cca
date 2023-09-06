@@ -305,16 +305,18 @@ def run_fvp_acs():
         "--fip",  "%s/fip.bin" % OUT,
         "--acs_build_dir", ACS_BUILD], cwd=ROOT)
 
-def place_realm_at_shared(rmm, realm_ip, fvp_tap_ip, host_ip):
+def place_realm_at_shared(rmm, realm_ip, fvp_tap_ip, host_ip, no_kvm_unit_tests, no_prebuilt_ml):
     os.makedirs(SHARED_PATH, exist_ok=True)
-    run(["cp", "-R", "%s/." % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
-    run(["cp", "-R", "%s/realm/." % OUT, SHARED_PATH], cwd=ROOT)
-    run(["cp", "%s/lkvm" % OUT, SHARED_PATH], cwd=ROOT)
-    run(["cp", "-R", "%s/kvm-unit-tests" % OUT, SHARED_PATH], cwd=ROOT)
+    run(["rm", "-R", "%s/rootfs" % OUT], cwd=ROOT)
+    run(["cp", "-R", "%s/rootfs-realm.cpio.gz" % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
+    run(["mv", "%s/realm/linux.realm" % OUT, SHARED_PATH], cwd=ROOT)
+    run(["mv", "%s/lkvm" % OUT, SHARED_PATH], cwd=ROOT)
     run(["cp", LAUNCH_REALM, SHARED_PATH], cwd=ROOT)
     run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
     run(["cp", CONFIGURE_NET, SHARED_PATH], cwd=ROOT)
     run(["cp", SET_REALM_IP, SHARED_PATH], cwd=ROOT)
+    if no_kvm_unit_tests == False:
+        run(["cp", "-R", "%s/kvm-unit-tests" % OUT, SHARED_PATH], cwd=ROOT)
 
     if realm_ip != None and fvp_tap_ip != None and host_ip != None:
         # set IP address accordingly
@@ -323,6 +325,7 @@ def place_realm_at_shared(rmm, realm_ip, fvp_tap_ip, host_ip):
         run(["sed", "-i", "-e", "s/FVP_TAP_IP/%s/g" % fvp_tap_ip, "%s/set-realm-ip.sh" % SHARED_PATH], cwd=ROOT)
         run(["sed", "-i", "-e", "s/REALM_IP/%s/g" % realm_ip, "%s/set-realm-ip.sh" % SHARED_PATH], cwd=ROOT)
 
+    if no_prebuilt_ml == False:
         # prebuilt examples: confidential-ml
         os.makedirs(SHARED_EXAMPLES_PATH, exist_ok=True)
         run(["cp", "-R", "%s/confidential-ml" % EXAMPLES, SHARED_EXAMPLES_PATH], cwd=ROOT)
@@ -388,6 +391,9 @@ if __name__ == "__main__":
     parser.add_argument("--realm", "-rm", help="A sample realm")
     parser.add_argument("--rmm", "-rmm", help="A realm management monitor (islet, trp, tf-rmm)", default="islet")
     parser.add_argument("--no-prebuilt-initrd", "-no-pi", help="Not using the prebuilt AOSP initrd", action="store_true")
+    parser.add_argument("--no-prebuilt-ml", help="Not using the prebuilt confidential-ml example", action="store_true")
+    parser.add_argument("--no-kvm-unit-tests", help="Do not build kvm unit tests", action="store_true")
+    parser.add_argument("--no-sdk", help="Do not build sdk", action="store_true")
 
     # for the network capability of FVP linux
     parser.add_argument("--host-ip", "-hip", help="the ip address of host machine", default="193.168.10.15")
@@ -424,13 +430,15 @@ if __name__ == "__main__":
             prepare_bootloaders(args.rmm, ACS_HOST)
         else:
             prepare_kvmtool()
-            prepare_kvm_unit_tests()
+            if args.no_kvm_unit_tests is False:
+                prepare_kvm_unit_tests()
             prepare_nw_linux(args.fvp_ip, args.host_ip, args.realm_launch)
             prepare_bootloaders(args.rmm, PREBUILT_EDK2)
 
             if args.realm is not None:
-                place_realm_at_shared(args.rmm, args.realm_ip, args.fvp_tap_ip, args.host_ip)
-                prepare_sdk()
+                place_realm_at_shared(args.rmm, args.realm_ip, args.fvp_tap_ip, args.host_ip, args.no_kvm_unit_tests, args.no_prebuilt_ml)
+                if args.no_sdk is False:
+                    prepare_sdk()
 
     if not args.build_only and args.normal_world == "tf-a-tests":
         run_fvp_tf_a_tests(args.debug)

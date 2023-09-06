@@ -25,8 +25,8 @@ check_result()
 	echo "[!] Tests result: Realm booting succeeded"
 }
 
-$ROOT/scripts/fvp-cca -bo -nw=linux --realm=linux -rmm=islet --realm-launch --no-sdk --no-kvm-unit-tests --no-prebuilt-ml
-$ROOT/scripts/fvp-cca -ro -nw=linux --realm=linux -rmm=islet --realm-launch --no-sdk --no-kvm-unit-tests --no-prebuilt-ml &
+$ROOT/scripts/fvp-cca -bo -nw=linux --realm=linux -rmm=islet --realm-launch --no-sdk --no-kvm-unit-tests --no-prebuilt-ml --rmm-log-level=error
+$ROOT/scripts/fvp-cca -ro -nw=linux --realm=linux -rmm=islet --realm-launch --no-sdk --no-kvm-unit-tests --no-prebuilt-ml --rmm-log-level=error &
 
 sleep 480
 

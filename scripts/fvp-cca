@@ -124,11 +124,24 @@ def prepare_bootloaders(rmm, bl33):
 
         run(["cp", outbin, OUT], cwd=ROOT)
 
-def prepare_rmm(rmm):
+def prepare_rmm(rmm, rmm_log_level):
     print("[!] Building realm management monitor...: %s" % rmm)
 
     if rmm == "islet":
-        run(["cargo", "build", "--release"], cwd=RMM)
+        args = ["cargo", "build", "--release"]
+        if rmm_log_level == "off":
+            args += ["--features", "max_level_off"]
+        elif rmm_log_level == "error":
+            args += ["--features", "max_level_error"]
+        elif rmm_log_level == "warn":
+            args += ["--features", "max_level_warn"]
+        elif rmm_log_level == "info":
+            args += ["--features", "max_level_info"]
+        elif rmm_log_level == "debug":
+            args += ["--features", "max_level_debug"]
+        else:
+            args += ["--features", "max_level_trace"]
+        run(args, cwd=RMM)
         run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
              "%s/aarch64-unknown-none-softfloat/release/fvp" % OUT,
              "%s/rmm.bin" % OUT],
@@ -403,6 +416,7 @@ if __name__ == "__main__":
     parser.add_argument("--route-ip", "-roip", help="the route ip for fvp", default="193.168.20.0")
     parser.add_argument("--gateway", "-gw", help="the gateway ip for host machine", default="193.168.10.1")
     parser.add_argument("--ifname", "-if", help="the main interface name of host machine", default="eth0")
+    parser.add_argument("--rmm-log-level", help="Determine RMM's log-level. Choose among (off, error, warn, info, debug, trace)", default="trace")
 
     args = parser.parse_args()
 
@@ -413,7 +427,7 @@ if __name__ == "__main__":
     validate_args(args)
 
     if not args.run_only:
-        prepare_rmm(args.rmm)
+        prepare_rmm(args.rmm, args.rmm_log_level)
 
         if args.realm is not None:
             prepare_realm(args.realm)

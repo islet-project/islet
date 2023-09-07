@@ -69,11 +69,9 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: true
 
       - name: Install dependencies
-        run: ./scripts/init.sh
+        run: ./scripts/init_min.sh
 
       - name: Run realm-linux booting
         run: ./scripts/tests/realm-boot.sh

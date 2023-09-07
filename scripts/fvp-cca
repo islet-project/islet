@@ -317,6 +317,7 @@ def run_fvp_aosp(debug):
     run(args, cwd=FVP_DIR, new_env=new_env)
 
 def run_fvp_acs():
+    print("[!] Running fvp for acs...")
     run([ACS_RUN,
         "--model", FVP_BIN,
         "--bl1",  "%s/bl1.bin" % OUT,

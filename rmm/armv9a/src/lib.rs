@@ -15,7 +15,6 @@ pub mod mm;
 pub mod panic;
 pub mod realm;
 pub mod rmm;
-pub mod smc;
 
 extern crate alloc;
 

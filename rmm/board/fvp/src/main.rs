@@ -25,12 +25,11 @@ pub unsafe fn main() -> ! {
     );
 
     let rmi = armv9a::realm::registry::RMI::new();
-    let smc = armv9a::smc::SMC::new();
     let rmm = armv9a::rmm::MemoryMap::new();
     monitor::rmm::granule::create_granule_status_table();
-    let monitor = monitor::Monitor::new(rmi, smc, rmm);
+    let monitor = monitor::Monitor::new(rmi, rmm);
     let mut mainloop = monitor::event::Mainloop::new();
-    mainloop.boot_complete(smc);
+    mainloop.boot_complete();
     mainloop.run(&monitor);
 
     panic!("failed to run the mainloop");

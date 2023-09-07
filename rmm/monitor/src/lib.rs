@@ -4,6 +4,7 @@
 #![warn(rust_2018_idioms)]
 #![deny(warnings)]
 
+pub mod asm;
 pub mod error;
 pub mod event;
 #[macro_use]
@@ -17,7 +18,6 @@ pub mod realm;
 pub mod rmi;
 pub mod rmm;
 pub mod rsi;
-pub mod smc;
 
 #[macro_use]
 extern crate log;
@@ -28,21 +28,18 @@ extern crate lazy_static;
 use crate::event::RsiHandle;
 use crate::rmi::RMI;
 use crate::rmm::PageMap;
-use crate::smc::SecureMonitorCall;
 
 pub struct Monitor {
     pub rmi: RMI,
     pub rsi: RsiHandle,
-    pub smc: SecureMonitorCall,
     pub mm: PageMap,
 }
 
 impl Monitor {
-    pub fn new(rmi: RMI, smc: SecureMonitorCall, mm: PageMap) -> Self {
+    pub fn new(rmi: RMI, mm: PageMap) -> Self {
         Self {
             rmi,
             rsi: RsiHandle::new(),
-            smc,
             mm,
         }
     }

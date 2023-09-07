@@ -1,9 +1,9 @@
 extern crate alloc;
 
 use super::Context;
+use crate::asm::smc;
 use crate::rmi;
 use crate::rmi::error::Error;
-use crate::smc::SecureMonitorCall;
 use crate::Monitor;
 
 use alloc::boxed::Box;
@@ -35,16 +35,16 @@ impl Mainloop {
         rmi::version::set_event_handler(self);
     }
 
-    pub fn boot_complete(&mut self, smc: SecureMonitorCall) {
+    pub fn boot_complete(&mut self) {
         let mut ctx = Context::new(rmi::BOOT_COMPLETE);
         ctx.init_arg(&[rmi::BOOT_SUCCESS]);
 
         self.add_event_handlers();
-        self.dispatch(smc, ctx);
+        self.dispatch(ctx);
     }
 
-    pub fn dispatch(&self, smc: SecureMonitorCall, ctx: Context) {
-        let ret = smc.call(ctx.cmd(), ctx.arg_slice());
+    pub fn dispatch(&self, ctx: Context) {
+        let ret = smc(ctx.cmd(), ctx.arg_slice());
         let cmd = ret[0];
 
         rmi::constraint::validate(
@@ -65,8 +65,6 @@ impl Mainloop {
     pub fn run(&self, monitor: &Monitor) {
         loop {
             let mut ctx = self.queue.lock().pop_front().unwrap(); // TODO: remove unwrap here, by introducing a more realistic queue
-            let smc = monitor.smc;
-
             if self.on_event.is_empty() {
                 panic!("There is no registered event handler.");
             }
@@ -82,7 +80,7 @@ impl Mainloop {
             };
 
             ctx.cmd = rmi::REQ_COMPLETE;
-            self.dispatch(smc, ctx);
+            self.dispatch(ctx);
         }
     }
 

@@ -4,10 +4,9 @@ members = [
     "lib/cose",
     "lib/rsi-el0",
     "lib/uart",
+    "plat/fvp",
     "realm/rsi-test",
-    "rmm/armv9a",
-    "rmm/board/fvp",
-    "rmm/monitor",
+    "rmm/",
     "sdk",
 ]
 

@@ -24,7 +24,7 @@ PREBUILT_EXAMPLES = os.path.join(PREBUILT, "examples")
 REALM_ROOTFS = os.path.join(ROOT, "assets/rootfs")
 
 REALM = os.path.join(ROOT, "realm")
-RMM = os.path.join(ROOT, "rmm/board/fvp")
+RMM = os.path.join(ROOT, "plat/fvp")
 SDK = os.path.join(ROOT, "sdk/")
 RSI_KO = os.path.join(ROOT, "realm/linux-rsi")
 EXAMPLES = os.path.join(ROOT, "examples")

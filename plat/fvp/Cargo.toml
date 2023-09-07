@@ -1,0 +1,27 @@
+[package]
+name = "fvp"
+version = "0.0.1"
+authors = ["Islet Contributors"]
+edition = "2021"
+
+[[bin]]
+name = "fvp"
+path = "src/main.rs"
+
+[features]
+max_level_off   = ["log/max_level_off"  , "monitor/max_level_off"  , "armv9a/max_level_off"  ]
+max_level_error = ["log/max_level_error", "monitor/max_level_error", "armv9a/max_level_error"]
+max_level_warn  = ["log/max_level_warn" , "monitor/max_level_warn" , "armv9a/max_level_warn" ]
+max_level_info  = ["log/max_level_info" , "monitor/max_level_info" , "armv9a/max_level_info" ]
+max_level_debug = ["log/max_level_debug", "monitor/max_level_debug", "armv9a/max_level_debug"]
+max_level_trace = ["log/max_level_trace", "monitor/max_level_trace", "armv9a/max_level_trace"]
+
+[dependencies]
+islet_rmm = { path = "../../rmm" }
+bitflags = "1.3"
+linked_list_allocator = "0.10.4"
+log = "0.4.17"
+uart = { path = "../../lib/uart" }
+
+[build-dependencies]
+cc = "1.0"

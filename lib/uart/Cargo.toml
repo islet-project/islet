@@ -9,5 +9,5 @@ name = "uart"
 path = "src/lib.rs"
 
 [dependencies]
-monitor = { path = "../../rmm/monitor" }
+islet_rmm = { path = "../../rmm" }
 spinning_top = "0.2.4"

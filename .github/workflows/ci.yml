@@ -113,10 +113,8 @@ jobs:
 
     - name: Check rust coding-style
       run: |
-        cd rmm
-        cd monitor && cargo fmt -- --check && cd -
-        cd armv9a && cargo fmt -- --check && cd -
-        cd board/fvp && cargo fmt -- --check
+        cd rmm && cargo fmt -- --check && cd -
+        cd plat/fvp && cargo fmt -- --check
 
     - uses: actions-rs/audit-check@v1
       with:

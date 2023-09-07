@@ -3,7 +3,7 @@ extern crate alloc;
 use alloc::boxed::Box;
 use spinning_top::Spinlock;
 
-use monitor::io::{self, ConsoleWriter, Error, ErrorKind, Result, Write};
+use islet_rmm::io::{self, ConsoleWriter, Error, ErrorKind, Result, Write};
 
 const CLK_IN_HZ: usize = 24000000;
 const BAUDRATE: usize = 115200;

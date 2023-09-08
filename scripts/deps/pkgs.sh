@@ -11,6 +11,7 @@ sudo apt install -y -qq --no-install-recommends \
 	libxml-libxml-perl \
 	jq lcov graphviz inkscape \
 	flex bison \
+	bzip2 \
 	srecord
 
 pip3 install toml

@@ -29,8 +29,10 @@ check_result()
 tar -xf $ROOT/out.tar.bz2 -C $ROOT
 # Use the below after assets gets updated
 #tar -xf $ROOT/assets/prebuilt/out.tar.bz2 -C $ROOT
-$ROOT/scripts/fvp-cca -bo -nw=prebuilt -rmm=islet --rmm-log-level=error
-$ROOT/scripts/fvp-cca -ro -nw=linux --realm=linux -rmm=islet &
+###$ROOT/scripts/fvp-cca -bo -nw=prebuilt -rmm=islet --rmm-log-level=error
+###$ROOT/scripts/fvp-cca -ro -nw=linux --realm=linux -rmm=islet &
+$ROOT/scripts/fvp-cca -bo -nw=prebuilt -rmm=tf-rmm
+$ROOT/scripts/fvp-cca -ro -nw=linux --realm=linux -rmm=tf-rmm &
 
 sleep 360
 

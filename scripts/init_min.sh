@@ -11,6 +11,7 @@ $HERE/deps/pkgs.sh
 # Sync submodules (only assets and tf-a)
 git submodule update --init --depth 1 $ROOT/assets   
 git submodule update --init --depth 1 $ROOT/third-party/tf-a
+git submodule update --init --depth 1 --recursive $ROOT/third-party/tf-rmm
 
 # Install rust
 $HERE/deps/rust.sh

@@ -1,9 +1,9 @@
+use super::timer;
 use crate::cpu::get_cpu_id;
 use crate::gic;
-use crate::helper::{SPSR_EL2, TPIDR_EL2};
 use crate::realm::vcpu::VCPU;
 
-use super::timer;
+use armv9a::regs::*;
 
 #[repr(C)]
 #[derive(Default, Debug)]

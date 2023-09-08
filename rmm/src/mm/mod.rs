@@ -4,7 +4,7 @@ pub mod guard;
 pub mod page;
 pub mod page_table;
 
-use crate::{define_bitfield, define_bits, define_mask};
+use armv9a::{define_bitfield, define_bits, define_mask};
 
 define_bits!(
     RawGPA, // ref. K6.1.2

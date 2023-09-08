@@ -1,5 +1,6 @@
 use crate::mm::address::PhysAddr;
-use crate::{define_bitfield, define_bits, define_mask};
+
+use armv9a::{define_bitfield, define_bits, define_mask};
 
 pub mod invalid_hipas {
     pub const UNASSIGNED: u64 = 0b00;

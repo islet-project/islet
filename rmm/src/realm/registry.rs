@@ -7,10 +7,6 @@ use crate::rmi::MapProt;
 
 use crate::gic;
 use crate::gic::{GIC_FEATURES, ICH_HCR_EL2_EOI_COUNT_MASK, ICH_HCR_EL2_NS_MASK};
-use crate::helper;
-use crate::helper::bits_in_reg;
-use crate::helper::VTTBR_EL2;
-use crate::helper::{EsrEl2, ESR_EL2_EC_DATA_ABORT};
 use crate::realm;
 use crate::realm::config::RealmConfig;
 use crate::realm::context::Context;
@@ -23,10 +19,12 @@ use crate::realm::timer;
 use crate::rmi::error::Error;
 use crate::rmi::error::InternalError::*;
 use crate::rmi::rtt_entry_state;
+use crate::rmm::rmm_exit;
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
 use alloc::sync::Arc;
+use armv9a::{bits_in_reg, regs::*};
 use spin::mutex::Mutex;
 use spinning_top::Spinlock;
 
@@ -41,7 +39,7 @@ fn enter() -> [usize; 4] {
                 vcpu.from_current();
             } else {
                 vcpu.realm.lock().page_table.lock().clean();
-                return helper::rmm_exit([0; 4]);
+                return rmm_exit([0; 4]);
             }
         }
         [0, 0, 0, 0]
@@ -163,16 +161,16 @@ impl crate::rmi::Interface for RMI {
         let prot = MapProt::new(prot);
 
         if prot.is_set(MapProt::NS_PAS) {
-            flags |= helper::bits_in_reg(RawPTE::NS, 0b1);
+            flags |= bits_in_reg(RawPTE::NS, 0b1);
         }
 
         // TODO:  define bit mask
-        flags |= helper::bits_in_reg(RawPTE::S2AP, pte::permission::RW);
+        flags |= bits_in_reg(RawPTE::S2AP, pte::permission::RW);
         if prot.is_set(MapProt::DEVICE) {
-            flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::DEVICE_NGNRE);
-            flags |= helper::bits_in_reg(RawPTE::NS, 0b1);
+            flags |= bits_in_reg(RawPTE::ATTR, pte::attribute::DEVICE_NGNRE);
+            flags |= bits_in_reg(RawPTE::NS, 0b1);
         } else {
-            flags |= helper::bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL);
+            flags |= bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL);
         }
 
         get_realm(id)
@@ -513,10 +511,10 @@ impl crate::rmi::Interface for RMI {
     ) -> Result<(), Error> {
         let size = crate::rmm::granule::GRANULE_SIZE;
         let mut new_s2tte = host_s2tte as u64;
-        new_s2tte |= helper::bits_in_reg(S2TTE::NS, 1)
-            | helper::bits_in_reg(S2TTE::XN, 1)
-            | helper::bits_in_reg(S2TTE::AF, 1)
-            | helper::bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
+        new_s2tte |= bits_in_reg(S2TTE::NS, 1)
+            | bits_in_reg(S2TTE::XN, 1)
+            | bits_in_reg(S2TTE::AF, 1)
+            | bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
         let s2tte = S2TTE::from(new_s2tte as usize);
         let pa = s2tte.get_masked(S2TTE::ADDR_FULL);
         let flags = s2tte.get_masked(S2TTE::PAGE_FLAGS);
@@ -559,8 +557,8 @@ impl crate::rmi::Interface for RMI {
             let pa: usize = s2tte.address(level).ok_or(Error::RmiErrorRtt)?.into();
             let size = crate::rmm::granule::GRANULE_SIZE;
             let mut flags = 0;
-            flags |= helper::bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
-            flags |= helper::bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
+            flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
+            flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
 
             get_realm(id)
                 .ok_or(Error::RmiErrorOthers(NotExistRealm))?
@@ -578,7 +576,7 @@ impl crate::rmi::Interface for RMI {
             let pa: usize = s2tte.address(level).ok_or(Error::RmiErrorRtt)?.into();
             let size = crate::rmm::granule::GRANULE_SIZE;
             let mut flags = 0;
-            flags |= helper::bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
+            flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
             get_realm(id)
                 .ok_or(Error::RmiErrorOthers(NotExistRealm))?
                 .lock()
@@ -620,10 +618,10 @@ impl crate::rmi::Interface for RMI {
 
         let mut flags = 0 as u64;
         if valid {
-            flags |= helper::bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::DESTROYED);
+            flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::DESTROYED);
         } else {
-            flags |= helper::bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
-            flags |= helper::bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
+            flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
+            flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
         }
         let size = crate::rmm::granule::GRANULE_SIZE;
         get_realm(id)

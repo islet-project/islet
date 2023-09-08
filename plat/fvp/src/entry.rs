@@ -1,8 +1,7 @@
 use crate::allocator;
-use crate::helper;
-use crate::helper::ID_AA64MMFR0_EL1;
 use crate::log::LevelFilter;
 
+use armv9a::regs::*;
 use islet_rmm::config::{NUM_OF_CPU, RMM_STACK_SIZE};
 use islet_rmm::io::stdout;
 use islet_rmm::logger;
@@ -87,5 +86,5 @@ unsafe fn setup() {
         (&mut COLD_BOOT as *mut bool).write_volatile(false);
     }
     translation::set_register_mm();
-    helper::init();
+    islet_rmm::init_el2();
 }

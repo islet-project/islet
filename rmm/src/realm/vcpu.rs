@@ -1,8 +1,7 @@
-pub use crate::helper::regs::current_vcpu as current;
-
 use super::Realm;
 
 use alloc::sync::{Arc, Weak};
+use armv9a::regs::*;
 use spin::Mutex;
 
 extern crate alloc;
@@ -80,4 +79,11 @@ pub enum State {
     Null,
     Ready,
     Running,
+}
+
+pub unsafe fn current() -> Option<&'static mut VCPU<crate::realm::context::Context>> {
+    match TPIDR_EL2.get() {
+        0 => None,
+        current => Some(&mut *(current as *mut VCPU<crate::realm::context::Context>)),
+    }
 }

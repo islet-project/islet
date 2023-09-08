@@ -1,12 +1,11 @@
+use super::pte;
 use crate::mm::address::PhysAddr;
 use crate::mm::error::Error;
 use crate::mm::page_table::{self, Level};
-
-use super::super::translation_granule_4k::RawPTE;
-use super::pte;
 use crate::mm::RawGPA;
+use crate::realm::mm::translation_granule_4k::RawPTE;
 
-use crate::helper::bits_in_reg;
+use armv9a::bits_in_reg;
 
 #[derive(Clone, Copy)]
 pub struct Entry(RawPTE);

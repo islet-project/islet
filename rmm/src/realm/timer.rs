@@ -1,17 +1,7 @@
 use super::context::Context;
-use crate::define_sys_register;
-// compiler doesn't understand the register, use the code instead
-use crate::helper::S3_4_C14_C1_0; // CNTHCTL_EL2
 use crate::realm::vcpu::VCPU;
 
-define_sys_register!(CNTVOFF_EL2);
-define_sys_register!(CNTV_CVAL_EL0);
-define_sys_register!(CNTV_CTL_EL0);
-define_sys_register!(S3_4_C14_C0_6); // CNTPOFF_EL2
-define_sys_register!(CNTP_CVAL_EL0);
-define_sys_register!(CNTP_CTL_EL0);
-define_sys_register!(CNTVCT_EL0);
-define_sys_register!(CNTV_TVAL_EL0);
+use armv9a::regs::*;
 
 pub fn init_timer(vcpu: &mut VCPU<Context>) {
     let timer = &mut vcpu.context.timer;

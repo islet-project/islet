@@ -1,0 +1,5 @@
+[package]
+name = "armv9a"
+version = "0.0.1"
+authors = ["Islet Contributors"]
+edition = "2021"

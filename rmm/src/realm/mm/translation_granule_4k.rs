@@ -1,4 +1,4 @@
-use crate::{define_bitfield, define_bits, define_mask};
+use armv9a::{define_bitfield, define_bits, define_mask};
 
 define_bits!(
     RawPTE,

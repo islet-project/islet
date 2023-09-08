@@ -5,6 +5,7 @@ authors = ["Islet Contributors"]
 edition = "2021"
 
 [dependencies]
+armv9a = { path = "../lib/armv9a" }
 hashbrown = "0.14"
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 linked_list_allocator = "0.10.4"

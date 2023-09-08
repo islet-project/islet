@@ -17,8 +17,9 @@ max_level_debug = ["log/max_level_debug", "monitor/max_level_debug", "armv9a/max
 max_level_trace = ["log/max_level_trace", "monitor/max_level_trace", "armv9a/max_level_trace"]
 
 [dependencies]
-islet_rmm = { path = "../../rmm" }
+armv9a = { path = "../../lib/armv9a" }
 bitflags = "1.3"
+islet_rmm = { path = "../../rmm" }
 linked_list_allocator = "0.10.4"
 log = "0.4.17"
 uart = { path = "../../lib/uart" }

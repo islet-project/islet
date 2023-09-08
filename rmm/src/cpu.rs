@@ -1,5 +1,6 @@
 use crate::config::NUM_OF_CPU_PER_CLUSTER;
-use crate::helper::MPIDR_EL1;
+
+use armv9a::regs::*;
 
 #[no_mangle]
 pub extern "C" fn get_cpu_id() -> usize {

@@ -6,10 +6,10 @@ use self::syndrome::Syndrome;
 use super::lower::synchronous;
 use crate::cpu;
 use crate::event::realmexit;
-use crate::helper::{FAR_EL2, HPFAR_EL2};
 use crate::realm::context::Context;
-
 use crate::realm::vcpu::VCPU;
+
+use armv9a::regs::*;
 
 #[repr(u16)]
 #[derive(Debug, Copy, Clone)]

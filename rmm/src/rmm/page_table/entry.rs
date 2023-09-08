@@ -1,12 +1,10 @@
+use super::attr;
 use crate::mm::address::PhysAddr;
 use crate::mm::error::Error;
 use crate::mm::page_table::{self, Level};
-
-use super::attr;
 use crate::mm::RawGPA;
-use crate::{define_bitfield, define_bits, define_mask};
 
-use crate::helper::bits_in_reg;
+use armv9a::{define_bitfield, define_bits, define_mask};
 
 define_bits!(
     PTDesc,
@@ -88,7 +86,7 @@ impl page_table::Entry for Entry {
     fn set_with_page_table_flags(&mut self, addr: PhysAddr) -> Result<(), Error> {
         self.set(
             addr,
-            bits_in_reg(PTDesc::TYPE, attr::page_type::TABLE_OR_PAGE),
+            armv9a::bits_in_reg(PTDesc::TYPE, attr::page_type::TABLE_OR_PAGE),
             false,
         )
     }

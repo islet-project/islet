@@ -1,15 +1,15 @@
 use super::page::RmmBasePageSize;
-use super::page_table::entry::{Entry, PTDesc};
+use super::page_table::entry::Entry;
 use super::page_table::{attr, L1Table};
 use crate::config::PAGE_SIZE;
-use crate::helper;
-use crate::helper::{bits_in_reg, regs};
-use core::arch::asm;
-
 use crate::mm::address::PhysAddr;
 use crate::mm::page::Page;
 use crate::mm::page_table::{Level, PageTable, PageTableMethods};
 use crate::rmm::address::VirtAddr;
+use crate::rmm::page_table::entry::PTDesc;
+
+use armv9a::{bits_in_reg, regs::*};
+use core::arch::asm;
 use core::ffi::c_void;
 use core::fmt;
 use lazy_static::lazy_static;
@@ -63,9 +63,9 @@ impl<'a> RmmPageTable<'a> {
             return;
         }
 
-        let ro_flags = helper::bits_in_reg(PTDesc::AP, attr::permission::RO);
-        let rw_flags = helper::bits_in_reg(PTDesc::AP, attr::permission::RW);
-        let rmm_flags = helper::bits_in_reg(PTDesc::INDX, attr::mair_idx::RW_DATA);
+        let ro_flags = bits_in_reg(PTDesc::AP, attr::permission::RO);
+        let rw_flags = bits_in_reg(PTDesc::AP, attr::permission::RW);
+        let rmm_flags = bits_in_reg(PTDesc::INDX, attr::mair_idx::RW_DATA);
 
         unsafe {
             let base_address = &__RMM_BASE__ as *const u64 as u64;
@@ -140,9 +140,9 @@ pub fn set_register_mm() {
     }
 
     // /* Set attributes in the right indices of the MAIR. */
-    let mair_el2 = bits_in_reg(regs::MAIR_EL2::Attr0, regs::mair_attr::NORMAL)
-        | bits_in_reg(regs::MAIR_EL2::Attr1, regs::mair_attr::DEVICE_NGNRNE)
-        | bits_in_reg(regs::MAIR_EL2::Attr2, regs::mair_attr::DEVICE_NGNRE);
+    let mair_el2 = bits_in_reg(MAIR_EL2::Attr0, mair_attr::NORMAL)
+        | bits_in_reg(MAIR_EL2::Attr1, mair_attr::DEVICE_NGNRNE)
+        | bits_in_reg(MAIR_EL2::Attr2, mair_attr::DEVICE_NGNRE);
 
     /*
      * The size of the virtual address space is configured as 64 – T0SZ.
@@ -151,14 +151,14 @@ pub fn set_register_mm() {
      * space is covered by a single L1 table.
      * Therefore, our starting level of translation is level 1.
      */
-    let mut tcr_el2 = bits_in_reg(regs::TCR_EL2::T0SZ, 0x19);
+    let mut tcr_el2 = bits_in_reg(TCR_EL2::T0SZ, 0x19);
 
     // configure the tcr_el2 attributes
-    tcr_el2 |= bits_in_reg(regs::TCR_EL2::PS, regs::tcr_paddr_size::PS_1T)
-        | bits_in_reg(regs::TCR_EL2::TG0, regs::tcr_granule::G_4K)
-        | bits_in_reg(regs::TCR_EL2::SH0, regs::tcr_shareable::INNER)
-        | bits_in_reg(regs::TCR_EL2::ORGN0, regs::tcr_cacheable::WBWA)
-        | bits_in_reg(regs::TCR_EL2::IRGN0, regs::tcr_cacheable::WBWA);
+    tcr_el2 |= bits_in_reg(TCR_EL2::PS, tcr_paddr_size::PS_1T)
+        | bits_in_reg(TCR_EL2::TG0, tcr_granule::G_4K)
+        | bits_in_reg(TCR_EL2::SH0, tcr_shareable::INNER)
+        | bits_in_reg(TCR_EL2::ORGN0, tcr_cacheable::WBWA)
+        | bits_in_reg(TCR_EL2::IRGN0, tcr_cacheable::WBWA);
 
     // set the ttlb base address, this is where the memory address translation
     // table walk starts
@@ -167,18 +167,18 @@ pub fn set_register_mm() {
     unsafe {
         // Invalidate the local I-cache so that any instructions fetched
         // speculatively are discarded.
-        regs::MAIR_EL2.set(mair_el2);
-        regs::TCR_EL2.set(tcr_el2);
-        regs::TTBR0_EL2.set(ttlb_base);
+        MAIR_EL2.set(mair_el2);
+        TCR_EL2.set(tcr_el2);
+        TTBR0_EL2.set(ttlb_base);
         asm!("dsb ish", "isb",);
     }
 }
 
 pub fn set_pages_for_rmi(addr: usize, secure: bool) {
-    let rw_flags = helper::bits_in_reg(PTDesc::AP, attr::permission::RW);
-    let memattr_flags = helper::bits_in_reg(PTDesc::INDX, attr::mair_idx::RMM_MEM);
-    let sh_flags = helper::bits_in_reg(PTDesc::SH, attr::shareable::INNER);
-    let secure_flags = helper::bits_in_reg(PTDesc::NS, !secure as u64);
+    let rw_flags = bits_in_reg(PTDesc::AP, attr::permission::RW);
+    let memattr_flags = bits_in_reg(PTDesc::INDX, attr::mair_idx::RMM_MEM);
+    let sh_flags = bits_in_reg(PTDesc::SH, attr::shareable::INNER);
+    let secure_flags = bits_in_reg(PTDesc::NS, !secure as u64);
     let va = VirtAddr::from(addr);
     let phys = PhysAddr::from(addr);
 

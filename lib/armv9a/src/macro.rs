@@ -130,7 +130,7 @@ macro_rules! define_bits {
         #[allow(non_snake_case)]
         #[derive(Copy, Clone)]
         #[repr(C)]
-        pub struct $name (u64);
+        pub struct $name (pub u64);
         impl $name {
             #[inline(always)]
             pub fn new(data: u64) -> $name {

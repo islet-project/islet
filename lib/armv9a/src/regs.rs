@@ -1,3 +1,5 @@
+use crate::bits_in_reg;
+
 define_sys_register!(
     MPIDR_EL1,     // ref. D7.2.74
     AFF2[23 - 16], // Affinity level 2
@@ -65,16 +67,7 @@ define_sys_register!(
 );
 
 define_sys_register!(ELR_EL2);
-
 define_sys_register!(TPIDR_EL2);
-use crate::realm::context::Context;
-use crate::realm::vcpu::VCPU;
-pub unsafe fn current_vcpu() -> Option<&'static mut VCPU<Context>> {
-    match TPIDR_EL2.get() {
-        0 => None,
-        current => Some(&mut *(current as *mut VCPU<Context>)),
-    }
-}
 
 define_sys_register!(
     HCR_EL2, // ref. D13.2.46\
@@ -308,3 +301,93 @@ define_sys_register!(
 );
 //CNTHCTL_EL2: S3_4_C14_C1_0
 define_sys_register!(S3_4_C14_C1_0, EL1PCTEN[11 - 11], EL1PTEN[10 - 10]);
+
+define_sys_register!(CNTVOFF_EL2);
+define_sys_register!(CNTV_CVAL_EL0);
+define_sys_register!(CNTV_CTL_EL0);
+define_sys_register!(S3_4_C14_C0_6); // CNTPOFF_EL2
+define_sys_register!(CNTP_CVAL_EL0);
+define_sys_register!(CNTP_CTL_EL0);
+define_sys_register!(CNTVCT_EL0);
+define_sys_register!(CNTV_TVAL_EL0);
+
+macro_rules! define_iss_id {
+    ($name:ident, $Op0:expr, $Op1:expr, $CRn:expr, $CRm:expr, $Op2:expr) => {
+        pub const $name: u32 = bits_in_reg(ISS::Op0, $Op0) as u32
+            | bits_in_reg(ISS::Op1, $Op1) as u32
+            | bits_in_reg(ISS::CRn, $CRn) as u32
+            | bits_in_reg(ISS::CRm, $CRm) as u32
+            | bits_in_reg(ISS::Op2, $Op2) as u32;
+    };
+}
+
+define_bits!(
+    ISS,
+    IL[25 - 25],
+    Op0[21 - 20],
+    Op2[19 - 17],
+    Op1[16 - 14],
+    CRn[13 - 10],
+    Rt[9 - 5],
+    CRm[4 - 1],
+    Direction[0 - 0]
+);
+
+define_sys_register!(ID_AA64PFR0_EL1);
+define_bits!(AA64PFR0, AMU[47 - 44], SVE[35 - 32]);
+define_iss_id!(ISS_ID_AA64PFR0_EL1, 3, 0, 0, 4, 0);
+
+define_sys_register!(ID_AA64PFR1_EL1);
+define_bits!(AA64PFR1, MTE[11 - 8]);
+define_iss_id!(ISS_ID_AA64PFR1_EL1, 3, 0, 0, 4, 1);
+
+// TODO: current compiler doesn't understand this sysreg
+//define_sys_register!(ID_AA64ZFR0_EL1);
+//define_iss_id!(ISS_ID_AA64ZFR0_EL1, 3, 0, 0, 4, 4);
+
+define_sys_register!(ID_AA64DFR0_EL1);
+define_bits!(
+    AA64DFR0,
+    BRBE[55 - 52],
+    MTPMU[51 - 48],
+    TraceBuffer[47 - 44],
+    TraceFilt[43 - 40],
+    PMSVer[35 - 32],
+    CTX_CMPs[31 - 28],
+    WRPs[23 - 20],
+    BRPs[15 - 12],
+    PMUVer[11 - 8],
+    TraceVer[7 - 4],
+    DebugVer[3 - 0]
+);
+define_iss_id!(ISS_ID_AA64DFR0_EL1, 3, 0, 0, 5, 0);
+
+define_sys_register!(ID_AA64DFR1_EL1);
+define_iss_id!(ISS_ID_AA64DFR1_EL1, 3, 0, 0, 5, 1);
+
+define_sys_register!(ID_AA64AFR0_EL1);
+define_iss_id!(ISS_ID_AA64AFR0_EL1, 3, 0, 0, 5, 4);
+
+define_sys_register!(ID_AA64AFR1_EL1);
+define_iss_id!(ISS_ID_AA64AFR1_EL1, 3, 0, 0, 5, 5);
+
+define_sys_register!(ID_AA64ISAR0_EL1);
+define_iss_id!(ISS_ID_AA64ISAR0_EL1, 3, 0, 0, 6, 0);
+
+define_sys_register!(ID_AA64ISAR1_EL1);
+define_bits!(
+    AA64ISAR1,
+    GPI[31 - 28],
+    GPA[27 - 24],
+    APA[7 - 4],
+    API[11 - 8]
+);
+define_iss_id!(ISS_ID_AA64ISAR1_EL1, 3, 0, 0, 6, 1);
+
+define_iss_id!(ISS_ID_AA64MMFR0_EL1, 3, 0, 0, 7, 0);
+
+define_sys_register!(ID_AA64MMFR1_EL1);
+define_iss_id!(ISS_ID_AA64MMFR1_EL1, 3, 0, 0, 7, 1);
+
+define_sys_register!(ID_AA64MMFR2_EL1);
+define_iss_id!(ISS_ID_AA64MMFR2_EL1, 3, 0, 0, 7, 2);

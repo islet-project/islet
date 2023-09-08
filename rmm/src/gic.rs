@@ -1,15 +1,7 @@
-use crate::helper::ICH_VTR_EL2;
-use crate::helper::{
-    ICH_AP0R0_EL2, ICH_AP0R1_EL2, ICH_AP0R2_EL2, ICH_AP0R3_EL2, ICH_AP1R0_EL2, ICH_AP1R1_EL2,
-    ICH_AP1R2_EL2, ICH_AP1R3_EL2,
-};
-use crate::helper::{
-    ICH_HCR_EL2, ICH_LR0_EL2, ICH_LR10_EL2, ICH_LR11_EL2, ICH_LR12_EL2, ICH_LR13_EL2, ICH_LR14_EL2,
-    ICH_LR15_EL2, ICH_LR1_EL2, ICH_LR2_EL2, ICH_LR3_EL2, ICH_LR4_EL2, ICH_LR5_EL2, ICH_LR6_EL2,
-    ICH_LR7_EL2, ICH_LR8_EL2, ICH_LR9_EL2, ICH_MISR_EL2, ICH_VMCR_EL2,
-};
 use crate::realm::context::Context;
 use crate::realm::vcpu::VCPU;
+
+use armv9a::regs::*;
 use lazy_static::lazy_static;
 
 // Interrupt Controller List Registers (ICH_LR)

@@ -1,9 +1,9 @@
-use crate::mm::page::PageSize;
-
 use super::page_table::pte;
 use super::translation_granule_4k::RawPTE;
 use crate::config::{HUGE_PAGE_SIZE, LARGE_PAGE_SIZE, PAGE_SIZE};
-use crate::helper::bits_in_reg;
+use crate::mm::page::PageSize;
+
+use armv9a::bits_in_reg;
 
 #[derive(Clone, Copy)]
 /// A 4 KiB page mapped in the L3Table.

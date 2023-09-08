@@ -12,7 +12,6 @@ mod entry;
 
 use islet_rmm::allocator;
 use islet_rmm::cpu;
-use islet_rmm::helper;
 
 use islet_rmm;
 
@@ -21,7 +20,7 @@ pub unsafe fn main() -> ! {
     info!(
         "booted on core {:2} with EL{}!",
         cpu::get_cpu_id(),
-        helper::regs::current_el()
+        armv9a::regs::current_el()
     );
 
     let rmi = islet_rmm::realm::registry::RMI::new();

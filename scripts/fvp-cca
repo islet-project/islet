@@ -249,7 +249,7 @@ def run_fvp_tf_a_tests(debug):
         args += ["--cadi-server"]
     run(args, cwd=FVP_DIR)
 
-def run_fvp_linux(debug, trace):
+def run_fvp_linux(debug, trace, no_telnet):
     print("[!] Running fvp for linux...")
     args = ["./FVP_Base_RevC-2xAEMvA",
             "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
@@ -258,6 +258,11 @@ def run_fvp_linux(debug, trace):
             "-C", "bp.virtiop9device.root_path=%s" % SHARED_PATH,
             "-f", CONFIG,
             "-Q", "1000"]
+    if no_telnet:
+        args += ["-C", "bp.terminal_0.start_telnet=0",
+                "-C", "bp.terminal_1.start_telnet=0",
+                "-C", "bp.terminal_2.start_telnet=0",
+                "-C", "bp.terminal_3.start_telnet=0"]
     if debug:
         args += ["--cadi-server"]
     if trace:
@@ -416,6 +421,7 @@ if __name__ == "__main__":
     parser.add_argument("--no-prebuilt-ml", help="Not using the prebuilt confidential-ml example", action="store_true")
     parser.add_argument("--no-kvm-unit-tests", help="Do not build kvm unit tests", action="store_true")
     parser.add_argument("--no-sdk", help="Do not build sdk", action="store_true")
+    parser.add_argument("--no-telnet", help="Do not use telnet", action="store_true")
 
     # for the network capability of FVP linux
     parser.add_argument("--host-ip", "-hip", help="the ip address of host machine", default="193.168.10.15")
@@ -471,7 +477,7 @@ if __name__ == "__main__":
         run_fvp_tf_a_tests(args.debug)
 
     if not args.build_only and args.normal_world == "linux":
-        run_fvp_linux(args.debug, args.trace)
+        run_fvp_linux(args.debug, args.trace, args.no_telnet)
 
     if not args.build_only and args.normal_world == "linux-net":
         run_fvp_linux_net(args.debug, args.host_ip, args.fvp_ip, args.fvp_tap_ip, args.realm_ip, args.route_ip, args.gateway, args.ifname)

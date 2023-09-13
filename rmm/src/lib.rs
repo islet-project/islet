@@ -15,7 +15,9 @@ pub mod cpu;
 pub mod error;
 pub mod event;
 pub mod exception;
+#[macro_use]
 pub mod gic;
+pub mod granule;
 #[macro_use]
 pub mod host;
 pub mod io;
@@ -25,7 +27,6 @@ pub mod mm;
 pub mod panic;
 pub mod realm;
 pub mod rmi;
-pub mod rmm;
 pub mod rsi;
 #[macro_use]
 pub mod r#macro;
@@ -41,22 +42,19 @@ extern crate log;
 use crate::event::RsiHandle;
 use crate::exception::vectors;
 use crate::rmi::RMI;
-use crate::rmm::PageMap;
 
 use armv9a::{bits_in_reg, regs::*};
 
 pub struct Monitor {
     pub rmi: RMI,
     pub rsi: RsiHandle,
-    pub mm: PageMap,
 }
 
 impl Monitor {
-    pub fn new(rmi: RMI, mm: PageMap) -> Self {
+    pub fn new(rmi: RMI) -> Self {
         Self {
             rmi,
             rsi: RsiHandle::new(),
-            mm,
         }
     }
 }
@@ -107,4 +105,30 @@ unsafe fn activate_stage2_mmu() {
     VTCR_EL2.set(vtcr_el2);
 
     core::arch::asm!("tlbi alle2", "dsb ish", "isb",);
+}
+
+/// Call `rmm_exit` within `exception/vectors.s` and jumps to EL1.
+///
+/// Currently, this function gets [0usize; 3] as an argument to initialize
+/// x0, x1 and x2 registers.
+///
+/// When an exception occurs and the flow comes back to EL2 through `rmm_enter`,
+/// x0, x1 and x2 registers might be changed to contain additional information
+/// set from `handle_lower_exception`.
+/// These are the return values of this function.
+/// The return value encodes: [rmi::RET_XXX, ret_val1, ret_val2]
+/// In most cases, the function returns [rmi::RET_SUCCESS, _, _]
+/// pagefault returns [rmi::RET_PAGE_FAULT, faulted address, _]
+pub unsafe fn rmm_exit(args: [usize; 4]) -> [usize; 4] {
+    let mut ret: [usize; 4] = [0usize; 4];
+
+    core::arch::asm!(
+        "bl rmm_exit",
+        inlateout("x0") args[0] => ret[0],
+        inlateout("x1") args[1] => ret[1],
+        inlateout("x2") args[2] => ret[2],
+        inlateout("x3") args[3] => ret[3],
+    );
+
+    ret
 }

@@ -1,30 +1,31 @@
 #[macro_use]
 pub mod pointer;
 
-use crate::mm::guard::Content;
-use crate::rmm::granule::validate_addr;
-use crate::rmm::granule::{GranuleState, GRANULE_SIZE};
-use crate::rmm::PageMap;
+use crate::granule::validate_addr;
+use crate::granule::{GranuleState, GRANULE_SIZE};
+use crate::mm::page_table::{map, unmap};
+
+use paging::guard::Content;
 
 /// This trait is used to enforce security checks for physical region allocated by the host.
 /// This is used for `PointerGuard` which is not able to modify data.
 pub trait Accessor {
     /// Try to do page-relevant stuff (e.g., RMM map).
     /// returns true only if everything goes well.
-    fn acquire(ptr: usize, page_map: PageMap) -> bool {
+    fn acquire(ptr: usize) -> bool {
         if !validate_addr(ptr) {
             return false;
         }
         // TODO: check if the granule state of `ptr` is Undelegated.
-        page_map.map(ptr, false)
+        map(ptr, false)
     }
 
     /// Try to clean up page-relevant stuff done by `acquire`.
     /// Structs that implement this trait must synchronize this function with `acquire`.
     /// returns true only if everything goes well.
-    fn release(ptr: usize, page_map: PageMap) -> bool {
+    fn release(ptr: usize) -> bool {
         // TODO: check if the granule state of `ptr` is Undelegated.
-        page_map.unmap(ptr)
+        unmap(ptr)
     }
 
     /// Validate each field in a struct that implements this trait.

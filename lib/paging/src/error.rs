@@ -1,5 +1,3 @@
-use crate::rmi::error::Error as RmiError;
-
 #[derive(Debug, PartialEq)]
 pub enum Error {
     MmStateError,
@@ -32,12 +30,5 @@ impl From<Error> for usize {
             Error::MmSubtableError => 19,
             Error::MmErrorOthers => 99,
         }
-    }
-}
-
-impl From<Error> for RmiError {
-    fn from(_e: Error) -> Self {
-        //error!("MmError occured: {}", <Error as Into<usize>>::into(e));
-        RmiError::RmiErrorInput
     }
 }

@@ -1,5 +1,6 @@
-use crate::mm::guard::Content;
-use crate::rmm::granule::GranuleState;
+use crate::granule::GranuleState;
+
+use paging::guard::Content;
 
 // TODO: Integrate with our `struct Realm`
 pub struct Rd {

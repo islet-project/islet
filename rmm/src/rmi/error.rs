@@ -29,3 +29,10 @@ impl From<Error> for usize {
         }
     }
 }
+
+impl From<paging::error::Error> for Error {
+    fn from(_e: paging::error::Error) -> Self {
+        //error!("MmError occured: {}", <Error as Into<usize>>::into(e));
+        Error::RmiErrorInput
+    }
+}

@@ -2,22 +2,21 @@ use super::params::Params;
 use super::run::{Run, REC_ENTRY_FLAG_TRAP_WFE, REC_ENTRY_FLAG_TRAP_WFI};
 use super::Rec;
 use crate::event::{realmexit, Context, Mainloop, RsiHandle};
-use crate::listen;
-use crate::rmi::realm::Rd;
-use crate::{rmi, rsi};
-
+use crate::granule::{set_granule, set_granule_with_parent, GranuleState};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::pointer::PointerMut as HostPointerMut;
+use crate::listen;
+use crate::mm::page_table;
 use crate::rmi::error::Error;
-use crate::rmm::granule::{set_granule, set_granule_with_parent, GranuleState};
+use crate::rmi::realm::Rd;
 use crate::{get_granule, get_granule_if};
+use crate::{rmi, rsi};
 
 extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_CREATE, |arg, ret, rmm| {
         let rmi = rmm.rmi;
-        let mm = rmm.mm;
 
         // grab the lock for Rd granule
         let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
@@ -26,10 +25,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // set Rec_state and grab the lock for Rec granule
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Delegated)?;
         let rec = rec_granule.content_mut::<Rec>();
-        mm.map(arg[0], true);
+        page_table::map(arg[0], true);
 
         // read params
-        let params = copy_from_host_or_ret!(Params, arg[2], mm);
+        let params = copy_from_host_or_ret!(Params, arg[2]);
         trace!("{:?}", params);
 
         match rmi.create_vcpu(rd.id()) {
@@ -55,14 +54,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec)
     });
 
-    listen!(mainloop, rmi::REC_DESTROY, |arg, _ret, rmm| {
+    listen!(mainloop, rmi::REC_DESTROY, |arg, _ret, _| {
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
 
         set_granule(&mut rec_granule, GranuleState::Delegated).map_err(|e| {
-            rmm.mm.unmap(arg[0]);
+            page_table::unmap(arg[0]);
             e
         })?;
-        rmm.mm.unmap(arg[0]);
+        page_table::unmap(arg[0]);
         Ok(())
     });
 
@@ -75,7 +74,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mut rec = rec_granule.content_mut::<Rec>();
 
         // read Run
-        let mut run = copy_from_host_or_ret!(Run, run_pa, rmm.mm);
+        let mut run = copy_from_host_or_ret!(Run, run_pa);
         trace!("{:?}", run);
 
         unsafe {
@@ -158,7 +157,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rmi.send_timer_state_to_host(rec.rd.id(), rec.id(), &mut run)?;
 
         // NOTICE: do not modify `run` after copy_to_host_or_ret!(). it won't have any effect.
-        copy_to_host_or_ret!(Run, &run, run_pa, rmm.mm);
+        copy_to_host_or_ret!(Run, &run, run_pa);
         Ok(())
     });
 }

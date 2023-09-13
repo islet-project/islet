@@ -1,9 +1,9 @@
 use super::pte;
-use crate::mm::address::PhysAddr;
-use crate::mm::error::Error;
-use crate::mm::page_table::{self, Level};
-use crate::mm::RawGPA;
 use crate::realm::mm::translation_granule_4k::RawPTE;
+use paging::address::PhysAddr;
+use paging::error::Error;
+use paging::page_table::{self, Level};
+use paging::RawGPA;
 
 use armv9a::bits_in_reg;
 

@@ -1,7 +1,7 @@
-use crate::mm::address::PhysAddr;
-use crate::mm::error::Error;
-use crate::mm::guard::EntryGuard;
-use crate::mm::page_table::{self, Level};
+use paging::address::PhysAddr;
+use paging::error::Error;
+use paging::guard::EntryGuard;
+use paging::page_table::{self, Level};
 
 use super::translation::{add_l1_table, addr_to_idx, get_l1_table_addr, L0_TABLE_ENTRY_SIZE_RANGE};
 use super::{GranuleState, GRANULE_SIZE};

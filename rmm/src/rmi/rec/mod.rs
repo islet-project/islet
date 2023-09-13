@@ -4,10 +4,11 @@ pub mod run;
 
 pub use self::handlers::set_event_handler;
 
-use crate::mm::guard::Content;
+use crate::granule::GranuleState;
 use crate::rmi::realm::rd::State;
 use crate::rmi::realm::Rd;
-use crate::rmm::granule::GranuleState;
+
+use paging::guard::Content;
 
 pub struct Rec {
     pub rd: Rd,

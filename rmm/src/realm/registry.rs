@@ -19,7 +19,7 @@ use crate::realm::timer;
 use crate::rmi::error::Error;
 use crate::rmi::error::InternalError::*;
 use crate::rmi::rtt_entry_state;
-use crate::rmm::rmm_exit;
+use crate::rmm_exit;
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
@@ -509,7 +509,7 @@ impl crate::rmi::Interface for RMI {
         _level: usize,
         host_s2tte: usize,
     ) -> Result<(), Error> {
-        let size = crate::rmm::granule::GRANULE_SIZE;
+        let size = crate::granule::GRANULE_SIZE;
         let mut new_s2tte = host_s2tte as u64;
         new_s2tte |= bits_in_reg(S2TTE::NS, 1)
             | bits_in_reg(S2TTE::XN, 1)
@@ -555,7 +555,7 @@ impl crate::rmi::Interface for RMI {
         if s2tte.is_valid(level, false) {
             // the case for ipa's range 0x8840_0000 - in realm-linux booting
             let pa: usize = s2tte.address(level).ok_or(Error::RmiErrorRtt)?.into();
-            let size = crate::rmm::granule::GRANULE_SIZE;
+            let size = crate::granule::GRANULE_SIZE;
             let mut flags = 0;
             flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
             flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
@@ -574,7 +574,7 @@ impl crate::rmi::Interface for RMI {
                 )?;
         } else if s2tte.is_unassigned() || s2tte.is_assigned() {
             let pa: usize = s2tte.address(level).ok_or(Error::RmiErrorRtt)?.into();
-            let size = crate::rmm::granule::GRANULE_SIZE;
+            let size = crate::granule::GRANULE_SIZE;
             let mut flags = 0;
             flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
             get_realm(id)
@@ -623,7 +623,7 @@ impl crate::rmi::Interface for RMI {
             flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
             flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
         }
-        let size = crate::rmm::granule::GRANULE_SIZE;
+        let size = crate::granule::GRANULE_SIZE;
         get_realm(id)
             .ok_or(Error::RmiErrorOthers(NotExistRealm))?
             .lock()

@@ -1,8 +1,9 @@
 use super::attr;
-use crate::mm::address::PhysAddr;
-use crate::mm::error::Error;
-use crate::mm::page_table::{self, Level};
-use crate::mm::RawGPA;
+
+use paging::address::PhysAddr;
+use paging::error::Error;
+use paging::page_table::{self, Level};
+use paging::RawGPA;
 
 use armv9a::{define_bitfield, define_bits, define_mask};
 

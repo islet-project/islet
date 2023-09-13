@@ -24,9 +24,8 @@ pub unsafe fn main() -> ! {
     );
 
     let rmi = islet_rmm::realm::registry::RMI::new();
-    let rmm = islet_rmm::rmm::MemoryMap::new();
-    islet_rmm::rmm::granule::create_granule_status_table();
-    let monitor = islet_rmm::Monitor::new(rmi, rmm);
+    islet_rmm::granule::create_granule_status_table();
+    let monitor = islet_rmm::Monitor::new(rmi);
     let mut mainloop = islet_rmm::event::Mainloop::new();
     mainloop.boot_complete();
     mainloop.run(&monitor);

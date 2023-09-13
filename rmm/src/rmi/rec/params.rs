@@ -1,6 +1,6 @@
 use crate::const_assert_eq;
+use crate::granule::GRANULE_SIZE;
 use crate::host::Accessor as HostAccessor;
-use crate::rmm::granule::GRANULE_SIZE;
 
 const PADDING: [usize; 5] = [248, 248, 248, 1216, 1912];
 

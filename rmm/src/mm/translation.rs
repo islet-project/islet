@@ -1,12 +1,12 @@
-use super::page::RmmBasePageSize;
 use super::page_table::entry::Entry;
 use super::page_table::{attr, L1Table};
 use crate::config::PAGE_SIZE;
-use crate::mm::address::PhysAddr;
-use crate::mm::page::Page;
-use crate::mm::page_table::{Level, PageTable, PageTableMethods};
-use crate::rmm::address::VirtAddr;
-use crate::rmm::page_table::entry::PTDesc;
+use crate::mm::page::BasePageSize;
+use crate::mm::page_table::entry::PTDesc;
+
+use paging::address::{PhysAddr, VirtAddr};
+use paging::page::Page;
+use paging::page_table::{Level, PageTable, PageTableMethods};
 
 use armv9a::{bits_in_reg, regs::*};
 use core::arch::asm;
@@ -102,8 +102,8 @@ impl<'a> RmmPageTable<'a> {
     }
 
     fn set_pages(&mut self, va: VirtAddr, phys: PhysAddr, size: usize, flags: u64) {
-        let virtaddr = Page::<RmmBasePageSize, VirtAddr>::range_with_size(va, size);
-        let phyaddr = Page::<RmmBasePageSize, PhysAddr>::range_with_size(phys, size);
+        let virtaddr = Page::<BasePageSize, VirtAddr>::range_with_size(va, size);
+        let phyaddr = Page::<BasePageSize, PhysAddr>::range_with_size(phys, size);
 
         if self
             .root_pgtlb
@@ -116,7 +116,7 @@ impl<'a> RmmPageTable<'a> {
 
     fn unset_page(&mut self, addr: usize) {
         let va = VirtAddr::from(addr);
-        let page = Page::<RmmBasePageSize, VirtAddr>::including_address(va);
+        let page = Page::<BasePageSize, VirtAddr>::including_address(va);
         self.root_pgtlb.unset_page(page);
     }
 }

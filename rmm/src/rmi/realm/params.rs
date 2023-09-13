@@ -1,8 +1,8 @@
 use crate::const_assert_eq;
+use crate::granule::GRANULE_SIZE;
 use crate::host::Accessor as HostAccessor;
 use crate::rmi::features;
 use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
-use crate::rmm::granule::GRANULE_SIZE;
 
 const PADDING: [usize; 5] = [248, 767, 960, 6, 2020];
 

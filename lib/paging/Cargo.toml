@@ -1,0 +1,9 @@
+[package]
+name = "paging"
+version = "0.0.1"
+authors = ["Islet Contributors"]
+edition = "2021"
+
+[dependencies]
+armv9a = { path = "../armv9a" }
+spinning_top = "0.2.4"

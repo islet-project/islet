@@ -2,10 +2,10 @@ use super::entry;
 use super::{validate_addr, GranuleState, L0Table, L1Table, GRANULE_SIZE};
 use super::{FVP_DRAM0_REGION, FVP_DRAM1_REGION};
 use crate::const_assert_eq;
-use crate::mm::address::PhysAddr;
-use crate::mm::error::Error;
-use crate::mm::page::{Page, PageSize};
-use crate::mm::page_table::{Level, PageTable, PageTableMethods};
+use paging::address::PhysAddr;
+use paging::error::Error;
+use paging::page::{Page, PageSize};
+use paging::page_table::{Level, PageTable, PageTableMethods};
 
 use hashbrown::HashMap;
 

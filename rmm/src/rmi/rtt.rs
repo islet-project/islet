@@ -1,16 +1,16 @@
+extern crate alloc;
+
 use super::realm::{rd::State, Rd};
 use super::rec::Rec;
-
 use crate::event::Mainloop;
+use crate::granule::{set_granule, GranuleState, GRANULE_SIZE};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::DataPage;
 use crate::listen;
+use crate::mm::page_table;
 use crate::rmi;
 use crate::rmi::error::Error;
-use crate::rmm::granule::{set_granule, GranuleState, GRANULE_SIZE};
 use crate::{get_granule, get_granule_if, set_state_and_get_granule};
-
-extern crate alloc;
 
 const RIPAS_EMPTY: u64 = 0;
 const RIPAS_RAM: u64 = 1;
@@ -91,7 +91,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
     listen!(mainloop, rmi::DATA_CREATE, |arg, _ret, rmm| {
         let rmi = rmm.rmi;
-        let mm = rmm.mm;
         // target_pa: location where realm data is created.
         let target_pa = arg[0];
         let ipa = arg[2];
@@ -112,10 +111,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // data granule lock for the target page
         let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
         let target_page = target_page_granule.content_mut::<DataPage>();
-        mm.map(target_pa, true);
+        page_table::map(target_pa, true);
 
         // read src page
-        let src_page = copy_from_host_or_ret!(DataPage, src_pa, mm);
+        let src_page = copy_from_host_or_ret!(DataPage, src_pa);
 
         // 3. copy src to _data
         *target_page = src_page;
@@ -141,7 +140,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
     listen!(mainloop, rmi::DATA_CREATE_UNKNOWN, |arg, _ret, rmm| {
         let rmi = rmm.rmi;
-        let mm = rmm.mm;
         // target_phys: location where realm data is created.
         let target_pa = arg[0];
         let ipa = arg[2];
@@ -155,7 +153,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // 0. Make sure granule state can make a transition to DATA
         // data granule lock for the target page
         let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
-        mm.map(target_pa, true);
+        page_table::map(target_pa, true);
 
         // 1. map ipa to target_pa into S2 table
         let prot = rmi::MapProt::new(0);

@@ -5,15 +5,15 @@ use core::arch::asm;
 use core::ffi::c_void;
 use core::fmt;
 
-use crate::mm::address::PhysAddr;
-use crate::mm::page::{Page, PageIter, PageSize};
-use crate::mm::page_table::Entry;
-use crate::mm::page_table::{Level, PageTable, PageTableMethods};
 use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::mm::page_table::pte;
 use crate::realm::mm::translation_granule_4k::RawPTE;
 use crate::realm::mm::IPATranslation;
 use crate::rmi::error::Error;
+use paging::address::PhysAddr;
+use paging::page::{Page, PageIter, PageSize};
+use paging::page_table::Entry;
+use paging::page_table::{Level, PageTable, PageTableMethods};
 
 use armv9a::{bits_in_reg, define_bitfield, define_bits, define_mask};
 

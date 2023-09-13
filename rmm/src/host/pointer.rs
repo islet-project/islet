@@ -1,5 +1,4 @@
 use crate::host::Accessor as HostAccessor;
-use crate::rmm::PageMap;
 use core::ops::{Deref, DerefMut};
 
 /// Type for holding an immutable pointer to physical region allocated by the host
@@ -7,16 +6,13 @@ use core::ops::{Deref, DerefMut};
 pub struct Pointer<T: HostAccessor> {
     /// pointer to physical region
     ptr: *const T,
-    /// page_map to map or unmap `ptr` in RMM
-    page_map: PageMap,
 }
 
 impl<T: HostAccessor> Pointer<T> {
     /// Creates a new pointer pointing to data shared between the host and RMM
-    pub fn new(ptr: usize, page_map: PageMap) -> Self {
+    pub fn new(ptr: usize) -> Self {
         Self {
             ptr: ptr as *const T,
-            page_map,
         }
     }
 
@@ -26,7 +22,7 @@ impl<T: HostAccessor> Pointer<T> {
     /// It returns a guard object only if it passes the two steps.
     #[inline]
     pub fn acquire<'a>(&'a self) -> Option<PointerGuard<'a, T>> {
-        if T::acquire(self.ptr as usize, self.page_map) {
+        if T::acquire(self.ptr as usize) {
             let guard = PointerGuard { inner: self };
             if !guard.validate() {
                 None
@@ -67,7 +63,7 @@ impl<'a, T: HostAccessor> Deref for PointerGuard<'a, T> {
 impl<'a, T: HostAccessor> Drop for PointerGuard<'a, T> {
     /// Automatically clean up page-relevant stuff we did in `acquire()`.
     fn drop(&mut self) {
-        T::release(self.inner.ptr as usize, self.inner.page_map);
+        T::release(self.inner.ptr as usize);
     }
 }
 
@@ -76,21 +72,16 @@ impl<'a, T: HostAccessor> Drop for PointerGuard<'a, T> {
 pub struct PointerMut<T: HostAccessor> {
     /// pointer to phyiscal region
     ptr: *mut T,
-    /// page_map to map or unmap `ptr` in RMM
-    page_map: PageMap,
 }
 
 impl<T: HostAccessor> PointerMut<T> {
-    pub fn new(ptr: usize, page_map: PageMap) -> Self {
-        Self {
-            ptr: ptr as *mut T,
-            page_map,
-        }
+    pub fn new(ptr: usize) -> Self {
+        Self { ptr: ptr as *mut T }
     }
 
     #[inline]
     pub fn acquire<'a>(&'a mut self) -> Option<PointerMutGuard<'a, T>> {
-        if T::acquire(self.ptr as usize, self.page_map) {
+        if T::acquire(self.ptr as usize) {
             let guard = PointerMutGuard { inner: self };
             if !guard.validate() {
                 None
@@ -130,14 +121,14 @@ impl<'a, T: HostAccessor> DerefMut for PointerMutGuard<'a, T> {
 
 impl<'a, T: HostAccessor> Drop for PointerMutGuard<'a, T> {
     fn drop(&mut self) {
-        T::release(self.inner.ptr as usize, self.inner.page_map);
+        T::release(self.inner.ptr as usize);
     }
 }
 
 #[macro_export]
 macro_rules! copy_from_host_or_ret {
-    ($target_type:tt, $ptr:expr, $page_map:expr) => {{
-        let src_obj = HostPointer::<$target_type>::new($ptr, $page_map);
+    ($target_type:tt, $ptr:expr) => {{
+        let src_obj = HostPointer::<$target_type>::new($ptr);
         let src_obj = src_obj.acquire();
         let src_obj = if let Some(v) = src_obj {
             v
@@ -160,8 +151,8 @@ macro_rules! copy_from_host_or_ret {
 
 #[macro_export]
 macro_rules! copy_to_host_or_ret {
-    ($target_type:tt, $src_obj:expr, $dest_ptr:expr, $page_map:expr) => {{
-        let mut dst_obj = HostPointerMut::<$target_type>::new($dest_ptr, $page_map);
+    ($target_type:tt, $src_obj:expr, $dest_ptr:expr) => {{
+        let mut dst_obj = HostPointerMut::<$target_type>::new($dest_ptr);
         let dst_obj = dst_obj.acquire();
         let mut dst_obj = if let Some(v) = dst_obj {
             v

@@ -1,7 +1,7 @@
-use super::page::Address;
-
 use core::fmt;
 use core::ops::{Add, AddAssign, BitAnd, BitOr, Sub, SubAssign};
+
+pub trait Address: Add + AddAssign + Copy + From<usize> + Into<usize> + PartialOrd {}
 
 /// Align address downwards.
 ///
@@ -135,4 +135,8 @@ macro_rules! impl_addr {
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PhysAddr(usize);
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct VirtAddr(usize);
+
+impl_addr!(VirtAddr);
 impl_addr!(PhysAddr);

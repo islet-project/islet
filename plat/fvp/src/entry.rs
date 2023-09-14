@@ -5,7 +5,6 @@ use armv9a::regs::*;
 use islet_rmm::config::{NUM_OF_CPU, RMM_STACK_SIZE};
 use islet_rmm::io::stdout;
 use islet_rmm::logger;
-use islet_rmm::mm::translation;
 
 #[no_mangle]
 #[link_section = ".stack"]
@@ -85,6 +84,4 @@ unsafe fn setup() {
 
         (&mut COLD_BOOT as *mut bool).write_volatile(false);
     }
-    translation::set_register_mm();
-    islet_rmm::init_el2();
 }

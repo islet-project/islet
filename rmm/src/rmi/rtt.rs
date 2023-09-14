@@ -7,7 +7,6 @@ use crate::granule::{set_granule, GranuleState, GRANULE_SIZE};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::DataPage;
 use crate::listen;
-use crate::mm::page_table;
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::{get_granule, get_granule_if, set_state_and_get_granule};
@@ -111,7 +110,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // data granule lock for the target page
         let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
         let target_page = target_page_granule.content_mut::<DataPage>();
-        page_table::map(target_pa, true);
+        rmm.page_table.map(target_pa, true);
 
         // read src page
         let src_page = copy_from_host_or_ret!(DataPage, src_pa);
@@ -153,7 +152,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // 0. Make sure granule state can make a transition to DATA
         // data granule lock for the target page
         let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
-        page_table::map(target_pa, true);
+        rmm.page_table.map(target_pa, true);
 
         // 1. map ipa to target_pa into S2 table
         let prot = rmi::MapProt::new(0);

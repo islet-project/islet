@@ -368,8 +368,9 @@ def clean_repo():
     args = ["-f", "fvp.mk", "linux-clean", "boot-img-clean"]
     make(BUILD_SCRIPT, args)
 
-    run(["rm", "-rf", "out"], cwd=ROOT)
+    run(["rm", "-rf", "build"], cwd=ACS)
     run(["rm", "-rf", "build"], cwd=TF_RMM)
+    run(["rm", "-rf", "out"], cwd=ROOT)
 
 def get_all_realms():
     realms = []

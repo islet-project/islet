@@ -43,6 +43,7 @@ use crate::event::RsiHandle;
 use crate::exception::vectors;
 use crate::mm::translation::{get_page_table, PageTable};
 use crate::rmi::RMI;
+use crate::granule::create_granule_status_table as setup_gst;
 
 use armv9a::{bits_in_reg, regs::*};
 
@@ -57,6 +58,7 @@ impl Monitor {
         setup_mmu_cfg();
         setup_el2();
         enable_mmu_el2();
+        setup_gst();
 
         Self {
             rmi,

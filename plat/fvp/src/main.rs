@@ -13,8 +13,6 @@ mod entry;
 use islet_rmm::allocator;
 use islet_rmm::cpu;
 
-use islet_rmm;
-
 #[no_mangle]
 pub unsafe fn main() -> ! {
     info!(
@@ -23,11 +21,7 @@ pub unsafe fn main() -> ! {
         armv9a::regs::current_el()
     );
 
-    let rmi = islet_rmm::realm::registry::RMI::new();
-    let monitor = islet_rmm::Monitor::new(rmi);
-    let mut mainloop = islet_rmm::event::Mainloop::new();
-    mainloop.boot_complete();
-    mainloop.run(&monitor);
+    islet_rmm::start();
 
     panic!("failed to run the mainloop");
 }

@@ -56,7 +56,7 @@ pub fn get_page_table() -> u64 {
 pub const NUM_ROOT_PAGE: usize = 1;
 pub const ALIGN_ROOT_PAGE: usize = 2;
 
-pub struct Inner<'a> {
+struct Inner<'a> {
     // We will set the translation granule with 4KB.
     // To reduce the level of page lookup, initial lookup will start from L1.
     root_pgtlb:

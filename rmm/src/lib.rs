@@ -15,8 +15,8 @@ pub mod cpu;
 pub mod error;
 pub mod event;
 pub mod exception;
-#[macro_use]
 pub mod gic;
+#[macro_use]
 pub mod granule;
 #[macro_use]
 pub mod host;
@@ -30,6 +30,7 @@ pub mod rmi;
 pub mod rsi;
 #[macro_use]
 pub mod r#macro;
+mod monitor;
 
 extern crate alloc;
 
@@ -39,33 +40,20 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
-use crate::event::RsiHandle;
 use crate::exception::vectors;
-use crate::mm::translation::{get_page_table, PageTable};
-use crate::rmi::RMI;
 use crate::granule::create_granule_status_table as setup_gst;
+use crate::mm::translation::get_page_table;
+use crate::monitor::Monitor;
 
 use armv9a::{bits_in_reg, regs::*};
 
-pub struct Monitor {
-    pub rmi: RMI,
-    pub rsi: RsiHandle,
-    pub page_table: PageTable,
-}
+pub unsafe fn start() {
+    setup_mmu_cfg();
+    setup_el2();
+    activate_stage2_mmu();
+    setup_gst();
 
-impl Monitor {
-    pub unsafe fn new(rmi: RMI) -> Self {
-        setup_mmu_cfg();
-        setup_el2();
-        enable_mmu_el2();
-        setup_gst();
-
-        Self {
-            rmi,
-            rsi: RsiHandle::new(),
-            page_table: PageTable::get_ref(),
-        }
-    }
+    Monitor::new().run();
 }
 
 unsafe fn setup_el2() {
@@ -96,7 +84,7 @@ unsafe fn setup_el2() {
     ICC_SRE_EL2.set(ICC_SRE_EL2::ENABLE | ICC_SRE_EL2::DIB | ICC_SRE_EL2::DFB | ICC_SRE_EL2::SRE);
 }
 
-unsafe fn enable_mmu_el2() {
+unsafe fn activate_stage2_mmu() {
     // stage 2 intitial table: L1 with 1024 entries (2 continuous 4KB pages)
     let vtcr_el2: u64 = bits_in_reg(VTCR_EL2::PS, tcr_paddr_size::PS_1T)
         | bits_in_reg(VTCR_EL2::TG0, tcr_granule::G_4K)

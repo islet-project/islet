@@ -41,6 +41,7 @@ extern crate log;
 
 use crate::event::RsiHandle;
 use crate::exception::vectors;
+use crate::mm::translation::{get_page_table, PageTable};
 use crate::rmi::RMI;
 
 use armv9a::{bits_in_reg, regs::*};
@@ -48,18 +49,24 @@ use armv9a::{bits_in_reg, regs::*};
 pub struct Monitor {
     pub rmi: RMI,
     pub rsi: RsiHandle,
+    pub page_table: PageTable,
 }
 
 impl Monitor {
-    pub fn new(rmi: RMI) -> Self {
+    pub unsafe fn new(rmi: RMI) -> Self {
+        setup_mmu_cfg();
+        setup_el2();
+        enable_mmu_el2();
+
         Self {
             rmi,
             rsi: RsiHandle::new(),
+            page_table: PageTable::get_ref(),
         }
     }
 }
 
-pub unsafe fn init_el2() {
+unsafe fn setup_el2() {
     HCR_EL2.set(
         HCR_EL2::FWB
             | HCR_EL2::TEA
@@ -85,10 +92,9 @@ pub unsafe fn init_el2() {
     SCTLR_EL2.set(SCTLR_EL2::I | SCTLR_EL2::M | SCTLR_EL2::EOS);
     CPTR_EL2.set(CPTR_EL2::TAM);
     ICC_SRE_EL2.set(ICC_SRE_EL2::ENABLE | ICC_SRE_EL2::DIB | ICC_SRE_EL2::DFB | ICC_SRE_EL2::SRE);
-    activate_stage2_mmu();
 }
 
-unsafe fn activate_stage2_mmu() {
+unsafe fn enable_mmu_el2() {
     // stage 2 intitial table: L1 with 1024 entries (2 continuous 4KB pages)
     let vtcr_el2: u64 = bits_in_reg(VTCR_EL2::PS, tcr_paddr_size::PS_1T)
         | bits_in_reg(VTCR_EL2::TG0, tcr_granule::G_4K)
@@ -105,6 +111,42 @@ unsafe fn activate_stage2_mmu() {
     VTCR_EL2.set(vtcr_el2);
 
     core::arch::asm!("tlbi alle2", "dsb ish", "isb",);
+}
+
+unsafe fn setup_mmu_cfg() {
+    core::arch::asm!("tlbi alle2is", "dsb ish", "isb",);
+
+    // /* Set attributes in the right indices of the MAIR. */
+    let mair_el2 = bits_in_reg(MAIR_EL2::Attr0, mair_attr::NORMAL)
+        | bits_in_reg(MAIR_EL2::Attr1, mair_attr::DEVICE_NGNRNE)
+        | bits_in_reg(MAIR_EL2::Attr2, mair_attr::DEVICE_NGNRE);
+
+    /*
+     * The size of the virtual address space is configured as 64 – T0SZ.
+     * In this, 64 – 0x19 gives 39 bits of virtual address space.
+     * This equates to 512GB (2^39), which means that the entire virtual address
+     * space is covered by a single L1 table.
+     * Therefore, our starting level of translation is level 1.
+     */
+    let mut tcr_el2 = bits_in_reg(TCR_EL2::T0SZ, 0x19);
+
+    // configure the tcr_el2 attributes
+    tcr_el2 |= bits_in_reg(TCR_EL2::PS, tcr_paddr_size::PS_1T)
+        | bits_in_reg(TCR_EL2::TG0, tcr_granule::G_4K)
+        | bits_in_reg(TCR_EL2::SH0, tcr_shareable::INNER)
+        | bits_in_reg(TCR_EL2::ORGN0, tcr_cacheable::WBWA)
+        | bits_in_reg(TCR_EL2::IRGN0, tcr_cacheable::WBWA);
+
+    // set the ttlb base address, this is where the memory address translation
+    // table walk starts
+    let ttlb_base = get_page_table();
+
+    // Invalidate the local I-cache so that any instructions fetched
+    // speculatively are discarded.
+    MAIR_EL2.set(mair_el2);
+    TCR_EL2.set(tcr_el2);
+    TTBR0_EL2.set(ttlb_base);
+    core::arch::asm!("dsb ish", "isb",);
 }
 
 /// Call `rmm_exit` within `exception/vectors.s` and jumps to EL1.

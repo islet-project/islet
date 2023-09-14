@@ -2,9 +2,7 @@ pub mod attr;
 pub mod entry;
 
 use self::entry::Entry;
-use crate::asm::dcache_flush;
 use crate::config::PAGE_SIZE;
-use crate::mm::translation;
 
 use paging::page_table::{HasSubtable, Level};
 
@@ -57,23 +55,4 @@ impl Level for L3Table {
     const TABLE_SIZE: usize = PAGE_SIZE;
     const TABLE_ALIGN: usize = PAGE_SIZE;
     const NUM_ENTRIES: usize = (Self::TABLE_SIZE / core::mem::size_of::<Entry>());
-}
-
-pub fn map(addr: usize, secure: bool) -> bool {
-    if addr == 0 {
-        warn!("map address is empty");
-        return false;
-    }
-    translation::set_pages_for_rmi(addr, secure);
-    dcache_flush(addr, PAGE_SIZE);
-    true
-}
-
-pub fn unmap(addr: usize) -> bool {
-    if addr == 0 {
-        warn!("map address is empty");
-        return false;
-    }
-    translation::unset_page_for_rmi(addr);
-    true
 }

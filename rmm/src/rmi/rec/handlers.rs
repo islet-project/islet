@@ -6,7 +6,6 @@ use crate::granule::{set_granule, set_granule_with_parent, GranuleState};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::pointer::PointerMut as HostPointerMut;
 use crate::listen;
-use crate::mm::page_table;
 use crate::rmi::error::Error;
 use crate::rmi::realm::Rd;
 use crate::{get_granule, get_granule_if};
@@ -25,7 +24,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // set Rec_state and grab the lock for Rec granule
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Delegated)?;
         let rec = rec_granule.content_mut::<Rec>();
-        page_table::map(arg[0], true);
+        rmm.page_table.map(arg[0], true);
 
         // read params
         let params = copy_from_host_or_ret!(Params, arg[2]);
@@ -54,14 +53,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec)
     });
 
-    listen!(mainloop, rmi::REC_DESTROY, |arg, _ret, _| {
+    listen!(mainloop, rmi::REC_DESTROY, |arg, _ret, rmm| {
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
 
         set_granule(&mut rec_granule, GranuleState::Delegated).map_err(|e| {
-            page_table::unmap(arg[0]);
+            rmm.page_table.unmap(arg[0]);
             e
         })?;
-        page_table::unmap(arg[0]);
+        rmm.page_table.unmap(arg[0]);
         Ok(())
     });
 

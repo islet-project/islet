@@ -1,15 +1,16 @@
 use super::page_table::entry::Entry;
 use super::page_table::{attr, L1Table};
+use crate::asm::dcache_flush;
 use crate::config::PAGE_SIZE;
 use crate::mm::page::BasePageSize;
 use crate::mm::page_table::entry::PTDesc;
 
 use paging::address::{PhysAddr, VirtAddr};
 use paging::page::Page;
-use paging::page_table::{Level, PageTable, PageTableMethods};
+use paging::page_table::PageTable as RootPageTable;
+use paging::page_table::{Level, PageTableMethods};
 
-use armv9a::{bits_in_reg, regs::*};
-use core::arch::asm;
+use armv9a::bits_in_reg;
 use core::ffi::c_void;
 use core::fmt;
 use lazy_static::lazy_static;
@@ -21,11 +22,31 @@ extern "C" {
     static __RW_END__: u64;
 }
 
-lazy_static! {
-    static ref RMM_PAGE_TABLE: Mutex<RmmPageTable<'static>> = Mutex::new(RmmPageTable::new());
+pub struct PageTable {
+    page_table: &'static Mutex<Inner<'static>>,
 }
 
-fn get_page_table() -> u64 {
+impl PageTable {
+    pub fn get_ref() -> Self {
+        Self {
+            page_table: &RMM_PAGE_TABLE,
+        }
+    }
+
+    pub fn map(&self, addr: usize, secure: bool) -> bool {
+        self.page_table.lock().set_pages_for_rmi(addr, secure)
+    }
+
+    pub fn unmap(&self, addr: usize) -> bool {
+        self.page_table.lock().unset_pages_for_rmi(addr)
+    }
+}
+
+lazy_static! {
+    static ref RMM_PAGE_TABLE: Mutex<Inner<'static>> = Mutex::new(Inner::new());
+}
+
+pub fn get_page_table() -> u64 {
     let mut page_table = RMM_PAGE_TABLE.lock();
     page_table.fill();
     page_table.get_base_address() as u64
@@ -35,17 +56,18 @@ fn get_page_table() -> u64 {
 pub const NUM_ROOT_PAGE: usize = 1;
 pub const ALIGN_ROOT_PAGE: usize = 2;
 
-pub struct RmmPageTable<'a> {
+pub struct Inner<'a> {
     // We will set the translation granule with 4KB.
     // To reduce the level of page lookup, initial lookup will start from L1.
-    root_pgtlb: &'a mut PageTable<VirtAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>,
+    root_pgtlb:
+        &'a mut RootPageTable<VirtAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>,
     dirty: bool,
 }
 
-impl<'a> RmmPageTable<'a> {
+impl<'a> Inner<'a> {
     pub fn new() -> Self {
         let root_pgtlb = unsafe {
-            &mut *PageTable::<VirtAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>::new_with_align(
+            &mut *RootPageTable::<VirtAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>::new_with_align(
                 NUM_ROOT_PAGE,
                 ALIGN_ROOT_PAGE,
             )
@@ -119,80 +141,51 @@ impl<'a> RmmPageTable<'a> {
         let page = Page::<BasePageSize, VirtAddr>::including_address(va);
         self.root_pgtlb.unset_page(page);
     }
+
+    fn set_pages_for_rmi(&mut self, addr: usize, secure: bool) -> bool {
+        if addr == 0 {
+            warn!("map address is empty");
+            return false;
+        }
+
+        let rw_flags = bits_in_reg(PTDesc::AP, attr::permission::RW);
+        let memattr_flags = bits_in_reg(PTDesc::INDX, attr::mair_idx::RMM_MEM);
+        let sh_flags = bits_in_reg(PTDesc::SH, attr::shareable::INNER);
+        let secure_flags = bits_in_reg(PTDesc::NS, !secure as u64);
+        let va = VirtAddr::from(addr);
+        let phys = PhysAddr::from(addr);
+
+        self.set_pages(
+            va,
+            phys,
+            PAGE_SIZE,
+            rw_flags | memattr_flags | secure_flags | sh_flags,
+        );
+
+        dcache_flush(addr, PAGE_SIZE);
+        true
+    }
+
+    fn unset_pages_for_rmi(&mut self, addr: usize) -> bool {
+        if addr == 0 {
+            warn!("map address is empty");
+            return false;
+        }
+
+        self.unset_page(addr);
+        true
+    }
 }
 
-impl<'a> fmt::Debug for RmmPageTable<'a> {
+impl<'a> fmt::Debug for Inner<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(stringify!(Self)).finish()
     }
 }
 
-impl<'a> Drop for RmmPageTable<'a> {
+impl<'a> Drop for Inner<'a> {
     fn drop(&mut self) {
-        info!("drop RmmPageTable");
+        info!("drop PageTable");
         self.root_pgtlb.drop();
     }
-}
-
-pub fn set_register_mm() {
-    unsafe {
-        asm!("tlbi alle2is", "dsb ish", "isb",);
-    }
-
-    // /* Set attributes in the right indices of the MAIR. */
-    let mair_el2 = bits_in_reg(MAIR_EL2::Attr0, mair_attr::NORMAL)
-        | bits_in_reg(MAIR_EL2::Attr1, mair_attr::DEVICE_NGNRNE)
-        | bits_in_reg(MAIR_EL2::Attr2, mair_attr::DEVICE_NGNRE);
-
-    /*
-     * The size of the virtual address space is configured as 64 – T0SZ.
-     * In this, 64 – 0x19 gives 39 bits of virtual address space.
-     * This equates to 512GB (2^39), which means that the entire virtual address
-     * space is covered by a single L1 table.
-     * Therefore, our starting level of translation is level 1.
-     */
-    let mut tcr_el2 = bits_in_reg(TCR_EL2::T0SZ, 0x19);
-
-    // configure the tcr_el2 attributes
-    tcr_el2 |= bits_in_reg(TCR_EL2::PS, tcr_paddr_size::PS_1T)
-        | bits_in_reg(TCR_EL2::TG0, tcr_granule::G_4K)
-        | bits_in_reg(TCR_EL2::SH0, tcr_shareable::INNER)
-        | bits_in_reg(TCR_EL2::ORGN0, tcr_cacheable::WBWA)
-        | bits_in_reg(TCR_EL2::IRGN0, tcr_cacheable::WBWA);
-
-    // set the ttlb base address, this is where the memory address translation
-    // table walk starts
-    let ttlb_base = get_page_table();
-
-    unsafe {
-        // Invalidate the local I-cache so that any instructions fetched
-        // speculatively are discarded.
-        MAIR_EL2.set(mair_el2);
-        TCR_EL2.set(tcr_el2);
-        TTBR0_EL2.set(ttlb_base);
-        asm!("dsb ish", "isb",);
-    }
-}
-
-pub fn set_pages_for_rmi(addr: usize, secure: bool) {
-    let rw_flags = bits_in_reg(PTDesc::AP, attr::permission::RW);
-    let memattr_flags = bits_in_reg(PTDesc::INDX, attr::mair_idx::RMM_MEM);
-    let sh_flags = bits_in_reg(PTDesc::SH, attr::shareable::INNER);
-    let secure_flags = bits_in_reg(PTDesc::NS, !secure as u64);
-    let va = VirtAddr::from(addr);
-    let phys = PhysAddr::from(addr);
-
-    let mut page_table = RMM_PAGE_TABLE.lock();
-
-    page_table.set_pages(
-        va,
-        phys,
-        PAGE_SIZE,
-        rw_flags | memattr_flags | secure_flags | sh_flags,
-    );
-}
-
-pub fn unset_page_for_rmi(addr: usize) {
-    let mut page_table = RMM_PAGE_TABLE.lock();
-    page_table.unset_page(addr);
 }

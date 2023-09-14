@@ -8,7 +8,6 @@ use crate::event::Mainloop;
 use crate::granule::{set_granule, GranuleState};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::listen;
-use crate::mm::page_table;
 use crate::rmi;
 use crate::{get_granule, get_granule_if};
 
@@ -30,7 +29,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         let mut rd_granule = get_granule_if!(rd, GranuleState::Delegated)?;
         let rd_obj = rd_granule.content_mut::<Rd>();
-        page_table::map(rd, true);
+        rmm.page_table.map(rd, true);
 
         let params = copy_from_host_or_ret!(Params, params_ptr);
         if params.rtt_base as usize == rd {
@@ -51,7 +50,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         };
 
         eplilog().map_err(|e| {
-            page_table::unmap(rd);
+            rmm.page_table.unmap(rd);
             rmm.rmi.remove(id).expect("Realm should be created before.");
             e
         })
@@ -75,7 +74,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // change state when everything goes fine.
         set_granule(&mut rd_granule, GranuleState::Delegated)?;
-        page_table::unmap(arg[0]);
+        rmm.page_table.unmap(arg[0]);
 
         Ok(())
     });

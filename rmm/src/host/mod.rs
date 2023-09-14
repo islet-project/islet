@@ -3,7 +3,7 @@ pub mod pointer;
 
 use crate::granule::validate_addr;
 use crate::granule::{GranuleState, GRANULE_SIZE};
-use crate::mm::page_table::{map, unmap};
+use crate::mm::translation::PageTable;
 
 use paging::guard::Content;
 
@@ -17,7 +17,7 @@ pub trait Accessor {
             return false;
         }
         // TODO: check if the granule state of `ptr` is Undelegated.
-        map(ptr, false)
+        PageTable::get_ref().map(ptr, false)
     }
 
     /// Try to clean up page-relevant stuff done by `acquire`.
@@ -25,7 +25,7 @@ pub trait Accessor {
     /// returns true only if everything goes well.
     fn release(ptr: usize) -> bool {
         // TODO: check if the granule state of `ptr` is Undelegated.
-        unmap(ptr)
+        PageTable::get_ref().unmap(ptr)
     }
 
     /// Validate each field in a struct that implements this trait.

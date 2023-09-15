@@ -14,7 +14,6 @@ use crate::realm::mm::page_table::pte;
 use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::stage2_tte::S2TTE;
 use crate::realm::mm::stage2_tte::{desc_type, invalid_hipas, invalid_ripas};
-use crate::realm::mm::translation_granule_4k::RawPTE;
 use crate::realm::timer;
 use crate::rmi::error::Error;
 use crate::rmi::error::InternalError::*;
@@ -161,16 +160,16 @@ impl crate::rmi::Interface for RMI {
         let prot = MapProt::new(prot);
 
         if prot.is_set(MapProt::NS_PAS) {
-            flags |= bits_in_reg(RawPTE::NS, 0b1);
+            flags |= bits_in_reg(S2TTE::NS, 0b1);
         }
 
         // TODO:  define bit mask
-        flags |= bits_in_reg(RawPTE::S2AP, pte::permission::RW);
+        flags |= bits_in_reg(S2TTE::AP, pte::permission::RW);
         if prot.is_set(MapProt::DEVICE) {
-            flags |= bits_in_reg(RawPTE::ATTR, pte::attribute::DEVICE_NGNRE);
-            flags |= bits_in_reg(RawPTE::NS, 0b1);
+            flags |= bits_in_reg(S2TTE::MEMATTR, pte::attribute::DEVICE_NGNRE);
+            flags |= bits_in_reg(S2TTE::NS, 0b1);
         } else {
-            flags |= bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL);
+            flags |= bits_in_reg(S2TTE::MEMATTR, pte::attribute::NORMAL_FWB);
         }
 
         get_realm(id)
@@ -514,6 +513,9 @@ impl crate::rmi::Interface for RMI {
         new_s2tte |= bits_in_reg(S2TTE::NS, 1)
             | bits_in_reg(S2TTE::XN, 1)
             | bits_in_reg(S2TTE::AF, 1)
+            | bits_in_reg(S2TTE::MEMATTR, pte::attribute::NORMAL_FWB)
+            | bits_in_reg(S2TTE::AP, pte::permission::RW)
+            | bits_in_reg(S2TTE::SH, pte::shareable::INNER)
             | bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
         let s2tte = S2TTE::from(new_s2tte as usize);
         let pa = s2tte.get_masked(S2TTE::ADDR_FULL);

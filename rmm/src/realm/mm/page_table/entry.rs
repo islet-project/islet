@@ -72,7 +72,7 @@ impl page_table::Entry for Entry {
     fn set_with_page_table_flags(&mut self, addr: PhysAddr) -> Result<(), Error> {
         self.set(
             addr,
-            bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL)
+            bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL_FWB)
                 | bits_in_reg(RawPTE::TYPE, pte::page_type::TABLE_OR_PAGE),
             false,
         )

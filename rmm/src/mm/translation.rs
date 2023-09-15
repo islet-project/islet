@@ -1,6 +1,5 @@
 use super::page_table::entry::Entry;
 use super::page_table::{attr, L1Table};
-use crate::asm::dcache_flush;
 use crate::config::PAGE_SIZE;
 use crate::mm::page::BasePageSize;
 use crate::mm::page_table::entry::PTDesc;
@@ -87,7 +86,8 @@ impl<'a> Inner<'a> {
 
         let ro_flags = bits_in_reg(PTDesc::AP, attr::permission::RO);
         let rw_flags = bits_in_reg(PTDesc::AP, attr::permission::RW);
-        let rmm_flags = bits_in_reg(PTDesc::INDX, attr::mair_idx::RW_DATA);
+        let rmm_flags = bits_in_reg(PTDesc::INDX, attr::mair_idx::RMM_MEM);
+        let device_flags = bits_in_reg(PTDesc::INDX, attr::mair_idx::DEVICE_MEM);
 
         unsafe {
             let base_address = &__RMM_BASE__ as *const u64 as u64;
@@ -105,14 +105,14 @@ impl<'a> Inner<'a> {
                 VirtAddr::from(rw_start),
                 PhysAddr::from(rw_start),
                 rw_size as usize,
-                rw_flags,
+                rw_flags | rmm_flags,
             );
             // UART
             self.set_pages(
                 VirtAddr::from(uart_phys),
                 PhysAddr::from(uart_phys),
                 1,
-                rw_flags | rmm_flags,
+                rw_flags | device_flags,
             );
         }
         //TODO Set dirty only if pages are updated, not added
@@ -152,6 +152,9 @@ impl<'a> Inner<'a> {
         let memattr_flags = bits_in_reg(PTDesc::INDX, attr::mair_idx::RMM_MEM);
         let sh_flags = bits_in_reg(PTDesc::SH, attr::shareable::INNER);
         let secure_flags = bits_in_reg(PTDesc::NS, !secure as u64);
+        let xn_flags = bits_in_reg(PTDesc::UXN, 1) | bits_in_reg(PTDesc::PXN, 1);
+        let valid_flags = bits_in_reg(PTDesc::VALID, 1);
+
         let va = VirtAddr::from(addr);
         let phys = PhysAddr::from(addr);
 
@@ -159,10 +162,9 @@ impl<'a> Inner<'a> {
             va,
             phys,
             PAGE_SIZE,
-            rw_flags | memattr_flags | secure_flags | sh_flags,
+            rw_flags | memattr_flags | secure_flags | sh_flags | xn_flags | valid_flags,
         );
 
-        dcache_flush(addr, PAGE_SIZE);
         true
     }
 

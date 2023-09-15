@@ -77,9 +77,7 @@ unsafe fn setup_el2() {
             | HCR_EL2::VM,
     );
     VBAR_EL2.set(&vectors as *const u64 as u64);
-    // FIXME: ACS got stuck when SCTLR_EL2 sets below flags at the same time.
-    SCTLR_EL2.set(SCTLR_EL2::C);
-    SCTLR_EL2.set(SCTLR_EL2::I | SCTLR_EL2::M | SCTLR_EL2::EOS);
+    SCTLR_EL2.set(SCTLR_EL2::C | SCTLR_EL2::I | SCTLR_EL2::M | SCTLR_EL2::EOS);
     CPTR_EL2.set(CPTR_EL2::TAM);
     ICC_SRE_EL2.set(ICC_SRE_EL2::ENABLE | ICC_SRE_EL2::DIB | ICC_SRE_EL2::DFB | ICC_SRE_EL2::SRE);
 }

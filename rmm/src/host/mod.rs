@@ -5,7 +5,7 @@ use crate::granule::validate_addr;
 use crate::granule::{GranuleState, GRANULE_SIZE};
 use crate::mm::translation::PageTable;
 
-use paging::guard::Content;
+use vmsa::guard::Content;
 
 /// This trait is used to enforce security checks for physical region allocated by the host.
 /// This is used for `PointerGuard` which is not able to modify data.

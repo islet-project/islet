@@ -1,6 +1,6 @@
 use crate::const_assert_size;
 use crate::realm::mm::address::GuestPhysAddr;
-use paging::page_table::{HasSubtable, Level, PageTable};
+use vmsa::page_table::{HasSubtable, Level, PageTable};
 
 use crate::config::PAGE_SIZE;
 use entry::Entry;

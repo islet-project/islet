@@ -1,4 +1,4 @@
-use paging::address::PhysAddr;
+use vmsa::address::PhysAddr;
 
 use armv9a::{define_bitfield, define_bits, define_mask};
 

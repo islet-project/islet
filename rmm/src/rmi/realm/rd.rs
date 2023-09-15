@@ -1,6 +1,6 @@
 use crate::granule::GranuleState;
 
-use paging::guard::Content;
+use vmsa::guard::Content;
 
 // TODO: Integrate with our `struct Realm`
 pub struct Rd {

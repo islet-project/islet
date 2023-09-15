@@ -5,10 +5,10 @@ use crate::config::PAGE_SIZE;
 use crate::mm::page::BasePageSize;
 use crate::mm::page_table::entry::PTDesc;
 
-use paging::address::{PhysAddr, VirtAddr};
-use paging::page::Page;
-use paging::page_table::PageTable as RootPageTable;
-use paging::page_table::{Level, PageTableMethods};
+use vmsa::address::{PhysAddr, VirtAddr};
+use vmsa::page::Page;
+use vmsa::page_table::PageTable as RootPageTable;
+use vmsa::page_table::{Level, PageTableMethods};
 
 use armv9a::bits_in_reg;
 use core::ffi::c_void;

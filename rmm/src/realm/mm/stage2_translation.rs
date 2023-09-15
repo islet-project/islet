@@ -10,10 +10,10 @@ use crate::realm::mm::page_table::pte;
 use crate::realm::mm::translation_granule_4k::RawPTE;
 use crate::realm::mm::IPATranslation;
 use crate::rmi::error::Error;
-use paging::address::PhysAddr;
-use paging::page::{Page, PageIter, PageSize};
-use paging::page_table::Entry;
-use paging::page_table::{Level, PageTable, PageTableMethods};
+use vmsa::address::PhysAddr;
+use vmsa::page::{Page, PageIter, PageSize};
+use vmsa::page_table::Entry;
+use vmsa::page_table::{Level, PageTable, PageTableMethods};
 
 use armv9a::{bits_in_reg, define_bitfield, define_bits, define_mask};
 

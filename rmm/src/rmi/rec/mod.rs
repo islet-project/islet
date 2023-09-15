@@ -8,7 +8,7 @@ use crate::granule::GranuleState;
 use crate::rmi::realm::rd::State;
 use crate::rmi::realm::Rd;
 
-use paging::guard::Content;
+use vmsa::guard::Content;
 
 pub struct Rec {
     pub rd: Rd,

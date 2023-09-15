@@ -6,9 +6,9 @@ use self::translation::{
     GranuleStatusTable, GRANULE_STATUS_TABLE, L0_TABLE_ENTRY_SIZE_RANGE, L1_TABLE_ENTRY_SIZE_RANGE,
 };
 use crate::rmi::error::Error as RmiError;
-use paging::address::PhysAddr;
-use paging::error::Error;
-use paging::page_table::{HasSubtable, Level};
+use vmsa::address::PhysAddr;
+use vmsa::error::Error;
+use vmsa::page_table::{HasSubtable, Level};
 
 pub const GRANULE_SIZE: usize = 4096;
 
@@ -96,10 +96,10 @@ macro_rules! get_granule {
         {
             use crate::granule::translation::{GranuleSize, GRANULE_STATUS_TABLE};
             use crate::granule::validate_addr;
-            use paging::address::PhysAddr;
-            use paging::error::Error as MmError;
-            use paging::page::Page;
-            use paging::page_table::{self, PageTableMethods};
+            use vmsa::address::PhysAddr;
+            use vmsa::error::Error as MmError;
+            use vmsa::page::Page;
+            use vmsa::page_table::{self, PageTableMethods};
 
             if !validate_addr($addr) {
                 Err(MmError::MmInvalidAddr)
@@ -132,7 +132,7 @@ macro_rules! get_granule_if {
     ($addr:expr, $state:expr) => {{
         get_granule!($addr).and_then(|guard| {
             if guard.state() != $state {
-                use paging::error::Error as MmError;
+                use vmsa::error::Error as MmError;
                 Err(MmError::MmStateError)
             } else {
                 Ok(guard)
@@ -247,7 +247,7 @@ mod test {
     use crate::granule::translation::{GranuleStatusTable, GRANULE_STATUS_TABLE};
     use crate::granule::{set_granule, GranuleState};
     use crate::set_state_and_get_granule;
-    use paging::error::Error;
+    use vmsa::error::Error;
 
     const TEST_ADDR: usize = 0x880c_0000;
     const TEST_WRONG_ADDR: usize = 0x7900_0000;

@@ -4,7 +4,7 @@ pub mod entry;
 use self::entry::Entry;
 use crate::config::PAGE_SIZE;
 
-use paging::page_table::{HasSubtable, Level};
+use vmsa::page_table::{HasSubtable, Level};
 
 // Safety/TODO:
 //  - As of now, concurrency safety for RTT and Realm page table is achieved by a big lock.

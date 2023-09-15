@@ -6,7 +6,7 @@ use crate::rmi;
 use crate::rmi::error::Error;
 use crate::{get_granule, get_granule_if, set_state_and_get_granule};
 
-use paging::error::Error as MmError;
+use vmsa::error::Error as MmError;
 
 extern crate alloc;
 

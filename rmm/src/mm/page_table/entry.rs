@@ -1,9 +1,9 @@
 use super::attr;
 
-use paging::address::PhysAddr;
-use paging::error::Error;
-use paging::page_table::{self, Level};
-use paging::RawGPA;
+use vmsa::address::PhysAddr;
+use vmsa::error::Error;
+use vmsa::page_table::{self, Level};
+use vmsa::RawGPA;
 
 use armv9a::{define_bitfield, define_bits, define_mask};
 

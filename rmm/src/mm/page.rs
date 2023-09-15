@@ -2,7 +2,7 @@ use super::page_table::{attr, entry::PTDesc};
 use crate::config::PAGE_SIZE;
 
 use armv9a::bits_in_reg;
-use paging::page::PageSize;
+use vmsa::page::PageSize;
 
 /// A 4 KiB page mapped in the L3Table.
 #[derive(Clone, Copy)]

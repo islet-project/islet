@@ -69,8 +69,25 @@ impl Context {
         F: Fn(&[usize], &mut [usize]) -> Result<(), Error>,
     {
         self.ret[0] = rmi::SUCCESS;
-        if let Err(code) = handler(&self.arg[..], &mut self.ret[..]) {
-            self.ret[0] = code.into();
+
+        #[cfg(feature = "stat")]
+        {
+            if self.cmd != rmi::REC_ENTER {
+                trace!("let's get STATS.lock() with cmd {}", rmi::to_str(self.cmd));
+                crate::stat::STATS.lock().measure(self.cmd, || {
+                    if let Err(code) = handler(&self.arg[..], &mut self.ret[..]) {
+                        self.ret[0] = code.into();
+                    }
+                });
+            } else if let Err(code) = handler(&self.arg[..], &mut self.ret[..]) {
+                self.ret[0] = code.into();
+            }
+        }
+        #[cfg(not(feature = "stat"))]
+        {
+            if let Err(code) = handler(&self.arg[..], &mut self.ret[..]) {
+                self.ret[0] = code.into();
+            }
         }
 
         trace!(
@@ -89,8 +106,21 @@ impl Context {
         F: FnMut(&[usize], &mut [usize]) -> Result<(), Error>,
     {
         self.ret[0] = rsi::SUCCESS;
-        if let Err(code) = handler(&self.arg[..], &mut self.ret[..]) {
-            self.ret[0] = code.into();
+
+        #[cfg(feature = "stat")]
+        {
+            trace!("let's get STATS.lock() with cmd {}", rsi::to_str(self.cmd));
+            crate::stat::STATS.lock().measure(self.cmd, || {
+                if let Err(code) = handler(&self.arg[..], &mut self.ret[..]) {
+                    self.ret[0] = code.into();
+                }
+            });
+        }
+        #[cfg(not(feature = "stat"))]
+        {
+            if let Err(code) = handler(&self.arg[..], &mut self.ret[..]) {
+                self.ret[0] = code.into();
+            }
         }
 
         trace!(

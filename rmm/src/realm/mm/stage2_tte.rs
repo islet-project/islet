@@ -33,7 +33,7 @@ define_bits!(
     AP[7 - 6],
     INVALID_RIPAS[6 - 6],
     INVALID_HIPAS[5 - 2],
-    MEMATTR[4 - 2],
+    MEMATTR[5 - 2],
     DESC_TYPE[1 - 0],
     PAGE_FLAGS[11 - 0]
 );

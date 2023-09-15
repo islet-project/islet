@@ -1,5 +1,6 @@
 use super::attr;
 
+use attr::mair_idx;
 use vmsa::address::PhysAddr;
 use vmsa::error::Error;
 use vmsa::page_table::{self, Level};
@@ -87,7 +88,8 @@ impl page_table::Entry for Entry {
     fn set_with_page_table_flags(&mut self, addr: PhysAddr) -> Result<(), Error> {
         self.set(
             addr,
-            armv9a::bits_in_reg(PTDesc::TYPE, attr::page_type::TABLE_OR_PAGE),
+            armv9a::bits_in_reg(PTDesc::INDX, mair_idx::RMM_MEM)
+                | armv9a::bits_in_reg(PTDesc::TYPE, attr::page_type::TABLE_OR_PAGE),
             false,
         )
     }

@@ -39,7 +39,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // revisit rmi.create_realm() (is it necessary?)
         rmm.rmi
             .create_realm(params.vmid)
-            .map(|id| rd_obj.init(id, params.rtt_base as usize))?;
+            .map(|id| rd_obj.init(id, params.rtt_base as usize, params.ipa_bits()))?;
 
         let id = rd_obj.id();
         let rtt_base = rd_obj.rtt_base();

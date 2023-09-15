@@ -7,13 +7,15 @@ pub struct Rd {
     realm_id: usize,
     state: State,
     rtt_base: usize,
+    ipa_bits: usize,
 }
 
 impl Rd {
-    pub fn init(&mut self, id: usize, rtt_base: usize) {
+    pub fn init(&mut self, id: usize, rtt_base: usize, ipa_bits: usize) {
         self.realm_id = id;
         self.state = State::New;
-        self.rtt_base = rtt_base
+        self.rtt_base = rtt_base;
+        self.ipa_bits = ipa_bits;
     }
 
     pub fn init_with_state(&mut self, id: usize, state: State) {
@@ -35,6 +37,10 @@ impl Rd {
 
     pub fn rtt_base(&self) -> usize {
         self.rtt_base
+    }
+
+    pub fn ipa_bits(&self) -> usize {
+        self.ipa_bits
     }
 }
 

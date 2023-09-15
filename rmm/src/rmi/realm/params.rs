@@ -65,7 +65,7 @@ impl HostAccessor for Params {
         }
 
         // Check misconfigurations between IPA size and SL
-        let ipa_bits = features::ipa_bits(self.features_0 as usize);
+        let ipa_bits = self.ipa_bits();
         let rtt_slvl = self.rtt_level_start as usize;
 
         const RTT_PAGE_LEVEL: usize = 3;
@@ -83,6 +83,12 @@ impl HostAccessor for Params {
             HASH_ALGO_SHA256 | HASH_ALGO_SHA512 => true,
             _ => false,
         }
+    }
+}
+
+impl Params {
+    pub fn ipa_bits(&self) -> usize {
+        features::ipa_bits(self.features_0 as usize)
     }
 }
 

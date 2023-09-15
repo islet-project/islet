@@ -1,8 +1,10 @@
 pub(crate) mod params;
 pub(crate) mod rd;
 
-use self::params::Params;
 pub use self::rd::Rd;
+
+use self::params::Params;
+use self::rd::State;
 use super::error::Error;
 use crate::event::Mainloop;
 use crate::granule::{set_granule, GranuleState};
@@ -14,8 +16,17 @@ use crate::{get_granule, get_granule_if};
 extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::REALM_ACTIVATE, |_, _, _| {
-        super::dummy();
+    listen!(mainloop, rmi::REALM_ACTIVATE, |arg, _, _| {
+        let rd = arg[0];
+
+        let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
+        let rd = rd_granule.content_mut::<Rd>();
+
+        if !rd.at_state(State::New) {
+            return Err(Error::RmiErrorRealm);
+        }
+
+        rd.set_state(State::Active);
         Ok(())
     });
 

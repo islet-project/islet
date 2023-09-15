@@ -31,6 +31,10 @@ impl Rd {
         self.state
     }
 
+    pub fn set_state(&mut self, state: State) {
+        self.state = state;
+    }
+
     pub fn at_state(&self, compared: State) -> bool {
         self.state == compared
     }

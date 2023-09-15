@@ -11,6 +11,8 @@ use crate::rmi;
 use crate::rmi::error::Error;
 use crate::{get_granule, get_granule_if, set_state_and_get_granule};
 
+use vmsa::error::Error as MmError;
+
 const RIPAS_EMPTY: u64 = 0;
 const RIPAS_RAM: u64 = 1;
 
@@ -92,12 +94,17 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rmi = rmm.rmi;
         // target_pa: location where realm data is created.
         let target_pa = arg[0];
+        let rd = arg[1];
         let ipa = arg[2];
         let src_pa = arg[3];
         let _flags = arg[4];
 
+        if target_pa == rd || target_pa == src_pa || rd == src_pa {
+            return Err(Error::RmiErrorInput);
+        }
+
         // rd granule lock
-        let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
+        let rd_granule = get_granule_if!(rd, GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let realm_id = rd.id();
 
@@ -106,6 +113,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if !rd.at_state(State::New) {
             return Err(Error::RmiErrorRealm);
         }
+
+        validate_ipa(ipa, rd.ipa_bits())?;
+
+        match get_granule_if!(src_pa, GranuleState::Undelegated) {
+            Ok(_) | Err(MmError::MmNoEntry) => Ok(()),
+            _ => Err(Error::RmiErrorInput),
+        }?;
 
         // data granule lock for the target page
         let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
@@ -207,4 +221,24 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rmi.unmap(rd.id(), ipa, GRANULE_SIZE)?;
         Ok(())
     });
+}
+
+fn realm_ipa_size(ipa_bits: usize) -> usize {
+    1 << ipa_bits
+}
+
+fn realm_par_size(ipa_bits: usize) -> usize {
+    realm_ipa_size(ipa_bits) / 2
+}
+
+fn validate_ipa(ipa: usize, ipa_bits: usize) -> Result<(), Error> {
+    if ipa % GRANULE_SIZE != 0 {
+        return Err(Error::RmiErrorInput);
+    }
+
+    if ipa >= realm_par_size(ipa_bits) {
+        return Err(Error::RmiErrorInput);
+    }
+
+    Ok(())
 }

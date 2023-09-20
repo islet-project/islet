@@ -2,6 +2,8 @@ use crate::const_assert_eq;
 use crate::granule::GRANULE_SIZE;
 use crate::host::Accessor as HostAccessor;
 
+use super::mpidr;
+
 const PADDING: [usize; 5] = [248, 248, 248, 1216, 1912];
 
 #[repr(C)]
@@ -38,6 +40,7 @@ impl Default for Params {
         }
     }
 }
+
 impl core::fmt::Debug for Params {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Params")
@@ -51,7 +54,16 @@ impl core::fmt::Debug for Params {
     }
 }
 
-impl HostAccessor for Params {}
+impl HostAccessor for Params {
+    fn validate(&self) -> bool {
+        trace!("{:?}", self);
+        if !mpidr::validate(self.mpidr) {
+            return false;
+        }
+
+        return true;
+    }
+}
 
 #[cfg(test)]
 pub mod test {

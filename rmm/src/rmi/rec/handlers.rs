@@ -38,7 +38,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // read params
         let params = copy_from_host_or_ret!(Params, params_ptr);
-        trace!("{:?}", params);
 
         match rmi.create_vcpu(rd.id()) {
             Ok(vcpuid) => {

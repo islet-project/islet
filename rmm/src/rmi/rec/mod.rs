@@ -1,4 +1,5 @@
 pub mod handlers;
+pub mod mpidr;
 mod params;
 pub mod run;
 

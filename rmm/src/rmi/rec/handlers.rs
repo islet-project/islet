@@ -7,7 +7,7 @@ use crate::host::pointer::Pointer as HostPointer;
 use crate::host::pointer::PointerMut as HostPointerMut;
 use crate::listen;
 use crate::rmi::error::Error;
-use crate::rmi::realm::Rd;
+use crate::rmi::realm::{rd::State, Rd};
 use crate::{get_granule, get_granule_if};
 use crate::{rmi, rsi};
 
@@ -20,9 +20,16 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd = arg[1];
         let params_ptr = arg[2];
 
+        if rec == rd {
+            return Err(Error::RmiErrorInput);
+        }
+
         // grab the lock for Rd granule
         let rd_granule = get_granule_if!(rd, GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
+        if !rd.at_state(State::New) {
+            return Err(Error::RmiErrorRealm);
+        }
 
         // set Rec_state and grab the lock for Rec granule
         let mut rec_granule = get_granule_if!(rec, GranuleState::Delegated)?;

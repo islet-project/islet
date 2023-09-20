@@ -16,18 +16,21 @@ extern crate alloc;
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_CREATE, |arg, ret, rmm| {
         let rmi = rmm.rmi;
+        let rec = arg[0];
+        let rd = arg[1];
+        let params_ptr = arg[2];
 
         // grab the lock for Rd granule
-        let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
+        let rd_granule = get_granule_if!(rd, GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
 
         // set Rec_state and grab the lock for Rec granule
-        let mut rec_granule = get_granule_if!(arg[0], GranuleState::Delegated)?;
+        let mut rec_granule = get_granule_if!(rec, GranuleState::Delegated)?;
+        rmm.page_table.map(rec, true);
         let rec = rec_granule.content_mut::<Rec>();
-        rmm.page_table.map(arg[0], true);
 
         // read params
-        let params = copy_from_host_or_ret!(Params, arg[2]);
+        let params = copy_from_host_or_ret!(Params, params_ptr);
         trace!("{:?}", params);
 
         match rmi.create_vcpu(rd.id()) {

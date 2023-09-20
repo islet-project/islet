@@ -8,6 +8,7 @@ pub struct Rd {
     state: State,
     rtt_base: usize,
     ipa_bits: usize,
+    rec_index: usize,
 }
 
 impl Rd {
@@ -16,6 +17,7 @@ impl Rd {
         self.state = State::New;
         self.rtt_base = rtt_base;
         self.ipa_bits = ipa_bits;
+        self.rec_index = 0;
     }
 
     pub fn init_with_state(&mut self, id: usize, state: State) {
@@ -45,6 +47,14 @@ impl Rd {
 
     pub fn ipa_bits(&self) -> usize {
         self.ipa_bits
+    }
+
+    pub fn rec_index(&self) -> usize {
+        self.rec_index
+    }
+
+    pub fn inc_rec_index(&mut self) {
+        self.rec_index += 1;
     }
 }
 

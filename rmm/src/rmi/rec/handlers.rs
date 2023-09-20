@@ -1,3 +1,4 @@
+use super::mpidr::MPIDR;
 use super::params::Params;
 use super::run::{Run, REC_ENTRY_FLAG_TRAP_WFE, REC_ENTRY_FLAG_TRAP_WFI};
 use super::Rec;
@@ -25,8 +26,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         // grab the lock for Rd granule
-        let rd_granule = get_granule_if!(rd, GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
+        let rd = rd_granule.content_mut::<Rd>();
         if !rd.at_state(State::New) {
             return Err(Error::RmiErrorRealm);
         }
@@ -36,8 +37,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rmm.page_table.map(rec, true);
         let rec = rec_granule.content_mut::<Rec>();
 
-        // read params
         let params = copy_from_host_or_ret!(Params, params_ptr);
+        let rec_index = MPIDR::from(params.mpidr).index();
+        if rec_index != rd.rec_index() {
+            return Err(Error::RmiErrorInput);
+        }
 
         match rmi.create_vcpu(rd.id()) {
             Ok(vcpuid) => {
@@ -59,6 +63,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
+        rd.inc_rec_index();
         set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec)
     });
 

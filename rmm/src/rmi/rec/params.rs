@@ -1,9 +1,11 @@
-use crate::const_assert_eq;
-use crate::granule::GRANULE_SIZE;
-use crate::host::Accessor as HostAccessor;
-
 use super::mpidr;
+use crate::const_assert_eq;
+use crate::granule::{GranuleState, GRANULE_SIZE};
+use crate::host::Accessor as HostAccessor;
+use crate::rmi::error::Error;
+use crate::{get_granule, get_granule_if};
 
+const MAX_AUX: usize = 16;
 const PADDING: [usize; 5] = [248, 248, 248, 1216, 1912];
 
 #[repr(C)]
@@ -17,7 +19,7 @@ pub struct Params {
     pub gprs: [u64; 8],
     padding3: [u8; PADDING[3]],
     pub num_aux: u64,
-    pub aux: [u64; 16],
+    pub aux: [u64; MAX_AUX],
     padding4: [u8; PADDING[4]],
 }
 
@@ -35,9 +37,30 @@ impl Default for Params {
             gprs: [0; 8],
             padding3: [0; PADDING[3]],
             num_aux: 0,
-            aux: [0; 16],
+            aux: [0; MAX_AUX],
             padding4: [0; PADDING[4]],
         }
+    }
+}
+
+impl Params {
+    pub fn validate_aux(&self, rec: usize, rd: usize, params_ptr: usize) -> Result<(), Error> {
+        let mut aux = self.aux;
+        aux.sort();
+        for idx in 0..self.num_aux as usize {
+            let addr = aux[idx] as usize;
+            if addr == rec || addr == rd || addr == params_ptr {
+                return Err(Error::RmiErrorInput);
+            }
+
+            if idx != 0 && aux[idx - 1] == aux[idx] {
+                return Err(Error::RmiErrorInput);
+            }
+
+            get_granule_if!(addr, GranuleState::Delegated)?;
+        }
+
+        Ok(())
     }
 }
 
@@ -58,6 +81,10 @@ impl HostAccessor for Params {
     fn validate(&self) -> bool {
         trace!("{:?}", self);
         if !mpidr::validate(self.mpidr) {
+            return false;
+        }
+
+        if self.num_aux as usize > MAX_AUX {
             return false;
         }
 

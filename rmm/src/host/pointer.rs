@@ -128,12 +128,18 @@ impl<'a, T: HostAccessor> Drop for PointerMutGuard<'a, T> {
 #[macro_export]
 macro_rules! copy_from_host_or_ret {
     ($target_type:tt, $ptr:expr) => {{
+        use crate::granule::is_not_in_realm;
+        use crate::rmi::error::Error;
+
+        if !is_not_in_realm($ptr) {
+            return Err(Error::RmiErrorInput);
+        }
+
         let src_obj = HostPointer::<$target_type>::new($ptr);
         let src_obj = src_obj.acquire();
         let src_obj = if let Some(v) = src_obj {
             v
         } else {
-            use crate::rmi::error::Error;
             return Err(Error::RmiErrorInput);
         };
 

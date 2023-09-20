@@ -6,6 +6,7 @@ use self::translation::{
     GranuleStatusTable, GRANULE_STATUS_TABLE, L0_TABLE_ENTRY_SIZE_RANGE, L1_TABLE_ENTRY_SIZE_RANGE,
 };
 use crate::rmi::error::Error as RmiError;
+
 use vmsa::address::PhysAddr;
 use vmsa::error::Error;
 use vmsa::page_table::{HasSubtable, Level};
@@ -239,6 +240,13 @@ pub fn to_rmi_result(res: Result<(), Error>) -> Result<(), RmiError> {
     match res {
         Ok(_) => Ok(()),
         Err(e) => Err(RmiError::from(e)),
+    }
+}
+
+pub fn is_not_in_realm(addr: usize) -> bool {
+    match get_granule_if!(addr, GranuleState::Undelegated) {
+        Ok(_) | Err(Error::MmNoEntry) => true,
+        _ => false,
     }
 }
 

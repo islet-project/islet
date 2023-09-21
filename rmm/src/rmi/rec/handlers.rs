@@ -8,6 +8,7 @@ use crate::granule::{set_granule, set_granule_with_parent, GranuleState};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::pointer::PointerMut as HostPointerMut;
 use crate::listen;
+use crate::measurement::HashContext;
 use crate::rmi::error::Error;
 use crate::rmi::realm::{rd::State, Rd};
 use crate::rsi::do_host_call;
@@ -69,6 +70,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rec.set_vtcr(prepare_vtcr(rd)?);
 
         rd.inc_rec_index();
+        HashContext::new(&rmm.rsi, &rd)?.measure_rec_params(&params)?;
+
         set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec)
     });
 

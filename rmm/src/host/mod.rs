@@ -48,6 +48,10 @@ impl DataPage {
     pub unsafe fn as_mut_ptr(&mut self) -> *mut u8 {
         self.0.as_ptr() as *mut u8
     }
+
+    pub fn as_slice(&self) -> &[u8] {
+        self.0.as_slice()
+    }
 }
 
 impl Default for DataPage {

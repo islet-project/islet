@@ -32,6 +32,7 @@ pub mod rsi;
 pub mod stat;
 #[macro_use]
 pub mod r#macro;
+mod measurement;
 mod monitor;
 
 extern crate alloc;

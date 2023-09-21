@@ -1,6 +1,7 @@
 use crate::const_assert_eq;
 use crate::granule::{GRANULE_SHIFT, GRANULE_SIZE};
 use crate::host::Accessor as HostAccessor;
+use crate::measurement::Hashable;
 use crate::rmi::features;
 use crate::rmi::rtt::{RTT_PAGE_LEVEL, S2TTE_STRIDE};
 use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
@@ -55,6 +56,29 @@ impl core::fmt::Debug for Params {
             .field("rtt_level_start", &self.rtt_level_start)
             .field("rtt_num_start", &self.rtt_num_start)
             .finish()
+    }
+}
+
+impl Hashable for Params {
+    fn hash(
+        &self,
+        hasher: &crate::measurement::Hasher,
+        out: &mut [u8],
+    ) -> Result<(), crate::measurement::MeasurementError> {
+        hasher.hash_fields_into(out, |alg| {
+            alg.hash_u64(0); // features aren't used
+            alg.hash(self.padding0);
+            alg.hash_u8(self.hash_algo);
+            alg.hash(self.padding1);
+            alg.hash([0u8; 64]); // rpv is not used
+            alg.hash(self.padding2);
+            alg.hash_u16(0); // vmid is not used
+            alg.hash(self.padding3);
+            alg.hash_u64(0); // rtt_base is not used
+            alg.hash_u64(0); // rtt_level_start is not used
+            alg.hash_u32(0); // rtt_num_start is not used
+            alg.hash(self.padding4);
+        })
     }
 }
 

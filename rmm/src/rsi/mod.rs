@@ -1,12 +1,16 @@
 pub mod constraint;
+pub mod error;
 pub mod hostcall;
 pub mod psci;
 
 use crate::define_interface;
 use crate::event::RsiHandle;
+use crate::granule::GranuleState;
 use crate::listen;
+use crate::measurement::{HashContext, Measurement, MeasurementError};
 use crate::rmi;
 use crate::rmi::error::{Error, InternalError::NotExistRealm};
+use crate::rmi::realm::Rd;
 use crate::rmi::rec::run::Run;
 use crate::rmi::rec::Rec;
 use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
@@ -71,6 +75,21 @@ pub fn do_host_call(
     Ok(())
 }
 
+pub trait Interface {
+    fn measurement_read(
+        &self,
+        realmid: usize,
+        index: usize,
+        out: &mut Measurement,
+    ) -> Result<(), error::Error>;
+    fn measurement_extend(
+        &self,
+        realmid: usize,
+        index: usize,
+        f: impl Fn(&mut Measurement) -> Result<(), MeasurementError>,
+    ) -> Result<(), error::Error>;
+}
+
 pub fn set_event_handler(rsi: &mut RsiHandle) {
     listen!(rsi, HOST_CALL, do_host_call);
 
@@ -85,6 +104,63 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             );
         }
         trace!("RSI_ABI_VERSION: {:#X?}", VERSION);
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
+    });
+
+    listen!(rsi, MEASUREMENT_READ, |_arg, ret, rmm, rec, _| {
+        let rmi = rmm.rmi;
+        let realmid = rec.realm_id()?;
+        let vcpuid = rec.id();
+
+        let mut measurement = Measurement::empty();
+        let index = rmi.get_reg(realmid, vcpuid, 1)?;
+        rmm.rsi.measurement_read(realmid, index, &mut measurement)?;
+        rmi.set_reg(realmid, vcpuid, 0, SUCCESS)?;
+        for (ind, chunk) in measurement
+            .as_slice()
+            .chunks_exact(core::mem::size_of::<usize>())
+            .enumerate()
+        {
+            let reg_value = usize::from_le_bytes(chunk.try_into().unwrap());
+            if rmi.set_reg(realmid, vcpuid, ind + 1, reg_value).is_err() {
+                warn!(
+                    "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
+                    realmid, vcpuid
+                );
+            }
+        }
+
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
+    });
+
+    listen!(rsi, MEASUREMENT_EXTEND, |_arg, ret, rmm, rec, _| {
+        let rmi = rmm.rmi;
+        let realmid = rec.realm_id()?;
+        let vcpuid = rec.id();
+
+        let index = rmi.get_reg(realmid, vcpuid, 1)?;
+        let size = rmi.get_reg(realmid, vcpuid, 2)?;
+        let mut buffer = [0u8; 64];
+
+        for i in 0..8 {
+            buffer[i * 8..i * 8 + 8].copy_from_slice(
+                rmi.get_reg(realmid, vcpuid, i + 3)?
+                    .to_le_bytes()
+                    .as_slice(),
+            );
+        }
+
+        if size > buffer.len() {
+            return Err(crate::event::Error::RmiErrorInput);
+        }
+
+        let rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
+        let rd = rd.content::<Rd>();
+        HashContext::new(&rmm.rsi, &rd)?.extend_measurement(&buffer[0..size], index)?;
+
+        rmi.set_reg(realmid, vcpuid, 0, SUCCESS)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
     });

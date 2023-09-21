@@ -1,6 +1,6 @@
 pub mod handlers;
 pub mod mpidr;
-mod params;
+pub mod params;
 pub mod run;
 pub mod vtcr;
 

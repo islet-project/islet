@@ -11,6 +11,7 @@ pub struct Rd {
     ipa_bits: usize,
     rec_index: usize,
     s2_starting_level: isize,
+    hash_algo: u8,
 }
 
 impl Rd {
@@ -62,6 +63,14 @@ impl Rd {
     pub fn addr_in_par(&self, addr: usize) -> bool {
         let ipa_bits = self.ipa_bits();
         addr < realm_par_size(ipa_bits)
+    }
+
+    pub fn hash_algo(&self) -> u8 {
+        self.hash_algo
+    }
+
+    pub fn set_hash_algo(&mut self, alg: u8) {
+        self.hash_algo = alg;
     }
 }
 

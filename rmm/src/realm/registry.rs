@@ -1,4 +1,5 @@
 use crate::granule::GRANULE_SIZE;
+use crate::measurement::MeasurementError;
 use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::mm::page_table::pte::{permission, shareable};
 use crate::realm::mm::IPATranslation;
@@ -8,6 +9,7 @@ use crate::rmi::realm::Rd;
 use crate::rmi::rec::run::{Run, REC_ENTRY_FLAG_EMUL_MMIO};
 use crate::rmi::rtt::{RTT_PAGE_LEVEL, S2TTE_STRIDE};
 
+use crate::event::RsiHandle;
 use crate::gic;
 use crate::gic::{GIC_FEATURES, ICH_HCR_EL2_EOI_COUNT_MASK, ICH_HCR_EL2_NS_MASK};
 use crate::granule::{set_granule, GranuleState};
@@ -24,6 +26,7 @@ use crate::rmi::error::Error;
 use crate::rmi::error::InternalError::*;
 use crate::rmi::rtt_entry_state;
 use crate::rmm_exit;
+use crate::rsi::error::Error as RsiError;
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
@@ -880,5 +883,47 @@ impl crate::rmi::Interface for RMI {
             .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
 
         Ok(pa)
+    }
+}
+
+impl crate::rsi::Interface for RsiHandle {
+    fn measurement_read(
+        &self,
+        realmid: usize,
+        index: usize,
+        out: &mut crate::measurement::Measurement,
+    ) -> Result<(), crate::rsi::error::Error> {
+        let realm_lock = get_realm(realmid).ok_or(RsiError::RealmDoesNotExists)?;
+
+        let mut realm = realm_lock.lock();
+
+        let measurement = realm
+            .measurements
+            .iter_mut()
+            .nth(index)
+            .ok_or(RsiError::InvalidMeasurementIndex)?;
+
+        out.as_mut_slice().copy_from_slice(measurement.as_slice());
+        Ok(())
+    }
+
+    fn measurement_extend(
+        &self,
+        realmid: usize,
+        index: usize,
+        f: impl Fn(&mut crate::measurement::Measurement) -> Result<(), MeasurementError>,
+    ) -> Result<(), crate::rsi::error::Error> {
+        let realm_lock = get_realm(realmid).ok_or(RsiError::RealmDoesNotExists)?;
+
+        let mut realm = realm_lock.lock();
+
+        let measurement = realm
+            .measurements
+            .iter_mut()
+            .nth(index)
+            .ok_or(RsiError::InvalidMeasurementIndex)?;
+
+        f(measurement)?;
+        Ok(())
     }
 }

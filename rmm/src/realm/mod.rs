@@ -5,6 +5,7 @@ pub mod registry;
 pub mod timer;
 pub mod vcpu;
 
+use crate::measurement::{Measurement, MEASUREMENTS_SLOT_NR};
 use crate::realm::mm::IPATranslation;
 use crate::realm::vcpu::{Context, VCPU};
 
@@ -23,6 +24,7 @@ pub struct Realm<T: Context> {
     pub state: State,
     pub vcpus: Vec<Arc<Mutex<VCPU<T>>>>,
     pub page_table: Arc<Mutex<Box<dyn IPATranslation>>>,
+    pub measurements: [Measurement; MEASUREMENTS_SLOT_NR],
 }
 
 impl<T: Context + Default> Realm<T> {
@@ -39,6 +41,7 @@ impl<T: Context + Default> Realm<T> {
                 state: State::New,
                 vcpus: vcpus,
                 page_table: page_table,
+                measurements: [Measurement::empty(); MEASUREMENTS_SLOT_NR],
             });
             realm
         })

@@ -7,6 +7,7 @@ use crate::granule::{is_not_in_realm, set_granule, GranuleState, GRANULE_SHIFT, 
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::DataPage;
 use crate::listen;
+use crate::measurement::HashContext;
 use crate::realm::mm::stage2_tte::S2TTE;
 use crate::rmi;
 use crate::rmi::error::Error;
@@ -95,6 +96,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
         rmi.rtt_init_ripas(rd.id(), ipa, level)?;
+
+        HashContext::new(&rmm.rsi, &rd)?.measure_ripas_granule(ipa, level as u8)?;
+
         Ok(())
     });
 
@@ -166,7 +170,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd = arg[1];
         let ipa = arg[2];
         let src_pa = arg[3];
-        let _flags = arg[4];
+        let flags = arg[4];
 
         if target_pa == rd || target_pa == src_pa || rd == src_pa {
             return Err(Error::RmiErrorInput);
@@ -197,13 +201,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // read src page
         let src_page = copy_from_host_or_ret!(DataPage, src_pa);
 
+        HashContext::new(&rmm.rsi, &rd)?.measure_data_granule(&src_page, ipa, flags)?;
+
         // 3. copy src to _data
         *target_page = src_page;
 
         // 4. map ipa to taget_pa in S2 table
         rmi.data_create(realm_id, ipa, target_pa)?;
 
-        // TODO: 5. perform measure
         set_granule(&mut target_page_granule, GranuleState::Data)?;
         Ok(())
     });
@@ -228,6 +233,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rmi.data_create(realm_id, ipa, target_pa)?;
 
         // TODO: 2. perform measure
+        // L0czek - not needed here see: tf-rmm/runtime/rmi/rtt.c:883
         set_granule(&mut target_page_granule, GranuleState::Data)?;
         Ok(())
     });

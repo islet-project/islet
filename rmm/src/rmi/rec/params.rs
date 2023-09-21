@@ -2,6 +2,7 @@ use super::mpidr;
 use crate::const_assert_eq;
 use crate::granule::{GranuleState, GRANULE_SIZE};
 use crate::host::Accessor as HostAccessor;
+use crate::measurement::Hashable;
 use crate::rmi::error::Error;
 use crate::{get_granule, get_granule_if};
 
@@ -89,6 +90,28 @@ impl HostAccessor for Params {
         }
 
         return true;
+    }
+}
+
+impl Hashable for Params {
+    fn hash(
+        &self,
+        hasher: &crate::measurement::Hasher,
+        out: &mut [u8],
+    ) -> Result<(), crate::measurement::MeasurementError> {
+        hasher.hash_fields_into(out, |h| {
+            h.hash_u64(self.flags);
+            h.hash(self.padding0);
+            h.hash_u64(0); // mpidr not used
+            h.hash(self.padding1);
+            h.hash_u64(self.pc);
+            h.hash(self.padding2);
+            h.hash_u64_array(self.gprs.as_slice());
+            h.hash(self.padding3);
+            h.hash_u64(0); // num_aux not used
+            h.hash_u64_array([0u64; 16].as_slice()); // aux is not used
+            h.hash(self.padding4);
+        })
     }
 }
 

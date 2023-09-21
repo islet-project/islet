@@ -1,3 +1,5 @@
+use crate::{measurement::MeasurementError, rsi};
+
 #[derive(Debug)]
 pub enum Error {
     RmiErrorInput,
@@ -14,6 +16,8 @@ pub enum Error {
 pub enum InternalError {
     NotExistRealm,
     NotExistVCPU,
+    MeasurementError,
+    InvalidMeasurementIndex,
 }
 
 impl From<Error> for usize {
@@ -34,5 +38,22 @@ impl From<vmsa::error::Error> for Error {
     fn from(_e: vmsa::error::Error) -> Self {
         //error!("MmError occured: {}", <Error as Into<usize>>::into(e));
         Error::RmiErrorInput
+    }
+}
+
+impl From<MeasurementError> for Error {
+    fn from(_value: MeasurementError) -> Self {
+        Error::RmiErrorOthers(InternalError::MeasurementError)
+    }
+}
+
+impl From<rsi::error::Error> for Error {
+    fn from(value: rsi::error::Error) -> Self {
+        match value {
+            rsi::error::Error::RealmDoesNotExists => {
+                Self::RmiErrorOthers(InternalError::NotExistRealm)
+            }
+            _ => Self::RmiErrorOthers(InternalError::InvalidMeasurementIndex),
+        }
     }
 }

@@ -20,6 +20,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rec = arg[0];
         let rd = arg[1];
         let params_ptr = arg[2];
+        let owner = rd;
 
         if rec == rd {
             return Err(Error::RmiErrorInput);
@@ -47,7 +48,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         match rmi.create_vcpu(rd.id()) {
             Ok(vcpuid) => {
                 ret[1] = vcpuid;
-                rec.init(rd.id(), rd.state(), vcpuid);
+                rec.init(owner, rd.id(), rd.state(), vcpuid);
             }
             Err(_) => return Err(Error::RmiErrorInput),
         }
@@ -86,6 +87,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // grab the lock for Rec
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
         let mut rec = rec_granule.content_mut::<Rec>();
+
+        {
+            let rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
+            let rd = rd.content::<Rd>();
+            if !rd.at_state(State::Active) {
+                return Err(Error::RmiErrorRealm);
+            }
+        }
 
         // read Run
         let mut run = copy_from_host_or_ret!(Run, run_pa);

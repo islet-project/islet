@@ -28,6 +28,8 @@ pub mod panic;
 pub mod realm;
 pub mod rmi;
 pub mod rsi;
+#[cfg(feature = "stat")]
+pub mod stat;
 #[macro_use]
 pub mod r#macro;
 mod monitor;

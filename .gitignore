@@ -12,3 +12,5 @@ third-party/*
 cli/islet
 
 docs/
+
+rusty-tags.vi*

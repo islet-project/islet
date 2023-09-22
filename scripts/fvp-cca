@@ -124,23 +124,39 @@ def prepare_bootloaders(rmm, bl33):
 
         run(["cp", outbin, OUT], cwd=ROOT)
 
-def prepare_rmm(rmm, rmm_log_level):
+def get_rmm_features(args):
+    features = []
+
+    if args.rmm == "islet":
+        if args.rmm_log_level == "off":
+            features += ["--features", "max_level_off"]
+        elif args.rmm_log_level == "error":
+            features += ["--features", "max_level_error"]
+        elif args.rmm_log_level == "warn":
+            features += ["--features", "max_level_warn"]
+        elif args.rmm_log_level == "info":
+            features += ["--features", "max_level_info"]
+        elif args.rmm_log_level == "debug":
+            features += ["--features", "max_level_debug"]
+        else:
+            features += ["--features", "max_level_trace"]
+
+        if args.stat == True:
+            features += ["--features", "stat"]
+
+    if features:
+        print("[!] Setting", args.rmm, "features:", features)
+    return features
+
+
+
+def prepare_rmm(rmm, features):
     print("[!] Building realm management monitor...: %s" % rmm)
 
     if rmm == "islet":
         args = ["cargo", "build", "--release"]
-        if rmm_log_level == "off":
-            args += ["--features", "max_level_off"]
-        elif rmm_log_level == "error":
-            args += ["--features", "max_level_error"]
-        elif rmm_log_level == "warn":
-            args += ["--features", "max_level_warn"]
-        elif rmm_log_level == "info":
-            args += ["--features", "max_level_info"]
-        elif rmm_log_level == "debug":
-            args += ["--features", "max_level_debug"]
-        else:
-            args += ["--features", "max_level_trace"]
+        args += features
+
         run(args, cwd=RMM)
         run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
              "%s/aarch64-unknown-none-softfloat/release/fvp" % OUT,
@@ -434,6 +450,7 @@ if __name__ == "__main__":
     parser.add_argument("--gateway", "-gw", help="the gateway ip for host machine", default="193.168.10.1")
     parser.add_argument("--ifname", "-if", help="the main interface name of host machine", default="eth0")
     parser.add_argument("--rmm-log-level", help="Determine RMM's log-level. Choose among (off, error, warn, info, debug, trace)", default="trace")
+    parser.add_argument("--stat", help="Enable stat to check memory used size per command", action="store_true")
 
     args = parser.parse_args()
 
@@ -444,7 +461,8 @@ if __name__ == "__main__":
     validate_args(args)
 
     if not args.run_only:
-        prepare_rmm(args.rmm, args.rmm_log_level)
+        features = get_rmm_features(args)
+        prepare_rmm(args.rmm, features)
 
         if args.realm is not None:
             prepare_realm(args.realm)

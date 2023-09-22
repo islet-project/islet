@@ -10,14 +10,14 @@ use crate::rsi::hostcall::HostCall;
 
 define_interface! {
     command {
-        ABI_VERSION= 0xc400_0190,
-        MEASUREMENT_READ= 0xc400_0192,
-        MEASUREMENT_EXTEND= 0xc400_0193,
-        ATTEST_TOKEN_INIT= 0xc400_0194,
-        ATTEST_TOKEN_CONTINUE= 0xc400_0195,
-        REALM_CONFIG= 0xc400_0196,
-        IPA_STATE_SET= 0xc400_0197,
-        HOST_CALL= 0xc400_0199,
+        ABI_VERSION             = 0xc400_0190,
+        MEASUREMENT_READ        = 0xc400_0192,
+        MEASUREMENT_EXTEND      = 0xc400_0193,
+        ATTEST_TOKEN_INIT       = 0xc400_0194,
+        ATTEST_TOKEN_CONTINUE   = 0xc400_0195,
+        REALM_CONFIG            = 0xc400_0196,
+        IPA_STATE_SET           = 0xc400_0197,
+        HOST_CALL               = 0xc400_0199,
     }
 }
 

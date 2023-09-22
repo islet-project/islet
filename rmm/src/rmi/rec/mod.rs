@@ -13,6 +13,8 @@ use vmsa::guard::Content;
 
 pub struct Rec {
     pub rd: Rd,
+    /// PA of RD of Realm which owns this REC
+    owner: usize,
     vcpuid: usize,
     ripas: Ripas,
 }
@@ -25,14 +27,19 @@ struct Ripas {
 }
 
 impl Rec {
-    pub fn init(&mut self, rd_id: usize, rd_state: State, vcpuid: usize) {
+    pub fn init(&mut self, owner: usize, rd_id: usize, rd_state: State, vcpuid: usize) {
         self.rd.init_with_state(rd_id, rd_state); // Copy Rd into Rec space
+        self.owner = owner;
         self.vcpuid = vcpuid;
         self.set_ripas(0, 0, 0, 0);
     }
 
     pub fn id(&self) -> usize {
         self.vcpuid
+    }
+
+    pub fn owner(&self) -> usize {
+        self.owner
     }
 
     pub fn set_ripas(&mut self, start: u64, end: u64, addr: u64, state: u8) {

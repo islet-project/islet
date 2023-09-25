@@ -23,11 +23,6 @@ impl Rd {
         self.s2_starting_level = s2_starting_level;
     }
 
-    pub fn init_with_state(&mut self, id: usize, state: State) {
-        self.realm_id = id;
-        self.state = state;
-    }
-
     pub fn id(&self) -> usize {
         self.realm_id
     }

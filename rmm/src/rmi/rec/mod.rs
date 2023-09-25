@@ -7,7 +7,7 @@ pub mod vtcr;
 pub use self::handlers::set_event_handler;
 
 use crate::granule::GranuleState;
-use crate::rmi::realm::rd::State;
+use crate::rmi::error::Error;
 use crate::rmi::realm::Rd;
 
 use vmsa::guard::Content;
@@ -29,11 +29,16 @@ struct Ripas {
 }
 
 impl Rec {
-    pub fn init(&mut self, owner: usize, rd_id: usize, rd_state: State, vcpuid: usize) {
-        self.rd.init_with_state(rd_id, rd_state); // Copy Rd into Rec space
+    pub fn init(&mut self, owner: usize, vcpuid: usize) {
         self.owner = owner;
         self.vcpuid = vcpuid;
         self.set_ripas(0, 0, 0, 0);
+    }
+
+    pub fn ipa_bits(&self) -> Result<usize, Error> {
+        let rd = get_granule_if!(self.owner(), GranuleState::RD)?;
+        let rd = rd.content::<Rd>();
+        Ok(rd.ipa_bits())
     }
 
     pub fn id(&self) -> usize {

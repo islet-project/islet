@@ -377,7 +377,7 @@ impl crate::rmi::Interface for RMI {
         Ok(())
     }
 
-    fn realm_config(&self, id: usize, config_ipa: usize) -> Result<(), Error> {
+    fn realm_config(&self, id: usize, config_ipa: usize, ipa_bits: usize) -> Result<(), Error> {
         let res = get_realm(id)
             .ok_or(Error::RmiErrorOthers(NotExistRealm))?
             .lock()
@@ -386,9 +386,7 @@ impl crate::rmi::Interface for RMI {
             .ipa_to_pa(GuestPhysAddr::from(config_ipa), 3);
         if let Some(pa) = res {
             let pa: usize = pa.into();
-            // TODO: Receive ipa width (== 33) from the Host's argument
-            //       and store it inside REC as well
-            unsafe { RealmConfig::init(pa, 33) };
+            unsafe { RealmConfig::init(pa, ipa_bits) };
             Ok(())
         } else {
             Err(Error::RmiErrorInput)

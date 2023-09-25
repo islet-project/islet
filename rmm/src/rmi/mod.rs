@@ -113,7 +113,7 @@ pub trait Interface {
     //       while moving others to another place (e.g., set_reg())
     fn create_realm(&self, vmid: u16, rtt_base: usize) -> Result<usize, Error>;
     fn create_vcpu(&self, id: usize) -> Result<usize, Error>;
-    fn realm_config(&self, id: usize, config_ipa: usize) -> Result<(), Error>;
+    fn realm_config(&self, id: usize, config_ipa: usize, ipa_bits: usize) -> Result<(), Error>;
     fn remove(&self, id: usize) -> Result<(), Error>;
     fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<[usize; 4], Error>;
     fn rtt_create(

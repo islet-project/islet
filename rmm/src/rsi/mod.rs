@@ -65,7 +65,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let realmid = rec.rd.id();
         let vcpuid = rec.id();
         let config_ipa = rmi.get_reg(realmid, vcpuid, 1)?;
-        rmi.realm_config(realmid, config_ipa)?;
+        rmi.realm_config(realmid, config_ipa, rec.ipa_bits()?)?;
 
         if rmi.set_reg(realmid, vcpuid, 0, SUCCESS).is_err() {
             warn!(

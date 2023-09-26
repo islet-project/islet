@@ -13,7 +13,6 @@ use crate::rmi::realm::Rd;
 use vmsa::guard::Content;
 
 pub struct Rec {
-    pub rd: Rd,
     /// PA of RD of Realm which owns this REC
     owner: usize,
     vcpuid: usize,
@@ -39,6 +38,12 @@ impl Rec {
         let rd = get_granule_if!(self.owner(), GranuleState::RD)?;
         let rd = rd.content::<Rd>();
         Ok(rd.ipa_bits())
+    }
+
+    pub fn realm_id(&self) -> Result<usize, Error> {
+        let rd = get_granule_if!(self.owner(), GranuleState::RD)?;
+        let rd = rd.content::<Rd>();
+        Ok(rd.id())
     }
 
     pub fn id(&self) -> usize {

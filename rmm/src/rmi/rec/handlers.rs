@@ -112,13 +112,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 host_call.set_gpr0(ipa);
             }
         }
-        rmi.receive_gic_state_from_host(rec.rd.id(), rec.id(), &run)?;
-        rmi.emulate_mmio(rec.rd.id(), rec.id(), &run)?;
+        rmi.receive_gic_state_from_host(rec.realm_id()?, rec.id(), &run)?;
+        rmi.emulate_mmio(rec.realm_id()?, rec.id(), &run)?;
 
         let ripas = rec.ripas_addr() as usize;
         if ripas > 0 {
-            rmi.set_reg(rec.rd.id(), rec.id(), 0, 0)?;
-            rmi.set_reg(rec.rd.id(), rec.id(), 1, ripas)?;
+            rmi.set_reg(rec.realm_id()?, rec.id(), 0, 0)?;
+            rmi.set_reg(rec.realm_id()?, rec.id(), 1, ripas)?;
             rec.set_ripas(0, 0, 0, 0);
         }
 
@@ -133,7 +133,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mut ret_ns;
         loop {
             ret_ns = true;
-            match rmi.run(rec.rd.id(), rec.id(), 0) {
+            match rmi.run(rec.realm_id()?, rec.id(), 0) {
                 Ok(val) => match val[0] {
                     realmexit::RSI => {
                         trace!("REC_ENTER ret: {:#X?}", val);
@@ -162,7 +162,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                         run.set_esr(val[1] as u64);
                         run.set_hpfar(val[2] as u64);
                         run.set_far(val[3] as u64);
-                        let _ = rmi.send_mmio_write(rec.rd.id(), rec.id(), &mut run);
+                        let _ = rmi.send_mmio_write(rec.realm_id()?, rec.id(), &mut run);
                         ret[0] = rmi::SUCCESS;
                     },
                     realmexit::IRQ => unsafe {
@@ -180,8 +180,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 break;
             }
         }
-        rmi.send_gic_state_to_host(rec.rd.id(), rec.id(), &mut run)?;
-        rmi.send_timer_state_to_host(rec.rd.id(), rec.id(), &mut run)?;
+        rmi.send_gic_state_to_host(rec.realm_id()?, rec.id(), &mut run)?;
+        rmi.send_timer_state_to_host(rec.realm_id()?, rec.id(), &mut run)?;
 
         // NOTICE: do not modify `run` after copy_to_host_or_ret!(). it won't have any effect.
         copy_to_host_or_ret!(Run, &run, run_pa);

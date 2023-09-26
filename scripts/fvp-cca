@@ -99,8 +99,14 @@ def prepare_bootloaders(rmm, bl33):
         "PLAT=fvp",
         "ENABLE_RME=1",
         "FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts",
-        "DEBUG=1",
+        "DEBUG=0",
         "BL33=%s" % bl33,
+        "PLAT_RSS_NOT_SUPPORTED=0",
+        "PLAT_RSS_COMMS_USE_SERIAL=1",
+        "ENABLE_RME=1",
+        "MEASURED_BOOT=1",
+        "MBEDTLS_DIR=%s" % MBEDTLS,
+        "ENABLE_MPAM_FOR_LOWER_ELS=0",
     ]
 
     if rmm == "islet":
@@ -115,7 +121,7 @@ def prepare_bootloaders(rmm, bl33):
     print("[!] Building bootloaders(%s)... " % ', '.join(bl_list))
     make(TF_A, args)
 
-    outdir = os.path.join(TF_A, "build/fvp/debug")
+    outdir = os.path.join(TF_A, "build/fvp/release")
     for bootloader in bl_list:
         outbin = os.path.join(outdir, bootloader)
         if not os.path.exists(outbin):

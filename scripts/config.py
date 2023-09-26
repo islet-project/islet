@@ -41,6 +41,7 @@ REALM_LINUX = os.path.join(THIRD_PARTY, "realm-linux")
 NW_LINUX = os.path.join(THIRD_PARTY, "nw-linux")
 NW_AOSP_BUILD_SCRIPT = os.path.join(THIRD_PARTY, "gki-build")
 NW_AOSP_OUT = "out/aosp_nw"
+MBEDTLS = os.path.join(THIRD_PARTY, "mbedtls")
 TF_A = os.path.join(THIRD_PARTY, "tf-a")
 TF_A_TESTS = os.path.join(THIRD_PARTY, "tf-a-tests")
 TFTF_BIN = os.path.join(TF_A_TESTS, "build/fvp/debug/tftf.bin")

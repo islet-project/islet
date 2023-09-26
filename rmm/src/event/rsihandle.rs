@@ -46,8 +46,13 @@ impl RsiHandle {
             }
             None => {
                 let rmi = monitor.rmi;
+                let realm_id = rec.realm_id();
+                if let Err(e) = realm_id {
+                    error!("failed to get realm_id: {:?}", e);
+                    return RsiHandle::RET_FAIL;
+                }
                 // TODO: handle the error properly
-                let _ = rmi.set_reg(rec.rd.id(), rec.id(), 0, RsiHandle::NOT_SUPPORTED);
+                let _ = rmi.set_reg(realm_id.unwrap(), rec.id(), 0, RsiHandle::NOT_SUPPORTED);
                 error!(
                     "Not registered event: {:X} returning {:X}",
                     ctx.cmd,

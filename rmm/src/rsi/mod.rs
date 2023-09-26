@@ -30,7 +30,7 @@ extern crate alloc;
 pub fn set_event_handler(rsi: &mut RsiHandle) {
     listen!(rsi, HOST_CALL, |_arg, ret, rmm, rec, run| {
         let rmi = rmm.rmi;
-        let realmid = rec.rd.id();
+        let realmid = rec.realm_id()?;
         let vcpuid = rec.id();
         let ipa = rmi.get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
         let pa: usize = ipa;
@@ -47,7 +47,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, ABI_VERSION, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;
-        let realmid = rec.rd.id();
+        let realmid = rec.realm_id()?;
         let vcpuid = rec.id();
         if rmi.set_reg(realmid, vcpuid, 0, VERSION).is_err() {
             warn!(
@@ -62,7 +62,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, REALM_CONFIG, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;
-        let realmid = rec.rd.id();
+        let realmid = rec.realm_id()?;
         let vcpuid = rec.id();
         let config_ipa = rmi.get_reg(realmid, vcpuid, 1)?;
         rmi.realm_config(realmid, config_ipa, rec.ipa_bits()?)?;
@@ -79,7 +79,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, IPA_STATE_SET, |_arg, ret, rmm, rec, run| {
         let rmi = rmm.rmi;
-        let realmid = rec.rd.id();
+        let realmid = rec.realm_id()?;
         let vcpuid = rec.id();
         let ipa_start = rmi.get_reg(realmid, vcpuid, 1)? as u64;
         let ipa_size = rmi.get_reg(realmid, vcpuid, 2)? as u64;

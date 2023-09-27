@@ -2,7 +2,8 @@
 
 set -e
 
-sudo apt update
+apt update && apt -y install sudo
+
 sudo apt install -y -qq --no-install-recommends \
 	gcc-multilib cmake libssl-dev \
 	binutils python3-pip \
@@ -12,6 +13,7 @@ sudo apt install -y -qq --no-install-recommends \
 	jq lcov graphviz inkscape \
 	flex bison \
 	bzip2 \
-	srecord
+	srecord \
+	git wget make vim
 
 pip3 install toml

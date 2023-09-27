@@ -45,8 +45,8 @@ jobs:
       - name: Install dependencies
         run: ./scripts/init.sh
 
-      - name: Build ACS
-        run: ./scripts/fvp-cca -bo -nw=acs -rmm=tf-rmm
+      - name: Test ACS
+        run: ./scripts/tests/acs.sh
 
   tf-a-tests:
     runs-on: ubuntu-22.04

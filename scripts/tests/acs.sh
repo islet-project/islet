@@ -31,7 +31,6 @@ done
 
 # Cleanup
 ps -ef | grep fvp-cca | grep -v grep | awk '{print $2}' | xargs kill
-ps -ef | grep "FVP terminal" | grep -v grep | awk '{print $2}' | xargs kill
 ps -ef | grep FVP_Base_RevC-2xAEMvA | grep -v grep | awk '{print $2}' | xargs kill
 
 tail -11 $UART

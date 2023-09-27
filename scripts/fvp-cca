@@ -332,13 +332,17 @@ def run_fvp_aosp(debug):
         args += ["--cadi-server"]
     run(args, cwd=FVP_DIR, new_env=new_env)
 
-def run_fvp_acs():
+def run_fvp_acs(no_telnet):
     print("[!] Running fvp for acs...")
-    run([ACS_RUN,
-        "--model", FVP_BIN,
-        "--bl1",  "%s/bl1.bin" % OUT,
-        "--fip",  "%s/fip.bin" % OUT,
-        "--acs_build_dir", ACS_BUILD], cwd=ROOT)
+
+    args = [ACS_RUN,
+            "--model", FVP_BIN,
+            "--bl1",  "%s/bl1.bin" % OUT,
+            "--fip",  "%s/fip.bin" % OUT,
+            "--acs_build_dir", ACS_BUILD]
+    if no_telnet:
+        args += ["--no_telnet"]
+    run(args, cwd=ROOT)
 
 def place_prebuilt_at_shared():
     run(["cp", "%s/rootfs-realm.cpio.gz" % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
@@ -506,4 +510,4 @@ if __name__ == "__main__":
         run_fvp_aosp(args.debug)
 
     if not args.build_only and args.normal_world == "acs":
-        run_fvp_acs()
+        run_fvp_acs(args.no_telnet)

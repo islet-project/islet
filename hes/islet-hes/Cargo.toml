@@ -1,0 +1,18 @@
+[package]
+name = "islet-hes"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+key-derivation = { version = "*", path = "../key-derivation" }
+tinyvec = { version = "*", features = ["rustc_1_55"]}
+sha2 = { version = "*", default-features = false, features = ["oid"]}
+aes = "*"
+p256 = { version = "*", default-features = false, features = ["alloc", "ecdsa"] }
+p384 = { version = "*", default-features = false, features = ["alloc", "ecdsa"] }
+ecdsa = "*"
+hkdf = "*"
+ciborium = { version = "*", default-features = false }
+coset = "*"

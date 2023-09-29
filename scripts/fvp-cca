@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
+import errno
 import glob
 import multiprocessing
 import os
+import signal
 import subprocess
 import sys
 
@@ -29,6 +31,28 @@ def make(srcdir, extra=None):
     if extra:
         args += extra
     run(args, cwd=srcdir)
+
+def kill(pid):
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except OSError as e:
+        if e.errno != errno.ESRCH:
+            print(f"Error sending signal to {pid}: {e}")
+            sys.exit(1)
+
+def kill_pid_file(pid_file_path):
+    if not os.path.exists(pid_file_path):
+        return
+    with open(pid_file_path, "r") as pid_file:
+        pid_str = pid_file.read().strip()
+        if pid_str.isdigit():
+            kill(int(pid_str))
+    os.remove(pid_file_path)
+
+def custom_signal_handler(signum, frame):
+    print("Signal %s intercepted" % signal.Signals(signum).name)
+    kill_pid_file(HES_PID)
+    signal.default_int_handler(signum, frame)
 
 def prepare_tf_a_tests(realm):
     srcdir = TF_A_TESTS
@@ -92,6 +116,10 @@ def prepare_sdk():
 
     print("[!] Building RSI kernel module...")
     make(RSI_KO)
+
+def prepare_islet_hes():
+    print("[!] Building islet-hes... ")
+    run(["cargo", "build", "--release"], cwd=HES_APP)
 
 def prepare_bootloaders(rmm, bl33):
     args = [
@@ -259,6 +287,11 @@ def prepare_acs():
 def prepare_tap_network(host_ip, fvp_ip, route_ip, gateway, ifname):
     print("[!] Configuring a tap network for fvp...")
     run(["./scripts/configure_tap.sh", host_ip, fvp_ip, route_ip, gateway, ifname], cwd=ROOT)
+
+def run_islet_hes():
+    print("[!] Running islet-hes...")
+    kill_pid_file(HES_PID)
+    run(["cargo", "run", "--", "-d"], cwd=HES_APP)
 
 def run_fvp_tf_a_tests(debug):
     print("[!] Running fvp for tf-a-tests...")
@@ -472,6 +505,7 @@ if __name__ == "__main__":
 
     if not args.run_only:
         features = get_rmm_features(args)
+        prepare_islet_hes()
         prepare_rmm(args.rmm, features)
 
         if args.realm is not None:
@@ -502,6 +536,10 @@ if __name__ == "__main__":
                 place_realm_at_shared(args.rmm, args.realm_ip, args.fvp_tap_ip, args.host_ip, args.no_kvm_unit_tests, args.no_prebuilt_ml)
                 if args.no_sdk is False:
                     prepare_sdk()
+
+    signal.signal(signal.SIGTERM, custom_signal_handler)
+    signal.signal(signal.SIGINT, custom_signal_handler)
+    run_islet_hes()
 
     if not args.build_only and args.normal_world == "tf-a-tests":
         run_fvp_tf_a_tests(args.debug)

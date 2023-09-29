@@ -28,6 +28,9 @@ RMM = os.path.join(ROOT, "plat/fvp")
 SDK = os.path.join(ROOT, "sdk/")
 RSI_KO = os.path.join(ROOT, "realm/linux-rsi")
 EXAMPLES = os.path.join(ROOT, "examples")
+HES = os.path.join(ROOT, "hes")
+HES_APP = os.path.join(HES, "islet-hes-host-app")
+HES_PID = "/tmp/hes.pid"
 
 # third-party
 THIRD_PARTY = os.path.join(ROOT, "third-party")

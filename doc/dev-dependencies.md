@@ -27,3 +27,21 @@
 | rand     | runtime    | MIT OR Apache-2.0 | https://github.com/rust-random/rand                            |
 | rsa      | runtime    | MIT OR Apache-2.0 | https://github.com/RustCrypto/RSA                              |
 | serde    | runtime    | MIT OR Apache-2.0 | https://github.com/serde-rs/serde                              |
+
+
+## Islet HES dependencies
+| Name           | Type    | License                   | URL                                                             |
+|----------------|---------|---------------------------|-----------------------------------------------------------------|
+| aes            | runtime | MIT OR Apache-2.0         | https://github.com/RustCrypto/block-ciphers                     |
+| ciborium       | runtime | Apache-2.0                | https://github.com/enarx/ciborium                               |
+| clap           | runtime | MIT OR Apache-2.0         | https://github.com/clap-rs/clap                                 |
+| coset          | runtime | Apache-2.0                | https://github.com/google/coset                                 |
+| daemonize      | runtime | MIT OR Apache-2.0         | https://github.com/knsd/daemonize                               |
+| ecdsa          | runtime | Apache-2.0 OR MIT         | https://github.com/RustCrypto/signatures/tree/master/ecdsa      |
+| elliptic-curve | runtime | Apache-2.0 OR MIT         | https://github.com/RustCrypto/traits/tree/master/elliptic-curve |
+| hex            | runtime | MIT OR Apache-2.0         | https://github.com/KokaKiwi/rust-hex                            |
+| hkdf           | runtime | MIT OR Apache-2.0         | https://github.com/RustCrypto/KDFs/                             |
+| p256           | runtime | Apache-2.0 OR MIT         | https://github.com/RustCrypto/elliptic-curves/tree/master/p256  |
+| p384           | runtime | Apache-2.0 OR MIT         | https://github.com/RustCrypto/elliptic-curves/tree/master/p384  |
+| sha2           | runtime | MIT OR Apache-2.0         | https://github.com/RustCrypto/hashes                            |
+| tinyvec        | runtime | Zlib OR Apache-2.0 OR MIT | https://github.com/Lokathor/tinyvec                             |

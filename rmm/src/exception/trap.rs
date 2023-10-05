@@ -105,7 +105,13 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
                 debug!("Other");
             }
             undefined => {
-                panic!("{:?} and ESR: {:X} on CPU {:?}", info, esr, cpu::id());
+                panic!(
+                    "{:?} and esr {:x}, TrapFrame: {:?} on cpu::id {:?}",
+                    info,
+                    esr,
+                    tf,
+                    cpu::id()
+                );
             }
         },
         _ => {

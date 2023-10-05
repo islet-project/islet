@@ -57,7 +57,7 @@ fn exit() {
     }
 }
 
-fn get_realm(id: usize) -> Option<RealmMutex> {
+pub fn get_realm(id: usize) -> Option<RealmMutex> {
     RMS.lock().1.get(&id).map(|realm| Arc::clone(realm))
 }
 

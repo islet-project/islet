@@ -10,7 +10,7 @@ sudo apt install -y -qq --no-install-recommends \
 	device-tree-compiler xterm fakeroot mtools fdisk cpio \
 	dosfstools e2fsprogs \
 	libxml-libxml-perl \
-	jq lcov graphviz inkscape \
+	jq lcov \
 	flex bison \
 	bzip2 \
 	srecord

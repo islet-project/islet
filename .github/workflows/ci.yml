@@ -39,11 +39,9 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: true
 
       - name: Install dependencies
-        run: ./scripts/init.sh
+        run: ./scripts/init_min_acs.sh
 
       - name: Test ACS
         run: ./scripts/tests/acs.sh
@@ -52,11 +50,9 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-        with:
-          submodules: true
 
       - name: Install dependencies
-        run: ./scripts/init.sh
+        run: ./scripts/init_min_tf_a.sh
 
       - name: Run tf-a-tests on normal-world
         run: ./scripts/tests/tf-a-tests.sh

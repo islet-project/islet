@@ -6,7 +6,7 @@ ROOT=$(git rev-parse --show-toplevel)
 HERE=$ROOT/scripts
 
 # Install packages
-$HERE/deps/pkgs.sh
+$HERE/deps/pkgs-for-ci.sh
 
 # Sync submodules (only assets and tf-a)
 git submodule update --init --depth 1 $ROOT/assets

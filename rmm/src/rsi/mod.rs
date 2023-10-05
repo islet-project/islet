@@ -6,6 +6,7 @@ use crate::define_interface;
 use crate::event::RsiHandle;
 use crate::listen;
 use crate::rmi;
+use crate::rmi::error::{Error, InternalError::NotExistRealm};
 use crate::rsi::hostcall::HostCall;
 
 define_interface! {
@@ -33,9 +34,17 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let realmid = rec.realm_id()?;
         let vcpuid = rec.id();
         let ipa = rmi.get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
-        let pa: usize = ipa;
+
+        let pa = crate::realm::registry::get_realm(realmid)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .ipa_to_pa(crate::realm::mm::address::GuestPhysAddr::from(ipa), 3)
+            .ok_or(Error::RmiErrorInput)?;
+
         unsafe {
-            let host_call = HostCall::parse(pa);
+            let host_call = HostCall::parse(pa.into());
             run.set_imm(host_call.imm());
             run.set_exit_reason(rmi::EXIT_HOST_CALL);
 

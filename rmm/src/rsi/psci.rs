@@ -1,6 +1,8 @@
 use crate::event::RsiHandle;
+use crate::granule::GranuleState;
 use crate::listen;
 use crate::rmi;
+use crate::rmi::realm::{rd::State, Rd};
 use crate::rmi::rec::run::Run;
 use crate::rmi::rec::Rec;
 use crate::Monitor;
@@ -107,8 +109,15 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
     listen!(rsi, SMC64::CPU_ON, dummy);
     listen!(rsi, SMC32::AFFINITY_INFO, dummy);
     listen!(rsi, SMC64::AFFINITY_INFO, dummy);
-    listen!(rsi, SMC32::SYSTEM_OFF, dummy);
     listen!(rsi, SMC32::SYSTEM_RESET, dummy);
+
+    listen!(rsi, SMC32::SYSTEM_OFF, |_arg, ret, _rmm, rec, _run| {
+        let mut rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
+        let rd = rd.content_mut::<Rd>();
+        rd.set_state(State::SystemOff);
+        ret[0] = rmi::SUCCESS;
+        Ok(())
+    });
 
     listen!(rsi, SMC32::FEATURES, |_arg, ret, rmm, rec, _run| {
         let rmi = rmm.rmi;

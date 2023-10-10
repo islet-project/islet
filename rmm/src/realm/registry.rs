@@ -641,6 +641,38 @@ impl crate::rmi::Interface for RMI {
         Ok(())
     }
 
+    fn rtt_unmap_unprotected(&self, id: usize, ipa: usize, level: usize) -> Result<(), Error> {
+        let (s2tte, last_level) = get_realm(id)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .ipa_to_pte(GuestPhysAddr::from(ipa), level)
+            .ok_or(Error::RmiErrorRtt(0))?; //XXX: check this again
+
+        if level != last_level {
+            return Err(Error::RmiErrorRtt(last_level));
+        }
+
+        let s2tte = S2TTE::from(s2tte as usize);
+        if !s2tte.is_valid(level, true) {
+            return Err(Error::RmiErrorRtt(level));
+        }
+
+        let new_s2tte: u64 = INVALID_UNPROTECTED;
+
+        get_realm(id)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
+
+        //TODO: add page/block invalidation
+
+        Ok(())
+    }
+
     fn make_shared(&self, id: usize, ipa: usize, level: usize) -> Result<(), Error> {
         let (s2tte, last_level) = get_realm(id)
             .ok_or(Error::RmiErrorOthers(NotExistRealm))?

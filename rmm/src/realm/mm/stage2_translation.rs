@@ -1,5 +1,8 @@
 use super::page::BasePageSize;
+#[cfg(not(feature = "realm_linux"))]
 use super::page_table::{entry, L0Table};
+#[cfg(feature = "realm_linux")]
+use super::page_table::{entry, L2Table};
 
 use core::arch::asm;
 use core::ffi::c_void;
@@ -27,6 +30,18 @@ pub mod tlbi_ns {
 
 define_bits!(TLBI_OP, NS[63 - 63], TTL[47 - 44], IPA[35 - 0]);
 
+#[cfg(feature = "realm_linux")]
+pub struct Stage2Translation<'a> {
+    // We will set the translation granule with 4KB.
+    root_pgtlb: &'a mut PageTable<
+        GuestPhysAddr,
+        L2Table,
+        entry::Entry,
+        { <L2Table as Level>::NUM_ENTRIES },
+    >,
+    dirty: bool,
+}
+#[cfg(not(feature = "realm_linux"))]
 pub struct Stage2Translation<'a> {
     // We will set the translation granule with 4KB.
     root_pgtlb: &'a mut PageTable<
@@ -39,6 +54,25 @@ pub struct Stage2Translation<'a> {
 }
 
 impl<'a> Stage2Translation<'a> {
+    #[cfg(feature = "realm_linux")]
+    pub fn new(rtt_base: usize) -> Self {
+        let root_pgtlb = unsafe {
+            &mut *PageTable::<
+                GuestPhysAddr,
+                L2Table,
+                entry::Entry,
+                { <L2Table as Level>::NUM_ENTRIES },
+            >::new_with_base(rtt_base)
+            .unwrap()
+        };
+
+        Self {
+            root_pgtlb,
+            dirty: false,
+        }
+    }
+
+    #[cfg(not(feature = "realm_linux"))]
     pub fn new(rtt_base: usize) -> Self {
         let root_pgtlb = unsafe {
             &mut *PageTable::<

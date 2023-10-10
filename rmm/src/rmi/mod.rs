@@ -113,15 +113,6 @@ pub trait Interface {
     fn realm_config(&self, id: usize, config_ipa: usize) -> Result<(), Error>;
     fn remove(&self, id: usize) -> Result<(), Error>;
     fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<[usize; 4], Error>;
-    fn map(
-        &self,
-        id: usize,
-        guest: usize,
-        phys: usize,
-        size: usize,
-        prot: usize,
-    ) -> Result<(), Error>;
-    fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<usize, Error>;
     fn rtt_read_entry(&self, id: usize, guest: usize, level: usize) -> Result<[usize; 4], Error>;
     fn rtt_map_unprotected(
         &self,

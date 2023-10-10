@@ -7,6 +7,7 @@ use self::params::Params;
 use self::rd::State;
 use super::error::Error;
 use crate::event::Mainloop;
+use crate::granule::GRANULE_SIZE;
 use crate::granule::{set_granule, GranuleState};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::listen;
@@ -47,6 +48,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if params.rtt_base as usize == rd {
             return Err(Error::RmiErrorInput);
         }
+        if !(params.rtt_base as usize % GRANULE_SIZE == 0) {
+            return Err(Error::RmiErrorInput);
+        }
+        let _ = get_granule_if!(params.rtt_base as usize, GranuleState::Delegated)?;
 
         // revisit rmi.create_realm() (is it necessary?)
         rmm.rmi

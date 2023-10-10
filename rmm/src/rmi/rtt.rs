@@ -90,7 +90,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let level = arg[2];
 
         if rd.state() != State::New {
-            return Err(Error::RmiErrorRealm);
+            return Err(Error::RmiErrorRealm(0));
         }
         if !is_valid_rtt_cmd(ipa, level) {
             return Err(Error::RmiErrorInput);
@@ -184,7 +184,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // Make sure DATA_CREATE is only processed
         // when the realm is in its New state.
         if !rd.at_state(State::New) {
-            return Err(Error::RmiErrorRealm);
+            return Err(Error::RmiErrorRealm(0));
         }
 
         validate_ipa(ipa, rd.ipa_bits())?;

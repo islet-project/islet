@@ -1,9 +1,11 @@
 use crate::{measurement::MeasurementError, rsi};
 
+// B3.4.1 RmiCommandReturnCode type
+// Default index is 0
 #[derive(Debug)]
 pub enum Error {
     RmiErrorInput,
-    RmiErrorRealm,
+    RmiErrorRealm(usize),
     RmiErrorRec,
     RmiErrorRtt(usize),
     RmiErrorInUse,
@@ -24,7 +26,7 @@ impl From<Error> for usize {
     fn from(err: Error) -> Self {
         match err {
             Error::RmiErrorInput => 1,
-            Error::RmiErrorRealm => 2,
+            Error::RmiErrorRealm(index) => 2 | (index << 8),
             Error::RmiErrorRec => 3,
             Error::RmiErrorRtt(level) => 4 | (level << 8),
             Error::RmiErrorInUse => 5,

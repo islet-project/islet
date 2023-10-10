@@ -26,7 +26,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd = rd_granule.content_mut::<Rd>();
 
         if !rd.at_state(State::New) {
-            return Err(Error::RmiErrorRealm);
+            return Err(Error::RmiErrorRealm(0));
         }
 
         rd.set_state(State::Active);

@@ -36,7 +36,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
         let rd = rd_granule.content_mut::<Rd>();
         if !rd.at_state(State::New) {
-            return Err(Error::RmiErrorRealm);
+            return Err(Error::RmiErrorRealm(0));
         }
 
         if rec_index != rd.rec_index() {
@@ -97,8 +97,17 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         {
             let rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
             let rd = rd.content::<Rd>();
-            if !rd.at_state(State::Active) {
-                return Err(Error::RmiErrorRealm);
+            match rd.state() {
+                State::Active => {}
+                State::New => {
+                    return Err(Error::RmiErrorRealm(0));
+                }
+                State::SystemOff => {
+                    return Err(Error::RmiErrorRealm(1));
+                }
+                _ => {
+                    panic!("Unexpected realm state");
+                }
             }
         }
 

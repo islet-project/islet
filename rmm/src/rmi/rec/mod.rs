@@ -18,6 +18,7 @@ pub struct Rec {
     vcpuid: usize,
     ripas: Ripas,
     vtcr: u64,
+    host_call_pending: bool,
 }
 
 struct Ripas {
@@ -52,6 +53,14 @@ impl Rec {
 
     pub fn owner(&self) -> usize {
         self.owner
+    }
+
+    pub fn host_call_pending(&self) -> bool {
+        self.host_call_pending
+    }
+
+    pub fn set_host_call_pending(&mut self, val: bool) {
+        self.host_call_pending = val;
     }
 
     pub fn set_ripas(&mut self, start: u64, end: u64, addr: u64, state: u8) {

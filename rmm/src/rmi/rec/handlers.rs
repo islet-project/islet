@@ -10,6 +10,7 @@ use crate::host::pointer::PointerMut as HostPointerMut;
 use crate::listen;
 use crate::rmi::error::Error;
 use crate::rmi::realm::{rd::State, Rd};
+use crate::rsi::do_host_call;
 use crate::{get_granule, get_granule_if};
 use crate::{rmi, rsi};
 
@@ -102,16 +103,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mut run = copy_from_host_or_ret!(Run, run_pa);
         trace!("{:?}", run);
 
-        unsafe {
-            // TODO: copy rec::entry gprs to host_call gprs
-            let ipa: u64 = 0x800088e00000;
-            if run.entry_gpr0() == ipa {
-                // TODO: Get ipa from rec->regs[1] and map to pa
-                let pa: usize = 0x88b0_6000;
-                let host_call = rsi::hostcall::HostCall::parse_mut(pa);
-                host_call.set_gpr0(ipa);
-            }
+        if rec.host_call_pending() {
+            do_host_call(&arg, ret, rmm, rec, &mut run)?;
         }
+
         rmi.receive_gic_state_from_host(rec.realm_id()?, rec.id(), &run)?;
         rmi.emulate_mmio(rec.realm_id()?, rec.id(), &run)?;
 

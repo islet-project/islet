@@ -1,4 +1,5 @@
 use crate::host::Accessor as HostAccessor;
+use crate::rmi::error::Error;
 use core::mem::ManuallyDrop;
 
 /// The structure holds data passsed between the Host and the RMM
@@ -14,9 +15,12 @@ impl Run {
         self.entry.inner.flags.val
     }
 
-    #[allow(dead_code)]
-    pub unsafe fn entry_gpr0(&self) -> u64 {
-        self.entry.inner.gprs.val[0]
+    pub unsafe fn entry_gpr(&self, idx: usize) -> Result<u64, Error> {
+        if idx >= NR_GPRS {
+            error!("out of index: {}", idx);
+            return Err(Error::RmiErrorInput);
+        }
+        Ok(self.entry.inner.gprs.val[idx])
     }
 
     pub unsafe fn entry_gic_lrs(&self) -> &[u64; 16] {
@@ -126,7 +130,7 @@ impl Default for Run {
             entry: Entry {
                 inner: ManuallyDrop::new(EntryInner {
                     flags: Flags { val: 0 },
-                    gprs: GPRs { val: [0; 31] },
+                    gprs: GPRs { val: [0; NR_GPRS] },
                     gicv3: EntryGICv3 {
                         inner: ManuallyDrop::new(EntryGICv3Inner {
                             hcr: 0,
@@ -145,7 +149,7 @@ impl Default for Run {
                             hpfar: 0,
                         }),
                     },
-                    gprs: GPRs { val: [0; 31] },
+                    gprs: GPRs { val: [0; NR_GPRS] },
                     gicv3: ExitGICv3 {
                         inner: ManuallyDrop::new(ExitGICv3Inner {
                             hcr: 0,
@@ -235,11 +239,12 @@ pub const REC_ENTRY_FLAG_TRAP_WFI: u64 = 1 << 2;
 ///  val 1: Trap is enabled.
 #[allow(dead_code)]
 pub const REC_ENTRY_FLAG_TRAP_WFE: u64 = 1 << 3;
+pub const NR_GPRS: usize = 31;
 
 /// General-purpose registers
 #[repr(C)]
 union GPRs {
-    val: [u64; 31],
+    val: [u64; NR_GPRS],
     reserved: [u8; 0x300 - 0x200],
 }
 

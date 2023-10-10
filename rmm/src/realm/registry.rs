@@ -300,7 +300,7 @@ impl crate::rmi::Interface for RMI {
                 3 => 0xffffffff_ffffffff, // double word
                 _ => unreachable!(),      // SAS consists of two bits
             };
-            let val = unsafe { run.entry_gpr0() } & mask;
+            let val = unsafe { run.entry_gpr(0)? } & mask;
             let sign_extended = esr.get_masked_value(EsrEl2::SSE);
             if sign_extended != 0 {
                 // TODO

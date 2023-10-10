@@ -139,6 +139,7 @@ pub trait Interface {
         level: usize,
         host_s2tte: usize,
     ) -> Result<(), Error>;
+    fn rtt_unmap_unprotected(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;
     fn data_create(&self, id: usize, guest: usize, target_pa: usize) -> Result<(), Error>;
     fn data_destroy(&self, id: usize, guest: usize) -> Result<usize, Error>;
     fn make_shared(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;

@@ -233,7 +233,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
-        rmi.unmap(rd.id(), ipa, GRANULE_SIZE)?;
+        let realm_id = rd.id();
+
+        let level = arg[2];
+        rmi.rtt_unmap_unprotected(realm_id, ipa, level)?;
         Ok(())
     });
 }

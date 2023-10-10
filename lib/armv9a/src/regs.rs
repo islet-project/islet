@@ -14,6 +14,26 @@ pub fn current_el() -> u8 {
 define_sys_register!(VBAR_EL2, RES0[10 - 0]);
 
 define_sys_register!(
+    ESR_EL1,
+    // Exception Class.
+    EC[31 - 26],
+    // Instruction Length for synchronous exceptions.
+    IL[25 - 25],
+    // Syndrome information.
+    ISS[24 - 00]
+);
+
+define_bits!(
+    EsrEl1,
+    // Exception Class.
+    EC[31 - 26],
+    // Instruction Length for synchronous exceptions.
+    IL[25 - 25],
+    // Syndrome information.
+    ISS[24 - 00]
+);
+
+define_sys_register!(
     ESR_EL2,
     // Exception Class.
     EC[31 - 26],
@@ -50,6 +70,7 @@ define_bits!(
     DFSC[5 - 0]
 );
 
+pub const ESR_EL1_EC_UNKNOWN: u64 = 0;
 pub const ESR_EL2_EC_UNKNOWN: u64 = 0;
 pub const ESR_EL2_EC_WFX: u64 = 1;
 pub const ESR_EL2_EC_FPU: u64 = 7;
@@ -76,6 +97,8 @@ define_sys_register!(
     M[3 - 0]  // Exception level and selected SP
 );
 
+define_sys_register!(SPSR_EL1);
+define_sys_register!(ELR_EL1);
 define_sys_register!(ELR_EL2);
 define_sys_register!(TPIDR_EL2);
 

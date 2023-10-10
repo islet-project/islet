@@ -46,6 +46,10 @@ impl page_table::Entry for Entry {
         self.0.get()
     }
 
+    fn mut_pte(&mut self) -> &mut Self::Inner {
+        self.0.get_mut()
+    }
+
     fn address(&self, level: usize) -> Option<PhysAddr> {
         match self.is_valid() {
             true => match self.0.get_masked_value(PTDesc::TYPE) {

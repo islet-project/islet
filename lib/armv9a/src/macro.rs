@@ -138,6 +138,11 @@ macro_rules! define_bits {
             }
 
             #[inline(always)]
+            pub fn get_mut(&mut self) -> &mut Self {
+                self
+            }
+
+            #[inline(always)]
             pub fn get(&self) -> u64 {
                 self.0
             }

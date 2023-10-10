@@ -185,6 +185,25 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
         }
     }
 
+    fn ipa_to_pte_set(
+        &mut self,
+        guest: GuestPhysAddr,
+        level: usize,
+        val: u64,
+    ) -> Result<(), Error> {
+        let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
+        let res = self.root_pgtlb.entry(guest, level, true, |entry| {
+            let pte = entry.mut_pte();
+            *pte = RawPTE(val);
+            Ok(None)
+        });
+        if let Ok(_x) = res {
+            return Ok(());
+        } else {
+            return Err(Error::RmiErrorInput);
+        }
+    }
+
     fn clean(&mut self) {
         if self.dirty {
             unsafe {

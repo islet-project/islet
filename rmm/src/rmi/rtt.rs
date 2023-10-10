@@ -7,10 +7,12 @@ use crate::granule::{is_not_in_realm, set_granule, GranuleState, GRANULE_SIZE};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::DataPage;
 use crate::listen;
+use crate::realm::mm::stage2_tte::S2TTE;
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::{get_granule, get_granule_if, set_state_and_get_granule};
 
+pub const RTT_MIN_BLOCK_LEVEL: usize = 2;
 pub const RTT_PAGE_LEVEL: usize = 3;
 
 const RIPAS_EMPTY: u64 = 0;
@@ -27,6 +29,23 @@ fn level_to_size(level: usize) -> u64 {
     }
 }
 
+fn is_valid_rtt_cmd(ipa: usize, level: usize) -> bool {
+    if level > RTT_PAGE_LEVEL {
+        return false;
+    }
+    let mask = match level {
+        0 => S2TTE::ADDR_L0_PAGE,
+        1 => S2TTE::ADDR_L1_PAGE,
+        2 => S2TTE::ADDR_L2_PAGE,
+        3 => S2TTE::ADDR_L3_PAGE,
+        _ => unreachable!(),
+    };
+    if ipa & mask as usize != ipa {
+        return false;
+    }
+    return true;
+}
+
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::RTT_CREATE, |arg, _ret, rmm| {
         let rmi = rmm.rmi;
@@ -36,6 +55,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let ipa = arg[2];
         let level = arg[3];
 
+        if !is_valid_rtt_cmd(ipa, level) {
+            return Err(Error::RmiErrorInput);
+        }
         rmi.rtt_create(rd.id(), rtt_addr, ipa, level)?;
         Ok(())
     });
@@ -48,6 +70,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let ipa = arg[2];
         let level = arg[3];
 
+        if !is_valid_rtt_cmd(ipa, level) {
+            return Err(Error::RmiErrorInput);
+        }
         rmi.rtt_destroy(rd, rtt_addr, ipa, level)?;
         Ok(())
     });
@@ -60,6 +85,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let level = arg[2];
 
         if rd.state() != State::New {
+            return Err(Error::RmiErrorRealm);
+        }
+        if !is_valid_rtt_cmd(ipa, level) {
             return Err(Error::RmiErrorInput);
         }
         rmi.rtt_init_ripas(rd.id(), ipa, level)?;
@@ -117,6 +145,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd = rd_granule.content::<Rd>();
         let ipa = arg[1];
         let level = arg[2];
+        if !is_valid_rtt_cmd(ipa, level) {
+            return Err(Error::RmiErrorInput);
+        }
 
         let res = rmi.rtt_read_entry(rd.id(), ipa, level)?;
         ret[1..5].copy_from_slice(&res[0..4]);
@@ -222,6 +253,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         let level = arg[2];
         let host_s2tte = arg[3];
+        if !is_valid_rtt_cmd(ipa, level) {
+            return Err(Error::RmiErrorInput);
+        }
         rmi.rtt_map_unprotected(rd, ipa, level, host_s2tte)?;
         Ok(())
     });
@@ -236,6 +270,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let realm_id = rd.id();
 
         let level = arg[2];
+        if !is_valid_rtt_cmd(ipa, level) {
+            return Err(Error::RmiErrorInput);
+        }
         rmi.rtt_unmap_unprotected(realm_id, ipa, level)?;
         Ok(())
     });

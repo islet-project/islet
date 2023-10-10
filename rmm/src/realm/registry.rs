@@ -459,7 +459,7 @@ impl crate::rmi::Interface for RMI {
             .page_table
             .lock()
             .ipa_to_pte(GuestPhysAddr::from(ipa), level)
-            .map_or((0, level), |pte| pte);
+            .ok_or(Error::RmiErrorRtt(0))?;
 
         let r1 = last_level;
         let (mut r2, mut r3, mut r4) = (0, 0, 0);
@@ -474,11 +474,17 @@ impl crate::rmi::Interface for RMI {
             r2 = rtt_entry_state::RMI_DESTROYED;
         } else if s2tte.is_assigned() {
             r2 = rtt_entry_state::RMI_ASSIGNED;
-            r3 = s2tte.address(last_level).ok_or(Error::RmiErrorRtt)?.into();
+            r3 = s2tte
+                .address(last_level)
+                .ok_or(Error::RmiErrorRtt(0))?
+                .into(); //XXX: check this again
             r4 = invalid_ripas::EMPTY as usize;
         } else if s2tte.is_valid(last_level, false) {
             r2 = rtt_entry_state::RMI_ASSIGNED;
-            r3 = s2tte.address(last_level).ok_or(Error::RmiErrorRtt)?.into();
+            r3 = s2tte
+                .address(last_level)
+                .ok_or(Error::RmiErrorRtt(0))?
+                .into(); //XXX: check this again
             r4 = invalid_ripas::RAM as usize;
         } else if s2tte.is_valid(last_level, true) {
             r2 = rtt_entry_state::RMI_VALID_NS;
@@ -487,14 +493,17 @@ impl crate::rmi::Interface for RMI {
                 2 => S2TTE::ADDR_L2_PAGE,
                 3 => S2TTE::ADDR_L3_PAGE,
                 _ => {
-                    return Err(Error::RmiErrorRtt);
+                    return Err(Error::RmiErrorRtt(0)); //XXX: check this again
                 }
             };
             let mask = addr_mask | S2TTE::MEMATTR | S2TTE::AP | S2TTE::SH;
             r3 = (s2tte.get() & mask) as usize;
         } else if s2tte.is_table(last_level) {
             r2 = rtt_entry_state::RMI_TABLE;
-            r3 = s2tte.address(3).ok_or(Error::RmiErrorRtt)?.into();
+            r3 = s2tte
+                .address(RTT_PAGE_LEVEL)
+                .ok_or(Error::RmiErrorRtt(0))?
+                .into(); //XXX: check this again
         } else {
             error!("Unexpected S2TTE value retrieved!");
         }
@@ -543,9 +552,9 @@ impl crate::rmi::Interface for RMI {
             .page_table
             .lock()
             .ipa_to_pte(GuestPhysAddr::from(ipa), level)
-            .ok_or(Error::RmiErrorRtt)?;
+            .ok_or(Error::RmiErrorRtt(0))?; //XXX: check this again
         if level != last_level {
-            return Err(Error::RmiErrorRtt);
+            return Err(Error::RmiErrorRtt(last_level)); //XXX: check this again
         }
 
         let s2tte = S2TTE::from(s2tte as usize);
@@ -556,7 +565,7 @@ impl crate::rmi::Interface for RMI {
         //           (rmm-spec)    : Figure D2.1 Realm shared memory protocol flow
         if s2tte.is_valid(level, false) {
             // the case for ipa's range 0x8840_0000 - in realm-linux booting
-            let pa: usize = s2tte.address(level).ok_or(Error::RmiErrorRtt)?.into();
+            let pa: usize = s2tte.address(level).ok_or(Error::RmiErrorRtt(0))?.into(); //XXX: check this again
             let size = crate::granule::GRANULE_SIZE;
             let mut flags = 0;
             flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
@@ -575,7 +584,7 @@ impl crate::rmi::Interface for RMI {
                     true,
                 )?;
         } else if s2tte.is_unassigned() || s2tte.is_assigned() {
-            let pa: usize = s2tte.address(level).ok_or(Error::RmiErrorRtt)?.into();
+            let pa: usize = s2tte.address(level).ok_or(Error::RmiErrorRtt(0))?.into(); //XXX: check this again
             let size = crate::granule::GRANULE_SIZE;
             let mut flags = 0;
             flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
@@ -603,20 +612,23 @@ impl crate::rmi::Interface for RMI {
             .page_table
             .lock()
             .ipa_to_pte(GuestPhysAddr::from(ipa), 3)
-            .ok_or(Error::RmiErrorRtt)?;
+            .ok_or(Error::RmiErrorRtt(0))?; //XXX: check this again
 
         if last_level != 3 {
-            return Err(Error::RmiErrorRtt);
+            return Err(Error::RmiErrorRtt(last_level));
         }
 
         let s2tte = S2TTE::from(s2tte as usize);
 
         let valid = s2tte.is_valid(last_level, false);
         if !valid && !s2tte.is_assigned() {
-            return Err(Error::RmiErrorRtt);
+            return Err(Error::RmiErrorRtt(RTT_PAGE_LEVEL));
         }
 
-        let pa = s2tte.address(last_level).ok_or(Error::RmiErrorRtt)?.into();
+        let pa = s2tte
+            .address(last_level)
+            .ok_or(Error::RmiErrorRtt(0))?
+            .into(); //XXX: check this again
 
         let mut flags = 0 as u64;
         if valid {

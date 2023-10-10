@@ -3,7 +3,7 @@ pub enum Error {
     RmiErrorInput,
     RmiErrorRealm,
     RmiErrorRec,
-    RmiErrorRtt,
+    RmiErrorRtt(usize),
     RmiErrorInUse,
     RmiErrorCount,
     //// The below are our-defined errors not in TF-RMM
@@ -22,7 +22,7 @@ impl From<Error> for usize {
             Error::RmiErrorInput => 1,
             Error::RmiErrorRealm => 2,
             Error::RmiErrorRec => 3,
-            Error::RmiErrorRtt => 4,
+            Error::RmiErrorRtt(level) => 4 | (level << 8),
             Error::RmiErrorInUse => 5,
             Error::RmiErrorCount => 6,
             Error::RmiErrorOthers(_) => 7,

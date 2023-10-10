@@ -1,6 +1,7 @@
 use super::mpidr::MPIDR;
 use super::params::Params;
 use super::run::{Run, REC_ENTRY_FLAG_TRAP_WFE, REC_ENTRY_FLAG_TRAP_WFI};
+use super::vtcr::{activate_stage2_mmu, prepare_vtcr};
 use super::Rec;
 use crate::event::{realmexit, Context, Mainloop, RsiHandle};
 use crate::granule::{set_granule, set_granule_with_parent, GranuleState};
@@ -64,6 +65,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         {
             return Err(Error::RmiErrorInput);
         }
+        rec.set_vtcr(prepare_vtcr(rd)?);
 
         rd.inc_rec_index();
         set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec)
@@ -125,6 +127,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             warn!("ISLET does not support re-configuring the WFI(E) trap");
             warn!("TWI(E) in HCR_EL2 is currently fixed to 'no trap'");
         }
+
+        activate_stage2_mmu(rec);
 
         let mut ret_ns;
         loop {

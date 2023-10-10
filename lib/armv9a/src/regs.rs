@@ -146,6 +146,30 @@ define_sys_register!(
 );
 
 define_sys_register!(
+    ID_AA64MMFR1_EL1, // ref. D19.2.65: AArch64 Memory Model Feature Register 1
+    CMOW[59 - 56],
+    TIDCP1[55 - 52],
+    nTLBPA[51 - 48],
+    AFP[47 - 44],
+    HCX[43 - 40],
+    ETS[39 - 36],
+    TWED[35 - 32],
+    XNX[31 - 28],
+    SpecSEI[27 - 24],
+    PAN[23 - 20],
+    LO[19 - 16],
+    HPDS[15 - 12],
+    VH[11 - 8],
+    VMID[7 - 4],
+    HAFDBS[3 - 0]
+);
+
+pub mod mmfr1_vmid {
+    pub const VMIDBITS_8: u64 = 0;
+    pub const VMIDBITS_16: u64 = 2;
+}
+
+define_sys_register!(
     MAIR_EL2, // ref. D7.2.71: Memory Attribute Indirection Register
     Attr7[63 - 56],
     Attr6[55 - 48],
@@ -193,7 +217,26 @@ define_sys_register!(
 );
 
 define_sys_register!(
-    VTCR_EL2,
+    VTCR_EL2, // ref. Virtualzation Translation Control Register
+    DS[32 - 32],
+    RES1[31 - 31],
+    // Non-secure stage 2 translation output address space for the Secure EL1&0
+    // translation regime
+    // 0b0: All stage 2 translations for the Non-secure IPA space of the Secure EL1&0
+    //      translation regime acccess the Secure PA space
+    // 0b1: All stage 2 translations for the Non-secure IPA space of the secure EL1&0
+    //      trnaslation regmime access the non-secure PA space
+    NSA[30 - 30],
+    // Non-secure stage 2 translation table address space for the Secure EL1&0
+    // translation regime
+    NSW[29 - 29],
+    HWU62[28 - 28],
+    HWU61[27 - 27],
+    HWU60[26 - 26],
+    HWU59[25 - 25],
+    RES0[24 - 23],
+    HD[22 - 22],
+    HA[21 - 21],
     VS[19 - 19],    // VMID size. 0b0: 8bits, 0b1: 16bit
     PS[18 - 16],    // Physical address size for the second stage of translation
     TG0[15 - 14],   // Granule size (VTTBR_EL2)
@@ -203,6 +246,13 @@ define_sys_register!(
     SL0[7 - 6],     // Starting level of the stage 2 translation lookup
     T0SZ[5 - 0]     // Size offset of the memory region (TTBR0_EL2)
 );
+
+pub mod vtcr_sl0 {
+    pub const SL0_4K_L2: u64 = 0x0;
+    pub const SL0_4K_L1: u64 = 0x1;
+    pub const SL0_4K_L0: u64 = 0x2;
+    pub const SL0_4K_L3: u64 = 0x3;
+}
 
 pub mod tcr_paddr_size {
     // PS
@@ -252,6 +302,12 @@ define_sys_register!(
 
 define_sys_register!(
     HPFAR_EL2, // Ref. D13.2.55
+    NS[63 - 63],
+    FIPA[43 - 4] //
+);
+
+define_bits!(
+    HpfarEl2, // Ref. D13.2.55
     NS[63 - 63],
     FIPA[43 - 4] //
 );
@@ -396,7 +452,6 @@ define_iss_id!(ISS_ID_AA64ISAR1_EL1, 3, 0, 0, 6, 1);
 
 define_iss_id!(ISS_ID_AA64MMFR0_EL1, 3, 0, 0, 7, 0);
 
-define_sys_register!(ID_AA64MMFR1_EL1);
 define_iss_id!(ISS_ID_AA64MMFR1_EL1, 3, 0, 0, 7, 1);
 
 define_sys_register!(ID_AA64MMFR2_EL1);

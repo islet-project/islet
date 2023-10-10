@@ -129,6 +129,8 @@ pub const RET_TO_RMM: u64 = 1;
 /// of the Synchronous and SError exception.
 /// The `vcpu` has the VCPU context.
 /// The `tf` has the TrapFrame of current context.
+///
+/// Do not write sys_regs of VCPU here. (ref. HANDLE_LOWER in vectors.s)
 #[no_mangle]
 #[allow(unused_variables)]
 pub extern "C" fn handle_lower_exception(
@@ -142,6 +144,25 @@ pub extern "C" fn handle_lower_exception(
         Kind::Synchronous => match Syndrome::from(esr) {
             Syndrome::HVC => {
                 debug!("Synchronous: HVC: {:#X}", vcpu.context.gp_regs[0]);
+
+                // Inject undefined exception to the realm
+                unsafe {
+                    SPSR_EL1.set(vcpu.context.spsr);
+                    ELR_EL1.set(vcpu.context.elr);
+
+                    let esr = EsrEl1::new(0)
+                        .set_masked_value(EsrEl1::EC, ESR_EL1_EC_UNKNOWN)
+                        .set_bits(EsrEl1::IL)
+                        .get();
+
+                    ESR_EL1.set(esr);
+                }
+
+                // Return to realm's exception handler
+                let vbar = vcpu.context.sys_regs.vbar;
+                const SPSR_EL2_MODE_EL1H_OFFSET: u64 = 0x200;
+                vcpu.context.elr = vbar + SPSR_EL2_MODE_EL1H_OFFSET;
+
                 tf.regs[0] = realmexit::SYNC as u64;
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = 0;

@@ -411,7 +411,7 @@ impl crate::rmi::Interface for RMI {
             .page_table
             .lock()
             .ipa_to_pte(GuestPhysAddr::from(ipa), level - 1)
-            .ok_or(Error::RmiErrorRtt(0))?; //XXX: check this again
+            .ok_or(Error::RmiErrorInput)?;
 
         if last_level != level - 1 {
             return Err(Error::RmiErrorRtt(last_level));

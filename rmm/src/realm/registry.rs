@@ -148,67 +148,6 @@ impl crate::rmi::Interface for RMI {
         Ok(ret)
     }
 
-    fn map(
-        &self,
-        id: usize,
-        guest: usize,
-        phys: usize,
-        size: usize,
-        prot: usize,
-    ) -> Result<(), Error> {
-        let mut flags = 0;
-        let prot = MapProt::new(prot);
-
-        if prot.is_set(MapProt::NS_PAS) {
-            flags |= bits_in_reg(S2TTE::NS, 0b1);
-        }
-
-        // TODO:  define bit mask
-        flags |= bits_in_reg(S2TTE::AP, pte::permission::RW);
-        if prot.is_set(MapProt::DEVICE) {
-            flags |= bits_in_reg(S2TTE::MEMATTR, pte::attribute::DEVICE_NGNRE);
-            flags |= bits_in_reg(S2TTE::NS, 0b1);
-        } else {
-            flags |= bits_in_reg(S2TTE::MEMATTR, pte::attribute::NORMAL_FWB);
-        }
-
-        get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .set_pages(
-                GuestPhysAddr::from(guest),
-                PhysAddr::from(phys),
-                size,
-                flags as usize,
-                false,
-            )?;
-
-        Ok(())
-    }
-
-    fn unmap(&self, id: usize, guest: usize, size: usize) -> Result<usize, Error> {
-        let pa = get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .ipa_to_pa(GuestPhysAddr::from(guest), 3)
-            .ok_or(Error::RmiErrorInput)?;
-
-        get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .unset_pages(GuestPhysAddr::from(guest), size);
-
-        //TODO change GPT to nonsecure
-        //TODO zeroize memory
-        Ok(pa.into())
-    }
-
     fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), Error> {
         match register {
             0..=30 => {

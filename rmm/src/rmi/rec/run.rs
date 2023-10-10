@@ -354,4 +354,17 @@ union Imm {
     reserved: [u8; 0x800 - 0x600],
 }
 
-impl HostAccessor for Run {}
+impl HostAccessor for Run {
+    fn validate(&self) -> bool {
+        const ICH_LR_HW_OFFSET: usize = 61;
+        // A6.1 Realm interrupts, HW == '0'
+        unsafe {
+            for lr in &self.entry.inner.gicv3.inner.lrs {
+                if lr & (1 << ICH_LR_HW_OFFSET) != 0 {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+}

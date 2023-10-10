@@ -7,7 +7,10 @@ use crate::event::RsiHandle;
 use crate::listen;
 use crate::rmi;
 use crate::rmi::error::{Error, InternalError::NotExistRealm};
-use crate::rsi::hostcall::HostCall;
+use crate::rmi::rec::run::Run;
+use crate::rmi::rec::Rec;
+use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
+use crate::Monitor;
 
 define_interface! {
     command {
@@ -28,31 +31,48 @@ pub const VERSION: usize = (1 << 16) | 0;
 
 extern crate alloc;
 
-pub fn set_event_handler(rsi: &mut RsiHandle) {
-    listen!(rsi, HOST_CALL, |_arg, ret, rmm, rec, run| {
-        let rmi = rmm.rmi;
-        let realmid = rec.realm_id()?;
-        let vcpuid = rec.id();
-        let ipa = rmi.get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
+pub fn do_host_call(
+    _arg: &[usize],
+    ret: &mut [usize],
+    rmm: &Monitor,
+    rec: &mut Rec,
+    run: &mut Run,
+) -> core::result::Result<(), Error> {
+    let rmi = rmm.rmi;
+    let realmid = rec.realm_id()?;
+    let vcpuid = rec.id();
+    let ipa = rmi.get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
 
-        let pa = crate::realm::registry::get_realm(realmid)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .ipa_to_pa(crate::realm::mm::address::GuestPhysAddr::from(ipa), 3)
-            .ok_or(Error::RmiErrorInput)?;
+    let pa = crate::realm::registry::get_realm(realmid)
+        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+        .lock()
+        .page_table
+        .lock()
+        .ipa_to_pa(crate::realm::mm::address::GuestPhysAddr::from(ipa), 3)
+        .ok_or(Error::RmiErrorInput)?;
 
-        unsafe {
-            let host_call = HostCall::parse(pa.into());
+    unsafe {
+        let host_call = HostCall::parse_mut(pa.into());
+        if rec.host_call_pending() {
+            for i in 0..HOST_CALL_NR_GPRS {
+                let val = run.entry_gpr(i)?;
+                host_call.set_gpr(i, val)?
+            }
+            rec.set_host_call_pending(false);
+        } else {
             run.set_imm(host_call.imm());
             run.set_exit_reason(rmi::EXIT_HOST_CALL);
+            rec.set_host_call_pending(true);
+        }
+        trace!("HOST_CALL param: {:#X?}", host_call)
+    }
 
-            trace!("HOST_CALL param: {:#X?}", host_call)
-        };
-        ret[0] = rmi::SUCCESS;
-        Ok(())
-    });
+    ret[0] = rmi::SUCCESS;
+    Ok(())
+}
+
+pub fn set_event_handler(rsi: &mut RsiHandle) {
+    listen!(rsi, HOST_CALL, do_host_call);
 
     listen!(rsi, ABI_VERSION, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;

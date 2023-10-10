@@ -1,4 +1,5 @@
 //extern crate alloc;
+use crate::rmi::error::Error;
 
 #[repr(C)]
 pub struct HostCall {
@@ -14,8 +15,13 @@ impl HostCall {
         &mut *(addr as *mut Self)
     }
 
-    pub unsafe fn set_gpr0(&mut self, val: u64) {
-        (*self.inner.val).gprs[0] = val;
+    pub unsafe fn set_gpr(&mut self, idx: usize, val: u64) -> Result<(), Error> {
+        if idx >= HOST_CALL_NR_GPRS {
+            error!("out of index: {}", idx);
+            return Err(Error::RmiErrorInput);
+        }
+        (*self.inner.val).gprs[idx] = val;
+        Ok(())
     }
 
     // Safety: union type should be initialized
@@ -45,7 +51,7 @@ impl core::fmt::Debug for HostCall {
     }
 }
 
-const HOST_CALL_NR_GPRS: usize = 7;
+pub const HOST_CALL_NR_GPRS: usize = 7;
 
 #[repr(C)]
 struct _Inner {

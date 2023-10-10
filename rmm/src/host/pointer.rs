@@ -153,6 +153,32 @@ macro_rules! copy_from_host_or_ret {
         };
         dst_obj
     }};
+    ($target_type:tt, $ptr:expr, $code:expr) => {{
+        use crate::granule::is_not_in_realm;
+        use crate::rmi::error::Error;
+
+        if !is_not_in_realm($ptr) {
+            return Err(Error::RmiErrorInput);
+        }
+
+        let src_obj = HostPointer::<$target_type>::new($ptr);
+        let src_obj = src_obj.acquire();
+        let src_obj = if let Some(v) = src_obj {
+            v
+        } else {
+            return Err($code);
+        };
+
+        let mut dst_obj: $target_type = $target_type::default();
+        unsafe {
+            core::ptr::copy_nonoverlapping::<$target_type>(
+                &*src_obj as *const $target_type,
+                &mut dst_obj as *mut $target_type,
+                1,
+            );
+        };
+        dst_obj
+    }};
 }
 
 #[macro_export]

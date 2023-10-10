@@ -112,7 +112,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         // read Run
-        let mut run = copy_from_host_or_ret!(Run, run_pa);
+        let mut run = copy_from_host_or_ret!(Run, run_pa, Error::RmiErrorRec);
         trace!("{:?}", run);
 
         if rec.host_call_pending() {

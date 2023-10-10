@@ -50,7 +50,17 @@ define_bits!(
     DFSC[5 - 0]
 );
 
+pub const ESR_EL2_EC_UNKNOWN: u64 = 0;
+pub const ESR_EL2_EC_WFX: u64 = 1;
+pub const ESR_EL2_EC_FPU: u64 = 7;
+pub const ESR_EL2_EC_SVC: u64 = 21;
+pub const ESR_EL2_EC_HVC: u64 = 22;
+pub const ESR_EL2_EC_SMC: u64 = 23;
+pub const ESR_EL2_EC_SYSREG: u64 = 24;
+pub const ESR_EL2_EC_SVE: u64 = 25;
+pub const ESR_EL2_EC_INST_ABORT: u64 = 32;
 pub const ESR_EL2_EC_DATA_ABORT: u64 = 36;
+pub const ESR_EL2_EC_SERROR: u64 = 47;
 
 define_register!(SP);
 define_sys_register!(SP_EL0);

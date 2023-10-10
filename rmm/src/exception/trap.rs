@@ -2,10 +2,12 @@ mod frame;
 pub mod syndrome;
 
 use self::frame::TrapFrame;
+use self::syndrome::Fault;
 use self::syndrome::Syndrome;
 use super::lower::synchronous;
 use crate::cpu;
 use crate::event::realmexit;
+use crate::mm::translation::PageTable;
 use crate::realm::context::Context;
 use crate::realm::vcpu::VCPU;
 
@@ -52,8 +54,58 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
                 debug!("{:?}\nESR: {:X}\n{:#X?}", info, esr, tf);
                 tf.elr += 4; //continue
             }
+            Syndrome::PCAlignmentFault => {
+                debug!("PCAlignmentFault");
+            }
+            Syndrome::DataAbort(fault) => {
+                let far = unsafe { FAR_EL2.get() };
+                debug!("Data Abort (higher), far:{:X}", far);
+                match fault {
+                    Fault::AddressSize { level } => {
+                        debug!("address size, level:{}", level);
+                    }
+                    Fault::Translation { level } => {
+                        debug!("translation, level:{}, esr:{:X}", level, esr);
+                        PageTable::get_ref().map(far as usize, true);
+                        tf.elr += 4; //continue
+                    }
+                    Fault::AccessFlag { level } => {
+                        debug!("access flag, level:{}", level);
+                    }
+                    Fault::Permission { level } => {
+                        debug!("permission, level:{}", level);
+                    }
+                    Fault::Alignment => {
+                        debug!("alignment");
+                    }
+                    Fault::TLBConflict => {
+                        debug!("tlb conflict");
+                    }
+                    Fault::Other(_x) => {
+                        debug!("other");
+                    }
+                }
+            }
+            Syndrome::InstructionAbort(v) => {
+                debug!("Instruction Abort (higher)");
+            }
+            Syndrome::HVC => {
+                debug!("HVC");
+            }
+            Syndrome::SMC => {
+                debug!("SMC");
+            }
+            Syndrome::SysRegInst => {
+                debug!("SysRegInst");
+            }
+            Syndrome::WFX => {
+                debug!("WFX");
+            }
+            Syndrome::Other(v) => {
+                debug!("Other");
+            }
             undefined => {
-                panic!("{:?} and {:?} on CPU {:?}", info, esr, cpu::id());
+                panic!("{:?} and ESR: {:X} on CPU {:?}", info, esr, cpu::id());
             }
         },
         _ => {

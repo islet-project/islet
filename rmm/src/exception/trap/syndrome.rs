@@ -52,9 +52,23 @@ impl From<u32> for Syndrome {
             0b01_0011 => Syndrome::SMC,
             0b01_0111 => Syndrome::SMC,
             0b01_1000 => Syndrome::SysRegInst,
-            0b10_0000 | 0b10_0001 => Syndrome::InstructionAbort(Fault::from(origin)),
+            0b10_0000 => {
+                debug!("Instruction Abort from a lower Exception level");
+                Syndrome::InstructionAbort(Fault::from(origin))
+            }
+            0b10_0001 => {
+                debug!("Instruction Abort taken without a change in Exception level");
+                Syndrome::InstructionAbort(Fault::from(origin))
+            }
             0b10_0010 => Syndrome::PCAlignmentFault,
-            0b10_0100 | 0b10_0101 => Syndrome::DataAbort(Fault::from(origin)),
+            0b10_0100 => {
+                debug!("Data Abort from a lower Exception level");
+                Syndrome::DataAbort(Fault::from(origin))
+            }
+            0b10_0101 => {
+                debug!("Data Abort without a change in Exception level");
+                Syndrome::DataAbort(Fault::from(origin))
+            }
             0b10_0110 => Syndrome::SPAlignmentFault,
             0b11_1100 => Syndrome::Brk((origin & ESR_EL2::ISS_BRK_CMT as u32) as u16),
             ec => Syndrome::Other(ec as u32),

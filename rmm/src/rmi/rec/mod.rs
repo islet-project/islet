@@ -2,6 +2,7 @@ pub mod handlers;
 pub mod mpidr;
 mod params;
 pub mod run;
+pub mod vtcr;
 
 pub use self::handlers::set_event_handler;
 
@@ -17,6 +18,7 @@ pub struct Rec {
     owner: usize,
     vcpuid: usize,
     ripas: Ripas,
+    vtcr: u64,
 }
 
 struct Ripas {
@@ -49,6 +51,10 @@ impl Rec {
         self.ripas.state = state;
     }
 
+    pub fn set_vtcr(&mut self, vtcr: u64) {
+        self.vtcr = vtcr;
+    }
+
     pub fn inc_ripas_addr(&mut self, size: u64) {
         self.ripas.addr += size;
     }
@@ -63,6 +69,10 @@ impl Rec {
 
     pub fn ripas_end(&self) -> u64 {
         self.ripas.end
+    }
+
+    pub fn vtcr(&self) -> u64 {
+        self.vtcr
     }
 }
 

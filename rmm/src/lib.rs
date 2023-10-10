@@ -52,7 +52,6 @@ use armv9a::{bits_in_reg, regs::*};
 pub unsafe fn start() {
     setup_mmu_cfg();
     setup_el2();
-    activate_stage2_mmu();
     setup_gst();
 
     Monitor::new().run();
@@ -82,25 +81,6 @@ unsafe fn setup_el2() {
     SCTLR_EL2.set(SCTLR_EL2::C | SCTLR_EL2::I | SCTLR_EL2::M | SCTLR_EL2::EOS);
     CPTR_EL2.set(CPTR_EL2::TAM);
     ICC_SRE_EL2.set(ICC_SRE_EL2::ENABLE | ICC_SRE_EL2::DIB | ICC_SRE_EL2::DFB | ICC_SRE_EL2::SRE);
-}
-
-unsafe fn activate_stage2_mmu() {
-    // stage 2 intitial table: L1 with 1024 entries (2 continuous 4KB pages)
-    let vtcr_el2: u64 = bits_in_reg(VTCR_EL2::PS, tcr_paddr_size::PS_1T)
-        | bits_in_reg(VTCR_EL2::TG0, tcr_granule::G_4K)
-        | bits_in_reg(VTCR_EL2::SH0, tcr_shareable::INNER)
-        | bits_in_reg(VTCR_EL2::ORGN0, tcr_cacheable::WBWA)
-        | bits_in_reg(VTCR_EL2::IRGN0, tcr_cacheable::WBWA)
-        | bits_in_reg(VTCR_EL2::SL0, tcr_start_level::L1)
-        | bits_in_reg(VTCR_EL2::T0SZ, 24); // T0SZ, input address is 2^40 bytes
-
-    // Invalidate the local I-cache so that any instructions fetched
-    // speculatively are discarded.
-    core::arch::asm!("ic iallu", "dsb nsh", "isb",);
-
-    VTCR_EL2.set(vtcr_el2);
-
-    core::arch::asm!("tlbi alle2", "dsb ish", "isb",);
 }
 
 unsafe fn setup_mmu_cfg() {

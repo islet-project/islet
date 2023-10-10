@@ -278,20 +278,33 @@ where
         }
         let index = E::index::<L>(page.address().into());
 
-        match self.entries[index].is_valid() {
-            true => {
-                if L::THIS_LEVEL < level {
-                    // Need to go deeper (recursive)
-                    match self.subtable::<S>(page) {
-                        Ok(subtable) => subtable.entry(page, level, no_valid_check, func),
-                        Err(e) => Err(e),
-                    }
-                } else {
-                    // The page is either LargePage or HugePage
-                    Ok((func(&mut self.entries[index])?, L::THIS_LEVEL))
+        if no_valid_check {
+            if L::THIS_LEVEL < level {
+                // Need to go deeper (recursive)
+                match self.subtable::<S>(page) {
+                    Ok(subtable) => subtable.entry(page, level, no_valid_check, func),
+                    Err(_e) => Ok((None, L::THIS_LEVEL)),
                 }
+            } else {
+                // The page is either LargePage or HugePage
+                Ok((func(&mut self.entries[index])?, L::THIS_LEVEL))
             }
-            false => Err(Error::MmNoEntry),
+        } else {
+            match self.entries[index].is_valid() {
+                true => {
+                    if L::THIS_LEVEL < level {
+                        // Need to go deeper (recursive)
+                        match self.subtable::<S>(page) {
+                            Ok(subtable) => subtable.entry(page, level, no_valid_check, func),
+                            Err(_e) => Ok((None, L::THIS_LEVEL)),
+                        }
+                    } else {
+                        // The page is either LargePage or HugePage
+                        Ok((func(&mut self.entries[index])?, L::THIS_LEVEL))
+                    }
+                }
+                false => Err(Error::MmNoEntry),
+            }
         }
     }
 

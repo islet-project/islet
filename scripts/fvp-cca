@@ -143,6 +143,8 @@ def get_rmm_features(args):
 
         if args.stat == True:
             features += ["--features", "stat"]
+        if args.realm_linux == True:
+            features += ["--features", "realm_linux"]
 
     if features:
         print("[!] Setting", args.rmm, "features:", features)
@@ -455,6 +457,7 @@ if __name__ == "__main__":
     parser.add_argument("--ifname", "-if", help="the main interface name of host machine", default="eth0")
     parser.add_argument("--rmm-log-level", help="Determine RMM's log-level. Choose among (off, error, warn, info, debug, trace)", default="trace")
     parser.add_argument("--stat", help="Enable stat to check memory used size per command", action="store_true")
+    parser.add_argument("--realm-linux", help="Enable realm-linux feature", action="store_true")
 
     args = parser.parse_args()
 

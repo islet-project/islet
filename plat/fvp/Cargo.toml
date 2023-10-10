@@ -16,6 +16,7 @@ max_level_info  = ["log/max_level_info", "islet_rmm/max_level_info"]
 max_level_debug = ["log/max_level_debug", "islet_rmm/max_level_debug"]
 max_level_trace = ["log/max_level_trace", "islet_rmm/max_level_trace"]
 stat = ["islet_rmm/stat"]
+realm_linux = ["islet_rmm/realm_linux"]
 
 [dependencies]
 armv9a = { path = "../../lib/armv9a" }

@@ -1,4 +1,6 @@
 use super::pte;
+#[cfg(feature = "realm_linux")]
+use crate::realm::mm::stage2_tte::S2TTE;
 use crate::realm::mm::translation_granule_4k::RawPTE;
 use vmsa::address::PhysAddr;
 use vmsa::error::Error;
@@ -82,6 +84,17 @@ impl page_table::Entry for Entry {
         )
     }
 
+    #[cfg(feature = "realm_linux")]
+    fn index<L: Level>(addr: usize) -> usize {
+        match L::THIS_LEVEL {
+            0 => RawGPA::from(addr).get_masked_value(RawGPA::L0Index) as usize,
+            1 => RawGPA::from(addr).get_masked_value(RawGPA::L1Index) as usize,
+            2 => RawGPA::from(addr).get_masked_value(S2TTE::ADDR_L2_PAGE) as usize,
+            3 => RawGPA::from(addr).get_masked_value(RawGPA::L3Index) as usize,
+            _ => panic!(),
+        }
+    }
+    #[cfg(not(feature = "realm_linux"))]
     fn index<L: Level>(addr: usize) -> usize {
         match L::THIS_LEVEL {
             0 => RawGPA::from(addr).get_masked_value(RawGPA::L0Index) as usize,

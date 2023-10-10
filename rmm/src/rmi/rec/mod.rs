@@ -16,6 +16,7 @@ pub struct Rec {
     /// PA of RD of Realm which owns this REC
     owner: usize,
     vcpuid: usize,
+    runnable: bool,
     ripas: Ripas,
     vtcr: u64,
     host_call_pending: bool,
@@ -29,10 +30,11 @@ struct Ripas {
 }
 
 impl Rec {
-    pub fn init(&mut self, owner: usize, vcpuid: usize) {
+    pub fn init(&mut self, owner: usize, vcpuid: usize, flags: u64) {
         self.owner = owner;
         self.vcpuid = vcpuid;
         self.set_ripas(0, 0, 0, 0);
+        self.set_runnable(flags);
     }
 
     pub fn ipa_bits(&self) -> Result<usize, Error> {
@@ -45,6 +47,10 @@ impl Rec {
         let rd = get_granule_if!(self.owner(), GranuleState::RD)?;
         let rd = rd.content::<Rd>();
         Ok(rd.id())
+    }
+
+    pub fn runnable(&self) -> bool {
+        self.runnable
     }
 
     pub fn id(&self) -> usize {
@@ -72,6 +78,14 @@ impl Rec {
 
     pub fn set_vtcr(&mut self, vtcr: u64) {
         self.vtcr = vtcr;
+    }
+
+    fn set_runnable(&mut self, flags: u64) {
+        const RUNNABLE_OFFSET: u64 = 1;
+        self.runnable = match flags & RUNNABLE_OFFSET {
+            0 => false,
+            _ => true,
+        }
     }
 
     pub fn inc_ripas_addr(&mut self, size: u64) {

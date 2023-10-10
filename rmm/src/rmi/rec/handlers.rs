@@ -128,6 +128,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mut ret_ns;
         loop {
             ret_ns = true;
+            unsafe { run.set_imm(0) };
             match rmi.run(rec.realm_id()?, rec.id(), 0) {
                 Ok(val) => match val[0] {
                     realmexit::RSI => {

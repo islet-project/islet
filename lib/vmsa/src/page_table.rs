@@ -31,6 +31,7 @@ pub trait Entry {
     fn clear(&mut self);
 
     fn pte(&self) -> u64;
+    fn mut_pte(&mut self) -> &mut Self::Inner;
     fn address(&self, level: usize) -> Option<PhysAddr>;
 
     fn set(&mut self, addr: PhysAddr, flags: u64, is_raw: bool) -> Result<(), Error>;

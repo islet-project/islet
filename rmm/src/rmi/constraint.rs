@@ -72,6 +72,14 @@ lazy_static! {
             Constraint::new(rmi::REC_AUX_COUNT, 2, 2),
         );
         m.insert(
+            rmi::RTT_CREATE,
+            Constraint::new(rmi::RTT_CREATE, 5, 1),
+        );
+        m.insert(
+            rmi::RTT_DESTROY,
+            Constraint::new(rmi::RTT_DESTROY, 5, 1),
+        );
+        m.insert(
             rmi::RTT_INIT_RIPAS,
             Constraint::new(rmi::RTT_INIT_RIPAS, 4, 2),
         );

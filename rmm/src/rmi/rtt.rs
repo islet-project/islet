@@ -11,6 +11,8 @@ use crate::rmi;
 use crate::rmi::error::Error;
 use crate::{get_granule, get_granule_if, set_state_and_get_granule};
 
+pub const RTT_PAGE_LEVEL: usize = 3;
+
 const RIPAS_EMPTY: u64 = 0;
 const RIPAS_RAM: u64 = 1;
 
@@ -26,8 +28,41 @@ fn level_to_size(level: usize) -> u64 {
 }
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::RTT_INIT_RIPAS, |_, _, _| {
-        super::dummy();
+    listen!(mainloop, rmi::RTT_CREATE, |arg, _ret, rmm| {
+        let rmi = rmm.rmi;
+        let rtt_addr = arg[0];
+        let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
+        let ipa = arg[2];
+        let level = arg[3];
+
+        rmi.rtt_create(rd.id(), rtt_addr, ipa, level)?;
+        Ok(())
+    });
+
+    listen!(mainloop, rmi::RTT_DESTROY, |arg, _ret, rmm| {
+        let rmi = rmm.rmi;
+        let rtt_addr = arg[0];
+        let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
+        let ipa = arg[2];
+        let level = arg[3];
+
+        rmi.rtt_destroy(rd, rtt_addr, ipa, level)?;
+        Ok(())
+    });
+
+    listen!(mainloop, rmi::RTT_INIT_RIPAS, |arg, _ret, rmm| {
+        let rmi = rmm.rmi;
+        let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
+        let ipa = arg[1];
+        let level = arg[2];
+
+        if rd.state() != State::New {
+            return Err(Error::RmiErrorInput);
+        }
+        rmi.rtt_init_ripas(rd.id(), ipa, level)?;
         Ok(())
     });
 
@@ -48,7 +83,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             RIPAS_RAM => { /* do nothing: ripas ram by default */ }
             _ => {
                 warn!("Unknown RIPAS:{}", ripas);
-                return Err(Error::RmiErrorRtt);
+                return Err(Error::RmiErrorInput); //XXX: check this again
             }
         }
 
@@ -66,10 +101,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         if ripas as u64 == RIPAS_EMPTY {
-            let ret = rmi.make_shared(rd.id(), ipa, level);
-            if ret.is_err() {
-                return Err(Error::RmiErrorInput);
-            }
+            rmi.make_shared(rd.id(), ipa, level)?;
+        } else if ripas as u64 == RIPAS_RAM {
+            rmi.make_exclusive(rd.id(), ipa, level)?;
+        } else {
+            unreachable!();
         }
         rec.inc_ripas_addr(map_size);
         Ok(())
@@ -129,19 +165,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // 3. copy src to _data
         *target_page = src_page;
 
-        // 4. map ipa to _taget_pa into S2 table
-        let prot = rmi::MapProt::new(0);
-        let res = rmi.map(
-            realm_id,
-            ipa,
-            target_pa,
-            core::mem::size_of::<DataPage>(),
-            prot.get(),
-        );
-        match res {
-            Ok(_) => {}
-            Err(val) => return Err(val),
-        }
+        // 4. map ipa to taget_pa in S2 table
+        rmi.data_create(realm_id, ipa, target_pa)?;
 
         // TODO: 5. perform measure
         set_granule(&mut target_page_granule, GranuleState::Data)?;
@@ -158,20 +183,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let realm_id = rd.id();
-        let granule_sz = GRANULE_SIZE;
 
         // 0. Make sure granule state can make a transition to DATA
         // data granule lock for the target page
         let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
         rmm.page_table.map(target_pa, true);
 
-        // 1. map ipa to target_pa into S2 table
-        let prot = rmi::MapProt::new(0);
-        let res = rmi.map(realm_id, ipa, target_pa, granule_sz, prot.get());
-        match res {
-            Ok(_) => {}
-            Err(val) => return Err(val),
-        }
+        // 1. map ipa to target_pa in S2 table
+        rmi.data_create(realm_id, ipa, target_pa)?;
 
         // TODO: 2. perform measure
         set_granule(&mut target_page_granule, GranuleState::Data)?;
@@ -200,11 +219,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // rd granule lock
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
-        let realm_id = rd.id();
 
         let level = arg[2];
         let host_s2tte = arg[3];
-        rmi.rtt_map_unprotected(realm_id, ipa, level, host_s2tte)?;
+        rmi.rtt_map_unprotected(rd, ipa, level, host_s2tte)?;
         Ok(())
     });
 
@@ -224,7 +242,7 @@ fn realm_ipa_size(ipa_bits: usize) -> usize {
     1 << ipa_bits
 }
 
-fn realm_par_size(ipa_bits: usize) -> usize {
+pub fn realm_par_size(ipa_bits: usize) -> usize {
     realm_ipa_size(ipa_bits) / 2
 }
 

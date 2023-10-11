@@ -10,6 +10,7 @@ use crate::event::Mainloop;
 use crate::granule::{set_granule, GranuleState};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::listen;
+use crate::mm::translation::PageTable;
 use crate::rmi;
 use crate::{get_granule, get_granule_if};
 
@@ -49,11 +50,21 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // revisit rmi.create_realm() (is it necessary?)
         rmm.rmi
-            .create_realm(params.vmid)
-            .map(|id| rd_obj.init(id, params.rtt_base as usize, params.ipa_bits()))?;
+            .create_realm(params.vmid, params.rtt_base as usize)
+            .map(|id| {
+                rd_obj.init(
+                    id,
+                    params.rtt_base as usize,
+                    params.ipa_bits(),
+                    params.rtt_level_start as isize,
+                )
+            })?;
 
         let id = rd_obj.id();
         let rtt_base = rd_obj.rtt_base();
+        // The below is added to avoid a fault regarding the RTT entry
+        PageTable::get_ref().map(rtt_base, true);
+
         let mut eplilog = move || {
             let mut rtt_granule = get_granule_if!(rtt_base, GranuleState::Delegated)?;
             set_granule(&mut rtt_granule, GranuleState::RTT)?;

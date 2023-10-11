@@ -46,6 +46,17 @@ jobs:
       - name: Test ACS
         run: ./scripts/tests/acs.sh
 
+  hes:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: ./scripts/init_min_tf_a_rss.sh
+
+      - name: Build HES
+        run: ./scripts/fvp-cca -nw=tf-a-tests -rmm=tf-rmm --hes --build-only 
+
   tf-a-tests:
     runs-on: ubuntu-22.04
     steps:

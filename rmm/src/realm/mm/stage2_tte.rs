@@ -1,6 +1,11 @@
+use core::mem::size_of;
 use vmsa::address::PhysAddr;
 
+use crate::granule::{GranuleState, GRANULE_SIZE};
 use armv9a::{define_bitfield, define_bits, define_mask};
+use vmsa::guard::Content;
+
+pub const INVALID_UNPROTECTED: u64 = 0x0;
 
 pub mod invalid_hipas {
     pub const UNASSIGNED: u64 = 0b00;
@@ -20,10 +25,33 @@ pub mod desc_type {
     pub const LX_INVALID: u64 = 0x0;
 }
 
+#[repr(C)]
+#[derive(Copy, Clone)]
+pub struct RttPage([u64; GRANULE_SIZE / size_of::<u64>()]);
+
+impl Content for RttPage {
+    const FLAGS: u64 = GranuleState::RTT;
+}
+
+impl RttPage {
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    pub fn get(&self, index: usize) -> Option<&u64> {
+        self.0.get(index)
+    }
+
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut u64> {
+        self.0.get_mut(index)
+    }
+}
+
 define_bits!(
     S2TTE,
     NS[55 - 55],
     XN[54 - 54],
+    ADDR_L0_PAGE[47 - 39], // XXX: check this again
     ADDR_L1_PAGE[47 - 30], // XXX: check this again
     ADDR_L2_PAGE[47 - 21], // XXX: check this again
     ADDR_L3_PAGE[47 - 12], // XXX: check this again
@@ -54,7 +82,8 @@ impl S2TTE {
     }
 
     pub fn is_unassigned(self) -> bool {
-        self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::UNASSIGNED
+        self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
+            && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::UNASSIGNED
     }
 
     pub fn is_destroyed(self) -> bool {
@@ -77,6 +106,22 @@ impl S2TTE {
             2 => Some(PhysAddr::from(self.get_masked(S2TTE::ADDR_L2_PAGE))),
             3 => Some(PhysAddr::from(self.get_masked(S2TTE::ADDR_L3_PAGE))),
             _ => None,
+        }
+    }
+
+    pub fn get_ripas(self) -> u64 {
+        let desc_ripas = self.get_masked_value(S2TTE::INVALID_RIPAS);
+
+        if (self.get_masked_value(S2TTE::DESC_TYPE) != desc_type::LX_INVALID)
+            && (desc_ripas != invalid_ripas::RAM)
+        {
+            panic!("invalid ripas");
+        }
+
+        if desc_ripas == invalid_ripas::EMPTY {
+            return invalid_ripas::EMPTY;
+        } else {
+            return invalid_ripas::RAM;
         }
     }
 }

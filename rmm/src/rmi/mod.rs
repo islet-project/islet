@@ -9,6 +9,7 @@ pub mod version;
 
 use crate::define_interface;
 use crate::rmi::error::Error;
+use crate::rmi::realm::Rd;
 use crate::rmi::rec::run::Run;
 
 define_interface! {
@@ -25,6 +26,8 @@ define_interface! {
          REC_CREATE             = 0xc400_015a,
          REC_DESTROY            = 0xc400_015b,
          REC_ENTER              = 0xc400_015c,
+         RTT_CREATE             = 0xc400_015d,
+         RTT_DESTROY            = 0xc400_015e,
          RTT_MAP_UNPROTECTED    = 0xc400_015f,
          RTT_UNMAP_UNPROTECTED  = 0xc400_0162,
          RTT_READ_ENTRY         = 0xc400_0161,
@@ -108,21 +111,38 @@ impl MapProt {
 pub trait Interface {
     // TODO: it would be better to leave only true RMI interface here
     //       while moving others to another place (e.g., set_reg())
-    fn create_realm(&self, vmid: u16) -> Result<usize, Error>;
+    fn create_realm(&self, vmid: u16, rtt_base: usize) -> Result<usize, Error>;
     fn create_vcpu(&self, id: usize) -> Result<usize, Error>;
     fn realm_config(&self, id: usize, config_ipa: usize) -> Result<(), Error>;
     fn remove(&self, id: usize) -> Result<(), Error>;
     fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<[usize; 4], Error>;
+    fn rtt_create(
+        &self,
+        id: usize,
+        rtt_addr: usize,
+        guest: usize,
+        level: usize,
+    ) -> Result<(), Error>;
+    fn rtt_destroy(
+        &self,
+        rd: &Rd,
+        rtt_addr: usize,
+        guest: usize,
+        level: usize,
+    ) -> Result<(), Error>;
+    fn rtt_init_ripas(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;
     fn rtt_read_entry(&self, id: usize, guest: usize, level: usize) -> Result<[usize; 4], Error>;
     fn rtt_map_unprotected(
         &self,
-        id: usize,
+        rd: &Rd,
         guest: usize,
         level: usize,
         host_s2tte: usize,
     ) -> Result<(), Error>;
+    fn data_create(&self, id: usize, guest: usize, target_pa: usize) -> Result<(), Error>;
     fn data_destroy(&self, id: usize, guest: usize) -> Result<usize, Error>;
     fn make_shared(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;
+    fn make_exclusive(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;
     fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), Error>;
     fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, Error>;
     fn receive_gic_state_from_host(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), Error>;

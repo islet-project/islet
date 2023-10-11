@@ -1,4 +1,5 @@
 use crate::granule::GranuleState;
+use crate::rmi::rtt::realm_par_size;
 
 use vmsa::guard::Content;
 
@@ -9,15 +10,17 @@ pub struct Rd {
     rtt_base: usize,
     ipa_bits: usize,
     rec_index: usize,
+    s2_starting_level: isize,
 }
 
 impl Rd {
-    pub fn init(&mut self, id: usize, rtt_base: usize, ipa_bits: usize) {
+    pub fn init(&mut self, id: usize, rtt_base: usize, ipa_bits: usize, s2_starting_level: isize) {
         self.realm_id = id;
         self.state = State::New;
         self.rtt_base = rtt_base;
         self.ipa_bits = ipa_bits;
         self.rec_index = 0;
+        self.s2_starting_level = s2_starting_level;
     }
 
     pub fn init_with_state(&mut self, id: usize, state: State) {
@@ -53,8 +56,17 @@ impl Rd {
         self.rec_index
     }
 
+    pub fn s2_starting_level(&self) -> isize {
+        self.s2_starting_level
+    }
+
     pub fn inc_rec_index(&mut self) {
         self.rec_index += 1;
+    }
+
+    pub fn addr_in_par(&self, addr: usize) -> bool {
+        let ipa_bits = self.ipa_bits();
+        addr < realm_par_size(ipa_bits)
     }
 }
 

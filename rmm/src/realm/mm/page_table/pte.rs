@@ -1,4 +1,7 @@
 pub mod shareable {
+    pub const NON_SHAREABLE: u64 = 0b00;
+    pub const RESERVED: u64 = 0b01;
+    pub const OUTER: u64 = 0b10;
     pub const INNER: u64 = 0b11;
 }
 

@@ -1,12 +1,11 @@
 use super::page::BasePageSize;
-use super::page_table::{entry, L1Table};
+use super::page_table::{entry, L0Table};
 
 use core::arch::asm;
 use core::ffi::c_void;
 use core::fmt;
 
 use crate::realm::mm::address::GuestPhysAddr;
-use crate::realm::mm::page_table::pte;
 use crate::realm::mm::translation_granule_4k::RawPTE;
 use crate::realm::mm::IPATranslation;
 use crate::rmi::error::Error;
@@ -30,29 +29,26 @@ define_bits!(TLBI_OP, NS[63 - 63], TTL[47 - 44], IPA[35 - 0]);
 
 pub struct Stage2Translation<'a> {
     // We will set the translation granule with 4KB.
-    // To reduce the level of page lookup, initial lookup will start from L1.
-    // We allocate two single page table initial lookup table, addresing up 1TB.
     root_pgtlb: &'a mut PageTable<
         GuestPhysAddr,
-        L1Table,
+        L0Table,
         entry::Entry,
-        { <L1Table as Level>::NUM_ENTRIES },
+        { <L0Table as Level>::NUM_ENTRIES },
     >,
     dirty: bool,
 }
 
 impl<'a> Stage2Translation<'a> {
-    pub fn new() -> Self {
+    pub fn new(rtt_base: usize) -> Self {
         let root_pgtlb = unsafe {
             &mut *PageTable::<
                 GuestPhysAddr,
-                L1Table,
+                L0Table,
                 entry::Entry,
-                { <L1Table as Level>::NUM_ENTRIES },
-            >::new_with_align(NUM_ROOT_PAGE, ALIGN_ROOT_PAGE)
+                { <L0Table as Level>::NUM_ENTRIES },
+            >::new_with_base(rtt_base)
             .unwrap()
         };
-        fill_stage2_table(root_pgtlb);
 
         Self {
             root_pgtlb,
@@ -63,6 +59,7 @@ impl<'a> Stage2Translation<'a> {
     // According to DDI0608A E1.2.1.11 Cache and TLB operations
     // 'TLBI IPAS2E1, Xt; DSB; TLBI VMALLE1'
     // or TLBI ALL or TLBI VMALLS1S2
+    #[allow(unused)]
     fn tlb_flush_by_vmid_ipa<S: PageSize>(&mut self, guest_iter: PageIter<S, GuestPhysAddr>) {
         for guest in guest_iter {
             let _level: u64 = S::MAP_TABLE_LEVEL as u64;
@@ -86,53 +83,6 @@ impl<'a> Stage2Translation<'a> {
 impl<'a> IPATranslation for Stage2Translation<'a> {
     fn get_base_address(&self) -> *const c_void {
         self.root_pgtlb as *const _ as *const c_void
-    }
-
-    fn set_pages(
-        &mut self,
-        guest: GuestPhysAddr,
-        phys: PhysAddr,
-        size: usize,
-        flags: usize,
-        is_raw: bool,
-    ) -> Result<(), Error> {
-        let _guest = Page::<BasePageSize, GuestPhysAddr>::range_with_size(guest, size);
-        let _guest_copy = Page::<BasePageSize, GuestPhysAddr>::range_with_size(guest, size);
-        let phys = Page::<BasePageSize, PhysAddr>::range_with_size(phys, size);
-
-        if is_raw {
-            if self
-                .root_pgtlb
-                .set_pages(_guest, phys, flags as u64, is_raw)
-                .is_err()
-            {
-                warn!("set_pages error");
-                return Err(Error::RmiErrorInput);
-            }
-        } else {
-            if self
-                .root_pgtlb
-                .set_pages(
-                    _guest,
-                    phys,
-                    flags as u64 | BasePageSize::MAP_EXTRA_FLAG,
-                    is_raw,
-                )
-                .is_err()
-            {
-                warn!("set_pages error");
-                return Err(Error::RmiErrorInput);
-            }
-        }
-        self.tlb_flush_by_vmid_ipa::<BasePageSize>(_guest_copy);
-
-        //TODO Set dirty only if pages are updated, not added
-        self.dirty = true;
-        Ok(())
-    }
-
-    fn unset_pages(&mut self, _guest: GuestPhysAddr, _size: usize) {
-        //TODO implement
     }
 
     /// Retrieves Page Table Entry (PA) from Intermediate Physical Address (IPA)
@@ -234,25 +184,5 @@ impl<'a> Drop for Stage2Translation<'a> {
     fn drop(&mut self) {
         info!("drop Stage2Translation");
         self.root_pgtlb.drop();
-    }
-}
-
-fn fill_stage2_table(
-    root: &mut PageTable<GuestPhysAddr, L1Table, entry::Entry, { L1Table::NUM_ENTRIES }>,
-) {
-    let device_flags = bits_in_reg(RawPTE::ATTR, pte::attribute::DEVICE_NGNRE)
-        | bits_in_reg(RawPTE::S2AP, pte::permission::RW);
-    let uart_guest = Page::<BasePageSize, GuestPhysAddr>::range_with_size(
-        GuestPhysAddr::from(0x1c0a0000 as u64),
-        1,
-    );
-    let uart_phys =
-        Page::<BasePageSize, PhysAddr>::range_with_size(PhysAddr::from(0x1c0a0000 as u64), 1);
-
-    if root
-        .set_pages(uart_guest, uart_phys, device_flags as u64, false)
-        .is_err()
-    {
-        warn!("set_pages error");
     }
 }

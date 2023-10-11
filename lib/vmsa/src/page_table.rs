@@ -83,6 +83,7 @@ pub struct PageTable<A, L, E, const N: usize> {
 }
 
 pub trait PageTableMethods<A: Address, L, E: Entry, const N: usize> {
+    fn new_with_base(base: usize) -> Result<*mut PageTable<A, L, E, N>, Error>;
     fn new_with_align(size: usize, align: usize) -> Result<*mut PageTable<A, L, E, N>, Error>;
     /// Sets multiple page table entries
     ///
@@ -164,6 +165,15 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
         }
 
         let table = table as *mut PageTable<A, L, E, N>;
+        unsafe {
+            let arr: [E; N] = core::array::from_fn(|_| E::new());
+            (*table).entries = arr;
+        }
+        Ok(table)
+    }
+
+    fn new_with_base(base: usize) -> Result<*mut PageTable<A, L, E, N>, Error> {
+        let table = base as *mut PageTable<A, L, E, N>;
         unsafe {
             let arr: [E; N] = core::array::from_fn(|_| E::new());
             (*table).entries = arr;

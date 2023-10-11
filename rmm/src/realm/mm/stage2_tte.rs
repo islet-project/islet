@@ -91,7 +91,8 @@ impl S2TTE {
     }
 
     pub fn is_assigned(self) -> bool {
-        self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::ASSIGNED
+        self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
+            && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::ASSIGNED
     }
 
     // level should be the value returned in page table walking

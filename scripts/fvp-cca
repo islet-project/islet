@@ -121,21 +121,32 @@ def prepare_islet_hes():
     print("[!] Building islet-hes... ")
     run(["cargo", "build", "--release"], cwd=HES_APP)
 
-def prepare_bootloaders(rmm, bl33):
-    args = [
-        "CROSS_COMPILE=%s" % CROSS_COMPILE,
-        "PLAT=fvp",
-        "ENABLE_RME=1",
-        "FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts",
-        "DEBUG=0",
-        "BL33=%s" % bl33,
-        "PLAT_RSS_NOT_SUPPORTED=0",
-        "PLAT_RSS_COMMS_USE_SERIAL=1",
-        "ENABLE_RME=1",
-        "MEASURED_BOOT=1",
-        "MBEDTLS_DIR=%s" % MBEDTLS,
-        "ENABLE_MPAM_FOR_LOWER_ELS=0",
-    ]
+def prepare_bootloaders(rmm, bl33, hes):
+    args = []
+
+    if hes:
+        args = [
+            "CROSS_COMPILE=%s" % CROSS_COMPILE,
+            "PLAT=fvp",
+            "ENABLE_RME=1",
+            "FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts",
+            "DEBUG=1",
+            "DEBUG=0",
+            "BL33=%s" % bl33,
+            "PLAT_RSS_NOT_SUPPORTED=0",
+            "PLAT_RSS_COMMS_USE_SERIAL=1",
+            "MEASURED_BOOT=1",
+            "MBEDTLS_DIR=%s" % MBEDTLS,
+            "ENABLE_MPAM_FOR_LOWER_ELS=0",
+        ]
+    else:
+        args = [
+            "CROSS_COMPILE=%s" % CROSS_COMPILE,
+            "PLAT=fvp",
+            "ENABLE_RME=1",
+            "FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts",
+            "DEBUG=1",
+            "BL33=%s" % bl33]
 
     if rmm == "islet":
         args += "RMM=%s/rmm.bin" % OUT,
@@ -147,9 +158,15 @@ def prepare_bootloaders(rmm, bl33):
 
     bl_list = ["bl1.bin", "fip.bin"]
     print("[!] Building bootloaders(%s)... " % ', '.join(bl_list))
-    make(TF_A, args)
 
-    outdir = os.path.join(TF_A, "build/fvp/release")
+    outdir = ""
+    if hes:
+        make(TF_A_RSS, args)
+        outdir = os.path.join(TF_A_RSS, "build/fvp/release")
+    else:
+        make(TF_A, args)
+        outdir = os.path.join(TF_A, "build/fvp/debug")
+
     for bootloader in bl_list:
         outbin = os.path.join(outdir, bootloader)
         if not os.path.exists(outbin):
@@ -483,6 +500,7 @@ if __name__ == "__main__":
     parser.add_argument("--no-kvm-unit-tests", help="Do not build kvm unit tests", action="store_true")
     parser.add_argument("--no-sdk", help="Do not build sdk", action="store_true")
     parser.add_argument("--no-telnet", help="Do not use telnet", action="store_true")
+    parser.add_argument("--hes", help="Run with hes", action="store_true")
 
     # for the network capability of FVP linux
     parser.add_argument("--host-ip", "-hip", help="the ip address of host machine", default="193.168.10.15")
@@ -505,41 +523,45 @@ if __name__ == "__main__":
 
     if not args.run_only:
         features = get_rmm_features(args)
-        prepare_islet_hes()
+
+        if args.hes:
+            prepare_islet_hes()
+
         prepare_rmm(args.rmm, features)
 
         if args.realm is not None:
             prepare_realm(args.realm)
 
         if args.use_prebuilt:
-            prepare_bootloaders(args.rmm, PREBUILT_EDK2)
+            prepare_bootloaders(args.rmm, PREBUILT_EDK2, args.hes)
             place_script_at_shared()
             place_prebuilt_at_shared()
         elif args.normal_world == "tf-a-tests":
             prepare_tf_a_tests(args.realm)
-            prepare_bootloaders(args.rmm, TFTF_BIN)
+            prepare_bootloaders(args.rmm, TFTF_BIN, args.hes)
         elif args.normal_world == "aosp":
             prepare_kvmtool("lkvm-static")
             prepare_nw_aosp(args.no_prebuilt_initrd)
-            prepare_bootloaders(args.rmm, PREBUILT_EDK2)
+            prepare_bootloaders(args.rmm, PREBUILT_EDK2, args.hes)
         elif args.normal_world == "acs":
             prepare_acs()
-            prepare_bootloaders(args.rmm, ACS_HOST)
+            prepare_bootloaders(args.rmm, ACS_HOST, args.hes)
         else:
             prepare_kvmtool()
             if args.no_kvm_unit_tests is False:
                 prepare_kvm_unit_tests()
             prepare_nw_linux(args.fvp_ip, args.host_ip, args.realm_launch)
-            prepare_bootloaders(args.rmm, PREBUILT_EDK2)
+            prepare_bootloaders(args.rmm, PREBUILT_EDK2, args.hes)
 
             if args.realm is not None:
                 place_realm_at_shared(args.rmm, args.realm_ip, args.fvp_tap_ip, args.host_ip, args.no_kvm_unit_tests, args.no_prebuilt_ml)
                 if args.no_sdk is False:
                     prepare_sdk()
 
-    signal.signal(signal.SIGTERM, custom_signal_handler)
-    signal.signal(signal.SIGINT, custom_signal_handler)
-    run_islet_hes()
+    if not args.build_only and args.hes:
+        signal.signal(signal.SIGTERM, custom_signal_handler)
+        signal.signal(signal.SIGINT, custom_signal_handler)
+        run_islet_hes()
 
     if not args.build_only and args.normal_world == "tf-a-tests":
         run_fvp_tf_a_tests(args.debug)

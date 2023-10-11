@@ -49,3 +49,7 @@
 	path = third-party/mbedtls
 	url = https://github.com/samsung/islet-asset
 	branch = 3rd-mbedtls
+[submodule "third-party/tf-a-rss"]
+	path = third-party/tf-a-rss
+	url = https://github.com/Samsung/islet-asset
+	branch = 3rd-tf-a-rss

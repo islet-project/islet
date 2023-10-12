@@ -513,9 +513,12 @@ impl crate::rmi::Interface for RMI {
             return Err(Error::RmiErrorRtt(last_level));
         }
 
-        //TODO: add checks for `is_table` and `is_unassigned`
+        let s2tte = S2TTE::from(s2tte as usize);
+        if s2tte.is_table(level) || !s2tte.is_unassigned() {
+            return Err(Error::RmiErrorRtt(level));
+        }
 
-        let mut new_s2tte = s2tte;
+        let mut new_s2tte = s2tte.get();
         new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::RAM);
 
         get_realm(id)

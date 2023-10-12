@@ -59,6 +59,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if !is_valid_rtt_cmd(ipa, level) {
             return Err(Error::RmiErrorInput);
         }
+        if rtt_addr == arg[1] {
+            return Err(Error::RmiErrorInput);
+        }
         rmi.rtt_create(rd.id(), rtt_addr, ipa, level)?;
         Ok(())
     });

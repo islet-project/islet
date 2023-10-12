@@ -1,3 +1,4 @@
+use crate::granule::GRANULE_SIZE;
 use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::mm::page_table::pte::{permission, shareable};
 use crate::realm::mm::IPATranslation;
@@ -5,7 +6,7 @@ use crate::realm::vcpu::VCPU;
 use crate::realm::Realm;
 use crate::rmi::realm::Rd;
 use crate::rmi::rec::run::{Run, REC_ENTRY_FLAG_EMUL_MMIO};
-use crate::rmi::rtt::RTT_PAGE_LEVEL;
+use crate::rmi::rtt::{RTT_PAGE_LEVEL, S2TTE_STRIDE};
 
 use crate::gic;
 use crate::gic::{GIC_FEATURES, ICH_HCR_EL2_EOI_COUNT_MASK, ICH_HCR_EL2_NS_MASK};
@@ -416,6 +417,7 @@ impl crate::rmi::Interface for RMI {
         }
 
         let parent_s2tte = S2TTE::from(parent_s2tte as usize);
+        let s2tt_len = s2tt.len();
         if parent_s2tte.is_unassigned() {
             let ripas = parent_s2tte.get_ripas();
             let mut new_s2tte = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
@@ -427,14 +429,49 @@ impl crate::rmi::Interface for RMI {
                 panic!("Unexpected ripas:{}", ripas);
             }
 
-            let s2tt_len = s2tt.len();
             for i in 0..s2tt_len {
                 if let Some(elem) = s2tt.get_mut(i) {
                     *elem = new_s2tte;
                 }
             }
+        } else if parent_s2tte.is_destroyed() {
+            let new_s2tte = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::DESTROYED);
+            for i in 0..s2tt_len {
+                if let Some(elem) = s2tt.get_mut(i) {
+                    *elem = new_s2tte;
+                }
+            }
+        } else if parent_s2tte.is_assigned() {
+            let mut pa: usize = parent_s2tte
+                .address(level - 1)
+                .ok_or(Error::RmiErrorRtt(0))?
+                .into(); //XXX: check this again
+            let map_size = match level {
+                3 => GRANULE_SIZE, // 4096
+                2 => GRANULE_SIZE << S2TTE_STRIDE,
+                1 => GRANULE_SIZE << S2TTE_STRIDE * 2,
+                0 => GRANULE_SIZE << S2TTE_STRIDE * 3,
+                _ => unreachable!(),
+            };
+            let mut flags = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
+            flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
+            let mut new_s2tte = pa as u64 | flags;
+            for i in 0..s2tt_len {
+                if let Some(elem) = s2tt.get_mut(i) {
+                    *elem = new_s2tte;
+                }
+                pa += map_size;
+                new_s2tte = pa as u64 | flags;
+            }
+        } else if parent_s2tte.is_valid(level - 1, false) {
+            unimplemented!();
+        } else if parent_s2tte.is_valid(level - 1, true) {
+            unimplemented!();
+        } else if parent_s2tte.is_table(level - 1) {
+            return Err(Error::RmiErrorRtt(level - 1));
+        } else {
+            panic!("Unexpected s2tte value:{:X}", parent_s2tte.get());
         }
-        //TODO: add different cases (destroyed, assigned, valid, etc)
 
         set_granule(&mut rtt_granule, GranuleState::RTT)?;
 

@@ -213,10 +213,3 @@ impl<'a> fmt::Debug for Stage2Translation<'a> {
         f.debug_struct(stringify!(Self)).finish()
     }
 }
-
-impl<'a> Drop for Stage2Translation<'a> {
-    fn drop(&mut self) {
-        info!("drop Stage2Translation");
-        self.root_pgtlb.drop();
-    }
-}

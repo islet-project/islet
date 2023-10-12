@@ -90,7 +90,8 @@ impl S2TTE {
     }
 
     pub fn is_destroyed(self) -> bool {
-        self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::DESTROYED
+        self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
+            && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::DESTROYED
     }
 
     pub fn is_assigned(self) -> bool {

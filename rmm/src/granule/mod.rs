@@ -12,6 +12,7 @@ use vmsa::error::Error;
 use vmsa::page_table::{HasSubtable, Level};
 
 pub const GRANULE_SIZE: usize = 4096;
+pub const GRANULE_SHIFT: usize = 12;
 
 /// The Level 0 Table
 /// Each entry (L1table) covers 4mb. This is a configurable number.

@@ -3,7 +3,7 @@ extern crate alloc;
 use super::realm::{rd::State, Rd};
 use super::rec::Rec;
 use crate::event::Mainloop;
-use crate::granule::{is_not_in_realm, set_granule, GranuleState, GRANULE_SIZE};
+use crate::granule::{is_not_in_realm, set_granule, GranuleState, GRANULE_SHIFT, GRANULE_SIZE};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::DataPage;
 use crate::listen;
@@ -14,6 +14,7 @@ use crate::{get_granule, get_granule_if, set_state_and_get_granule};
 
 pub const RTT_MIN_BLOCK_LEVEL: usize = 2;
 pub const RTT_PAGE_LEVEL: usize = 3;
+pub const S2TTE_STRIDE: usize = GRANULE_SHIFT - 3;
 
 const RIPAS_EMPTY: u64 = 0;
 const RIPAS_RAM: u64 = 1;

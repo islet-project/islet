@@ -1,7 +1,8 @@
 use crate::const_assert_eq;
-use crate::granule::GRANULE_SIZE;
+use crate::granule::{GRANULE_SHIFT, GRANULE_SIZE};
 use crate::host::Accessor as HostAccessor;
 use crate::rmi::features;
+use crate::rmi::rtt::{RTT_PAGE_LEVEL, S2TTE_STRIDE};
 use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
 
 const PADDING: [usize; 5] = [248, 767, 960, 6, 2020];
@@ -68,9 +69,6 @@ impl HostAccessor for Params {
         let ipa_bits = self.ipa_bits();
         let rtt_slvl = self.rtt_level_start as usize;
 
-        const RTT_PAGE_LEVEL: usize = 3;
-        const GRANULE_SHIFT: usize = 12;
-        const S2TTE_STRIDE: usize = GRANULE_SHIFT - 3;
         let level = RTT_PAGE_LEVEL - rtt_slvl;
         let min_ipa_bits = level * S2TTE_STRIDE + GRANULE_SHIFT + 1;
         let max_ipa_bits = min_ipa_bits + (S2TTE_STRIDE - 1) + 4;

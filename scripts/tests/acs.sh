@@ -3,7 +3,7 @@
 set -e
 
 # Control these variables
-EXPECTED=16
+EXPECTED=17
 TIMEOUT=3000
 
 ROOT=$(git rev-parse --show-toplevel)
@@ -11,7 +11,7 @@ UART=$ROOT/out/uart2.log
 
 [ -e $UART ] && rm $UART
 
-$ROOT/scripts/fvp-cca -bo -nw=acs
+$ROOT/scripts/fvp-cca -bo -nw=acs --rmm-log-level=error
 $ROOT/scripts/fvp-cca -ro -nw=acs --no-telnet &
 
 sleep 30

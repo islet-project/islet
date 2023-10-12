@@ -383,7 +383,7 @@ impl crate::rmi::Interface for RMI {
             .lock()
             .page_table
             .lock()
-            .ipa_to_pa(GuestPhysAddr::from(config_ipa), 3);
+            .ipa_to_pa(GuestPhysAddr::from(config_ipa), RTT_PAGE_LEVEL);
         if let Some(pa) = res {
             let pa: usize = pa.into();
             unsafe { RealmConfig::init(pa, ipa_bits) };

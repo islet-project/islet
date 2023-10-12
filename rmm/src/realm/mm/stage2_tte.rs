@@ -2,6 +2,7 @@ use core::mem::size_of;
 use vmsa::address::PhysAddr;
 
 use crate::granule::{GranuleState, GRANULE_SIZE};
+use crate::rmi::rtt::{RTT_MIN_BLOCK_LEVEL, RTT_PAGE_LEVEL};
 use armv9a::{define_bitfield, define_bits, define_mask};
 use vmsa::guard::Content;
 
@@ -77,8 +78,10 @@ impl S2TTE {
         let ns = self.get_masked_value(S2TTE::NS);
         let ns_valid = if is_ns { ns == 1 } else { ns == 0 };
         ns_valid
-            && ((level == 3 && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L3_PAGE)
-                || (level == 2 && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L012_BLOCK))
+            && ((level == RTT_PAGE_LEVEL
+                && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L3_PAGE)
+                || (level == RTT_MIN_BLOCK_LEVEL
+                    && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L012_BLOCK))
     }
 
     pub fn is_unassigned(self) -> bool {
@@ -98,7 +101,7 @@ impl S2TTE {
     // level should be the value returned in page table walking
     // (== the last level that has been reached)
     pub fn is_table(self, level: usize) -> bool {
-        (level < 3) && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L012_TABLE
+        (level < RTT_PAGE_LEVEL) && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L012_TABLE
     }
 
     pub fn address(self, level: usize) -> Option<PhysAddr> {

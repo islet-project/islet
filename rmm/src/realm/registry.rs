@@ -736,9 +736,8 @@ impl crate::rmi::Interface for RMI {
         if s2tte.is_valid(level, false) {
             // This condition is added with no-op for handling the `else` case
         } else if s2tte.is_unassigned() || s2tte.is_assigned() {
-            let pa: usize = s2tte.address(level).ok_or(Error::RmiErrorRtt(0))?.into(); //XXX: check this again
             let flags = bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::RAM);
-            let new_s2tte = pa as u64 | flags;
+            let new_s2tte = s2tte.get() | flags;
 
             get_realm(id)
                 .ok_or(Error::RmiErrorOthers(NotExistRealm))?

@@ -3,7 +3,7 @@
 set -e
 
 # Control these variables
-EXPECTED=11
+EXPECTED=12
 TIMEOUT=1000
 
 ROOT=$(git rev-parse --show-toplevel)
@@ -36,7 +36,7 @@ ps -ef | grep FVP_Base_RevC-2xAEMvA | grep -v grep | awk '{print $2}' | xargs ki
 tail -11 $UART
 passed=$(tail -11 $UART | grep "TOTAL PASSED" | awk '{print $5}')
 
-if [ "$EXPECTED" -eq "$passed" ]; then
+if [ "$passed" -ge "$EXPECTED" ]; then
 	echo "[!] Test succeeded!"
 else
 	echo "[!] Test failed!"

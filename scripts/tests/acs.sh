@@ -3,8 +3,8 @@
 set -e
 
 # Control these variables
-EXPECTED=12
-TIMEOUT=1000
+EXPECTED=16
+TIMEOUT=3000
 
 ROOT=$(git rev-parse --show-toplevel)
 UART=$ROOT/out/uart2.log

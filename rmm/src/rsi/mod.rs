@@ -45,8 +45,11 @@ pub fn do_host_call(
     run: &mut Run,
 ) -> core::result::Result<(), Error> {
     let rmi = rmm.rmi;
-    let realmid = rec.realm_id()?;
     let vcpuid = rec.id();
+    let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
+    let realmid = g_rd.content::<Rd>().id();
+    drop(g_rd);
+
     let ipa = rmi.get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
 
     let pa = crate::realm::registry::get_realm(realmid)
@@ -97,8 +100,11 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, ABI_VERSION, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;
-        let realmid = rec.realm_id()?;
         let vcpuid = rec.id();
+        let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
+        let realmid = g_rd.content::<Rd>().id();
+        drop(g_rd);
+
         if rmi.set_reg(realmid, vcpuid, 0, VERSION).is_err() {
             warn!(
                 "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
@@ -112,8 +118,10 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, MEASUREMENT_READ, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;
-        let realmid = rec.realm_id()?;
         let vcpuid = rec.id();
+        let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
+        let realmid = g_rd.content::<Rd>().id();
+        drop(g_rd);
 
         let mut measurement = Measurement::empty();
         let index = rmi.get_reg(realmid, vcpuid, 1)?;
@@ -139,8 +147,10 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, MEASUREMENT_EXTEND, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;
-        let realmid = rec.realm_id()?;
         let vcpuid = rec.id();
+        let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
+        let realmid = g_rd.content::<Rd>().id();
+        drop(g_rd);
 
         let index = rmi.get_reg(realmid, vcpuid, 1)?;
         let size = rmi.get_reg(realmid, vcpuid, 2)?;
@@ -169,10 +179,15 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, REALM_CONFIG, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;
-        let realmid = rec.realm_id()?;
         let vcpuid = rec.id();
+        let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
+        let rd = g_rd.content::<Rd>();
+        let ipa_bits = rd.ipa_bits();
+        let realmid = rd.id();
+        drop(g_rd);
+
         let config_ipa = rmi.get_reg(realmid, vcpuid, 1)?;
-        rmi.realm_config(realmid, config_ipa, rec.ipa_bits()?)?;
+        rmi.realm_config(realmid, config_ipa, ipa_bits)?;
 
         if rmi.set_reg(realmid, vcpuid, 0, SUCCESS).is_err() {
             warn!(
@@ -186,8 +201,11 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, IPA_STATE_SET, |_arg, ret, rmm, rec, run| {
         let rmi = rmm.rmi;
-        let realmid = rec.realm_id()?;
         let vcpuid = rec.id();
+        let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
+        let realmid = g_rd.content::<Rd>().id();
+        drop(g_rd);
+
         let ipa_start = rmi.get_reg(realmid, vcpuid, 1)? as u64;
         let ipa_size = rmi.get_reg(realmid, vcpuid, 2)? as u64;
         let ipa_state = rmi.get_reg(realmid, vcpuid, 3)? as u8;

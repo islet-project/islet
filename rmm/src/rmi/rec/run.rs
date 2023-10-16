@@ -55,8 +55,13 @@ impl Run {
         (*(*self.exit.inner).sys_regs.inner).hpfar = hpfar;
     }
 
-    pub unsafe fn set_gpr0(&mut self, gpr0: u64) {
-        (*self.exit.inner).gprs.val[0] = gpr0;
+    pub unsafe fn set_gpr(&mut self, idx: usize, val: u64) -> Result<(), Error> {
+        if idx >= NR_GPRS {
+            error!("out of index: {}", idx);
+            return Err(Error::RmiErrorInput);
+        }
+        (*self.exit.inner).gprs.val[idx] = val;
+        Ok(())
     }
 
     pub unsafe fn set_ripas(&mut self, base: u64, size: u64, state: u8) {

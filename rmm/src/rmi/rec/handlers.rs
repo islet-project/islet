@@ -98,22 +98,23 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorRec);
         }
 
-        {
-            let rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
-            let rd = rd.content::<Rd>();
-            match rd.state() {
-                State::Active => {}
-                State::New => {
-                    return Err(Error::RmiErrorRealm(0));
-                }
-                State::SystemOff => {
-                    return Err(Error::RmiErrorRealm(1));
-                }
-                _ => {
-                    panic!("Unexpected realm state");
-                }
+        let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
+        let rd = g_rd.content::<Rd>();
+        let realm_id = rd.id();
+
+        match rd.state() {
+            State::Active => {}
+            State::New => {
+                return Err(Error::RmiErrorRealm(0));
+            }
+            State::SystemOff => {
+                return Err(Error::RmiErrorRealm(1));
+            }
+            _ => {
+                panic!("Unexpected realm state");
             }
         }
+        drop(g_rd); // manually drop to reduce a lock contention
 
         // read Run
         let mut run = copy_from_host_or_ret!(Run, run_pa, Error::RmiErrorRec);
@@ -123,13 +124,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             do_host_call(&arg, ret, rmm, rec, &mut run)?;
         }
 
-        rmi.receive_gic_state_from_host(rec.realm_id()?, rec.id(), &run)?;
-        rmi.emulate_mmio(rec.realm_id()?, rec.id(), &run)?;
+        rmi.receive_gic_state_from_host(realm_id, rec.id(), &run)?;
+        rmi.emulate_mmio(realm_id, rec.id(), &run)?;
 
         let ripas = rec.ripas_addr() as usize;
         if ripas > 0 {
-            rmi.set_reg(rec.realm_id()?, rec.id(), 0, 0)?;
-            rmi.set_reg(rec.realm_id()?, rec.id(), 1, ripas)?;
+            rmi.set_reg(realm_id, rec.id(), 0, 0)?;
+            rmi.set_reg(realm_id, rec.id(), 1, ripas)?;
             rec.set_ripas(0, 0, 0, 0);
         }
 
@@ -145,7 +146,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         loop {
             ret_ns = true;
             unsafe { run.set_imm(0) };
-            match rmi.run(rec.realm_id()?, rec.id(), 0) {
+            match rmi.run(realm_id, rec.id(), 0) {
                 Ok(val) => match val[0] {
                     realmexit::RSI => {
                         trace!("REC_ENTER ret: {:#X?}", val);
@@ -174,7 +175,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                         run.set_esr(val[1] as u64);
                         run.set_hpfar(val[2] as u64);
                         run.set_far(val[3] as u64);
-                        let _ = rmi.send_mmio_write(rec.realm_id()?, rec.id(), &mut run);
+                        let _ = rmi.send_mmio_write(realm_id, rec.id(), &mut run);
                         ret[0] = rmi::SUCCESS;
                     },
                     realmexit::IRQ => unsafe {
@@ -192,8 +193,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 break;
             }
         }
-        rmi.send_gic_state_to_host(rec.realm_id()?, rec.id(), &mut run)?;
-        rmi.send_timer_state_to_host(rec.realm_id()?, rec.id(), &mut run)?;
+        rmi.send_gic_state_to_host(realm_id, rec.id(), &mut run)?;
+        rmi.send_timer_state_to_host(realm_id, rec.id(), &mut run)?;
 
         // NOTICE: do not modify `run` after copy_to_host_or_ret!(). it won't have any effect.
         copy_to_host_or_ret!(Run, &run, run_pa);

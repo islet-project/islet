@@ -8,7 +8,10 @@ use crate::rsi;
 use crate::rsi::psci;
 use crate::Monitor;
 // TODO: Change this into rsi::error::Error
+use crate::granule::GranuleState;
 use crate::rmi::error::Error;
+use crate::rmi::realm::Rd;
+use crate::{get_granule, get_granule_if};
 
 use alloc::boxed::Box;
 use alloc::collections::btree_map::BTreeMap;
@@ -46,13 +49,19 @@ impl RsiHandle {
             }
             None => {
                 let rmi = monitor.rmi;
-                let realm_id = rec.realm_id();
-                if let Err(e) = realm_id {
-                    error!("failed to get realm_id: {:?}", e);
-                    return RsiHandle::RET_FAIL;
-                }
+                let res = get_granule_if!(rec.owner(), GranuleState::RD);
+                let g_rd = match res {
+                    Ok(g_rd) => g_rd,
+                    Err(e) => {
+                        error!("failed to get rd: {:?}", e);
+                        return RsiHandle::RET_FAIL;
+                    }
+                };
+
+                let realm_id = g_rd.content::<Rd>().id();
+                drop(g_rd);
                 // TODO: handle the error properly
-                let _ = rmi.set_reg(realm_id.unwrap(), rec.id(), 0, RsiHandle::NOT_SUPPORTED);
+                let _ = rmi.set_reg(realm_id, rec.id(), 0, RsiHandle::NOT_SUPPORTED);
                 error!(
                     "Not registered event: {:X} returning {:X}",
                     ctx.cmd,

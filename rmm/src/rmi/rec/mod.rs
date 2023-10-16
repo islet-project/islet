@@ -7,8 +7,6 @@ pub mod vtcr;
 pub use self::handlers::set_event_handler;
 
 use crate::granule::GranuleState;
-use crate::rmi::error::Error;
-use crate::rmi::realm::Rd;
 
 use vmsa::guard::Content;
 
@@ -35,18 +33,6 @@ impl Rec {
         self.vcpuid = vcpuid;
         self.set_ripas(0, 0, 0, 0);
         self.set_runnable(flags);
-    }
-
-    pub fn ipa_bits(&self) -> Result<usize, Error> {
-        let rd = get_granule_if!(self.owner(), GranuleState::RD)?;
-        let rd = rd.content::<Rd>();
-        Ok(rd.ipa_bits())
-    }
-
-    pub fn realm_id(&self) -> Result<usize, Error> {
-        let rd = get_granule_if!(self.owner(), GranuleState::RD)?;
-        let rd = rd.content::<Rd>();
-        Ok(rd.id())
     }
 
     pub fn runnable(&self) -> bool {

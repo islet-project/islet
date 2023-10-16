@@ -340,7 +340,7 @@ impl crate::rmi::Interface for RMI {
         if rt == 31 {
             // xzr
             unsafe {
-                run.set_gpr0(0);
+                run.set_gpr(0, 0)?;
             }
         } else {
             let sas = esr.get_masked_value(EsrEl2::SAS);
@@ -357,7 +357,7 @@ impl crate::rmi::Interface for RMI {
                 unimplemented!();
             }
             unsafe {
-                run.set_gpr0(context.gp_regs[rt] & mask);
+                run.set_gpr(0, context.gp_regs[rt] & mask)?;
             }
         }
         Ok(())

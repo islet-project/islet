@@ -15,6 +15,7 @@ use crate::rmi::error::{Error, InternalError::NotExistRealm};
 use crate::rmi::realm::Rd;
 use crate::rmi::rec::run::Run;
 use crate::rmi::rec::Rec;
+use crate::rmi::rtt::RTT_PAGE_LEVEL;
 use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 use crate::Monitor;
 
@@ -57,7 +58,10 @@ pub fn do_host_call(
         .lock()
         .page_table
         .lock()
-        .ipa_to_pa(crate::realm::mm::address::GuestPhysAddr::from(ipa), 3)
+        .ipa_to_pa(
+            crate::realm::mm::address::GuestPhysAddr::from(ipa),
+            RTT_PAGE_LEVEL,
+        )
         .ok_or(Error::RmiErrorInput)?;
 
     unsafe {

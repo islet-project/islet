@@ -37,7 +37,7 @@ impl<'a> HashContext<'a> {
             let old_value = current.clone();
 
             self.hasher.hash_fields_into(current, |h| {
-                h.hash(old_value);
+                h.hash(&old_value.as_ref()[0..self.hasher.output_size()]);
                 h.hash(buffer);
             })
         })

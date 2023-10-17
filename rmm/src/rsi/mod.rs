@@ -7,7 +7,9 @@ use crate::define_interface;
 use crate::event::RsiHandle;
 use crate::granule::GranuleState;
 use crate::listen;
-use crate::measurement::{HashContext, Measurement, MeasurementError};
+use crate::measurement::{
+    HashContext, Measurement, MeasurementError, MEASUREMENTS_SLOT_NR, MEASUREMENTS_SLOT_RIM,
+};
 use crate::rmi;
 use crate::rmi::error::{Error, InternalError::NotExistRealm};
 use crate::rmi::realm::Rd;
@@ -152,7 +154,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             );
         }
 
-        if size > buffer.len() {
+        if size > buffer.len() || index == MEASUREMENTS_SLOT_RIM || index >= MEASUREMENTS_SLOT_NR {
             return Err(crate::event::Error::RmiErrorInput);
         }
 

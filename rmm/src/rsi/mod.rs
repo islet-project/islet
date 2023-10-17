@@ -195,6 +195,12 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         drop(g_rd); // manually drop to reduce a lock contention
 
         let config_ipa = rmi.get_reg(realmid, vcpuid, 1)?;
+        if validate_ipa(config_ipa, ipa_bits).is_err() {
+            rmi.set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            ret[0] = rmi::SUCCESS_REC_ENTER;
+            return Ok(());
+        }
+
         rmi.realm_config(realmid, config_ipa, ipa_bits)?;
 
         if rmi.set_reg(realmid, vcpuid, 0, SUCCESS).is_err() {

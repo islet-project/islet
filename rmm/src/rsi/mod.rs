@@ -15,7 +15,7 @@ use crate::rmi::error::{Error, InternalError::NotExistRealm};
 use crate::rmi::realm::Rd;
 use crate::rmi::rec::run::Run;
 use crate::rmi::rec::Rec;
-use crate::rmi::rtt::RTT_PAGE_LEVEL;
+use crate::rmi::rtt::{validate_ipa, RTT_PAGE_LEVEL};
 use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 use crate::Monitor;
 
@@ -34,6 +34,9 @@ define_interface! {
 }
 
 pub const SUCCESS: usize = 0;
+pub const ERROR_INPUT: usize = 1;
+pub const ERROR_STATE: usize = 2;
+pub const INCOMPLETE: usize = 3;
 
 pub const VERSION: usize = (1 << 16) | 0;
 
@@ -208,15 +211,28 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let rmi = rmm.rmi;
         let vcpuid = rec.id();
         let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
-        let realmid = g_rd.content::<Rd>().id();
+        let rd = g_rd.content::<Rd>();
+        let ipa_bits = rd.ipa_bits();
+        let realmid = rd.id();
         drop(g_rd);
 
-        let target_ipa_page = rmi.get_reg(realmid, vcpuid, 1)?;
-        let ripas = rmi.rtt_get_ripas(realmid, target_ipa_page, RTT_PAGE_LEVEL)? as usize;
+        let ipa_page = rmi.get_reg(realmid, vcpuid, 1)?;
+        if validate_ipa(ipa_page, ipa_bits).is_err() {
+            if rmi.set_reg(realmid, vcpuid, 0, ERROR_INPUT).is_err() {
+                warn!(
+                    "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
+                    realmid, vcpuid
+                );
+            }
+            ret[0] = rmi::SUCCESS_REC_ENTER;
+            return Ok(());
+        }
+
+        let ripas = rmi.rtt_get_ripas(realmid, ipa_page, RTT_PAGE_LEVEL)? as usize;
 
         debug!(
-            "RSI_IPA_STATE_GET: target_ipa_page: {:X} ripas: {:X}",
-            target_ipa_page, ripas
+            "RSI_IPA_STATE_GET: ipa_page: {:X} ripas: {:X}",
+            ipa_page, ripas
         );
 
         if rmi.set_reg(realmid, vcpuid, 0, SUCCESS).is_err() {

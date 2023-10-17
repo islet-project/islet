@@ -298,9 +298,12 @@ def prepare_kvm_unit_tests():
     run(["./scripts/build-kvm-unit-tests.sh"], cwd=ROOT)
     run(["cp", "-R", "arm", "%s/%s" % (OUT, "kvm-unit-tests")], cwd=KVM_UNIT_TESTS)
 
-def prepare_acs():
+def prepare_acs(start, end):
     print("[!] Building ACS...")
-    run(["./scripts/build-acs.sh"], cwd=ROOT)
+    if start == "" and end == "":
+        run(["./scripts/build-acs.sh"], cwd=ROOT)
+    else:
+        run(["./scripts/build-acs.sh", start, end], cwd=ROOT)
 
 def prepare_tap_network(host_ip, fvp_ip, route_ip, gateway, ifname):
     print("[!] Configuring a tap network for fvp...")
@@ -514,6 +517,7 @@ if __name__ == "__main__":
     parser.add_argument("--rmm-log-level", help="Determine RMM's log-level. Choose among (off, error, warn, info, debug, trace)", default="trace")
     parser.add_argument("--stat", help="Enable stat to check memory used size per command", action="store_true")
     parser.add_argument("--realm-linux", help="Enable realm-linux feature", action="store_true")
+    parser.add_argument("--selected-tests", "-st", help="Select the first and end test name separated by ';'", default="")
 
     args = parser.parse_args()
 
@@ -546,8 +550,21 @@ if __name__ == "__main__":
             prepare_nw_aosp(args.no_prebuilt_initrd)
             prepare_bootloaders(args.rmm, PREBUILT_EDK2, args.hes)
         elif args.normal_world == "acs":
-            prepare_acs()
-            prepare_bootloaders(args.rmm, ACS_HOST, args.hes)
+            if args.selected_tests == "":
+                prepare_acs("", "")
+                prepare_bootloaders(args.rmm, ACS_HOST, args.hes)
+            else:
+                selected_tests = args.selected_tests
+                tests = selected_tests.split(";")
+                test_num = len(tests)
+                if test_num == 1:
+                    prepare_acs(tests[0], tests[0])
+                elif test_num == 2:
+                    prepare_acs(tests[0], tests[1])
+                else:
+                    print("[!] Pass one or two test names separated by ';'")
+                    sys.exit(1)
+                prepare_bootloaders(args.rmm, ACS_HOST, args.hes)
         else:
             prepare_kvmtool()
             if args.no_kvm_unit_tests is False:

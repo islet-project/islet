@@ -131,6 +131,7 @@ pub trait Interface {
         level: usize,
     ) -> Result<(), Error>;
     fn rtt_init_ripas(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;
+    fn rtt_get_ripas(&self, id: usize, ipa: usize, level: usize) -> Result<u64, Error>;
     fn rtt_read_entry(&self, id: usize, guest: usize, level: usize) -> Result<[usize; 4], Error>;
     fn rtt_map_unprotected(
         &self,

@@ -17,8 +17,8 @@ lazy_static! {
         m.insert(rsi::ABI_VERSION, Constraint::new(rsi::ABI_VERSION, 2, 1));
         m.insert(rsi::REALM_CONFIG, Constraint::new(rsi::REALM_CONFIG, 2, 1));
         m.insert(
-            rsi::IPA_STATE_SET,
-            Constraint::new(rsi::IPA_STATE_SET, 2, 1),
+            rsi::IPA_STATE_GET,
+            Constraint::new(rsi::IPA_STATE_GET, 2, 1),
         );
         m.insert(
             psci::PSCI_VERSION,

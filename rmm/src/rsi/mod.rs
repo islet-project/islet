@@ -28,6 +28,7 @@ define_interface! {
         ATTEST_TOKEN_CONTINUE   = 0xc400_0195,
         REALM_CONFIG            = 0xc400_0196,
         IPA_STATE_SET           = 0xc400_0197,
+        IPA_STATE_GET           = 0xc400_0198,
         HOST_CALL               = 0xc400_0199,
     }
 }
@@ -199,6 +200,39 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
                 realmid, vcpuid
             );
         }
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
+    });
+
+    listen!(rsi, IPA_STATE_GET, |_arg, ret, rmm, rec, _| {
+        let rmi = rmm.rmi;
+        let vcpuid = rec.id();
+        let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
+        let realmid = g_rd.content::<Rd>().id();
+        drop(g_rd);
+
+        let target_ipa_page = rmi.get_reg(realmid, vcpuid, 1)?;
+        let ripas = rmi.rtt_get_ripas(realmid, target_ipa_page, RTT_PAGE_LEVEL)? as usize;
+
+        debug!(
+            "RSI_IPA_STATE_GET: target_ipa_page: {:X} ripas: {:X}",
+            target_ipa_page, ripas
+        );
+
+        if rmi.set_reg(realmid, vcpuid, 0, SUCCESS).is_err() {
+            warn!(
+                "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
+                realmid, vcpuid
+            );
+        }
+
+        if rmi.set_reg(realmid, vcpuid, 1, ripas).is_err() {
+            warn!(
+                "Unable to set register 1. realmid: {:?} vcpuid: {:?}",
+                realmid, vcpuid
+            );
+        }
+
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
     });

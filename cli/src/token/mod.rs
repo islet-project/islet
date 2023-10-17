@@ -340,8 +340,6 @@ pub enum TokenError
     InvalidKey(&'static str),
     InvalidTag(&'static str),
     InvalidTokenFormat(&'static str),
-    NotImplemented(&'static str),
-    InvalidAlgorithm(Option<coset::Algorithm>),
     Signature,
     Ciborium(de::Error<std::io::Error>),
     Coset(coset::CoseError),

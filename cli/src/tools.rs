@@ -36,9 +36,9 @@ pub(crate) fn random_data(len: usize) -> Vec<u8>
     rng.sample_iter(&Standard).take(len).collect()
 }
 
-pub(crate) fn verify_print(token: &[u8]) -> Result<(), islet_cli::TokenError>
+pub(crate) fn verify_print(token: &[u8]) -> Result<(), crate::token::TokenError>
 {
-    let claims = islet_cli::verify_token(token)?;
-    islet_cli::print_token(&claims);
+    let claims = crate::token::verifier::verify_token(token)?;
+    crate::token::dumper::print_token(&claims);
     Ok(())
 }

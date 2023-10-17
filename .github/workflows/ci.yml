@@ -46,6 +46,11 @@ jobs:
       - name: Test ACS
         run: ./scripts/tests/acs.sh
 
+      - uses: actions/upload-artifact@v3
+        with:
+          name: acs
+          path: out/uart*.log
+
   hes:
     runs-on: ubuntu-22.04
     steps:
@@ -70,6 +75,7 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
+          name: tf-a-tests
           path: out/uart*.log
 
   realm-boot:
@@ -85,6 +91,7 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         with:
+          name: realm-boot
           path: out/uart*.log
 
   crates:

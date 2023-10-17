@@ -574,6 +574,27 @@ impl crate::rmi::Interface for RMI {
         Ok(())
     }
 
+    fn rtt_get_ripas(&self, id: usize, ipa: usize, level: usize) -> Result<u64, Error> {
+        let (s2tte, last_level) = get_realm(id)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .ipa_to_pte(GuestPhysAddr::from(ipa), level)
+            .ok_or(Error::RmiErrorRtt(0))?;
+
+        if level != last_level {
+            return Err(Error::RmiErrorRtt(last_level));
+        }
+
+        let s2tte = S2TTE::from(s2tte as usize);
+        if s2tte.is_destroyed() {
+            error!("The s2tte is destroyed: {:x}", s2tte.get());
+            return Err(Error::RmiErrorRtt(last_level));
+        }
+        Ok(s2tte.get_ripas())
+    }
+
     fn rtt_read_entry(&self, id: usize, ipa: usize, level: usize) -> Result<[usize; 4], Error> {
         let (s2tte, last_level) = get_realm(id)
             .ok_or(Error::RmiErrorOthers(NotExistRealm))?

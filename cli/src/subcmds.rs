@@ -119,11 +119,3 @@ pub(crate) fn verify(args: &VerifyArgs) -> GenericResult
     tools::verify_print(&token)?;
     Ok(())
 }
-
-#[derive(Args, Debug)]
-pub(crate) struct VerifyCArgs
-{
-    /// filename with the token to verify
-    #[arg(short, long)]
-    input: String,
-}

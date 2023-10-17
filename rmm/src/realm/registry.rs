@@ -422,6 +422,9 @@ impl crate::rmi::Interface for RMI {
         let parent_s2tte = S2TTE::from(parent_s2tte as usize);
         let s2tt_len = s2tt.len();
         if parent_s2tte.is_unassigned() {
+            if parent_s2tte.is_invalid_ripas() {
+                panic!("invalid ripas");
+            }
             let ripas = parent_s2tte.get_ripas();
             let mut new_s2tte = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
             if ripas == invalid_ripas::EMPTY {
@@ -815,6 +818,9 @@ impl crate::rmi::Interface for RMI {
         }
 
         let mut new_s2tte = target_pa as u64;
+        if s2tte.is_invalid_ripas() {
+            panic!("invalid ripas");
+        }
         let ripas = s2tte.get_ripas();
         if ripas == invalid_ripas::EMPTY {
             new_s2tte |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);

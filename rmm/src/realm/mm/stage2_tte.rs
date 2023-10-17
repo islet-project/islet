@@ -105,6 +105,11 @@ impl S2TTE {
         (level < RTT_PAGE_LEVEL) && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L012_TABLE
     }
 
+    pub fn is_invalid_ripas(self) -> bool {
+        (self.get_masked_value(S2TTE::DESC_TYPE) != desc_type::LX_INVALID)
+            && (self.get_ripas() != invalid_ripas::RAM)
+    }
+
     pub fn address(self, level: usize) -> Option<PhysAddr> {
         match level {
             1 => Some(PhysAddr::from(self.get_masked(S2TTE::ADDR_L1_PAGE))),
@@ -115,18 +120,6 @@ impl S2TTE {
     }
 
     pub fn get_ripas(self) -> u64 {
-        let desc_ripas = self.get_masked_value(S2TTE::INVALID_RIPAS);
-
-        if (self.get_masked_value(S2TTE::DESC_TYPE) != desc_type::LX_INVALID)
-            && (desc_ripas != invalid_ripas::RAM)
-        {
-            panic!("invalid ripas");
-        }
-
-        if desc_ripas == invalid_ripas::EMPTY {
-            return invalid_ripas::EMPTY;
-        } else {
-            return invalid_ripas::RAM;
-        }
+        self.get_masked_value(S2TTE::INVALID_RIPAS)
     }
 }

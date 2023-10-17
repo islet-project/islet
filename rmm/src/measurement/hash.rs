@@ -51,6 +51,7 @@ impl HashWrapper {
 
 pub struct Hasher {
     factory: Box<dyn Fn() -> Box<dyn DynDigest>>,
+    block_size: usize,
 }
 
 impl Hasher {
@@ -61,7 +62,16 @@ impl Hasher {
             _ => return Err(MeasurementError::InvalidHashAlgorithmValue(hash_algo)),
         };
 
-        Ok(Self { factory })
+        let block_size = match hash_algo {
+            HASH_ALGO_SHA256 => <Sha256 as Digest>::output_size(),
+            HASH_ALGO_SHA512 => <Sha512 as Digest>::output_size(),
+            _ => return Err(MeasurementError::InvalidHashAlgorithmValue(hash_algo)),
+        };
+
+        Ok(Self {
+            factory,
+            block_size,
+        })
     }
 
     pub fn hash_fields_into(
@@ -82,6 +92,10 @@ impl Hasher {
         mut out: impl AsMut<[u8]>,
     ) -> Result<(), MeasurementError> {
         obj.hash(&self, out.as_mut())
+    }
+
+    pub fn output_size(&self) -> usize {
+        self.block_size
     }
 }
 

@@ -296,12 +296,18 @@ pub fn realm_par_size(ipa_bits: usize) -> usize {
     realm_ipa_size(ipa_bits) / 2
 }
 
-fn validate_ipa(ipa: usize, ipa_bits: usize) -> Result<(), Error> {
+pub fn validate_ipa(ipa: usize, ipa_bits: usize) -> Result<(), Error> {
     if ipa % GRANULE_SIZE != 0 {
+        error!("ipa: {:x} is not aligned with {:x}", ipa, GRANULE_SIZE);
         return Err(Error::RmiErrorInput);
     }
 
     if ipa >= realm_par_size(ipa_bits) {
+        error!(
+            "ipa: {:x} is not in protected ipa range {:x}",
+            ipa,
+            realm_par_size(ipa_bits)
+        );
         return Err(Error::RmiErrorInput);
     }
 

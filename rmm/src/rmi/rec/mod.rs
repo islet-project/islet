@@ -10,7 +10,15 @@ use crate::granule::GranuleState;
 
 use vmsa::guard::Content;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum RmmRecAttestState {
+    AttestInProgress,
+    NoAttestInProgress,
+}
+
 pub struct Rec {
+    attest_state: RmmRecAttestState,
+    attest_challenge: [u8; 64],
     /// PA of RD of Realm which owns this REC
     owner: usize,
     vcpuid: usize,
@@ -35,6 +43,14 @@ impl Rec {
         self.set_runnable(flags);
     }
 
+    pub fn attest_state(&self) -> RmmRecAttestState {
+        self.attest_state
+    }
+
+    pub fn attest_challenge(&self) -> &[u8] {
+        &self.attest_challenge
+    }
+
     pub fn runnable(&self) -> bool {
         self.runnable
     }
@@ -49,6 +65,14 @@ impl Rec {
 
     pub fn host_call_pending(&self) -> bool {
         self.host_call_pending
+    }
+
+    pub fn set_attest_state(&mut self, state: RmmRecAttestState) {
+        self.attest_state = state;
+    }
+
+    pub fn set_attest_challenge(&mut self, challenge: &[u8]) {
+        self.attest_challenge.copy_from_slice(challenge);
     }
 
     pub fn set_host_call_pending(&mut self, val: bool) {

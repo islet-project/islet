@@ -54,6 +54,17 @@ def custom_signal_handler(signum, frame):
     kill_pid_file(HES_PID)
     signal.default_int_handler(signum, frame)
 
+def make_single_line(excluded):
+    with open(excluded, 'r') as excluded_file:
+        excluded_tests = ""
+        for i, line in enumerate(excluded_file.readlines()):
+            line = line.strip()
+            if i == 0:
+                excluded_tests = line
+            else:
+                excluded_tests = ",".join([excluded_tests, line])
+        return excluded_tests
+
 def prepare_tf_a_tests(realm):
     srcdir = TF_A_TESTS
     outbin = TFTF_BIN
@@ -298,12 +309,20 @@ def prepare_kvm_unit_tests():
     run(["./scripts/build-kvm-unit-tests.sh"], cwd=ROOT)
     run(["cp", "-R", "arm", "%s/%s" % (OUT, "kvm-unit-tests")], cwd=KVM_UNIT_TESTS)
 
-def prepare_acs(start, end):
+def prepare_acs(start, end, excluded):
     print("[!] Building ACS...")
     if start == "" and end == "":
-        run(["./scripts/build-acs.sh"], cwd=ROOT)
+        if excluded == "":
+            run(["./scripts/build-acs.sh"], cwd=ROOT)
+        else:
+            excluded_tests = make_single_line(excluded)
+            run(["./scripts/build-acs.sh", excluded_tests], cwd=ROOT)
     else:
-        run(["./scripts/build-acs.sh", start, end], cwd=ROOT)
+        if excluded == "":
+            run(["./scripts/build-acs.sh", start, end], cwd=ROOT)
+        else:
+            excluded_tests = make_single_line(excluded)
+            run(["./scripts/build-acs.sh", excluded_tests, start, end], cwd=ROOT)
 
 def prepare_tap_network(host_ip, fvp_ip, route_ip, gateway, ifname):
     print("[!] Configuring a tap network for fvp...")
@@ -518,6 +537,7 @@ if __name__ == "__main__":
     parser.add_argument("--stat", help="Enable stat to check memory used size per command", action="store_true")
     parser.add_argument("--realm-linux", help="Enable realm-linux feature", action="store_true")
     parser.add_argument("--selected-tests", "-st", help="Select the first and end test name separated by ';'", default="")
+    parser.add_argument("--excluded-tests", "-et", help="File name which contains the list of ACS tests to be excluded", default="")
 
     args = parser.parse_args()
 
@@ -551,16 +571,16 @@ if __name__ == "__main__":
             prepare_bootloaders(args.rmm, PREBUILT_EDK2, args.hes)
         elif args.normal_world == "acs":
             if args.selected_tests == "":
-                prepare_acs("", "")
+                prepare_acs("", "", args.excluded_tests)
                 prepare_bootloaders(args.rmm, ACS_HOST, args.hes)
             else:
                 selected_tests = args.selected_tests
                 tests = selected_tests.split(";")
                 test_num = len(tests)
                 if test_num == 1:
-                    prepare_acs(tests[0], tests[0])
+                    prepare_acs(tests[0], tests[0], args.excluded_tests)
                 elif test_num == 2:
-                    prepare_acs(tests[0], tests[1])
+                    prepare_acs(tests[0], tests[1], args.excluded_tests)
                 else:
                     print("[!] Pass one or two test names separated by ';'")
                     sys.exit(1)

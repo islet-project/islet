@@ -112,6 +112,7 @@ impl Context {
             trace!("let's get STATS.lock() with cmd {}", rsi::to_str(self.cmd));
             crate::stat::STATS.lock().measure(self.cmd, || {
                 if let Err(code) = handler(&self.arg[..], &mut self.ret[..]) {
+                    error!("rsi handler returns error:{:?}", code);
                     self.ret[0] = code.into();
                 }
             });
@@ -119,6 +120,7 @@ impl Context {
         #[cfg(not(feature = "stat"))]
         {
             if let Err(code) = handler(&self.arg[..], &mut self.ret[..]) {
+                error!("rsi handler returns error:{:?}", code);
                 self.ret[0] = code.into();
             }
         }

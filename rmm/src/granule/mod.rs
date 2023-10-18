@@ -251,6 +251,10 @@ pub fn is_not_in_realm(addr: usize) -> bool {
     }
 }
 
+pub fn is_granule_aligned(addr: usize) -> bool {
+    addr % GRANULE_SIZE == 0
+}
+
 #[cfg(test)]
 mod test {
     use crate::granule::translation::{GranuleStatusTable, GRANULE_STATUS_TABLE};

@@ -5,17 +5,18 @@ pub mod psci;
 
 use crate::define_interface;
 use crate::event::RsiHandle;
-use crate::granule::GranuleState;
+use crate::granule::{is_granule_aligned, GranuleState};
 use crate::listen;
 use crate::measurement::{
     HashContext, Measurement, MeasurementError, MEASUREMENTS_SLOT_NR, MEASUREMENTS_SLOT_RIM,
 };
+use crate::realm::mm::stage2_tte::invalid_ripas;
 use crate::rmi;
 use crate::rmi::error::{Error, InternalError::NotExistRealm};
 use crate::rmi::realm::Rd;
 use crate::rmi::rec::run::Run;
 use crate::rmi::rec::Rec;
-use crate::rmi::rtt::{validate_ipa, RTT_PAGE_LEVEL};
+use crate::rmi::rtt::{is_protected_ipa, validate_ipa, RTT_PAGE_LEVEL};
 use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 use crate::Monitor;
 
@@ -263,17 +264,41 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let rmi = rmm.rmi;
         let vcpuid = rec.id();
         let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
-        let realmid = g_rd.content::<Rd>().id();
+        let rd = g_rd.content::<Rd>();
+        let realmid = rd.id();
+        let ipa_bits = rd.ipa_bits();
         drop(g_rd); // manually drop to reduce a lock contention
 
-        let ipa_start = rmi.get_reg(realmid, vcpuid, 1)? as u64;
-        let ipa_size = rmi.get_reg(realmid, vcpuid, 2)? as u64;
+        let ipa_start = rmi.get_reg(realmid, vcpuid, 1)?;
+        let ipa_size = rmi.get_reg(realmid, vcpuid, 2)?;
         let ipa_state = rmi.get_reg(realmid, vcpuid, 3)? as u8;
+        let ipa_end = ipa_start + ipa_size;
+
+        if ipa_end <= ipa_start {
+            return Err(Error::RmiErrorInput); // integer overflows or size is zero
+        }
+
+        if !is_granule_aligned(ipa_start)
+            || !is_granule_aligned(ipa_size)
+            || !is_ripas_valid(ipa_state)
+            || !is_protected_ipa(ipa_start, ipa_bits)
+            || !is_protected_ipa(ipa_end - 1, ipa_bits)
+        {
+            rmi.set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            ret[0] = rmi::SUCCESS_REC_ENTER;
+            return Ok(());
+        }
+
         // TODO: check ipa_state value, ipa address granularity
         unsafe {
             run.set_exit_reason(rmi::EXIT_RIPAS_CHANGE);
-            run.set_ripas(ipa_start, ipa_size, ipa_state);
-            rec.set_ripas(ipa_start, ipa_start + ipa_size, ipa_start, ipa_state);
+            run.set_ripas(ipa_start as u64, ipa_size as u64, ipa_state);
+            rec.set_ripas(
+                ipa_start as u64,
+                ipa_end as u64,
+                ipa_start as u64,
+                ipa_state,
+            );
             ret[0] = rmi::SUCCESS;
         };
         debug!(
@@ -285,4 +310,11 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         super::rmi::dummy();
         Ok(())
     });
+}
+
+fn is_ripas_valid(ripas: u8) -> bool {
+    match ripas as u64 {
+        invalid_ripas::EMPTY | invalid_ripas::RAM => true,
+        _ => false,
+    }
 }

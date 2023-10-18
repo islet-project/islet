@@ -3,7 +3,9 @@ extern crate alloc;
 use super::realm::{rd::State, Rd};
 use super::rec::Rec;
 use crate::event::Mainloop;
-use crate::granule::{is_not_in_realm, set_granule, GranuleState, GRANULE_SHIFT, GRANULE_SIZE};
+use crate::granule::{
+    is_granule_aligned, is_not_in_realm, set_granule, GranuleState, GRANULE_SHIFT, GRANULE_SIZE,
+};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::DataPage;
 use crate::listen;
@@ -296,13 +298,17 @@ pub fn realm_par_size(ipa_bits: usize) -> usize {
     realm_ipa_size(ipa_bits) / 2
 }
 
+pub fn is_protected_ipa(ipa: usize, ipa_bits: usize) -> bool {
+    ipa < realm_par_size(ipa_bits)
+}
+
 pub fn validate_ipa(ipa: usize, ipa_bits: usize) -> Result<(), Error> {
-    if ipa % GRANULE_SIZE != 0 {
+    if !is_granule_aligned(ipa) {
         error!("ipa: {:x} is not aligned with {:x}", ipa, GRANULE_SIZE);
         return Err(Error::RmiErrorInput);
     }
 
-    if ipa >= realm_par_size(ipa_bits) {
+    if !is_protected_ipa(ipa, ipa_bits) {
         error!(
             "ipa: {:x} is not in protected ipa range {:x}",
             ipa,

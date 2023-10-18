@@ -1,5 +1,5 @@
 use crate::granule::GRANULE_SIZE;
-use crate::measurement::MeasurementError;
+use crate::measurement::{Measurement, MeasurementError};
 use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::mm::page_table::pte::{permission, shareable};
 use crate::realm::mm::IPATranslation;
@@ -26,6 +26,7 @@ use crate::rmi::error::Error;
 use crate::rmi::error::InternalError::*;
 use crate::rmi::rtt_entry_state;
 use crate::rmm_exit;
+use crate::rsi::attestation::Attestation;
 use crate::rsi::error::Error as RsiError;
 
 use alloc::boxed::Box;
@@ -952,5 +953,25 @@ impl crate::rsi::Interface for RsiHandle {
 
         f(measurement)?;
         Ok(())
+    }
+
+    fn get_attestation_token(
+        &self,
+        attest_pa: usize,
+        challenge: &[u8],
+        measurements: &[Measurement],
+        hash_algo: u8,
+    ) -> usize {
+        // TODO: consider storing attestation object somewhere,
+        // as RAK and token do not change during rmm lifetime.
+        let token =
+            Attestation::new(&[], &[]).create_attestation_token(challenge, measurements, hash_algo);
+
+        unsafe {
+            let pa_ptr = attest_pa as *mut u8;
+            core::ptr::copy(token.as_ptr(), pa_ptr, token.len());
+        }
+
+        token.len()
     }
 }

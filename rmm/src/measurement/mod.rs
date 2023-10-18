@@ -44,3 +44,9 @@ impl AsRef<[u8]> for Measurement {
         self.as_slice()
     }
 }
+
+impl Default for Measurement {
+    fn default() -> Self {
+        Measurement([0; MEASUREMENTS_SLOT_MAX_SIZE])
+    }
+}

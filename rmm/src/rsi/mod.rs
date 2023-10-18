@@ -1,3 +1,4 @@
+pub mod attestation;
 pub mod constraint;
 pub mod error;
 pub mod hostcall;
@@ -10,12 +11,13 @@ use crate::listen;
 use crate::measurement::{
     HashContext, Measurement, MeasurementError, MEASUREMENTS_SLOT_NR, MEASUREMENTS_SLOT_RIM,
 };
+use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::mm::stage2_tte::invalid_ripas;
 use crate::rmi;
 use crate::rmi::error::{Error, InternalError::NotExistRealm};
 use crate::rmi::realm::Rd;
 use crate::rmi::rec::run::Run;
-use crate::rmi::rec::Rec;
+use crate::rmi::rec::{Rec, RmmRecAttestState};
 use crate::rmi::rtt::{is_protected_ipa, validate_ipa, RTT_PAGE_LEVEL};
 use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 use crate::Monitor;
@@ -102,9 +104,100 @@ pub trait Interface {
         index: usize,
         f: impl Fn(&mut Measurement) -> Result<(), MeasurementError>,
     ) -> Result<(), error::Error>;
+    fn get_attestation_token(
+        &self,
+        attest_pa: usize,
+        challenge: &[u8],
+        measurements: &[Measurement],
+        hash_algo: u8,
+    ) -> usize;
 }
 
 pub fn set_event_handler(rsi: &mut RsiHandle) {
+    listen!(rsi, ATTEST_TOKEN_INIT, |_arg, ret, rmm, rec, _| {
+        let rmi = rmm.rmi;
+
+        let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
+        let realmid = g_rd.content::<Rd>().id();
+        drop(g_rd); // manually drop to reduce a lock contention
+
+        let vcpuid = rec.id();
+
+        let mut challenge: [u8; 64] = [0; 64];
+
+        for i in 0..8 {
+            let challenge_part = rmi.get_reg(realmid, vcpuid, i + 2)?;
+            let start_idx = i * 8;
+            let end_idx = start_idx + 8;
+            challenge[start_idx..end_idx].copy_from_slice(&challenge_part.to_le_bytes());
+        }
+
+        rec.set_attest_challenge(&challenge);
+        rec.set_attest_state(RmmRecAttestState::AttestInProgress);
+
+        rmi.set_reg(realmid, vcpuid, 0, SUCCESS)?;
+
+        // TODO: Calculate real token size
+        rmi.set_reg(realmid, vcpuid, 1, 4096)?;
+
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
+    });
+
+    listen!(rsi, ATTEST_TOKEN_CONTINUE, |_arg, ret, rmm, rec, _| {
+        let rmi = rmm.rmi;
+
+        let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
+        let rd = g_rd.content::<Rd>();
+        let realmid = rd.id();
+        let ipa_bits = rd.ipa_bits();
+        let hash_algo = rd.hash_algo();
+        drop(g_rd); // manually drop to reduce a lock contention
+
+        let vcpuid = rec.id();
+
+        if rec.attest_state() != RmmRecAttestState::AttestInProgress {
+            warn!("Calling attest token continue without init");
+            rmi.set_reg(realmid, vcpuid, 0, ERROR_STATE)?;
+            ret[0] = rmi::SUCCESS_REC_ENTER;
+            return Ok(());
+        }
+
+        let attest_ipa = rmi.get_reg(realmid, vcpuid, 1)?;
+        if validate_ipa(attest_ipa, ipa_bits).is_err() {
+            warn!("Wrong ipa passed {}", attest_ipa);
+            rmi.set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            ret[0] = rmi::SUCCESS_REC_ENTER;
+            return Ok(());
+        }
+
+        let pa = crate::realm::registry::get_realm(realmid)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .ipa_to_pa(GuestPhysAddr::from(attest_ipa), RTT_PAGE_LEVEL)
+            .ok_or(Error::RmiErrorInput)?;
+
+        let measurements = crate::realm::registry::get_realm(realmid)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .measurements;
+
+        let attest_size = rmm.rsi.get_attestation_token(
+            pa.into(),
+            rec.attest_challenge(),
+            &measurements,
+            hash_algo,
+        );
+
+        rmi.set_reg(realmid, vcpuid, 0, SUCCESS)?;
+        rmi.set_reg(realmid, vcpuid, 1, attest_size)?;
+
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
+    });
+
     listen!(rsi, HOST_CALL, do_host_call);
 
     listen!(rsi, ABI_VERSION, |_arg, ret, rmm, rec, _| {

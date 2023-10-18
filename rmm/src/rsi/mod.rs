@@ -227,6 +227,14 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
         let mut measurement = Measurement::empty();
         let index = rmi.get_reg(realmid, vcpuid, 1)?;
+
+        if index >= MEASUREMENTS_SLOT_NR {
+            warn!("Wrong index passed: {}", index);
+            rmi.set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            ret[0] = rmi::SUCCESS_REC_ENTER;
+            return Ok(());
+        }
+
         rmm.rsi.measurement_read(realmid, index, &mut measurement)?;
         rmi.set_reg(realmid, vcpuid, 0, SUCCESS)?;
         for (ind, chunk) in measurement
@@ -235,12 +243,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             .enumerate()
         {
             let reg_value = usize::from_le_bytes(chunk.try_into().unwrap());
-            if rmi.set_reg(realmid, vcpuid, ind + 1, reg_value).is_err() {
-                warn!(
-                    "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
-                    realmid, vcpuid
-                );
-            }
+            rmi.set_reg(realmid, vcpuid, ind + 1, reg_value)?;
         }
 
         ret[0] = rmi::SUCCESS_REC_ENTER;
@@ -267,7 +270,13 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         }
 
         if size > buffer.len() || index == MEASUREMENTS_SLOT_RIM || index >= MEASUREMENTS_SLOT_NR {
-            return Err(crate::event::Error::RmiErrorInput);
+            warn!(
+                "Wrong index or buffer size passed: idx: {}, size: {}",
+                index, size
+            );
+            rmi.set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            ret[0] = rmi::SUCCESS_REC_ENTER;
+            return Ok(());
         }
 
         let rd = get_granule_if!(rec.owner(), GranuleState::RD)?;

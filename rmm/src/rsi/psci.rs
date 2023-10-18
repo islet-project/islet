@@ -76,7 +76,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             let vcpuid = rec.id();
             let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
             let realmid = g_rd.content::<Rd>().id();
-            drop(g_rd);
+            drop(g_rd); // manually drop to reduce a lock contention
 
             if rmi
                 .set_reg(realmid, vcpuid, 0, PsciReturn::SUCCESS)
@@ -96,7 +96,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let vcpuid = rec.id();
         let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
         let realmid = g_rd.content::<Rd>().id();
-        drop(g_rd);
+        drop(g_rd); // manually drop to reduce a lock contention
 
         if rmi.set_reg(realmid, vcpuid, 0, psci_version()).is_err() {
             warn!(
@@ -130,7 +130,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let vcpuid = rec.id();
         let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
         let realmid = g_rd.content::<Rd>().id();
-        drop(g_rd);
+        drop(g_rd); // manually drop to reduce a lock contention
 
         let feature_id = rmi.get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
         let retval = match feature_id {
@@ -162,7 +162,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let vcpuid = rec.id();
         let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
         let realmid = g_rd.content::<Rd>().id();
-        drop(g_rd);
+        drop(g_rd); // manually drop to reduce a lock contention
 
         if rmi.set_reg(realmid, vcpuid, 0, smccc_version()).is_err() {
             warn!(

@@ -1,5 +1,6 @@
 use crate::tools;
 use clap::Args;
+use colored::Colorize;
 
 pub(crate) type GenericResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -117,5 +118,23 @@ pub(crate) fn verify(args: &VerifyArgs) -> GenericResult
 {
     let token = tools::file_read(&args.input)?;
     tools::verify_print(&token)?;
+    Ok(())
+}
+
+#[derive(Args, Debug)]
+pub(crate) struct TestArgs
+{
+    /// filename with the token to verify
+    #[arg(short, long)]
+    verbose: bool,
+}
+
+pub(crate) fn test(args: &TestArgs) -> GenericResult
+{
+    match crate::checks::run_tests(args.verbose) {
+        Ok(_) => (),
+        Err(e) => {println!("{}: {}", "FAILED".red(), e); ()},
+    }
+
     Ok(())
 }

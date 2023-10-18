@@ -12,6 +12,7 @@ description = "Command line interface for ISLET"
 [dependencies]
 ciborium = "*"
 clap = { version = "*", features = ["derive"] }
+colored = "*"
 coset = "*"
 cose = { path = "../lib/cose" }
 ecdsa = "*"

@@ -1,3 +1,4 @@
+mod checks;
 mod subcmds;
 mod token;
 mod tools;
@@ -25,6 +26,8 @@ enum Commands
     Attest(subcmds::AttestArgs),
     /// Verifies and prints the token from a file
     Verify(subcmds::VerifyArgs),
+    /// Verifies and prints the token from a file
+    Test(subcmds::TestArgs),
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>>
@@ -37,6 +40,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
         Commands::MeasurExtend(args) => subcmds::measur_extend(args)?,
         Commands::Attest(args) => subcmds::attest(args)?,
         Commands::Verify(args) => subcmds::verify(args)?,
+        Commands::Test(args) => subcmds::test(args)?,
     };
 
     Ok(())

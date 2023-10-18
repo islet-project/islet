@@ -59,7 +59,8 @@ impl RsiHandle {
                 };
 
                 let realm_id = g_rd.content::<Rd>().id();
-                drop(g_rd);
+                drop(g_rd); // manually drop to reduce a lock contention
+
                 // TODO: handle the error properly
                 let _ = rmi.set_reg(realm_id, rec.id(), 0, RsiHandle::NOT_SUPPORTED);
                 error!(

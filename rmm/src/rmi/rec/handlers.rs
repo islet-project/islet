@@ -3,17 +3,18 @@ use super::params::Params;
 use super::run::{Run, REC_ENTRY_FLAG_TRAP_WFE, REC_ENTRY_FLAG_TRAP_WFI};
 use super::vtcr::{activate_stage2_mmu, prepare_vtcr};
 use super::Rec;
-use crate::event::{realmexit, Context, Mainloop, RsiHandle};
+use crate::event::{realmexit, Mainloop};
 use crate::granule::{set_granule, set_granule_with_parent, GranuleState};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::pointer::PointerMut as HostPointerMut;
 use crate::listen;
 use crate::measurement::HashContext;
+use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmi::realm::{rd::State, Rd};
+use crate::rmi::rec::handlers::realmexit::handle_realm_exit;
 use crate::rsi::do_host_call;
 use crate::{get_granule, get_granule_if};
-use crate::{rmi, rsi};
 
 extern crate alloc;
 
@@ -146,49 +147,15 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         loop {
             ret_ns = true;
             unsafe { run.set_imm(0) };
+
             match rmi.run(realm_id, rec.id(), 0) {
-                Ok(val) => match val[0] {
-                    realmexit::RSI => {
-                        trace!("REC_ENTER ret: {:#X?}", val);
-                        let rsi = &rmm.rsi;
-                        let cmd = val[1];
-
-                        rsi::constraint::validate(cmd, |_, ret_num| {
-                            let mut rsi_ctx = Context::new(cmd);
-                            rsi_ctx.resize_ret(ret_num);
-
-                            // set default value
-                            if rsi.dispatch(&mut rsi_ctx, rmm, &mut rec, &mut run)
-                                == RsiHandle::RET_SUCCESS
-                            {
-                                if rsi_ctx.ret_slice()[0] == rmi::SUCCESS_REC_ENTER {
-                                    ret_ns = false;
-                                }
-                                ret[0] = rsi_ctx.ret_slice()[0];
-                            } else {
-                                ret_ns = false;
-                            }
-                        });
-                    }
-                    realmexit::SYNC => unsafe {
-                        run.set_exit_reason(rmi::EXIT_SYNC);
-                        run.set_esr(val[1] as u64);
-                        run.set_hpfar(val[2] as u64);
-                        run.set_far(val[3] as u64);
-                        let _ = rmi.send_mmio_write(realm_id, rec.id(), &mut run);
-                        ret[0] = rmi::SUCCESS;
-                    },
-                    realmexit::IRQ => unsafe {
-                        run.set_exit_reason(rmi::EXIT_IRQ);
-                        run.set_esr(val[1] as u64);
-                        run.set_hpfar(val[2] as u64);
-                        run.set_far(val[3] as u64);
-                        ret[0] = rmi::SUCCESS;
-                    },
-                    _ => ret[0] = rmi::SUCCESS,
-                },
+                Ok(realm_exit_res) => {
+                    (ret_ns, ret[0]) =
+                        handle_realm_exit(realm_exit_res, rmm, &mut rec, &mut run, realm_id)?
+                }
                 Err(_) => ret[0] = rmi::ERROR_REC,
-            };
+            }
+
             if ret_ns == true {
                 break;
             }

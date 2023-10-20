@@ -409,19 +409,13 @@ impl crate::rmi::Interface for RMI {
         let mut rtt_granule = get_granule_if!(rtt_addr, GranuleState::Delegated)?;
         let s2tt = rtt_granule.content_mut::<RttPage>();
 
-        let (parent_s2tte, last_level) = get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .ipa_to_pte(GuestPhysAddr::from(ipa), level - 1)
-            .ok_or(Error::RmiErrorInput)?;
+        let (parent_s2tte, last_level) =
+            S2TTE::get_s2tte(id, ipa, level - 1, Error::RmiErrorInput)?;
 
         if last_level != level - 1 {
             return Err(Error::RmiErrorRtt(last_level));
         }
 
-        let parent_s2tte = S2TTE::from(parent_s2tte as usize);
         let s2tt_len = s2tt.len();
         if parent_s2tte.is_unassigned() {
             if parent_s2tte.is_invalid_ripas() {
@@ -499,19 +493,13 @@ impl crate::rmi::Interface for RMI {
 
     fn rtt_destroy(&self, rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), Error> {
         let id = rd.id();
-        let (parent_s2tte, last_level) = get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .ipa_to_pte(GuestPhysAddr::from(ipa), level - 1)
-            .ok_or(Error::RmiErrorRtt(0))?; //XXX: check this again
+        let (parent_s2tte, last_level) =
+            S2TTE::get_s2tte(id, ipa, level - 1, Error::RmiErrorRtt(0))?;
 
         if last_level != level - 1 {
             return Err(Error::RmiErrorRtt(last_level));
         }
 
-        let parent_s2tte = S2TTE::from(parent_s2tte as usize);
         if !parent_s2tte.is_table(level - 1) {
             return Err(Error::RmiErrorRtt(level - 1));
         }
@@ -546,19 +534,12 @@ impl crate::rmi::Interface for RMI {
     }
 
     fn rtt_init_ripas(&self, id: usize, ipa: usize, level: usize) -> Result<(), Error> {
-        let (s2tte, last_level) = get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .ipa_to_pte(GuestPhysAddr::from(ipa), level)
-            .ok_or(Error::RmiErrorRtt(0))?; //XXX: check this again
+        let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
 
         if level != last_level {
             return Err(Error::RmiErrorRtt(last_level));
         }
 
-        let s2tte = S2TTE::from(s2tte as usize);
         if s2tte.is_table(level) || !s2tte.is_unassigned() {
             return Err(Error::RmiErrorRtt(level));
         }
@@ -577,19 +558,12 @@ impl crate::rmi::Interface for RMI {
     }
 
     fn rtt_get_ripas(&self, id: usize, ipa: usize, level: usize) -> Result<u64, Error> {
-        let (s2tte, last_level) = get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .ipa_to_pte(GuestPhysAddr::from(ipa), level)
-            .ok_or(Error::RmiErrorRtt(0))?;
+        let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
 
         if level != last_level {
             return Err(Error::RmiErrorRtt(last_level));
         }
 
-        let s2tte = S2TTE::from(s2tte as usize);
         if s2tte.is_destroyed() {
             error!("The s2tte is destroyed: {:x}", s2tte.get());
             return Err(Error::RmiErrorRtt(last_level));
@@ -598,18 +572,10 @@ impl crate::rmi::Interface for RMI {
     }
 
     fn rtt_read_entry(&self, id: usize, ipa: usize, level: usize) -> Result<[usize; 4], Error> {
-        let (s2tte, last_level) = get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .ipa_to_pte(GuestPhysAddr::from(ipa), level)
-            .ok_or(Error::RmiErrorRtt(0))?;
+        let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
 
         let r1 = last_level;
         let (mut r2, mut r3, mut r4) = (0, 0, 0);
-
-        let s2tte = S2TTE::from(s2tte as usize);
 
         if s2tte.is_unassigned() {
             let ripas = s2tte.get_masked_value(S2TTE::INVALID_RIPAS);
@@ -667,19 +633,11 @@ impl crate::rmi::Interface for RMI {
         }
 
         let id = rd.id();
-        let (s2tte, last_level) = get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .ipa_to_pte(GuestPhysAddr::from(ipa), level)
-            .ok_or(Error::RmiErrorRtt(0))?; //XXX: check this again
+        let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
 
         if level != last_level {
             return Err(Error::RmiErrorRtt(last_level));
         }
-
-        let s2tte = S2TTE::from(s2tte as usize);
 
         if !s2tte.is_unassigned() {
             return Err(Error::RmiErrorRtt(level));
@@ -709,19 +667,12 @@ impl crate::rmi::Interface for RMI {
     }
 
     fn rtt_unmap_unprotected(&self, id: usize, ipa: usize, level: usize) -> Result<(), Error> {
-        let (s2tte, last_level) = get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .ipa_to_pte(GuestPhysAddr::from(ipa), level)
-            .ok_or(Error::RmiErrorRtt(0))?; //XXX: check this again
+        let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
 
         if level != last_level {
             return Err(Error::RmiErrorRtt(last_level));
         }
 
-        let s2tte = S2TTE::from(s2tte as usize);
         if !s2tte.is_valid(level, true) {
             return Err(Error::RmiErrorRtt(level));
         }
@@ -741,18 +692,11 @@ impl crate::rmi::Interface for RMI {
     }
 
     fn make_shared(&self, id: usize, ipa: usize, level: usize) -> Result<(), Error> {
-        let (s2tte, last_level) = get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .ipa_to_pte(GuestPhysAddr::from(ipa), level)
-            .ok_or(Error::RmiErrorRtt(0))?; //XXX: check this again
+        let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
+
         if level != last_level {
             return Err(Error::RmiErrorRtt(last_level)); //XXX: check this again
         }
-
-        let s2tte = S2TTE::from(s2tte as usize);
 
         // Reference (tf-rmm)      : smc_rtt_set_ripas() in runtime/rmi/rtt.c
         //           (realm-linux) : __set_memory_encrypted() in arch/arm64/mm/pageattr.c
@@ -789,18 +733,11 @@ impl crate::rmi::Interface for RMI {
     }
 
     fn make_exclusive(&self, id: usize, ipa: usize, level: usize) -> Result<(), Error> {
-        let (s2tte, last_level) = get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .ipa_to_pte(GuestPhysAddr::from(ipa), level)
-            .ok_or(Error::RmiErrorRtt(0))?; //XXX: check this again
+        let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
+
         if level != last_level {
             return Err(Error::RmiErrorRtt(last_level)); //XXX: check this again
         }
-
-        let s2tte = S2TTE::from(s2tte as usize);
 
         if s2tte.is_valid(level, false) {
             // This condition is added with no-op for handling the `else` case
@@ -823,19 +760,12 @@ impl crate::rmi::Interface for RMI {
 
     fn data_create(&self, id: usize, ipa: usize, target_pa: usize) -> Result<(), Error> {
         let level = RTT_PAGE_LEVEL;
-        let (s2tte, last_level) = get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .ipa_to_pte(GuestPhysAddr::from(ipa), level)
-            .ok_or(Error::RmiErrorRtt(0))?; //XXX: check this again
+        let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
 
         if level != last_level {
             return Err(Error::RmiErrorRtt(last_level));
         }
 
-        let s2tte = S2TTE::from(s2tte as usize);
         if !s2tte.is_unassigned() {
             return Err(Error::RmiErrorRtt(RTT_PAGE_LEVEL));
         }
@@ -872,19 +802,11 @@ impl crate::rmi::Interface for RMI {
 
     fn data_destroy(&self, id: usize, ipa: usize) -> Result<usize, Error> {
         let level = RTT_PAGE_LEVEL;
-        let (s2tte, last_level) = get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
-            .lock()
-            .ipa_to_pte(GuestPhysAddr::from(ipa), level)
-            .ok_or(Error::RmiErrorRtt(0))?; //XXX: check this again
+        let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
 
         if last_level != level {
             return Err(Error::RmiErrorRtt(last_level));
         }
-
-        let s2tte = S2TTE::from(s2tte as usize);
 
         let valid = s2tte.is_valid(last_level, false);
         if !valid && !s2tte.is_assigned() {

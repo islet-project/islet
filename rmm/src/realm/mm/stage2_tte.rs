@@ -1,8 +1,11 @@
 use core::mem::size_of;
 use vmsa::address::PhysAddr;
 
+use super::address::GuestPhysAddr;
 use crate::granule::{GranuleState, GRANULE_SIZE};
 use crate::realm::mm::page_table::pte::{attribute, shareable};
+use crate::realm::registry::get_realm;
+use crate::rmi::error::{Error, InternalError::NotExistRealm};
 use crate::rmi::rtt::{RTT_MIN_BLOCK_LEVEL, RTT_PAGE_LEVEL};
 use armv9a::{define_bitfield, define_bits, define_mask};
 use vmsa::guard::Content;
@@ -75,6 +78,23 @@ impl From<usize> for S2TTE {
 }
 
 impl S2TTE {
+    pub fn get_s2tte(
+        realm_id: usize,
+        ipa: usize,
+        level: usize,
+        error_code: Error,
+    ) -> Result<(S2TTE, usize), Error> {
+        let (s2tte, last_level) = get_realm(realm_id)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .ipa_to_pte(GuestPhysAddr::from(ipa), level)
+            .ok_or(error_code)?;
+
+        Ok((S2TTE::from(s2tte as usize), last_level))
+    }
+
     pub fn is_valid(self, level: usize, is_ns: bool) -> bool {
         let ns = self.get_masked_value(S2TTE::NS);
         let ns_valid = if is_ns { ns == 1 } else { ns == 0 };

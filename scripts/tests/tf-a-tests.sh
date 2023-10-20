@@ -47,7 +47,7 @@ sleep 20
 check_result
 
 # islet-rmm tests
-$ROOT/scripts/fvp-cca -bo -nw=tf-a-tests -rmm=islet
+$ROOT/scripts/fvp-cca -bo -nw=tf-a-tests -rmm=islet --rmm-log-level=error
 $ROOT/scripts/fvp-cca -ro -nw=tf-a-tests -rmm=islet &
 
 sleep 20
@@ -55,7 +55,7 @@ sleep 20
 check_result
 
 # islet-rmm tests with rsi-test realm
-$ROOT/scripts/fvp-cca -bo -nw=tf-a-tests -rmm=islet -rm=rsi-test
+$ROOT/scripts/fvp-cca -bo -nw=tf-a-tests -rmm=islet -rm=rsi-test --rmm-log-level=error
 $ROOT/scripts/fvp-cca -ro -nw=tf-a-tests -rmm=islet -rm=rsi-test &
 
 sleep 20

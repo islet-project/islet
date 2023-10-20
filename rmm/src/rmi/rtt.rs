@@ -220,11 +220,16 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // target_phys: location where realm data is created.
         let target_pa = arg[0];
         let ipa = arg[2];
+        if target_pa == arg[1] {
+            return Err(Error::RmiErrorInput);
+        }
 
         // rd granule lock
         let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let realm_id = rd.id();
+
+        validate_ipa(ipa, rd.ipa_bits())?;
 
         // 0. Make sure granule state can make a transition to DATA
         // data granule lock for the target page

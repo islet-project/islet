@@ -1,29 +1,56 @@
-# ISLET
-ISLET is a project of Samsung Research that extends confidential computing to user devices.
-We enable on-device confidential computing for end users by leveraging ARMv9 CCA that is
-the newly emerging confidential computing hardware on ARM devices.
+# Islet
+Islet is an open-source software project written in Rust that enables confidential computing 
+on ARM architecture devices using the ARMv9 CCA.
+The primary objective of Islet is to enable on-device confidential computing 
+and protect user privacy on end user devices. 
 
-Using the hardware support, ISLET enables a Trusted Execution Environment (TEE)
-on user’s devices within which users can securely process, store, communicate
-and manage their private data. The protection provided by
-ISLET applies not only to data-at-rest but also to data-in-use
-even in the presence of malicious privileged software on devices.
+While current confidential computing solutions mainly focus on server-side 
+protection,  it is equally important to safeguard user information at the user 
+device level  since that is where private data collection initially occurs.
+Furthermore, as more and more users rely on privacy apps such as private 
+messengers,  secure emails, password managers, and web browsers with privacy 
+settings,  there is a growing need to ensure privacy on user devices.
+Islet, an open-source project, addresses this need by providing a platform
+ for ARM-based confidential computing. 
 
-We develop components enabling Realm Virtual Machines (VMs),
-which are secure VM-level TEE provided by ARMv9 CCA.
-To manage Realm VMs, Realm Management Monitor (RMM)
-is needed to be running at EL2 in the Realm world.
-ISLET provides the implementation of RMM that is written in Rust. 
+Enabling CC on user devices will not only establish end-to-end CC throughout 
+the entire data processing path, 
+but it will also help create a secure computation model 
+that enables processing of user private data on the user device 
+using the same components that previously were employed at the server side 
+without disclosing business logic. 
+Furthermore, on-device confidential computing will be a key enabler for 
+machine-to-machine computing without the need for server intervention
 
 ## Feature Overview
-- Rust-based Realm Management Monitor
+- Realm Management Monitor
+- Hardware Enforced Security
 - Confidential Computing API Standardization
-- Confidential Machine Learning
+- Use case : Confidential Machine Learning
 
 ## Overall Architecture
-We contribute mainly to `Islet RMM`, `Islet SDK`.
 
-![islet-overview](https://github.com/Samsung/islet/raw/main/doc/islet-overview.png)
+Islet provides a platform for running virtual machines (VMs) 
+confidentially, with standard SDKs for easy integration with other confidential 
+computing frameworks at upper layers. 
+The platform consists of two key components: 
+the Islet Realm Management Monitor (Islet-RMM) and Islet Hardware Enforced Security (Islet-HES).  
+
+- `Islet RMM` operates at EL2 in the Realm world on the application processor cores 
+and manages the confidential VMs, known as realms. 
+- On the other hand, `Islet HES` performs device boot measurement, generates 
+platform attestation reports, and manages sealing key functionality within a secure 
+hardware IP apart from the main application processor.
+
+![islet-overview](doc/res/overview.png)
+
+In designing Islet, we aim to to address the current security challenges in confidential 
+computing technologies right from the very beginning.
+To ensure that our software is built with safety in mind, we have chosen to use the 
+Rust programming language, known for its unique security model that ensures memory 
+safety and concurrency safety. 
+Moving forward, we also plan to incorporate formal 
+verification techniques to further enhance the security of our design and implementation.
 
 For more information, please visit our [developer site](https://samsung.github.io/islet/).
 

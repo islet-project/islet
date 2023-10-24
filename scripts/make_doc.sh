@@ -16,8 +16,7 @@ ln -sf ../../examples/confidential-ml/README.md confidential-ml.md
 
 # RMM crate
 rm -rf ${ROOT}/doc/plat-doc
-cd ${ROOT}/rmm
-cargo doc --lib --no-deps -p monitor
+cargo doc --lib --no-deps -p islet_rmm
 cp -R ${ROOT}/out/aarch64-unknown-none-softfloat/doc ${ROOT}/doc/plat-doc
 
 # SDK crate

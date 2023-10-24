@@ -298,14 +298,7 @@ impl crate::rmi::Interface for RMI {
 
         // MMIO read case
         if wnr == 0 && rt != 31 {
-            let sas = esr.get_masked_value(EsrEl2::SAS);
-            let mask: u64 = match sas {
-                0 => 0xff,                // byte
-                1 => 0xffff,              // half-word
-                2 => 0xffffffff,          // word
-                3 => 0xffffffff_ffffffff, // double word
-                _ => unreachable!(),      // SAS consists of two bits
-            };
+            let mask = esr.get_access_size_mask();
             let val = unsafe { run.entry_gpr(0)? } & mask;
             let sign_extended = esr.get_masked_value(EsrEl2::SSE);
             if sign_extended != 0 {

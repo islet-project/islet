@@ -80,6 +80,18 @@ define_bits!(
     DFSC[5 - 0]
 );
 
+impl EsrEl2 {
+    pub fn get_access_size_mask(&self) -> u64 {
+        match self.get_masked_value(EsrEl2::SAS) {
+            0 => 0xff,                // byte
+            1 => 0xffff,              // half-word
+            2 => 0xffffffff,          // word
+            3 => 0xffffffff_ffffffff, // double word
+            _ => unreachable!(),      // SAS consists of two bits
+        }
+    }
+}
+
 pub const ESR_EL1_EC_UNKNOWN: u64 = 0;
 pub const ESR_EL2_EC_UNKNOWN: u64 = 0;
 pub const ESR_EL2_EC_WFX: u64 = 1;

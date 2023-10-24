@@ -64,6 +64,16 @@ define_bits!(
     SF[15 - 15],
     // Acquire/Release. (ISV == '1')
     AR[14 - 14],
+    // Indicates that the fault came from use of VNCR_EL2 register by EL1 code.
+    VNCR[13 - 13],
+    // Synchronous Error Type
+    SET[12 - 11],
+    // FAR not Valid
+    FNV[10 - 10],
+    // External Abort type
+    EA[9 - 9],
+    // Cache Maintenance
+    CM[8 - 8],
     S1PTW[7 - 7],
     // Write not Read.
     WNR[6 - 6],

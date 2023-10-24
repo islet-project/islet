@@ -105,6 +105,11 @@ pub const ESR_EL2_EC_INST_ABORT: u64 = 32;
 pub const ESR_EL2_EC_DATA_ABORT: u64 = 36;
 pub const ESR_EL2_EC_SERROR: u64 = 47;
 
+pub const NON_EMULATABLE_ABORT_MASK: u64 =
+    EsrEl2::EC | EsrEl2::SET | EsrEl2::FNV | EsrEl2::EA | EsrEl2::DFSC;
+pub const EMULATABLE_ABORT_MASK: u64 =
+    NON_EMULATABLE_ABORT_MASK | EsrEl2::ISV | EsrEl2::SAS | EsrEl2::SF | EsrEl2::WNR;
+
 define_register!(SP);
 define_sys_register!(SP_EL0);
 define_sys_register!(SP_EL1);

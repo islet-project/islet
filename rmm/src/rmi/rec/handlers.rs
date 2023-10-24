@@ -150,8 +150,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
             match rmi.run(realm_id, rec.id(), 0) {
                 Ok(realm_exit_res) => {
-                    (ret_ns, ret[0]) =
-                        handle_realm_exit(realm_exit_res, rmm, &mut rec, &mut run, realm_id)?
+                    (ret_ns, ret[0]) = handle_realm_exit(realm_exit_res, rmm, &mut rec, &mut run)?
                 }
                 Err(_) => ret[0] = rmi::ERROR_REC,
             }

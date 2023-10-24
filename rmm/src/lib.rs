@@ -34,6 +34,7 @@ pub mod stat;
 pub mod r#macro;
 mod measurement;
 mod monitor;
+mod rmm_el3;
 
 extern crate alloc;
 
@@ -47,13 +48,18 @@ use crate::exception::vectors;
 use crate::granule::create_granule_status_table as setup_gst;
 use crate::mm::translation::get_page_table;
 use crate::monitor::Monitor;
+use crate::rmm_el3::setup_el3_ifc;
 
 use armv9a::{bits_in_reg, regs::*};
 
-pub unsafe fn start() {
+pub unsafe fn start(cpu_id: usize) {
     setup_mmu_cfg();
     setup_el2();
     setup_gst();
+    // TODO: call once or with every start?
+    if cpu_id == 0 {
+        setup_el3_ifc();
+    }
 
     Monitor::new().run();
 }

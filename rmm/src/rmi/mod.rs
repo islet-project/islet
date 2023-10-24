@@ -40,6 +40,9 @@ define_interface! {
 
 pub const REQ_COMPLETE: usize = 0xc400_018f;
 
+pub const GET_REALM_ATTEST_KEY: usize = 0xC400_01B2;
+pub const GET_PLAT_TOKEN: usize = 0xC400_01B3;
+
 pub const BOOT_COMPLETE: usize = 0xC400_01CF;
 pub const BOOT_SUCCESS: usize = 0x0;
 

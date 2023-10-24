@@ -21,7 +21,7 @@ pub unsafe fn main() -> ! {
         armv9a::regs::current_el()
     );
 
-    islet_rmm::start();
+    islet_rmm::start(cpu::get_cpu_id());
 
     panic!("failed to run the mainloop");
 }

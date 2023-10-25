@@ -53,3 +53,7 @@
 	path = third-party/tf-a-rss
 	url = https://github.com/Samsung/islet-asset
 	branch = 3rd-tf-a-rss
+[submodule "third-party/kvmtool-rim-measurer"]
+	path = third-party/kvmtool-rim-measurer
+	url = https://github.com/Samsung/islet-asset
+	branch = 3rd-kvmtool-rim-measurer

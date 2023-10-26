@@ -169,21 +169,25 @@ pub extern "C" fn handle_lower_exception(
                 const SPSR_EL2_MODE_EL1H_OFFSET: u64 = 0x200;
                 vcpu.context.elr = vbar + SPSR_EL2_MODE_EL1H_OFFSET;
 
-                tf.regs[0] = realmexit::SYNC as u64;
+                tf.regs[0] = realmexit::Kind::UndefinedSync.into();
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = 0;
                 tf.regs[3] = unsafe { FAR_EL2.get() };
                 RET_TO_REC
             }
             Syndrome::SMC => {
-                tf.regs[0] = realmexit::RSI as u64;
+                tf.regs[0] = realmexit::Kind::RSI.into();
                 tf.regs[1] = vcpu.context.gp_regs[0]; // RSI command
                 advance_pc(vcpu);
                 RET_TO_RMM
             }
             Syndrome::InstructionAbort(_) | Syndrome::DataAbort(_) => {
                 debug!("Synchronous: InstructionAbort | DataAbort");
-                tf.regs[0] = realmexit::SYNC as u64;
+                if let Syndrome::InstructionAbort(_) = Syndrome::from(esr) {
+                    tf.regs[0] = realmexit::Kind::InstAbort.into();
+                } else {
+                    tf.regs[0] = realmexit::Kind::DataAbort.into();
+                }
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = unsafe { HPFAR_EL2.get() };
                 tf.regs[3] = unsafe { FAR_EL2.get() };
@@ -201,7 +205,7 @@ pub extern "C" fn handle_lower_exception(
             }
             Syndrome::WFX => {
                 debug!("Synchronous: WFx");
-                tf.regs[0] = realmexit::SYNC as u64;
+                tf.regs[0] = realmexit::Kind::UndefinedSync.into();
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = unsafe { HPFAR_EL2.get() };
                 tf.regs[3] = unsafe { FAR_EL2.get() };
@@ -210,7 +214,7 @@ pub extern "C" fn handle_lower_exception(
             }
             undefined => {
                 debug!("Synchronous: Other");
-                tf.regs[0] = realmexit::SYNC as u64;
+                tf.regs[0] = realmexit::Kind::UndefinedSync.into();
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = unsafe { HPFAR_EL2.get() };
                 tf.regs[3] = unsafe { FAR_EL2.get() };
@@ -219,7 +223,7 @@ pub extern "C" fn handle_lower_exception(
         },
         Kind::Irq => {
             debug!("IRQ");
-            tf.regs[0] = realmexit::IRQ as u64;
+            tf.regs[0] = realmexit::Kind::IRQ as u64;
             // IRQ isn't interpreted with esr. It just hold previsou info. Void them out.
             tf.regs[1] = 0;
             tf.regs[2] = 0;

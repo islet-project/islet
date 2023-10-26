@@ -5,11 +5,36 @@ use crate::rmi::rec::Rec;
 use crate::Monitor;
 use crate::{rmi, rsi};
 
-pub const RSI: usize = 0;
-pub const IRQ: usize = 1;
-pub const FIQ: usize = 2;
-pub const SERROR: usize = 3;
-pub const SYNC: usize = 4;
+#[derive(Debug)]
+pub enum Kind {
+    RSI = 0,
+    IRQ = 1,
+    FIQ = 2,
+    SERROR = 3,
+    InstAbort = 4,
+    DataAbort = 5,
+    UndefinedSync,
+}
+
+impl Into<u64> for Kind {
+    fn into(self) -> u64 {
+        self as u64
+    }
+}
+
+impl From<usize> for Kind {
+    fn from(num: usize) -> Self {
+        match num {
+            0 => Kind::RSI,
+            1 => Kind::IRQ,
+            2 => Kind::FIQ,
+            3 => Kind::SERROR,
+            4 => Kind::InstAbort,
+            5 => Kind::DataAbort,
+            _ => Kind::UndefinedSync,
+        }
+    }
+}
 
 pub fn handle_realm_exit(
     realm_exit_res: [usize; 4],
@@ -20,8 +45,8 @@ pub fn handle_realm_exit(
 ) -> Result<(bool, usize), Error> {
     let rmi = rmm.rmi;
     let mut return_to_ns = true;
-    let ret = match realm_exit_res[0] {
-        RSI => {
+    let ret = match Kind::from(realm_exit_res[0]) {
+        Kind::RSI => {
             trace!("REC_ENTER ret: {:#X?}", realm_exit_res);
             let rsi = &rmm.rsi;
             let cmd = realm_exit_res[1];
@@ -43,7 +68,7 @@ pub fn handle_realm_exit(
             });
             ret
         }
-        SYNC => unsafe {
+        Kind::InstAbort | Kind::DataAbort => unsafe {
             run.set_exit_reason(rmi::EXIT_SYNC);
             run.set_esr(realm_exit_res[1] as u64);
             run.set_hpfar(realm_exit_res[2] as u64);
@@ -51,8 +76,15 @@ pub fn handle_realm_exit(
             let _ = rmi.send_mmio_write(realm_id, rec.id(), run);
             rmi::SUCCESS
         },
-        IRQ => unsafe {
+        Kind::IRQ => unsafe {
             run.set_exit_reason(rmi::EXIT_IRQ);
+            run.set_esr(realm_exit_res[1] as u64);
+            run.set_hpfar(realm_exit_res[2] as u64);
+            run.set_far(realm_exit_res[3] as u64);
+            rmi::SUCCESS
+        },
+        Kind::UndefinedSync => unsafe {
+            run.set_exit_reason(rmi::EXIT_SYNC);
             run.set_esr(realm_exit_res[1] as u64);
             run.set_hpfar(realm_exit_res[2] as u64);
             run.set_far(realm_exit_res[3] as u64);

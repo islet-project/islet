@@ -1,15 +1,22 @@
 ## Islet RMM dependencies
-| Name                  | Type       | License           | URL                                                 |
-| --------------------- | ---------- | ----------------- | --------------------------------------------------- |
-| bitflags              | runtime    | MIT/Apache-2.0    | https://github.com/bitflags/bitflags                |
-| cc                    | build time | MIT OR Apache-2.0 | https://github.com/rust-lang/cc-rs                  |
-| hashbrown             | runtime    | MIT OR Apache-2.0 | https://github.com/rust-lang/hashbrown              |
-| lazy_static           | runtime    | MIT/Apache-2.0    | https://github.com/rust-lang-nursery/lazy-static.rs |
-| linked_list_allocator | runtime    | Apache-2.0/MIT    | https://github.com/phil-opp/linked-list-allocator   |
-| lock_api              | runtime    | MIT OR Apache-2.0 | https://github.com/Amanieu/parking_lot              |
-| log                   | runtime    | MIT OR Apache-2.0 | https://github.com/rust-lang/log                    |
-| spin                  | runtime    | MIT               | https://github.com/mvdnes/spin-rs.git               |
-| spinning_top          | runtime    | MIT/Apache-2.0    | https://github.com/rust-osdev/spinning_top          |
+| Name                  | Type       | License                   | URL                                                            |
+|-----------------------|------------|---------------------------|----------------------------------------------------------------|
+| bitflags              | runtime    | MIT/Apache-2.0            | https://github.com/bitflags/bitflags                           |
+| cc                    | build time | MIT OR Apache-2.0         | https://github.com/rust-lang/cc-rs                             |
+| ciborium              | runtime    | Apache-2.0                | https://github.com/enarx/ciborium                              |
+| coset                 | runtime    | Apache-2.0                | https://github.com/google/coset                                |
+| ecdsa                 | runtime    | Apache-2.0 OR MIT         | https://github.com/RustCrypto/signatures/tree/master/ecdsa     |
+| hashbrown             | runtime    | MIT OR Apache-2.0         | https://github.com/rust-lang/hashbrown                         |
+| hex                   | runtime    | MIT OR Apache-2.0         | https://github.com/KokaKiwi/rust-hex                           |
+| lazy_static           | runtime    | MIT/Apache-2.0            | https://github.com/rust-lang-nursery/lazy-static.rs            |
+| linked_list_allocator | runtime    | Apache-2.0/MIT            | https://github.com/phil-opp/linked-list-allocator              |
+| lock_api              | runtime    | MIT OR Apache-2.0         | https://github.com/Amanieu/parking_lot                         |
+| log                   | runtime    | MIT OR Apache-2.0         | https://github.com/rust-lang/log                               |
+| p384                  | runtime    | Apache-2.0 OR MIT         | https://github.com/RustCrypto/elliptic-curves/tree/master/p384 |
+| sha2                  | runtime    | MIT OR Apache-2.0         | https://github.com/RustCrypto/hashes                           |
+| spin                  | runtime    | MIT                       | https://github.com/mvdnes/spin-rs.git                          |
+| spinning_top          | runtime    | MIT/Apache-2.0            | https://github.com/rust-osdev/spinning_top                     |
+| tinyvec               | runtime    | Zlib OR Apache-2.0 OR MIT | https://github.com/Lokathor/tinyvec                            |
 
 ## Islet SDK dependencies
 | Name     | Type       | License           | URL                                                            |

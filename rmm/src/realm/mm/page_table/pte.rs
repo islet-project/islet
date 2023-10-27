@@ -29,6 +29,7 @@ pub mod attribute {
     pub const NORMAL_FWB: u64 = 0b0110;
     pub const NORMAL: u64 = 0b0111;
     pub const NORMAL_NC: u64 = 0b0101;
+    pub const FWB_RESERVED: u64 = 0b0100;
     pub const DEVICE_NGNRE: u64 = 0b0001;
 }
 

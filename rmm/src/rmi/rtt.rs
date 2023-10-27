@@ -263,13 +263,17 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::RTT_MAP_UNPROTECTED, |arg, _ret, rmm| {
         let rmi = rmm.rmi;
         let ipa = arg[1];
+        let level = arg[2];
+        let host_s2tte = arg[3];
+        let s2tte = S2TTE::from(host_s2tte);
+        if !s2tte.is_host_ns_valid(level) {
+            return Err(Error::RmiErrorInput);
+        }
 
         // rd granule lock
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
 
-        let level = arg[2];
-        let host_s2tte = arg[3];
         if !is_valid_rtt_cmd(ipa, level) {
             return Err(Error::RmiErrorInput);
         }

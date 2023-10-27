@@ -2,6 +2,7 @@ use core::mem::size_of;
 use vmsa::address::PhysAddr;
 
 use crate::granule::{GranuleState, GRANULE_SIZE};
+use crate::realm::mm::page_table::pte::{attribute, shareable};
 use crate::rmi::rtt::{RTT_MIN_BLOCK_LEVEL, RTT_PAGE_LEVEL};
 use armv9a::{define_bitfield, define_bits, define_mask};
 use vmsa::guard::Content;
@@ -82,6 +83,34 @@ impl S2TTE {
                 && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L3_PAGE)
                 || (level == RTT_MIN_BLOCK_LEVEL
                     && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L012_BLOCK))
+    }
+
+    pub fn is_host_ns_valid(self, level: usize) -> bool {
+        let tmp = S2TTE::new(!0);
+        let addr_mask = match level {
+            1 => tmp.get_masked(S2TTE::ADDR_L1_PAGE),
+            2 => tmp.get_masked(S2TTE::ADDR_L2_PAGE),
+            3 => tmp.get_masked(S2TTE::ADDR_L3_PAGE),
+            _ => return false,
+        };
+        let mask = addr_mask
+            | tmp.get_masked(S2TTE::MEMATTR)
+            | tmp.get_masked(S2TTE::AP)
+            | tmp.get_masked(S2TTE::SH);
+
+        if (self.get() & !mask) != 0 {
+            return false;
+        }
+
+        if self.get_masked_value(S2TTE::MEMATTR) == attribute::FWB_RESERVED {
+            return false;
+        }
+
+        if self.get_masked_value(S2TTE::SH) == shareable::RESERVED {
+            return false;
+        }
+
+        return true;
     }
 
     pub fn is_unassigned(self) -> bool {

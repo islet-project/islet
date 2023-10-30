@@ -459,18 +459,32 @@ def place_realm_at_shared(rmm, realm_ip, fvp_tap_ip, host_ip, no_kvm_unit_tests,
         run(["cp", "-R", "%s/lib" % PREBUILT_EXAMPLES, SHARED_EXAMPLES_PATH], cwd=ROOT)
         run(["tar", "-zxvf", "%s/lib/libtensorflowlite.tar.gz" % SHARED_EXAMPLES_PATH, "-C", "%s/lib/" % SHARED_EXAMPLES_PATH], cwd=ROOT)
 
-def clean_repo():
-    run(["make", "distclean"], cwd=TF_A)
-    run(["make", "distclean"], cwd=TF_A_TESTS)
-    run(["make", "clean"], cwd=REALM_LINUX)
-    run(["make", "clean"], cwd=KVMTOOL)
+def clean_repo(target):
+    clean_list = ["all", "tf-a", "tf-a-tests", "realm-linux", "kvmtool", "optee", "acs", "tf-rmm", "islet"]
+    if not target in clean_list:
+        print("Please select one of the clean list:")
+        print("  " + "\n  ".join(clean_list))
+        sys.exit(1)
 
-    args = ["-f", "fvp.mk", "linux-clean", "boot-img-clean"]
-    make(BUILD_SCRIPT, args)
+    if target == "all" or target == "tf-a":
+        run(["make", "distclean"], cwd=TF_A)
+    if target == "all" or target == "tf-a-tests":
+        run(["make", "distclean"], cwd=TF_A_TESTS)
+    if target == "all" or target == "realm-linux":
+        run(["make", "clean"], cwd=REALM_LINUX)
+    if target == "all" or target == "kvmtool":
+        run(["make", "clean"], cwd=KVMTOOL)
 
-    run(["rm", "-rf", "build"], cwd=ACS)
-    run(["rm", "-rf", "build"], cwd=TF_RMM)
-    run(["rm", "-rf", "out"], cwd=ROOT)
+    if target == "all" or target == "optee":
+        args = ["-f", "fvp.mk", "linux-clean", "boot-img-clean"]
+        make(BUILD_SCRIPT, args)
+
+    if target == "all" or target == "acs":
+        run(["rm", "-rf", "build"], cwd=ACS)
+    if target == "all" or target == "tf-rmm":
+        run(["rm", "-rf", "build"], cwd=TF_RMM)
+    if target == "all" or target == "islet":
+        run(["rm", "-rf", "out"], cwd=ROOT)
 
 def get_all_realms():
     realms = []
@@ -513,7 +527,7 @@ if __name__ == "__main__":
                         help="Running fvp without building", action="store_true")
     parser.add_argument("--build-only", "-bo",
                         help="Building components without running", action="store_true")
-    parser.add_argument("--clean", "-c", help="Clean the repo", action="store_true")
+    parser.add_argument("--clean", "-c", help="Clean the repo (pass `target name` or `all`)", default="")
     parser.add_argument("--realm-launch", help="Execute realm launch on boot", action="store_true")
     parser.add_argument("--realm", "-rm", help="A sample realm")
     parser.add_argument("--rmm", "-rmm", help="A realm management monitor (islet, trp, tf-rmm)", default="islet")
@@ -541,8 +555,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.clean:
-        clean_repo()
+    if args.clean != "":
+        clean_repo(args.clean)
         sys.exit(0)
 
     validate_args(args)
@@ -570,6 +584,10 @@ if __name__ == "__main__":
             prepare_nw_aosp(args.no_prebuilt_initrd)
             prepare_bootloaders(args.rmm, PREBUILT_EDK2, args.hes)
         elif args.normal_world == "acs":
+            # When a target has changed either with `--selected-tests` or 
+            # `--excluded-tests`, it is recommended for users to execute 
+            # `./scripts/fvp-cca --clean acs` first, so that the current 
+            # target is not confused by the previous target in the build.
             if args.selected_tests == "":
                 prepare_acs("", "", args.excluded_tests)
                 prepare_bootloaders(args.rmm, ACS_HOST, args.hes)

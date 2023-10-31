@@ -6,7 +6,7 @@ LF Projects LLC. Adopted on XXX
 
 This Charter sets forth the responsibilities and procedures for technical
 contribution to, and oversight of, the Islet open source project, which has
-been established as Islet Project a Series of LF Projects, LLC (the
+been established as the Islet Project a Series of LF Projects, LLC (the
 "Project"). LF Projects, LLC ("LF Projects") is a Delaware series limited
 liability company. All contributors (including committers, maintainers, and
 other technical positions) and other participants in the Project (collectively,

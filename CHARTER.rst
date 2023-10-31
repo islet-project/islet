@@ -15,7 +15,7 @@ other technical positions) and other participants in the Project (collectively,
 1. Mission and Scope of the Project
 -----------------------------------
 
-1. The mission of the Project is to develop to develop an on-device confidential platform,
+1. The mission of the Project is to develop an on-device confidential computing platform,
    designed to deliver trustworthy experience to users.
 
 2. The scope of the Project includes collaborative development under the Project
@@ -65,7 +65,7 @@ other technical positions) and other participants in the Project (collectively,
 6. The TSC may elect a TSC Chair, who will preside over meetings of the TSC and
    will serve until their resignation or replacement by the TSC. The TSC Chair,
    or any other TSC member so designated by the TSC, will serve as the primary
-   communication contact between the Project and the Confidential Computing
+   communication contact between the Islet Project and the Confidential Computing
    Consortium Fund of The Linux Foundation.
 
 7. Responsibilities: The TSC will be responsible for all aspects of oversight

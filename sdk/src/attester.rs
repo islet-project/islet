@@ -27,7 +27,7 @@ fn attest_aarch64(user_data: &[u8]) -> Result<Report, Error> {
         Ok(token) => Ok(Report { buffer: token }),
         Err(error) => {
             println!("Failed to get an attestation report. {:?}", error);
-            Err(Error::AttestationReport)
+            Err(Error::Report)
         }
     }
 }

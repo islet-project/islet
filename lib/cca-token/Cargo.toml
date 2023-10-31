@@ -10,3 +10,4 @@ cose = { path = "../cose" }
 coset = "*"
 ecdsa = "*"
 hex = "*"
+serde = { version = "1.0", features = ["derive"] }

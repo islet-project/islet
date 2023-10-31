@@ -4,7 +4,6 @@
 
 pub mod attester;
 pub mod c_api;
-pub mod claim;
 /// cbindgen:ignore
 pub mod config;
 pub mod error;
@@ -19,34 +18,25 @@ mod parser;
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use super::prelude::*;
 
     #[test]
     fn attest_verify() {
         let user_data = b"User data";
-        let report = attester::attest(user_data).unwrap();
-        let claims = verifier::verify(&report).unwrap();
-        println!("Debug: {:?}", claims);
+        let report = attest(user_data).unwrap();
+        let claims = verify(&report).unwrap();
 
-        if let claim::Value::Bytes(value) = &claims.value(config::STR_USER_DATA).unwrap() {
-            assert_eq!(user_data, &value[..user_data.len()]);
+        if let Some(ClaimData::Bstr(data)) = parse(&claims, config::STR_USER_DATA) {
+            assert_eq!(&data[..user_data.len()], user_data);
         } else {
-            assert!(false, "Wrong user data");
+            assert!(false, "Claims parsing error.");
         }
 
-        if let claim::Value::String(value) = &claims.value(config::STR_PLAT_PROFILE).unwrap() {
-            assert_eq!(value.as_str(), "http://arm.com/CCA-SSD/1.0.0");
+        if let Some(ClaimData::Text(data)) = parse(&claims, config::STR_PLAT_PROFILE) {
+            assert_eq!(data, "http://arm.com/CCA-SSD/1.0.0");
         } else {
-            assert!(false, "Wrong platform profile");
+            assert!(false, "Claims parsing error.");
         }
-    }
-
-    #[test]
-    fn claim_not_supported_yet() {
-        let user_data = b"User data";
-        let report = attester::attest(user_data).unwrap();
-        let claims = verifier::verify(&report).unwrap();
-        assert!(claims.value(config::STR_PLAT_SW_COMPONENTS).is_none());
     }
 
     #[test]

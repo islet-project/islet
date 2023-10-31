@@ -1,4 +1,4 @@
-use crate::{subcmds::GenericResult, token::verifier, tools};
+use crate::{subcmds::GenericResult, tools};
 use colored::Colorize;
 
 // HELPER FUNCTIONS
@@ -119,7 +119,7 @@ fn test_positive_attestation_verify_token() -> GenericResult
     start(true, "attestation, verify token");
     let challenge = tools::random_data(rsi_el0::CHALLENGE_LEN as usize);
     let token = rsi_el0::attestation_token(&challenge.try_into().unwrap())?;
-    let _claims = verifier::verify_token(&token)?;
+    let _claims = cca_token::verifier::verify_token(&token)?;
     success()
 }
 

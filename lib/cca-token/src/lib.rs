@@ -1,5 +1,5 @@
-pub(crate) mod dumper;
-pub(crate) mod verifier;
+pub mod dumper;
+pub mod verifier;
 
 use ciborium::de;
 use coset::CoseSign1;

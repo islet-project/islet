@@ -1,6 +1,5 @@
 mod checks;
 mod subcmds;
-mod token;
 mod tools;
 
 use clap::{Parser, Subcommand};

@@ -1,0 +1,12 @@
+[package]
+name = "cca_token"
+version = "0.1.0"
+edition = "2021"
+authors = ["Islet Contributors"]
+
+[dependencies]
+ciborium = "*"
+cose = { path = "../cose" }
+coset = "*"
+ecdsa = "*"
+hex = "*"

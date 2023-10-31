@@ -10,13 +10,10 @@ description = "Command line interface for ISLET"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+cca_token = { path = "../lib/cca-token" }
 ciborium = "*"
 clap = { version = "*", features = ["derive"] }
 colored = "*"
-coset = "*"
-cose = { path = "../lib/cose" }
-ecdsa = "*"
-hex = "*"
 islet_sdk = { path = "../sdk" }
 nix = "*"
 rand = "*"

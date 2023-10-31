@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "lib/armv9a",
+    "lib/cca-token",
     "lib/cose",
     "lib/vmsa",
     "lib/rsi-el0",

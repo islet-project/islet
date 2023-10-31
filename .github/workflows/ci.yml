@@ -122,8 +122,10 @@ jobs:
       run: ./assets/formatter/shfmt -d -ci -bn -fn `find scripts/. -name *.sh`
 
     - name: Check local packages and all of its dependencies for errors
-      run:
-        cargo check --workspace --exclude islet_sdk --exclude rsi_el0 --exclude cose
+      run: >
+        cargo check --workspace 
+        --exclude islet_sdk --exclude rsi_el0
+        --exclude cose --exclude cca_token
 
     - name: Check rust coding-style
       run: |

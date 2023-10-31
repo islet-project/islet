@@ -1,9 +1,4 @@
-use crate::attester::attest;
-use crate::claim::{Claims, Value};
-use crate::error::Error;
-use crate::report::Report;
-use crate::sealing::{seal, unseal};
-use crate::verifier::verify;
+use crate::prelude::*;
 
 use bincode::{deserialize, serialize};
 use std::ffi::{c_char, c_int, c_uchar, CStr};
@@ -65,11 +60,13 @@ pub unsafe extern "C" fn islet_verify(
         let encoded = from_raw_parts(report as *const u8, report_len as usize);
         let decoded: Report = deserialize(encoded).or(Err(Error::Report))?;
 
-        let claims = verify(&decoded)?;
-        let encoded = serialize(&claims).or(Err(Error::Serialize))?;
-        *claims_out_len = encoded.len() as c_int;
+        let _claims = verify(&decoded)?;
+
+        // Encode the report instead of the claims.
+        // Because the claims couldn't serialize now.
         let out = std::slice::from_raw_parts_mut(claims_out, encoded.len());
         out.copy_from_slice(&encoded[..]);
+        *claims_out_len = out.len() as c_int;
         Ok(())
     };
 
@@ -90,23 +87,26 @@ pub unsafe extern "C" fn islet_parse(
     value_out_len: *mut c_int,
 ) -> islet_status_t {
     let do_parse = || -> Result<(), Error> {
+        // Actually the report is passed instead of the claims
+        // ref. islet_verify()
         let encoded = from_raw_parts(claims as *const u8, claims_len as usize);
-        let decoded: Claims = deserialize(encoded).or(Err(Error::Claims))?;
+        let decoded: Report = deserialize(encoded).or(Err(Error::Report))?;
 
+        let claims = verify(&decoded)?;
         let title = CStr::from_ptr(title).to_str().or(Err(Error::Decoding))?;
-        let value = decoded.value(title).ok_or(Error::Claims)?;
-        match value {
-            Value::Bytes(value) => {
+        match parse(&claims, title) {
+            Some(ClaimData::Bstr(value)) => {
                 *value_out_len = value.len() as c_int;
                 let out = from_raw_parts_mut(value_out, value.len());
                 out.copy_from_slice(&value[..]);
             }
-            Value::String(value) => {
+            Some(ClaimData::Text(value)) => {
                 let value = value.as_bytes();
                 *value_out_len = value.len() as c_int;
                 let out = from_raw_parts_mut(value_out, value.len());
                 out.copy_from_slice(value);
             }
+            None => return Err(Error::Claims),
             _ => return Err(Error::NotSupported),
         };
         Ok(())
@@ -122,9 +122,17 @@ pub unsafe extern "C" fn islet_parse(
 /// Print all claims including Realm Token and Platform Token.
 #[no_mangle]
 pub unsafe extern "C" fn islet_print_claims(claims: *const c_uchar, claims_len: c_int) {
+    // Actually the report is passed instead of the claims
+    // ref. islet_verify()
     let encoded = from_raw_parts(claims as *const u8, claims_len as usize);
-    if let Ok(decoded) = deserialize::<Claims>(encoded) {
-        println!("{:?}", decoded);
+    let decoded: Result<Report, Error> = deserialize(encoded).or(Err(Error::Report));
+    if decoded.is_err() {
+        println!("Wrong claims.");
+    }
+
+    match verify(&decoded.unwrap()) {
+        Ok(claims) => cca_token::dumper::print_token(&claims),
+        Err(error) => println!("Wrong claims {:?}", error),
     }
 }
 

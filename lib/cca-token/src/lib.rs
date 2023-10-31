@@ -171,6 +171,49 @@ impl AttestationClaims
         wrapper[2].init(true, ClaimData::new_bstr(), 0, "Signature", false);
     }
 
+    pub fn data(&self, title: &'static str) -> Option<&ClaimData>
+    {
+        let claim = self.claim(title)?;
+        Some(&claim.data)
+    }
+
+    pub fn claim<'a>(&'a self, title: &'static str) -> Option<&'a Claim>
+    {
+        let find = |claims: &'a [Claim]| {
+            for claim in claims {
+                if title == &claim.title {
+                    return Some(claim);
+                }
+            }
+            None
+        };
+
+        find(&self.realm_cose_sign1_wrapper)
+            .or(find(&self.realm_token_claims))
+            .or(find(&self.realm_measurement_claims))
+            .or(find(&self.plat_cose_sign1_wrapper))
+            .or(find(&self.plat_token_claims))
+    }
+
+    // For simulation on x86 system.
+    pub fn claim_mut<'a>(&'a mut self, title: &'static str) -> Option<&'a mut Claim>
+    {
+        let find = |claims: &'a mut [Claim]| {
+            for claim in claims {
+                if title == &claim.title {
+                    return Some(claim);
+                }
+            }
+            None
+        };
+
+        find(&mut self.realm_cose_sign1_wrapper)
+            .or(find(&mut self.realm_token_claims))
+            .or(find(&mut self.realm_measurement_claims))
+            .or(find(&mut self.plat_cose_sign1_wrapper))
+            .or(find(&mut self.plat_token_claims))
+    }
+
     pub(crate) fn new() -> Self
     {
         let mut claims = Self::default();

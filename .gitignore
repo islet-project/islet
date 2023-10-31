@@ -10,6 +10,7 @@ third-party/*
 !third-party/worktree.toml
 
 cli/islet
+sdk/sdk-example-c
 
 docs/
 

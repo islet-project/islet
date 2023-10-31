@@ -1,150 +1,20 @@
-use crate::claim::{platform::SWComponent, Claim, PlatformSWComponents, Value};
-use crate::config::to_label;
-use crate::error::Error;
+use crate::config;
+use cca_token::{dumper::print_token, AttestationClaims, ClaimData};
 
-use minicbor::Decoder;
-
-pub struct Parser<'a> {
-    pub decoder: Decoder<'a>,
+pub fn parse<'a>(claims: &'a AttestationClaims, title: &'static str) -> Option<&'a ClaimData> {
+    let title = support_user_data(title);
+    claims.data(title)
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(buffer: &'a [u8]) -> Self {
-        Self {
-            decoder: Decoder::new(buffer),
-        }
-    }
+pub fn print_claims(claims: &AttestationClaims) {
+    print_token(&claims);
+}
 
-    pub fn label(&mut self, title: &'static str) -> Result<u16, Error> {
-        let label = self.decoder.u16()?;
-        if label != to_label(title) {
-            println!("Expected: {}, Provided: {}", to_label(title), label);
-            Err(Error::Claim(title))
-        } else {
-            Ok(label)
-        }
-    }
-
-    pub fn string(&mut self, title: &'static str) -> Result<Claim, Error> {
-        let mut parse = || {
-            Ok::<Claim, Error>(Claim {
-                label: self.label(title)?,
-                title: title.to_string(),
-                value: Value::String(self.decoder.str()?.to_string()),
-            })
-        };
-        parse().or(Err(Error::Claim(title)))
-    }
-
-    pub fn bytes<const N: usize>(&mut self, title: &'static str) -> Result<Claim, Error> {
-        let mut parse = || {
-            let label = self.label(title)?;
-            let value = self.decoder.bytes()?;
-            if value.len() != N {
-                return Err(Error::Claim(title));
-            }
-            Ok::<Claim, Error>(Claim {
-                label,
-                title: title.to_string(),
-                value: Value::Bytes(value.to_vec()),
-            })
-        };
-        parse().or(Err(Error::Claim(title)))
-    }
-
-    pub fn u16(&mut self, title: &'static str) -> Result<Claim, Error> {
-        let mut parse = || {
-            Ok::<Claim, Error>(Claim {
-                label: self.label(title)?,
-                title: title.to_string(),
-                value: Value::U16(self.decoder.u16()?),
-            })
-        };
-        parse().or(Err(Error::Claim(title)))
-    }
-
-    pub fn rem<const N: usize>(&mut self, title: &'static str) -> Result<Claim, Error> {
-        let mut parse = || {
-            let label = self.label(title)?;
-            let _ = self.decoder.array()?;
-            let value = self.decoder.bytes()?;
-            if value.len() != N {
-                return Err(Error::Claim(title));
-            }
-            Ok::<Claim, Error>(Claim {
-                label,
-                title: title.to_string(),
-                value: Value::Bytes(value.to_vec()),
-            })
-        };
-        parse().or(Err(Error::Claim(title)))
-    }
-
-    pub fn sw_components(&mut self, title: &'static str) -> Result<PlatformSWComponents, Error> {
-        let _ = self.label(title)?;
-        let decoder = &mut self.decoder;
-        assert_eq!(4, decoder.array().unwrap().unwrap());
-        assert_eq!(5, decoder.map().unwrap().unwrap());
-
-        let sw_comp0 = SWComponent {
-            name: (decoder.u16()?, decoder.str()?.to_string()),
-            measurement: (
-                decoder.u16()?,
-                decoder.bytes()?.try_into().or(Err(Error::Format))?,
-            ),
-            version: (decoder.u16()?, decoder.str()?.to_string()),
-            signer_id: (
-                decoder.u16()?,
-                decoder.bytes()?.try_into().or(Err(Error::Format))?,
-            ),
-            hash_algo: (decoder.u16()?, decoder.str()?.to_string()),
-        };
-
-        assert_eq!(4, decoder.map().unwrap().unwrap());
-        let sw_comp1 = SWComponent {
-            name: (decoder.u16()?, decoder.str()?.to_string()),
-            measurement: (
-                decoder.u16()?,
-                decoder.bytes()?.try_into().or(Err(Error::Format))?,
-            ),
-            version: (decoder.u16()?, decoder.str()?.to_string()),
-            signer_id: (
-                decoder.u16()?,
-                decoder.bytes()?.try_into().or(Err(Error::Format))?,
-            ),
-            hash_algo: (0, String::from("")),
-        };
-
-        assert_eq!(4, decoder.map().unwrap().unwrap());
-        let sw_comp2 = SWComponent {
-            name: (decoder.u16()?, decoder.str()?.to_string()),
-            measurement: (
-                decoder.u16()?,
-                decoder.bytes()?.try_into().or(Err(Error::Format))?,
-            ),
-            version: (decoder.u16()?, decoder.str()?.to_string()),
-            signer_id: (
-                decoder.u16()?,
-                decoder.bytes()?.try_into().or(Err(Error::Format))?,
-            ),
-            hash_algo: (0, String::from("")),
-        };
-
-        assert_eq!(4, decoder.map().unwrap().unwrap());
-        let sw_comp3 = SWComponent {
-            name: (decoder.u16()?, decoder.str()?.to_string()),
-            measurement: (
-                decoder.u16()?,
-                decoder.bytes()?.try_into().or(Err(Error::Format))?,
-            ),
-            version: (decoder.u16()?, decoder.str()?.to_string()),
-            signer_id: (
-                decoder.u16()?,
-                decoder.bytes()?.try_into().or(Err(Error::Format))?,
-            ),
-            hash_algo: (0, String::from("")),
-        };
-
-        Ok([sw_comp0, sw_comp1, sw_comp2, sw_comp3])
+// The requirement of Certifier
+fn support_user_data(title: &'static str) -> &'static str {
+    if title == config::STR_USER_DATA {
+        config::STR_REALM_CHALLENGE
+    } else {
+        title
     }
 }

@@ -4,21 +4,24 @@ fn attestation() -> Result<(), Error> {
     let user_data = b"User data";
     let report = attest(user_data)?;
     let claims = verify(&report)?;
-    println!("Debug: {:?}", claims);
+    print_claims(&claims);
 
-    if let claim::Value::Bytes(value) = &claims.value(config::STR_USER_DATA).ok_or(Error::Claims)? {
-        assert_eq!(user_data, &value[..user_data.len()]);
+    if let Some(ClaimData::Bstr(data)) = parse(&claims, config::STR_USER_DATA) {
+        assert_eq!(user_data, &data[..user_data.len()]);
     } else {
         assert!(false, "Wrong user data");
     }
 
-    if let claim::Value::String(value) = &claims
-        .value(config::STR_PLAT_PROFILE)
-        .ok_or(Error::Claims)?
-    {
-        assert_eq!(value.as_str(), "http://arm.com/CCA-SSD/1.0.0");
+    if let Some(ClaimData::Text(data)) = parse(&claims, config::STR_PLAT_PROFILE) {
+        assert_eq!(data, "http://arm.com/CCA-SSD/1.0.0");
     } else {
         assert!(false, "Wrong platform profile");
+    }
+
+    if let Some(ClaimData::Bstr(data)) = parse(&claims, config::STR_REALM_INITIAL_MEASUREMENT) {
+        println!("Realm initial measurement: {:X?}", &data);
+    } else {
+        assert!(false, "Wrong RIM");
     }
 
     Ok(())

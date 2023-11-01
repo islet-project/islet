@@ -52,7 +52,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         match rmi.create_vcpu(rd.id()) {
             Ok(vcpuid) => {
                 ret[1] = vcpuid;
-                rec.init(owner, vcpuid, params.flags);
+                rec.init(owner, vcpuid, params.flags, rd.id(), rd.ipa_bits())?;
             }
             Err(_) => return Err(Error::RmiErrorInput),
         }

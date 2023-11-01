@@ -3,6 +3,7 @@ pub mod mpidr;
 pub mod params;
 pub mod run;
 pub mod vtcr;
+use crate::rmi::error::Error;
 
 pub use self::handlers::set_event_handler;
 
@@ -17,6 +18,7 @@ pub enum RmmRecAttestState {
 }
 
 pub struct Rec {
+    init_done: bool,
     attest_state: RmmRecAttestState,
     attest_challenge: [u8; 64],
     /// PA of RD of Realm which owns this REC
@@ -26,6 +28,14 @@ pub struct Rec {
     ripas: Ripas,
     vtcr: u64,
     host_call_pending: bool,
+
+    /// Immutable Rd fields
+    ///
+    /// Multiple RECs can be created per Realm
+    /// so the following fields are always valid
+    /// before destroying the current Rec
+    realmid: usize,
+    ipa_bits: usize,
 }
 
 struct Ripas {
@@ -36,11 +46,30 @@ struct Ripas {
 }
 
 impl Rec {
-    pub fn init(&mut self, owner: usize, vcpuid: usize, flags: u64) {
+    pub fn init(
+        &mut self,
+        owner: usize,
+        vcpuid: usize,
+        flags: u64,
+        realmid: usize,
+        ipa_bits: usize,
+    ) -> Result<(), Error> {
+        if self.init_done {
+            error!(
+                "Rec::init() called twice. owner: 0x{:x}, vcpuid: {}, realmid: {}",
+                self.owner, self.vcpuid, self.realmid
+            );
+            return Err(Error::RmiErrorRec);
+        }
         self.owner = owner;
         self.vcpuid = vcpuid;
         self.set_ripas(0, 0, 0, 0);
         self.set_runnable(flags);
+        self.realmid = realmid;
+        self.ipa_bits = ipa_bits;
+        self.init_done = true;
+
+        Ok(())
     }
 
     pub fn attest_state(&self) -> RmmRecAttestState {
@@ -116,6 +145,14 @@ impl Rec {
 
     pub fn vtcr(&self) -> u64 {
         self.vtcr
+    }
+
+    pub fn realmid(&self) -> usize {
+        self.realmid
+    }
+
+    pub fn ipa_bits(&self) -> usize {
+        self.ipa_bits
     }
 }
 

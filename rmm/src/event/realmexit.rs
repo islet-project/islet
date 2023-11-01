@@ -199,7 +199,7 @@ fn handle_data_abort(
             true => (esr_el2 & NON_EMULATABLE_ABORT_MASK, 0),
             false => {
                 if esr_el2 & EsrEl2::WNR != 0 {
-                    let write_val = get_write_val(rmm.rmi, realm_id, rec.id(), esr_el2)?;
+                    let write_val = get_write_val(rmm.rmi, realm_id, rec.vcpuid(), esr_el2)?;
                     unsafe {
                         run.set_gpr(0, write_val)?;
                     }

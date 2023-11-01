@@ -13,33 +13,79 @@ use crate::{get_granule, get_granule_if};
 use crate::{rmi, rsi};
 use armv9a::{EsrEl2, EMULATABLE_ABORT_MASK, HPFAR_EL2, NON_EMULATABLE_ABORT_MASK};
 
+const RMI_REC_EXIT_REASON_MASK: usize = 15; // 0b1111
+
+const EXIT_SYNC_TYPE_SHIFT: usize = 4;
+const EXIT_SYNC_TYPE_MASK: usize = 15 << EXIT_SYNC_TYPE_SHIFT; // 0b1111_0000
+
 #[derive(Debug)]
-pub enum Kind {
-    RSI = 0,
+#[repr(usize)]
+pub enum RmiRecExitReason {
+    Sync(ExitSyncType),
     IRQ = 1,
     FIQ = 2,
-    SERROR = 3,
-    InstAbort = 4,
-    DataAbort = 5,
-    UndefinedSync,
+    PSCI = 3,
+    RipasChange = 4,
+    HostCall = 5,
+    SError = 6,
+    Undefined = RMI_REC_EXIT_REASON_MASK, // fixed, 0b1111
 }
 
-impl Into<u64> for Kind {
+impl Into<u64> for RmiRecExitReason {
+    fn into(self) -> u64 {
+        match self {
+            RmiRecExitReason::Sync(exit_sync_type) => exit_sync_type.into(),
+            RmiRecExitReason::IRQ => 1,
+            RmiRecExitReason::FIQ => 2,
+            RmiRecExitReason::PSCI => 3,
+            RmiRecExitReason::RipasChange => 4,
+            RmiRecExitReason::HostCall => 5,
+            RmiRecExitReason::SError => 6,
+            RmiRecExitReason::Undefined => 7,
+        }
+    }
+}
+
+impl From<usize> for RmiRecExitReason {
+    fn from(num: usize) -> Self {
+        match num & RMI_REC_EXIT_REASON_MASK {
+            0 => RmiRecExitReason::Sync(ExitSyncType::from(num)),
+            1 => RmiRecExitReason::IRQ,
+            2 => RmiRecExitReason::FIQ,
+            3 => RmiRecExitReason::PSCI,
+            4 => RmiRecExitReason::RipasChange,
+            5 => RmiRecExitReason::HostCall,
+            6 => RmiRecExitReason::SError,
+            _ => RmiRecExitReason::Undefined,
+        }
+    }
+}
+
+/// Fault Status Code only for the 'RmiRecExitReason::Sync'
+/// it's a different from trap::Syndrome
+#[derive(Debug)]
+#[repr(usize)]
+pub enum ExitSyncType {
+    RSI = 1 << EXIT_SYNC_TYPE_SHIFT,
+    DataAbort = 2 << EXIT_SYNC_TYPE_SHIFT,
+    InstAbort = 3 << EXIT_SYNC_TYPE_SHIFT,
+    Undefined = EXIT_SYNC_TYPE_MASK, // fixed, 0b1111_0000
+}
+
+impl Into<u64> for ExitSyncType {
     fn into(self) -> u64 {
         self as u64
     }
 }
 
-impl From<usize> for Kind {
+impl From<usize> for ExitSyncType {
     fn from(num: usize) -> Self {
-        match num {
-            0 => Kind::RSI,
-            1 => Kind::IRQ,
-            2 => Kind::FIQ,
-            3 => Kind::SERROR,
-            4 => Kind::InstAbort,
-            5 => Kind::DataAbort,
-            _ => Kind::UndefinedSync,
+        let masked_val = (num & EXIT_SYNC_TYPE_MASK) >> EXIT_SYNC_TYPE_SHIFT;
+        match masked_val {
+            1 => ExitSyncType::RSI,
+            2 => ExitSyncType::DataAbort,
+            3 => ExitSyncType::InstAbort,
+            _ => ExitSyncType::Undefined,
         }
     }
 }
@@ -51,8 +97,8 @@ pub fn handle_realm_exit(
     run: &mut Run,
 ) -> Result<(bool, usize), Error> {
     let mut return_to_ns = true;
-    let ret = match Kind::from(realm_exit_res[0]) {
-        Kind::RSI => {
+    let ret = match RmiRecExitReason::from(realm_exit_res[0]) {
+        RmiRecExitReason::Sync(ExitSyncType::RSI) => {
             trace!("REC_ENTER ret: {:#X?}", realm_exit_res);
             let rsi = &rmm.rsi;
             let cmd = realm_exit_res[1];
@@ -74,15 +120,18 @@ pub fn handle_realm_exit(
             });
             ret
         }
-        Kind::DataAbort => handle_data_abort(realm_exit_res, rmm, rec, run)?,
-        Kind::IRQ => unsafe {
+        RmiRecExitReason::Sync(ExitSyncType::DataAbort) => {
+            handle_data_abort(realm_exit_res, rmm, rec, run)?
+        }
+        RmiRecExitReason::IRQ => unsafe {
             run.set_exit_reason(rmi::EXIT_IRQ);
             run.set_esr(realm_exit_res[1] as u64);
             run.set_hpfar(realm_exit_res[2] as u64);
             run.set_far(realm_exit_res[3] as u64);
             rmi::SUCCESS
         },
-        Kind::InstAbort | Kind::UndefinedSync => unsafe {
+        RmiRecExitReason::Sync(ExitSyncType::InstAbort)
+        | RmiRecExitReason::Sync(ExitSyncType::Undefined) => unsafe {
             run.set_exit_reason(rmi::EXIT_SYNC);
             run.set_esr(realm_exit_res[1] as u64);
             run.set_hpfar(realm_exit_res[2] as u64);

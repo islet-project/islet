@@ -1,15 +1,13 @@
 use crate::event::{Context, RsiHandle};
-use crate::granule::{GranuleState, GRANULE_MASK};
+use crate::granule::GRANULE_MASK;
 use crate::realm::mm::stage2_tte::S2TTE;
 use crate::rmi::error::Error;
-use crate::rmi::realm::Rd;
 use crate::rmi::rec::run::Run;
 use crate::rmi::rec::Rec;
 use crate::rmi::rtt::is_protected_ipa;
 use crate::rmi::rtt::RTT_PAGE_LEVEL;
 use crate::rmi::RMI;
 use crate::Monitor;
-use crate::{get_granule, get_granule_if};
 use crate::{rmi, rsi};
 use armv9a::{EsrEl2, EMULATABLE_ABORT_MASK, HPFAR_EL2, NON_EMULATABLE_ABORT_MASK};
 
@@ -177,11 +175,8 @@ fn handle_data_abort(
     rec: &mut Rec,
     run: &mut Run,
 ) -> Result<usize, Error> {
-    let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
-    let rd = g_rd.content::<Rd>();
-    let realm_id = rd.id();
-    let ipa_bits = rd.ipa_bits();
-    drop(g_rd); // manually drop to reduce a lock contention
+    let realm_id = rec.realmid()?;
+    let ipa_bits = rec.ipa_bits()?;
 
     let esr_el2 = realm_exit_res[1] as u64;
     let hpfar_el2 = realm_exit_res[2] as u64;

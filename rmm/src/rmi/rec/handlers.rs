@@ -52,7 +52,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         match rmi.create_vcpu(rd.id()) {
             Ok(vcpuid) => {
                 ret[1] = vcpuid;
-                rec.init(owner, vcpuid, params.flags);
+                rec.init(owner, vcpuid, params.flags, rd.id(), rd.ipa_bits())?;
             }
             Err(_) => return Err(Error::RmiErrorInput),
         }
@@ -102,7 +102,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorRec);
         }
 
-        let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
+        let g_rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
         let rd = g_rd.content::<Rd>();
         let realm_id = rd.id();
 

@@ -22,6 +22,7 @@ pub fn smc(cmd: usize, args: &[usize]) -> [usize; 8] {
     put(&mut padded_args);
 
     // TODO: support more number of registers than 8 if needed
+    #[cfg(not(kani))]
     unsafe {
         asm!(
             "smc #0x0",

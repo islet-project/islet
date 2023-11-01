@@ -55,7 +55,7 @@ impl Rec {
         self.runnable
     }
 
-    pub fn id(&self) -> usize {
+    pub fn vcpuid(&self) -> usize {
         self.vcpuid
     }
 

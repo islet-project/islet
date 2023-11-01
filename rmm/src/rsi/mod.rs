@@ -53,7 +53,7 @@ pub fn do_host_call(
     run: &mut Run,
 ) -> core::result::Result<(), Error> {
     let rmi = rmm.rmi;
-    let vcpuid = rec.id();
+    let vcpuid = rec.vcpuid();
     let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
     let realmid = g_rd.content::<Rd>().id();
     drop(g_rd); // manually drop to reduce a lock contention
@@ -121,7 +121,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let realmid = g_rd.content::<Rd>().id();
         drop(g_rd); // manually drop to reduce a lock contention
 
-        let vcpuid = rec.id();
+        let vcpuid = rec.vcpuid();
 
         let mut challenge: [u8; 64] = [0; 64];
 
@@ -154,7 +154,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let hash_algo = rd.hash_algo();
         drop(g_rd); // manually drop to reduce a lock contention
 
-        let vcpuid = rec.id();
+        let vcpuid = rec.vcpuid();
 
         if rec.attest_state() != RmmRecAttestState::AttestInProgress {
             warn!("Calling attest token continue without init");
@@ -202,7 +202,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, ABI_VERSION, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;
-        let vcpuid = rec.id();
+        let vcpuid = rec.vcpuid();
         let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
         let realmid = g_rd.content::<Rd>().id();
         drop(g_rd); // manually drop to reduce a lock contention
@@ -220,7 +220,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, MEASUREMENT_READ, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;
-        let vcpuid = rec.id();
+        let vcpuid = rec.vcpuid();
         let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
         let realmid = g_rd.content::<Rd>().id();
         drop(g_rd); // manually drop to reduce a lock contention
@@ -252,7 +252,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, MEASUREMENT_EXTEND, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;
-        let vcpuid = rec.id();
+        let vcpuid = rec.vcpuid();
         let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
         let realmid = g_rd.content::<Rd>().id();
         drop(g_rd); // manually drop to reduce a lock contention
@@ -290,7 +290,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, REALM_CONFIG, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;
-        let vcpuid = rec.id();
+        let vcpuid = rec.vcpuid();
         let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
         let rd = g_rd.content::<Rd>();
         let ipa_bits = rd.ipa_bits();
@@ -318,7 +318,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, IPA_STATE_GET, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;
-        let vcpuid = rec.id();
+        let vcpuid = rec.vcpuid();
         let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
         let rd = g_rd.content::<Rd>();
         let ipa_bits = rd.ipa_bits();
@@ -364,7 +364,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, IPA_STATE_SET, |_arg, ret, rmm, rec, run| {
         let rmi = rmm.rmi;
-        let vcpuid = rec.id();
+        let vcpuid = rec.vcpuid();
         let g_rd = get_granule_if!(rec.owner(), GranuleState::RD)?;
         let rd = g_rd.content::<Rd>();
         let realmid = rd.id();

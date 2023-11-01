@@ -3,6 +3,8 @@ pub mod mpidr;
 pub mod params;
 pub mod run;
 pub mod vtcr;
+use crate::rmi::error::Error;
+use core::cell::OnceCell;
 
 pub use self::handlers::set_event_handler;
 
@@ -16,18 +18,6 @@ pub enum RmmRecAttestState {
     NoAttestInProgress,
 }
 
-pub struct Rec {
-    attest_state: RmmRecAttestState,
-    attest_challenge: [u8; 64],
-    /// PA of RD of Realm which owns this REC
-    owner: usize,
-    vcpuid: usize,
-    runnable: bool,
-    ripas: Ripas,
-    vtcr: u64,
-    host_call_pending: bool,
-}
-
 struct Ripas {
     start: u64,
     end: u64,
@@ -35,12 +25,111 @@ struct Ripas {
     state: u8,
 }
 
+#[derive(Debug)]
+pub struct Inner {
+    owner: usize,
+    realmid: usize,
+    ipa_bits: usize,
+}
+
+impl Inner {
+    pub fn init(owner: usize, realmid: usize, ipa_bits: usize) -> Self {
+        Inner {
+            owner,
+            realmid,
+            ipa_bits,
+        }
+    }
+
+    pub fn owner(&self) -> usize {
+        self.owner
+    }
+
+    pub fn realmid(&self) -> usize {
+        self.realmid
+    }
+
+    pub fn ipa_bits(&self) -> usize {
+        self.ipa_bits
+    }
+}
+
+/// Immutable Realm information in target Rd.
+///
+/// It can be written to only once because of OnceCell.
+/// Multiple RECs can be created per Realm
+/// so the fields in Inner are always valid
+/// before destroying the current Rec.
+struct ImmutRealmInfo {
+    inner: OnceCell<Inner>,
+}
+
+impl ImmutRealmInfo {
+    fn init(&mut self, owner: usize, realmid: usize, ipa_bits: usize) -> Result<(), Inner> {
+        self.inner.set(Inner::init(owner, realmid, ipa_bits))
+    }
+
+    fn get(&self) -> Result<&Inner, Error> {
+        match self.inner.get() {
+            Some(realm_info) => Ok(realm_info),
+            None => {
+                error!("ImmutRealmInfo is none");
+                Err(Error::RmiErrorRec)
+            }
+        }
+    }
+
+    pub fn owner(&self) -> Result<usize, Error> {
+        let inner = self.get()?;
+        Ok(inner.owner())
+    }
+
+    pub fn realmid(&self) -> Result<usize, Error> {
+        let inner = self.get()?;
+        Ok(inner.realmid())
+    }
+
+    pub fn ipa_bits(&self) -> Result<usize, Error> {
+        let inner = self.get()?;
+        Ok(inner.ipa_bits())
+    }
+}
+
+pub struct Rec {
+    attest_state: RmmRecAttestState,
+    attest_challenge: [u8; 64],
+    /// PA of RD of Realm which owns this REC
+    vcpuid: usize,
+    runnable: bool,
+    ripas: Ripas,
+    vtcr: u64,
+    host_call_pending: bool,
+    realm_info: ImmutRealmInfo,
+}
+
 impl Rec {
-    pub fn init(&mut self, owner: usize, vcpuid: usize, flags: u64) {
-        self.owner = owner;
+    pub fn init(
+        &mut self,
+        owner: usize,
+        vcpuid: usize,
+        flags: u64,
+        realmid: usize,
+        ipa_bits: usize,
+    ) -> Result<(), Error> {
+        if let Err(new_realm_info) = self.realm_info.init(owner, realmid, ipa_bits) {
+            let cur_realm_info = self.realm_info.get()?;
+            error!(
+                "Rec::init() called twice. cur_realm_info: {:?}, new_realm_info: {:?}",
+                cur_realm_info, new_realm_info
+            );
+            return Err(Error::RmiErrorRec);
+        }
+
         self.vcpuid = vcpuid;
         self.set_ripas(0, 0, 0, 0);
         self.set_runnable(flags);
+
+        Ok(())
     }
 
     pub fn attest_state(&self) -> RmmRecAttestState {
@@ -59,8 +148,8 @@ impl Rec {
         self.vcpuid
     }
 
-    pub fn owner(&self) -> usize {
-        self.owner
+    pub fn owner(&self) -> Result<usize, Error> {
+        self.realm_info.owner()
     }
 
     pub fn host_call_pending(&self) -> bool {
@@ -116,6 +205,14 @@ impl Rec {
 
     pub fn vtcr(&self) -> u64 {
         self.vtcr
+    }
+
+    pub fn realmid(&self) -> Result<usize, Error> {
+        self.realm_info.realmid()
+    }
+
+    pub fn ipa_bits(&self) -> Result<usize, Error> {
+        self.realm_info.ipa_bits()
     }
 }
 

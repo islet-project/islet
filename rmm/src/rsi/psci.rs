@@ -73,7 +73,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
     let dummy =
         |_arg: &[usize], ret: &mut [usize], rmm: &Monitor, rec: &mut Rec, _run: &mut Run| {
             let rmi = rmm.rmi;
-            let vcpuid = rec.id();
+            let vcpuid = rec.vcpuid();
             let realmid = rec.realmid();
 
             if rmi
@@ -91,7 +91,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, PSCI_VERSION, |_arg, ret, rmm, rec, _run| {
         let rmi = rmm.rmi;
-        let vcpuid = rec.id();
+        let vcpuid = rec.vcpuid();
         let realmid = rec.realmid();
 
         if rmi.set_reg(realmid, vcpuid, 0, psci_version()).is_err() {
@@ -123,7 +123,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, SMC32::FEATURES, |_arg, ret, rmm, rec, _run| {
         let rmi = rmm.rmi;
-        let vcpuid = rec.id();
+        let vcpuid = rec.vcpuid();
         let realmid = rec.realmid();
 
         let feature_id = rmi.get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
@@ -153,7 +153,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, SMCCC_VERSION, |_arg, ret, rmm, rec, _run| {
         let rmi = rmm.rmi;
-        let vcpuid = rec.id();
+        let vcpuid = rec.vcpuid();
         let realmid = rec.realmid();
 
         if rmi.set_reg(realmid, vcpuid, 0, smccc_version()).is_err() {

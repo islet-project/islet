@@ -49,7 +49,7 @@ impl RsiHandle {
                 let realm_id = rec.realmid();
 
                 // TODO: handle the error properly
-                let _ = rmi.set_reg(realm_id, rec.id(), 0, RsiHandle::NOT_SUPPORTED);
+                let _ = rmi.set_reg(realm_id, rec.vcpuid(), 0, RsiHandle::NOT_SUPPORTED);
                 error!(
                     "Not registered event: {:X} returning {:X}",
                     ctx.cmd,

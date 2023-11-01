@@ -58,12 +58,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         for (idx, gpr) in params.gprs.iter().enumerate() {
-            if rmi.set_reg(rd.id(), rec.id(), idx, *gpr as usize).is_err() {
+            if rmi.set_reg(rd.id(), rec.vcpuid(), idx, *gpr as usize).is_err() {
                 return Err(Error::RmiErrorInput);
             }
         }
         if rmi
-            .set_reg(rd.id(), rec.id(), 31, params.pc as usize)
+            .set_reg(rd.id(), rec.vcpuid(), 31, params.pc as usize)
             .is_err()
         {
             return Err(Error::RmiErrorInput);
@@ -125,13 +125,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             do_host_call(&arg, ret, rmm, rec, &mut run)?;
         }
 
-        rmi.receive_gic_state_from_host(realm_id, rec.id(), &run)?;
-        rmi.emulate_mmio(realm_id, rec.id(), &run)?;
+        rmi.receive_gic_state_from_host(realm_id, rec.vcpuid(), &run)?;
+        rmi.emulate_mmio(realm_id, rec.vcpuid(), &run)?;
 
         let ripas = rec.ripas_addr() as usize;
         if ripas > 0 {
-            rmi.set_reg(realm_id, rec.id(), 0, 0)?;
-            rmi.set_reg(realm_id, rec.id(), 1, ripas)?;
+            rmi.set_reg(realm_id, rec.vcpuid(), 0, 0)?;
+            rmi.set_reg(realm_id, rec.vcpuid(), 1, ripas)?;
             rec.set_ripas(0, 0, 0, 0);
         }
 
@@ -148,7 +148,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             ret_ns = true;
             unsafe { run.set_imm(0) };
 
-            match rmi.run(realm_id, rec.id(), 0) {
+            match rmi.run(realm_id, rec.vcpuid(), 0) {
                 Ok(realm_exit_res) => {
                     (ret_ns, ret[0]) = handle_realm_exit(realm_exit_res, rmm, &mut rec, &mut run)?
                 }
@@ -159,8 +159,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 break;
             }
         }
-        rmi.send_gic_state_to_host(realm_id, rec.id(), &mut run)?;
-        rmi.send_timer_state_to_host(realm_id, rec.id(), &mut run)?;
+        rmi.send_gic_state_to_host(realm_id, rec.vcpuid(), &mut run)?;
+        rmi.send_timer_state_to_host(realm_id, rec.vcpuid(), &mut run)?;
 
         // NOTICE: do not modify `run` after copy_to_host_or_ret!(). it won't have any effect.
         copy_to_host_or_ret!(Run, &run, run_pa);

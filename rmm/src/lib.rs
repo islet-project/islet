@@ -138,6 +138,7 @@ unsafe fn setup_mmu_cfg() {
 /// The return value encodes: [rmi::RET_XXX, ret_val1, ret_val2]
 /// In most cases, the function returns [rmi::RET_SUCCESS, _, _]
 /// pagefault returns [rmi::RET_PAGE_FAULT, faulted address, _]
+#[cfg(not(kani))]
 pub unsafe fn rmm_exit(args: [usize; 4]) -> [usize; 4] {
     let mut ret: [usize; 4] = [0usize; 4];
 
@@ -149,5 +150,11 @@ pub unsafe fn rmm_exit(args: [usize; 4]) -> [usize; 4] {
         inlateout("x3") args[3] => ret[3],
     );
 
+    ret
+}
+
+#[cfg(kani)]
+pub unsafe fn rmm_exit(_args: [usize; 4]) -> [usize; 4] {
+    let ret: [usize; 4] = [0usize; 4];
     ret
 }

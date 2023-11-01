@@ -4,7 +4,7 @@ fn alloc_error_handler(_layout: core::alloc::Layout) -> ! {
 }
 
 #[panic_handler]
-pub extern "C" fn panic_handler(_info: &core::panic::PanicInfo<'_>) -> ! {
+pub fn panic_handler(_info: &core::panic::PanicInfo<'_>) -> ! {
     error!("RMM: {}", _info);
     halt()
 }

@@ -97,16 +97,16 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // grab the lock for Rec
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
         let mut rec = rec_granule.content_mut::<Rec>();
+        let realm_id = rec.realmid()?;
 
         if !rec.runnable() {
             return Err(Error::RmiErrorRec);
         }
 
-        let g_rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = g_rd.content::<Rd>();
-        let realm_id = rd.id();
-
-        match rd.state() {
+        match get_granule_if!(rec.owner()?, GranuleState::RD)?
+            .content::<Rd>()
+            .state() // Rd dropped
+        {
             State::Active => {}
             State::New => {
                 return Err(Error::RmiErrorRealm(0));
@@ -118,7 +118,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 panic!("Unexpected realm state");
             }
         }
-        drop(g_rd); // manually drop to reduce a lock contention
 
         // read Run
         let mut run = copy_from_host_or_ret!(Run, run_pa, Error::RmiErrorRec);

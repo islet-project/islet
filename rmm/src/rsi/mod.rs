@@ -140,13 +140,12 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, ATTEST_TOKEN_CONTINUE, |_arg, ret, rmm, rec, _| {
         let rmi = rmm.rmi;
+        let realmid = rec.realmid()?;
+        let ipa_bits = rec.ipa_bits()?;
 
-        let g_rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = g_rd.content::<Rd>();
-        let realmid = rd.id();
-        let ipa_bits = rd.ipa_bits();
-        let hash_algo = rd.hash_algo();
-        drop(g_rd); // manually drop to reduce a lock contention
+        let hash_algo = get_granule_if!(rec.owner()?, GranuleState::RD)?
+            .content::<Rd>()
+            .hash_algo(); // Rd dropped
 
         let vcpuid = rec.vcpuid();
 

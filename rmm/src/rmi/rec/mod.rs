@@ -1,3 +1,4 @@
+pub mod exit;
 pub mod handlers;
 pub mod mpidr;
 pub mod params;

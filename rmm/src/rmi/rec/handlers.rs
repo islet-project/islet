@@ -3,7 +3,7 @@ use super::params::Params;
 use super::run::{Run, REC_ENTRY_FLAG_TRAP_WFE, REC_ENTRY_FLAG_TRAP_WFI};
 use super::vtcr::{activate_stage2_mmu, prepare_vtcr};
 use super::Rec;
-use crate::event::{realmexit, Mainloop};
+use crate::event::Mainloop;
 use crate::granule::{set_granule, set_granule_with_parent, GranuleState};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::pointer::PointerMut as HostPointerMut;
@@ -12,7 +12,7 @@ use crate::measurement::HashContext;
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmi::realm::{rd::State, Rd};
-use crate::rmi::rec::handlers::realmexit::handle_realm_exit;
+use crate::rmi::rec::exit::handle_realm_exit;
 use crate::rsi::do_host_call;
 use crate::{get_granule, get_granule_if};
 

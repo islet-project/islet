@@ -13,6 +13,7 @@ use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmi::realm::{rd::State, Rd};
 use crate::rmi::rec::exit::handle_realm_exit;
+use crate::rmi::rec::RecState;
 use crate::rsi::do_host_call;
 use crate::{get_granule, get_granule_if};
 
@@ -103,6 +104,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorRec);
         }
 
+        if let RecState::Running = rec.get_state() {
+            error!("Rec is already running: {:?}", rec);
+            return Err(Error::RmiErrorRec);
+        }
+
         match get_granule_if!(rec.owner()?, GranuleState::RD)?
             .content::<Rd>()
             .state() // Rd dropped
@@ -150,12 +156,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             ret_ns = true;
             unsafe { run.set_imm(0) };
 
+            rec.set_state(RecState::Running);
             match rmi.run(realm_id, rec.vcpuid(), 0) {
                 Ok(realm_exit_res) => {
                     (ret_ns, ret[0]) = handle_realm_exit(realm_exit_res, rmm, &mut rec, &mut run)?
                 }
                 Err(_) => ret[0] = rmi::ERROR_REC,
             }
+            rec.set_state(RecState::Ready);
 
             if ret_ns == true {
                 break;

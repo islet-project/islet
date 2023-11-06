@@ -74,11 +74,11 @@ impl<T: Context> Drop for VCPU<T> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum State {
-    Null,
-    Ready,
-    Running,
+    Null = 0,
+    Ready = 1,
+    Running = 2,
 }
 
 pub unsafe fn current() -> Option<&'static mut VCPU<crate::realm::context::Context>> {

@@ -4,6 +4,7 @@ pub mod mpidr;
 pub mod params;
 pub mod run;
 pub mod vtcr;
+use crate::realm::vcpu::State as RecState;
 use crate::rmi::error::Error;
 use core::cell::OnceCell;
 
@@ -19,6 +20,7 @@ pub enum RmmRecAttestState {
     NoAttestInProgress,
 }
 
+#[derive(Debug)]
 struct Ripas {
     start: u64,
     end: u64,
@@ -61,6 +63,7 @@ impl Inner {
 /// Multiple RECs can be created per Realm
 /// so the fields in Inner are always valid
 /// before destroying the current Rec.
+#[derive(Debug)]
 struct ImmutRealmInfo {
     inner: OnceCell<Inner>,
 }
@@ -96,12 +99,14 @@ impl ImmutRealmInfo {
     }
 }
 
+#[derive(Debug)]
 pub struct Rec {
     attest_state: RmmRecAttestState,
     attest_challenge: [u8; 64],
     /// PA of RD of Realm which owns this REC
     vcpuid: usize,
     runnable: bool,
+    state: RecState,
     ripas: Ripas,
     vtcr: u64,
     host_call_pending: bool,
@@ -129,6 +134,7 @@ impl Rec {
         self.vcpuid = vcpuid;
         self.set_ripas(0, 0, 0, 0);
         self.set_runnable(flags);
+        self.set_state(RecState::Ready);
 
         Ok(())
     }
@@ -186,6 +192,14 @@ impl Rec {
             0 => false,
             _ => true,
         }
+    }
+
+    pub fn set_state(&mut self, state: RecState) {
+        self.state = state;
+    }
+
+    pub fn get_state(&self) -> RecState {
+        self.state
     }
 
     pub fn inc_ripas_addr(&mut self, size: u64) {

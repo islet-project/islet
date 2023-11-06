@@ -23,7 +23,7 @@ pub mod host;
 pub mod io;
 pub mod logger;
 pub mod mm;
-#[cfg(not(test))]
+#[cfg(not(any(test, kani)))]
 pub mod panic;
 pub mod realm;
 pub mod rmi;

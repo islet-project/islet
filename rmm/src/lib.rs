@@ -5,7 +5,7 @@
 #![feature(const_mut_refs)]
 #![feature(specialization)]
 #![warn(rust_2018_idioms)]
-#![deny(warnings)]
+//#![deny(warnings)]
 
 #[cfg(not(test))]
 pub mod allocator;

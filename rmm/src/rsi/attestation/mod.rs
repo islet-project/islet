@@ -155,11 +155,14 @@ pub fn get_token(
 ) -> usize {
     // TODO: consider storing attestation object somewhere,
     // as RAK and token do not change during rmm lifetime.
+    #[cfg(not(kani))]
     let token = Attestation::new(&plat_token(), &realm_attest_key()).create_attestation_token(
         challenge,
         measurements,
         hash_algo,
     );
+    #[cfg(kani)]
+    let token = alloc::vec::Vec::new();
 
     unsafe {
         let pa_ptr = attest_pa as *mut u8;

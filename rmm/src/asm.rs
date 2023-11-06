@@ -36,6 +36,18 @@ pub fn smc(cmd: usize, args: &[usize]) -> [usize; 8] {
             inlateout("x7") padded_args[7] => ret[7],
         )
     }
+    // TODO: make the below configurable outside
+    #[cfg(kani)]
+    {
+        ret[0] = kani::any();
+        ret[1] = kani::any();
+        ret[2] = kani::any();
+        ret[3] = kani::any();
+        ret[4] = kani::any();
+        ret[5] = kani::any();
+        ret[6] = kani::any();
+        ret[7] = kani::any();
+    }
 
     ret
 }

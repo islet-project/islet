@@ -35,6 +35,9 @@ pub mod stat;
 #[macro_use]
 pub mod r#macro;
 mod measurement;
+#[cfg(kani)]
+pub mod monitor;
+#[cfg(not(kani))]
 mod monitor;
 mod rmm_el3;
 

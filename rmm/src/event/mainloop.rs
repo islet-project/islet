@@ -26,6 +26,7 @@ impl Mainloop {
         }
     }
 
+    #[cfg(not(kani))]
     fn add_event_handlers(&mut self) {
         rmi::features::set_event_handler(self);
         rmi::gpt::set_event_handler(self);
@@ -33,6 +34,11 @@ impl Mainloop {
         rmi::rec::set_event_handler(self);
         rmi::rtt::set_event_handler(self);
         rmi::version::set_event_handler(self);
+    }
+
+    #[cfg(kani)]
+    fn add_event_handlers(&mut self) {
+        rmi::features::set_event_handler(self);
     }
 
     pub fn boot_complete(&mut self) {
@@ -43,6 +49,7 @@ impl Mainloop {
         self.dispatch(ctx);
     }
 
+    #[cfg(not(kani))]
     pub fn dispatch(&self, ctx: Context) {
         let ret = smc(ctx.cmd(), ctx.arg_slice());
         let cmd = ret[0];
@@ -62,6 +69,25 @@ impl Mainloop {
         );
     }
 
+    #[cfg(kani)]
+    pub fn dispatch(&self, ctx: Context) {
+        let ret = smc(ctx.cmd(), ctx.arg_slice());
+        let cmd = ret[0];
+        // The below should be configurable outside
+        kani::assume(cmd == 0xc400_0165);
+
+        // The below should be configurable according to different kind of RMIs
+        let arg_num = 2;
+        let ret_num = 2;
+        {
+            let mut ctx = Context::new(cmd);
+            ctx.init_arg(&ret[1..arg_num]);
+            ctx.resize_ret(ret_num);
+            self.queue.lock().push_back(ctx);
+        }
+    }
+
+    #[cfg(not(kani))]
     pub fn run(&self, monitor: &Monitor) {
         loop {
             let mut ctx = self.queue.lock().pop_front().unwrap(); // TODO: remove unwrap here, by introducing a more realistic queue
@@ -82,6 +108,25 @@ impl Mainloop {
             ctx.cmd = rmi::REQ_COMPLETE;
             self.dispatch(ctx);
         }
+    }
+    #[cfg(kani)]
+    pub fn run(&self, monitor: &Monitor) {
+        let mut ctx = self.queue.lock().pop_front().unwrap();
+
+        if self.on_event.is_empty() {
+            panic!("There is no registered event handler.");
+        }
+
+        match self.on_event.get(&ctx.cmd()) {
+            Some(handler) => {
+                ctx.do_rmi(|arg, ret| handler(arg, ret, monitor));
+            }
+            None => {
+                assert!(false);
+                error!("Not registered event: {:X}", ctx.cmd());
+                ctx.init_arg(&[rmi::RET_FAIL]);
+            }
+        };
     }
 
     pub fn add_event_handler(&mut self, code: usize, handler: Handler) {

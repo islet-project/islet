@@ -26,7 +26,7 @@ struct Ripas {
 }
 
 #[derive(Debug)]
-pub struct Inner {
+struct Inner {
     owner: usize,
     realmid: usize,
     ipa_bits: usize,

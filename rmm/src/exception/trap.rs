@@ -6,7 +6,7 @@ use self::syndrome::Fault;
 use self::syndrome::Syndrome;
 use super::lower::synchronous;
 use crate::cpu;
-use crate::event::realmexit::{ExitSyncType, RmiRecExitReason};
+use crate::event::realmexit::{ExitSyncType, RecExitReason};
 use crate::mm::translation::PageTable;
 use crate::realm::context::Context;
 use crate::realm::vcpu::VCPU;
@@ -169,14 +169,14 @@ pub extern "C" fn handle_lower_exception(
                 const SPSR_EL2_MODE_EL1H_OFFSET: u64 = 0x200;
                 vcpu.context.elr = vbar + SPSR_EL2_MODE_EL1H_OFFSET;
 
-                tf.regs[0] = RmiRecExitReason::Sync(ExitSyncType::Undefined).into();
+                tf.regs[0] = RecExitReason::Sync(ExitSyncType::Undefined).into();
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = 0;
                 tf.regs[3] = unsafe { FAR_EL2.get() };
                 RET_TO_REC
             }
             Syndrome::SMC => {
-                tf.regs[0] = RmiRecExitReason::Sync(ExitSyncType::RSI).into();
+                tf.regs[0] = RecExitReason::Sync(ExitSyncType::RSI).into();
                 tf.regs[1] = vcpu.context.gp_regs[0]; // RSI command
                 advance_pc(vcpu);
                 RET_TO_RMM
@@ -184,9 +184,9 @@ pub extern "C" fn handle_lower_exception(
             Syndrome::InstructionAbort(_) | Syndrome::DataAbort(_) => {
                 debug!("Synchronous: InstructionAbort | DataAbort");
                 if let Syndrome::InstructionAbort(_) = Syndrome::from(esr) {
-                    tf.regs[0] = RmiRecExitReason::Sync(ExitSyncType::InstAbort).into()
+                    tf.regs[0] = RecExitReason::Sync(ExitSyncType::InstAbort).into()
                 } else {
-                    tf.regs[0] = RmiRecExitReason::Sync(ExitSyncType::DataAbort).into();
+                    tf.regs[0] = RecExitReason::Sync(ExitSyncType::DataAbort).into();
                 }
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = unsafe { HPFAR_EL2.get() };
@@ -205,7 +205,7 @@ pub extern "C" fn handle_lower_exception(
             }
             Syndrome::WFX => {
                 debug!("Synchronous: WFx");
-                tf.regs[0] = RmiRecExitReason::Sync(ExitSyncType::Undefined).into();
+                tf.regs[0] = RecExitReason::Sync(ExitSyncType::Undefined).into();
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = unsafe { HPFAR_EL2.get() };
                 tf.regs[3] = unsafe { FAR_EL2.get() };
@@ -214,7 +214,7 @@ pub extern "C" fn handle_lower_exception(
             }
             undefined => {
                 debug!("Synchronous: Other");
-                tf.regs[0] = RmiRecExitReason::Sync(ExitSyncType::Undefined).into();
+                tf.regs[0] = RecExitReason::Sync(ExitSyncType::Undefined).into();
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = unsafe { HPFAR_EL2.get() };
                 tf.regs[3] = unsafe { FAR_EL2.get() };
@@ -223,7 +223,7 @@ pub extern "C" fn handle_lower_exception(
         },
         Kind::Irq => {
             debug!("IRQ");
-            tf.regs[0] = RmiRecExitReason::IRQ.into();
+            tf.regs[0] = RecExitReason::IRQ.into();
             // IRQ isn't interpreted with esr. It just hold previsou info. Void them out.
             tf.regs[1] = 0;
             tf.regs[2] = 0;

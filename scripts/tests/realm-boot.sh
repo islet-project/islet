@@ -26,7 +26,7 @@ check_result()
 }
 
 tar -xf $ROOT/assets/prebuilt/out.tar.bz2 -C $ROOT
-$ROOT/scripts/fvp-cca -bo -rmm=islet --use-prebuilt --rmm-log-level=error --realm-linux
+$ROOT/scripts/fvp-cca -bo -rmm=islet --use-prebuilt --rmm-log-level=error
 $ROOT/scripts/fvp-cca -ro -nw=linux --realm=linux -rmm=islet --no-telnet &
 
 sleep 640

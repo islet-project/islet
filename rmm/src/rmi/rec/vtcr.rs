@@ -48,7 +48,7 @@ pub fn prepare_vtcr(rd: &Rd) -> Result<u64, Error> {
     Ok(vtcr_val)
 }
 
-pub fn activate_stage2_mmu(rec: &Rec) {
+pub fn activate_stage2_mmu(rec: &Rec<'_>) {
     unsafe {
         VTCR_EL2.set(rec.vtcr());
     }

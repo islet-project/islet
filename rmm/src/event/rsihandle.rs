@@ -14,7 +14,7 @@ use alloc::boxed::Box;
 use alloc::collections::btree_map::BTreeMap;
 
 pub type Handler =
-    Box<dyn Fn(&[usize], &mut [usize], &Monitor, &mut Rec, &mut Run) -> Result<(), Error>>;
+    Box<dyn Fn(&[usize], &mut [usize], &Monitor, &mut Rec<'_>, &mut Run) -> Result<(), Error>>;
 
 pub struct RsiHandle {
     pub on_event: BTreeMap<usize, Handler>,
@@ -37,7 +37,7 @@ impl RsiHandle {
         &self,
         ctx: &mut Context,
         monitor: &Monitor,
-        rec: &mut Rec,
+        rec: &mut Rec<'_>,
         run: &mut Run,
     ) -> usize {
         match self.on_event.get(&ctx.cmd) {

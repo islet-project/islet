@@ -4,6 +4,7 @@ use crate::rmi::rtt::realm_par_size;
 use vmsa::guard::Content;
 
 // TODO: Integrate with our `struct Realm`
+#[derive(Debug)]
 pub struct Rd {
     realm_id: usize,
     state: State,

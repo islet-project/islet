@@ -15,7 +15,7 @@ use armv9a::{EsrEl2, EMULATABLE_ABORT_MASK, HPFAR_EL2, NON_EMULATABLE_ABORT_MASK
 pub fn handle_realm_exit(
     realm_exit_res: [usize; 4],
     rmm: &Monitor,
-    rec: &mut Rec,
+    rec: &mut Rec<'_>,
     run: &mut Run,
 ) -> Result<(bool, usize), Error> {
     let mut return_to_ns = true;
@@ -96,7 +96,7 @@ fn get_write_val(rmi: RMI, realm_id: usize, vcpu_id: usize, esr_el2: u64) -> Res
 fn handle_data_abort(
     realm_exit_res: [usize; 4],
     rmm: &Monitor,
-    rec: &mut Rec,
+    rec: &mut Rec<'_>,
     run: &mut Run,
 ) -> Result<usize, Error> {
     let realm_id = rec.realmid()?;

@@ -113,7 +113,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let mut rec_granule = get_granule_if!(arg[1], GranuleState::Rec)?;
-        let rec = rec_granule.content_mut::<Rec>();
+        let rec = rec_granule.content_mut::<Rec<'_>>();
 
         let mut prot = rmi::MapProt::new(0);
         match ripas as u64 {

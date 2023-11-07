@@ -49,7 +49,7 @@ pub fn do_host_call(
     _arg: &[usize],
     ret: &mut [usize],
     rmm: &Monitor,
-    rec: &mut Rec,
+    rec: &mut Rec<'_>,
     run: &mut Run,
 ) -> core::result::Result<(), Error> {
     let rmi = rmm.rmi;

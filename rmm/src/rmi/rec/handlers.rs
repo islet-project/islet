@@ -48,12 +48,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // set Rec_state and grab the lock for Rec granule
         let mut rec_granule = get_granule_if!(rec, GranuleState::Delegated)?;
         rmm.page_table.map(rec, true);
-        let rec = rec_granule.content_mut::<Rec>();
+        let rec = rec_granule.content_mut::<Rec<'_>>();
 
         match rmi.create_vcpu(rd.id()) {
             Ok(vcpuid) => {
                 ret[1] = vcpuid;
-                rec.init(owner, vcpuid, params.flags, rd.id(), rd.ipa_bits())?;
+                rec.init(owner, vcpuid, params.flags)?;
             }
             Err(_) => return Err(Error::RmiErrorInput),
         }
@@ -97,7 +97,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // grab the lock for Rec
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
-        let mut rec = rec_granule.content_mut::<Rec>();
+        let mut rec = rec_granule.content_mut::<Rec<'_>>();
         let realm_id = rec.realmid()?;
 
         if !rec.runnable() {

@@ -71,7 +71,7 @@ extern crate alloc;
 
 pub fn set_event_handler(rsi: &mut RsiHandle) {
     let dummy =
-        |_arg: &[usize], ret: &mut [usize], rmm: &Monitor, rec: &mut Rec, _run: &mut Run| {
+        |_arg: &[usize], ret: &mut [usize], rmm: &Monitor, rec: &mut Rec<'_>, _run: &mut Run| {
             let rmi = rmm.rmi;
             let vcpuid = rec.vcpuid();
             let realmid = rec.realmid()?;

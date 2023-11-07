@@ -6,6 +6,7 @@ pub mod run;
 pub mod vtcr;
 use crate::realm::vcpu::State as RecState;
 use crate::rmi::error::Error;
+use crate::rmi::Rd;
 use core::cell::OnceCell;
 
 pub use self::handlers::set_event_handler;
@@ -29,104 +30,35 @@ struct Ripas {
 }
 
 #[derive(Debug)]
-struct Inner {
-    owner: usize,
-    realmid: usize,
-    ipa_bits: usize,
-}
-
-impl Inner {
-    pub fn init(owner: usize, realmid: usize, ipa_bits: usize) -> Self {
-        Inner {
-            owner,
-            realmid,
-            ipa_bits,
-        }
-    }
-
-    pub fn owner(&self) -> usize {
-        self.owner
-    }
-
-    pub fn realmid(&self) -> usize {
-        self.realmid
-    }
-
-    pub fn ipa_bits(&self) -> usize {
-        self.ipa_bits
-    }
-}
-
-/// Immutable Realm information in target Rd.
-///
-/// It can be written to only once because of OnceCell.
-/// Multiple RECs can be created per Realm
-/// so the fields in Inner are always valid
-/// before destroying the current Rec.
-#[derive(Debug)]
-struct ImmutRealmInfo {
-    inner: OnceCell<Inner>,
-}
-
-impl ImmutRealmInfo {
-    fn init(&mut self, owner: usize, realmid: usize, ipa_bits: usize) -> Result<(), Inner> {
-        self.inner.set(Inner::init(owner, realmid, ipa_bits))
-    }
-
-    fn get(&self) -> Result<&Inner, Error> {
-        match self.inner.get() {
-            Some(realm_info) => Ok(realm_info),
-            None => {
-                error!("ImmutRealmInfo is none");
-                Err(Error::RmiErrorRec)
-            }
-        }
-    }
-
-    pub fn owner(&self) -> Result<usize, Error> {
-        let inner = self.get()?;
-        Ok(inner.owner())
-    }
-
-    pub fn realmid(&self) -> Result<usize, Error> {
-        let inner = self.get()?;
-        Ok(inner.realmid())
-    }
-
-    pub fn ipa_bits(&self) -> Result<usize, Error> {
-        let inner = self.get()?;
-        Ok(inner.ipa_bits())
-    }
-}
-
-#[derive(Debug)]
-pub struct Rec {
+pub struct Rec<'a> {
     attest_state: RmmRecAttestState,
     attest_challenge: [u8; 64],
     /// PA of RD of Realm which owns this REC
+    ///
+    /// Safety:
+    /// Only immutable fields of Rd must be dereferenced by owner
+    /// by making getter method for the safety
+    owner: OnceCell<&'a Rd>,
     vcpuid: usize,
     runnable: bool,
     state: RecState,
     ripas: Ripas,
     vtcr: u64,
     host_call_pending: bool,
-    realm_info: ImmutRealmInfo,
 }
 
-impl Rec {
-    pub fn init(
-        &mut self,
-        owner: usize,
-        vcpuid: usize,
-        flags: u64,
-        realmid: usize,
-        ipa_bits: usize,
-    ) -> Result<(), Error> {
-        if let Err(new_realm_info) = self.realm_info.init(owner, realmid, ipa_bits) {
-            let cur_realm_info = self.realm_info.get()?;
+impl Rec<'_> {
+    pub fn init(&mut self, owner: usize, vcpuid: usize, flags: u64) -> Result<(), Error> {
+        if owner == 0 {
+            error!("owner should be non-zero");
+            return Err(Error::RmiErrorInput);
+        }
+
+        if let Err(input_owner) = self.owner.set(unsafe { &*(owner as *const Rd) }) {
             error!(
-                "Rec::init() called twice. cur_realm_info: {:?}, new_realm_info: {:?}",
-                cur_realm_info, new_realm_info
+                "Rec::init() called twice. cur owner: {:x}, input owner: {:x}",
+                self.get_owner()? as *const Rd as usize,
+                input_owner as *const Rd as usize
             );
             return Err(Error::RmiErrorRec);
         }
@@ -155,8 +87,16 @@ impl Rec {
         self.vcpuid
     }
 
+    fn get_owner(&self) -> Result<&Rd, Error> {
+        match self.owner.get() {
+            Some(owner) => Ok(owner),
+            None => Err(Error::RmiErrorRec),
+        }
+    }
+
     pub fn owner(&self) -> Result<usize, Error> {
-        self.realm_info.owner()
+        let owner = self.get_owner()?;
+        Ok(owner as *const Rd as usize)
     }
 
     pub fn host_call_pending(&self) -> bool {
@@ -223,14 +163,16 @@ impl Rec {
     }
 
     pub fn realmid(&self) -> Result<usize, Error> {
-        self.realm_info.realmid()
+        let owner = self.get_owner()?;
+        Ok(owner.id())
     }
 
     pub fn ipa_bits(&self) -> Result<usize, Error> {
-        self.realm_info.ipa_bits()
+        let owner = self.get_owner()?;
+        Ok(owner.ipa_bits())
     }
 }
 
-impl Content for Rec {
+impl Content for Rec<'_> {
     const FLAGS: u64 = GranuleState::Rec;
 }

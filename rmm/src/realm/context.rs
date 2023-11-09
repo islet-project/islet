@@ -63,6 +63,36 @@ pub fn set_reg(id: usize, vcpu: usize, register: usize, value: usize) -> Result<
     Ok(())
 }
 
+pub fn get_reg(id: usize, vcpu: usize, register: usize) -> Result<usize, Error> {
+    match register {
+        0..=30 => {
+            let value = get_realm(id)
+                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+                .lock()
+                .vcpus
+                .get(vcpu)
+                .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
+                .lock()
+                .context
+                .gp_regs[register];
+            Ok(value as usize)
+        }
+        31 => {
+            let value = get_realm(id)
+                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+                .lock()
+                .vcpus
+                .get(vcpu)
+                .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
+                .lock()
+                .context
+                .elr;
+            Ok(value as usize)
+        }
+        _ => Err(Error::RmiErrorInput),
+    }
+}
+
 impl crate::realm::vcpu::Context for Context {
     fn new() -> Self {
         let mut context: Self = Default::default();

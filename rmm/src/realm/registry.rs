@@ -158,36 +158,6 @@ impl crate::rmi::Interface for RMI {
         Ok(ret)
     }
 
-    fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, Error> {
-        match register {
-            0..=30 => {
-                let value = get_realm(id)
-                    .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-                    .lock()
-                    .vcpus
-                    .get(vcpu)
-                    .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
-                    .lock()
-                    .context
-                    .gp_regs[register];
-                Ok(value as usize)
-            }
-            31 => {
-                let value = get_realm(id)
-                    .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-                    .lock()
-                    .vcpus
-                    .get(vcpu)
-                    .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
-                    .lock()
-                    .context
-                    .elr;
-                Ok(value as usize)
-            }
-            _ => Err(Error::RmiErrorInput),
-        }
-    }
-
     fn receive_gic_state_from_host(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), Error> {
         let realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))?;
         let locked_realm = realm.lock();

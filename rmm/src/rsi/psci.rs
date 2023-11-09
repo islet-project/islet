@@ -1,7 +1,7 @@
 use crate::event::RsiHandle;
 use crate::granule::GranuleState;
 use crate::listen;
-use crate::realm::context::set_reg;
+use crate::realm::context::{get_reg, set_reg};
 use crate::rmi;
 use crate::rmi::realm::{rd::State, Rd};
 use crate::rmi::rec::run::Run;
@@ -117,12 +117,11 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         Ok(())
     });
 
-    listen!(rsi, SMC32::FEATURES, |_arg, ret, rmm, rec, _run| {
-        let rmi = rmm.rmi;
+    listen!(rsi, SMC32::FEATURES, |_arg, ret, _rmm, rec, _run| {
         let vcpuid = rec.vcpuid();
         let realmid = rec.realmid()?;
 
-        let feature_id = rmi.get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
+        let feature_id = get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
         let retval = match feature_id {
             SMC32::CPU_SUSPEND
             | SMC64::CPU_SUSPEND

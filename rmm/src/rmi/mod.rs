@@ -148,7 +148,6 @@ pub trait Interface {
     fn data_destroy(&self, id: usize, guest: usize) -> Result<usize, Error>;
     fn make_shared(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;
     fn make_exclusive(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;
-    fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, Error>;
     fn receive_gic_state_from_host(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), Error>;
     fn send_gic_state_to_host(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), Error>;
     fn send_timer_state_to_host(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), Error>;

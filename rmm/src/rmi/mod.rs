@@ -113,7 +113,7 @@ impl MapProt {
 
 pub trait Interface {
     // TODO: it would be better to leave only true RMI interface here
-    //       while moving others to another place (e.g., set_reg())
+    //       while moving others to another place
     fn create_realm(&self, vmid: u16, rtt_base: usize) -> Result<usize, Error>;
     fn create_vcpu(&self, id: usize) -> Result<usize, Error>;
     fn realm_config(&self, id: usize, config_ipa: usize, ipa_bits: usize) -> Result<(), Error>;
@@ -148,7 +148,6 @@ pub trait Interface {
     fn data_destroy(&self, id: usize, guest: usize) -> Result<usize, Error>;
     fn make_shared(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;
     fn make_exclusive(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;
-    fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), Error>;
     fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, Error>;
     fn receive_gic_state_from_host(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), Error>;
     fn send_gic_state_to_host(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), Error>;

@@ -9,6 +9,7 @@ use crate::host::pointer::Pointer as HostPointer;
 use crate::host::pointer::PointerMut as HostPointerMut;
 use crate::listen;
 use crate::measurement::HashContext;
+use crate::realm::context::set_reg;
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmi::realm::{rd::State, Rd};
@@ -59,17 +60,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         for (idx, gpr) in params.gprs.iter().enumerate() {
-            if rmi
-                .set_reg(rd.id(), rec.vcpuid(), idx, *gpr as usize)
-                .is_err()
-            {
+            if set_reg(rd.id(), rec.vcpuid(), idx, *gpr as usize).is_err() {
                 return Err(Error::RmiErrorInput);
             }
         }
-        if rmi
-            .set_reg(rd.id(), rec.vcpuid(), 31, params.pc as usize)
-            .is_err()
-        {
+        if set_reg(rd.id(), rec.vcpuid(), 31, params.pc as usize).is_err() {
             return Err(Error::RmiErrorInput);
         }
         rec.set_vtcr(prepare_vtcr(rd)?);
@@ -138,8 +133,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         let ripas = rec.ripas_addr() as usize;
         if ripas > 0 {
-            rmi.set_reg(realm_id, rec.vcpuid(), 0, 0)?;
-            rmi.set_reg(realm_id, rec.vcpuid(), 1, ripas)?;
+            set_reg(realm_id, rec.vcpuid(), 0, 0)?;
+            set_reg(realm_id, rec.vcpuid(), 1, ripas)?;
             rec.set_ripas(0, 0, 0, 0);
         }
 

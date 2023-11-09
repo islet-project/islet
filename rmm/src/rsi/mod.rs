@@ -11,6 +11,7 @@ use crate::listen;
 use crate::measurement::{
     HashContext, Measurement, MeasurementError, MEASUREMENTS_SLOT_NR, MEASUREMENTS_SLOT_RIM,
 };
+use crate::realm::context::set_reg;
 use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::mm::stage2_tte::invalid_ripas;
 use crate::rmi;
@@ -129,10 +130,10 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         rec.set_attest_challenge(&challenge);
         rec.set_attest_state(RmmRecAttestState::AttestInProgress);
 
-        rmi.set_reg(realmid, vcpuid, 0, SUCCESS)?;
+        set_reg(realmid, vcpuid, 0, SUCCESS)?;
 
         // TODO: Calculate real token size
-        rmi.set_reg(realmid, vcpuid, 1, 4096)?;
+        set_reg(realmid, vcpuid, 1, 4096)?;
 
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
@@ -151,7 +152,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
         if rec.attest_state() != RmmRecAttestState::AttestInProgress {
             warn!("Calling attest token continue without init");
-            rmi.set_reg(realmid, vcpuid, 0, ERROR_STATE)?;
+            set_reg(realmid, vcpuid, 0, ERROR_STATE)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
@@ -159,7 +160,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let attest_ipa = rmi.get_reg(realmid, vcpuid, 1)?;
         if validate_ipa(attest_ipa, ipa_bits).is_err() {
             warn!("Wrong ipa passed {}", attest_ipa);
-            rmi.set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
@@ -184,8 +185,8 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             hash_algo,
         );
 
-        rmi.set_reg(realmid, vcpuid, 0, SUCCESS)?;
-        rmi.set_reg(realmid, vcpuid, 1, attest_size)?;
+        set_reg(realmid, vcpuid, 0, SUCCESS)?;
+        set_reg(realmid, vcpuid, 1, attest_size)?;
 
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
@@ -193,12 +194,11 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, HOST_CALL, do_host_call);
 
-    listen!(rsi, ABI_VERSION, |_arg, ret, rmm, rec, _| {
-        let rmi = rmm.rmi;
+    listen!(rsi, ABI_VERSION, |_arg, ret, _rmm, rec, _| {
         let vcpuid = rec.vcpuid();
         let realmid = rec.realmid()?;
 
-        if rmi.set_reg(realmid, vcpuid, 0, VERSION).is_err() {
+        if set_reg(realmid, vcpuid, 0, VERSION).is_err() {
             warn!(
                 "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
                 realmid, vcpuid
@@ -218,20 +218,20 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
         if index >= MEASUREMENTS_SLOT_NR {
             warn!("Wrong index passed: {}", index);
-            rmi.set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
 
         rmm.rsi.measurement_read(realmid, index, &mut measurement)?;
-        rmi.set_reg(realmid, vcpuid, 0, SUCCESS)?;
+        set_reg(realmid, vcpuid, 0, SUCCESS)?;
         for (ind, chunk) in measurement
             .as_slice()
             .chunks_exact(core::mem::size_of::<usize>())
             .enumerate()
         {
             let reg_value = usize::from_le_bytes(chunk.try_into().unwrap());
-            rmi.set_reg(realmid, vcpuid, ind + 1, reg_value)?;
+            set_reg(realmid, vcpuid, ind + 1, reg_value)?;
         }
 
         ret[0] = rmi::SUCCESS_REC_ENTER;
@@ -260,7 +260,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
                 "Wrong index or buffer size passed: idx: {}, size: {}",
                 index, size
             );
-            rmi.set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
@@ -269,7 +269,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let rd = rd.content::<Rd>();
         HashContext::new(&rmm.rsi, &rd)?.extend_measurement(&buffer[0..size], index)?;
 
-        rmi.set_reg(realmid, vcpuid, 0, SUCCESS)?;
+        set_reg(realmid, vcpuid, 0, SUCCESS)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
     });
@@ -281,14 +281,14 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let realmid = rec.realmid()?;
         let config_ipa = rmi.get_reg(realmid, vcpuid, 1)?;
         if validate_ipa(config_ipa, ipa_bits).is_err() {
-            rmi.set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
 
         rmi.realm_config(realmid, config_ipa, ipa_bits)?;
 
-        if rmi.set_reg(realmid, vcpuid, 0, SUCCESS).is_err() {
+        if set_reg(realmid, vcpuid, 0, SUCCESS).is_err() {
             warn!(
                 "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
                 realmid, vcpuid
@@ -306,7 +306,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
         let ipa_page = rmi.get_reg(realmid, vcpuid, 1)?;
         if validate_ipa(ipa_page, ipa_bits).is_err() {
-            if rmi.set_reg(realmid, vcpuid, 0, ERROR_INPUT).is_err() {
+            if set_reg(realmid, vcpuid, 0, ERROR_INPUT).is_err() {
                 warn!(
                     "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
                     realmid, vcpuid
@@ -323,14 +323,14 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             ipa_page, ripas
         );
 
-        if rmi.set_reg(realmid, vcpuid, 0, SUCCESS).is_err() {
+        if set_reg(realmid, vcpuid, 0, SUCCESS).is_err() {
             warn!(
                 "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
                 realmid, vcpuid
             );
         }
 
-        if rmi.set_reg(realmid, vcpuid, 1, ripas).is_err() {
+        if set_reg(realmid, vcpuid, 1, ripas).is_err() {
             warn!(
                 "Unable to set register 1. realmid: {:?} vcpuid: {:?}",
                 realmid, vcpuid
@@ -362,7 +362,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             || !is_protected_ipa(ipa_start, ipa_bits)
             || !is_protected_ipa(ipa_end - 1, ipa_bits)
         {
-            rmi.set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }

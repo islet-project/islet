@@ -158,49 +158,6 @@ impl crate::rmi::Interface for RMI {
         Ok(ret)
     }
 
-    fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), Error> {
-        match register {
-            0..=30 => {
-                get_realm(id)
-                    .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-                    .lock()
-                    .vcpus
-                    .get(vcpu)
-                    .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
-                    .lock()
-                    .context
-                    .gp_regs[register] = value as u64;
-                Ok(())
-            }
-            31 => {
-                get_realm(id)
-                    .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-                    .lock()
-                    .vcpus
-                    .get(vcpu)
-                    .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
-                    .lock()
-                    .context
-                    .elr = value as u64;
-                Ok(())
-            }
-            32 => {
-                get_realm(id)
-                    .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-                    .lock()
-                    .vcpus
-                    .get(vcpu)
-                    .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
-                    .lock()
-                    .context
-                    .spsr = value as u64;
-                Ok(())
-            }
-            _ => Err(Error::RmiErrorInput),
-        }?;
-        Ok(())
-    }
-
     fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, Error> {
         match register {
             0..=30 => {

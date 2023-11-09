@@ -8,6 +8,7 @@ use crate::rsi;
 use crate::rsi::psci;
 use crate::Monitor;
 // TODO: Change this into rsi::error::Error
+use crate::realm::context::set_reg;
 use crate::rmi::error::Error;
 
 use alloc::boxed::Box;
@@ -52,7 +53,6 @@ impl RsiHandle {
                     RsiHandle::NOT_SUPPORTED
                 );
 
-                let rmi = monitor.rmi;
                 let realm_id = match rec.realmid() {
                     Ok(realm_id) => realm_id,
                     Err(e) => {
@@ -62,7 +62,7 @@ impl RsiHandle {
                 };
 
                 // TODO: handle the error properly
-                let _ = rmi.set_reg(realm_id, rec.vcpuid(), 0, RsiHandle::NOT_SUPPORTED);
+                let _ = set_reg(realm_id, rec.vcpuid(), 0, RsiHandle::NOT_SUPPORTED);
 
                 return RsiHandle::RET_FAIL;
             }

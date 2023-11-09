@@ -13,8 +13,16 @@ use crate::host::pointer::Pointer as HostPointer;
 use crate::listen;
 use crate::measurement::HashContext;
 use crate::mm::translation::PageTable;
+use crate::realm::mm::stage2_translation::Stage2Translation;
+use crate::realm::mm::IPATranslation;
+use crate::realm::registry::RMS;
+use crate::realm::vcpu::remove;
+use crate::realm::Realm;
 use crate::rmi;
 use crate::{get_granule, get_granule_if};
+use alloc::boxed::Box;
+use alloc::sync::Arc;
+use spin::mutex::Mutex;
 
 extern crate alloc;
 
@@ -55,16 +63,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let _ = get_granule_if!(params.rtt_base as usize, GranuleState::Delegated)?;
 
         // revisit rmi.create_realm() (is it necessary?)
-        rmm.rmi
-            .create_realm(params.vmid, params.rtt_base as usize)
-            .map(|id| {
-                rd_obj.init(
-                    id,
-                    params.rtt_base as usize,
-                    params.ipa_bits(),
-                    params.rtt_level_start as isize,
-                )
-            })?;
+        create_realm(params.vmid, params.rtt_base as usize).map(|id| {
+            rd_obj.init(
+                id,
+                params.rtt_base as usize,
+                params.ipa_bits(),
+                params.rtt_level_start as isize,
+            )
+        })?;
 
         let id = rd_obj.id();
         let rtt_base = rd_obj.rtt_base();
@@ -83,7 +89,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         eplilog().map_err(|e| {
             rmm.page_table.unmap(rd);
-            rmm.rmi.remove(id).expect("Realm should be created before.");
+            remove(id).expect("Realm should be created before.");
             e
         })
     });
@@ -94,12 +100,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     listen!(mainloop, rmi::REALM_DESTROY, |arg, _ret, rmm| {
-        let rmi = rmm.rmi;
-
         // get the lock for Rd
         let mut rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
-        rmi.remove(rd.id())?;
+        remove(rd.id())?;
 
         let mut rtt_granule = get_granule_if!(rd.rtt_base(), GranuleState::RTT)?;
         set_granule(&mut rtt_granule, GranuleState::Delegated)?;
@@ -110,4 +114,25 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         Ok(())
     });
+}
+
+fn create_realm(vmid: u16, rtt_base: usize) -> Result<usize, Error> {
+    let mut rms = RMS.lock();
+
+    for (_, realm) in &rms.1 {
+        if vmid == realm.lock().vmid {
+            return Err(Error::RmiErrorInput);
+        }
+    }
+
+    let id = rms.0;
+    let s2_table = Arc::new(Mutex::new(
+        Box::new(Stage2Translation::new(rtt_base)) as Box<dyn IPATranslation>
+    ));
+    let realm = Realm::new(id, vmid, s2_table);
+
+    rms.0 += 1;
+    rms.1.insert(id, realm.clone());
+
+    Ok(id)
 }

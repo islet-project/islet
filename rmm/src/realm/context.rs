@@ -1,7 +1,10 @@
 use super::timer;
 use crate::cpu::get_cpu_id;
 use crate::gic;
+use crate::realm::registry::get_realm;
 use crate::realm::vcpu::VCPU;
+use crate::rmi::error::Error;
+use crate::rmi::error::InternalError::*;
 
 use armv9a::regs::*;
 
@@ -15,6 +18,79 @@ pub struct Context {
     pub gic_state: GICRegister,
     pub timer: TimerRegister,
     pub fp_regs: [u128; 32],
+}
+
+pub fn set_reg(id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), Error> {
+    match register {
+        0..=30 => {
+            get_realm(id)
+                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+                .lock()
+                .vcpus
+                .get(vcpu)
+                .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
+                .lock()
+                .context
+                .gp_regs[register] = value as u64;
+            Ok(())
+        }
+        31 => {
+            get_realm(id)
+                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+                .lock()
+                .vcpus
+                .get(vcpu)
+                .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
+                .lock()
+                .context
+                .elr = value as u64;
+            Ok(())
+        }
+        32 => {
+            get_realm(id)
+                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+                .lock()
+                .vcpus
+                .get(vcpu)
+                .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
+                .lock()
+                .context
+                .spsr = value as u64;
+            Ok(())
+        }
+        _ => Err(Error::RmiErrorInput),
+    }?;
+    Ok(())
+}
+
+pub fn get_reg(id: usize, vcpu: usize, register: usize) -> Result<usize, Error> {
+    match register {
+        0..=30 => {
+            let value = get_realm(id)
+                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+                .lock()
+                .vcpus
+                .get(vcpu)
+                .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
+                .lock()
+                .context
+                .gp_regs[register];
+            Ok(value as usize)
+        }
+        31 => {
+            let value = get_realm(id)
+                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+                .lock()
+                .vcpus
+                .get(vcpu)
+                .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
+                .lock()
+                .context
+                .elr;
+            Ok(value as usize)
+        }
+        _ => Err(Error::RmiErrorInput),
+    }
 }
 
 impl crate::realm::vcpu::Context for Context {

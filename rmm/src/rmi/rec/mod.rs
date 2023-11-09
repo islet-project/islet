@@ -4,9 +4,14 @@ pub mod mpidr;
 pub mod params;
 pub mod run;
 pub mod vtcr;
+use crate::realm;
+use crate::realm::registry::get_realm;
 use crate::realm::vcpu::State as RecState;
+use crate::realm::vcpu::VCPU;
 use crate::rmi::error::Error;
+use crate::rmi::error::InternalError::*;
 use crate::rmi::Rd;
+use crate::rmm_exit;
 use core::cell::OnceCell;
 
 pub use self::handlers::set_event_handler;
@@ -175,4 +180,65 @@ impl Rec<'_> {
 
 impl Content for Rec<'_> {
     const FLAGS: u64 = GranuleState::Rec;
+}
+
+fn enter() -> [usize; 4] {
+    unsafe {
+        if let Some(vcpu) = realm::vcpu::current() {
+            if vcpu.is_realm_dead() {
+                vcpu.from_current();
+            } else {
+                vcpu.realm.lock().page_table.lock().clean();
+                return rmm_exit([0; 4]);
+            }
+        }
+        [0, 0, 0, 0]
+    }
+}
+
+fn exit() {
+    unsafe {
+        if let Some(vcpu) = realm::vcpu::current() {
+            vcpu.from_current();
+        }
+    }
+}
+
+pub fn run(id: usize, vcpu: usize, incr_pc: usize) -> Result<[usize; 4], Error> {
+    if incr_pc == 1 {
+        get_realm(id)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .vcpus
+            .get(vcpu)
+            .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
+            .lock()
+            .context
+            .elr += 4;
+    }
+    debug!(
+        "resuming: {:#x}",
+        get_realm(id)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .vcpus
+            .get(vcpu)
+            .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
+            .lock()
+            .context
+            .elr
+    );
+
+    get_realm(id)
+        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+        .lock()
+        .vcpus
+        .get(vcpu)
+        .map(|vcpu| VCPU::into_current(&mut *vcpu.lock()));
+
+    trace!("Switched to VCPU {} on Realm {}", vcpu, id);
+    let ret = enter();
+
+    exit();
+    Ok(ret)
 }

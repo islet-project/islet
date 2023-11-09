@@ -8,9 +8,7 @@ pub mod rtt;
 pub mod version;
 
 use crate::define_interface;
-use crate::rmi::error::Error;
 use crate::rmi::realm::Rd;
-use crate::rmi::rec::run::Run;
 
 define_interface! {
     command {
@@ -84,8 +82,6 @@ pub const EXIT_RIPAS_CHANGE: u8 = 4;
 pub const EXIT_HOST_CALL: u8 = 5;
 pub const EXIT_SERROR: u8 = 6;
 
-pub type RMI = &'static dyn Interface;
-
 pub struct MapProt(usize);
 
 impl From<usize> for MapProt {
@@ -109,51 +105,6 @@ impl MapProt {
     }
     pub const DEVICE: u64 = 0;
     pub const NS_PAS: u64 = 1;
-}
-
-pub trait Interface {
-    // TODO: it would be better to leave only true RMI interface here
-    //       while moving others to another place (e.g., set_reg())
-    fn create_realm(&self, vmid: u16, rtt_base: usize) -> Result<usize, Error>;
-    fn create_vcpu(&self, id: usize) -> Result<usize, Error>;
-    fn realm_config(&self, id: usize, config_ipa: usize, ipa_bits: usize) -> Result<(), Error>;
-    fn remove(&self, id: usize) -> Result<(), Error>;
-    fn run(&self, id: usize, vcpu: usize, incr_pc: usize) -> Result<[usize; 4], Error>;
-    fn rtt_create(
-        &self,
-        id: usize,
-        rtt_addr: usize,
-        guest: usize,
-        level: usize,
-    ) -> Result<(), Error>;
-    fn rtt_destroy(
-        &self,
-        rd: &Rd,
-        rtt_addr: usize,
-        guest: usize,
-        level: usize,
-    ) -> Result<(), Error>;
-    fn rtt_init_ripas(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;
-    fn rtt_get_ripas(&self, id: usize, ipa: usize, level: usize) -> Result<u64, Error>;
-    fn rtt_read_entry(&self, id: usize, guest: usize, level: usize) -> Result<[usize; 4], Error>;
-    fn rtt_map_unprotected(
-        &self,
-        rd: &Rd,
-        guest: usize,
-        level: usize,
-        host_s2tte: usize,
-    ) -> Result<(), Error>;
-    fn rtt_unmap_unprotected(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;
-    fn data_create(&self, id: usize, guest: usize, target_pa: usize) -> Result<(), Error>;
-    fn data_destroy(&self, id: usize, guest: usize) -> Result<usize, Error>;
-    fn make_shared(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;
-    fn make_exclusive(&self, id: usize, guest: usize, level: usize) -> Result<(), Error>;
-    fn set_reg(&self, id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), Error>;
-    fn get_reg(&self, id: usize, vcpu: usize, register: usize) -> Result<usize, Error>;
-    fn receive_gic_state_from_host(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), Error>;
-    fn send_gic_state_to_host(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), Error>;
-    fn send_timer_state_to_host(&self, id: usize, vcpu: usize, run: &mut Run) -> Result<(), Error>;
-    fn emulate_mmio(&self, id: usize, vcpu: usize, run: &Run) -> Result<(), Error>;
 }
 
 pub(crate) fn dummy() {

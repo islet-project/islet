@@ -23,11 +23,13 @@ pub mod host;
 pub mod io;
 pub mod logger;
 pub mod mm;
+pub mod mmio;
 #[cfg(not(any(test, kani)))]
 pub mod panic;
 pub mod realm;
 pub mod rmi;
 pub mod rsi;
+pub mod rtt;
 #[cfg(feature = "stat")]
 pub mod stat;
 #[macro_use]

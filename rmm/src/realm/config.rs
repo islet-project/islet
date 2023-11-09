@@ -1,3 +1,9 @@
+use crate::realm::mm::address::GuestPhysAddr;
+use crate::realm::registry::get_realm;
+use crate::rmi::error::Error;
+use crate::rmi::error::InternalError::*;
+use crate::rmi::rtt::RTT_PAGE_LEVEL;
+
 #[repr(C)]
 pub struct RealmConfig {
     ipa_width: usize,
@@ -15,5 +21,21 @@ impl RealmConfig {
     pub unsafe fn init(config_addr: usize, ipa_width: usize) {
         let config: &mut RealmConfig = &mut *(config_addr as *mut RealmConfig);
         config.ipa_width = ipa_width;
+    }
+}
+
+pub fn realm_config(id: usize, config_ipa: usize, ipa_bits: usize) -> Result<(), Error> {
+    let res = get_realm(id)
+        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+        .lock()
+        .page_table
+        .lock()
+        .ipa_to_pa(GuestPhysAddr::from(config_ipa), RTT_PAGE_LEVEL);
+    if let Some(pa) = res {
+        let pa: usize = pa.into();
+        unsafe { RealmConfig::init(pa, ipa_bits) };
+        Ok(())
+    } else {
+        Err(Error::RmiErrorInput)
     }
 }

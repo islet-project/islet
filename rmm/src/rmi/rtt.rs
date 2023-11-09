@@ -51,8 +51,7 @@ fn is_valid_rtt_cmd(ipa: usize, level: usize) -> bool {
 }
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::RTT_CREATE, |arg, _ret, rmm| {
-        let rmi = rmm.rmi;
+    listen!(mainloop, rmi::RTT_CREATE, |arg, _ret, _rmm| {
         let rtt_addr = arg[0];
         let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
@@ -65,12 +64,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if rtt_addr == arg[1] {
             return Err(Error::RmiErrorInput);
         }
-        rmi.rtt_create(rd.id(), rtt_addr, ipa, level)?;
+        crate::rtt::create(rd.id(), rtt_addr, ipa, level)?;
         Ok(())
     });
 
-    listen!(mainloop, rmi::RTT_DESTROY, |arg, _ret, rmm| {
-        let rmi = rmm.rmi;
+    listen!(mainloop, rmi::RTT_DESTROY, |arg, _ret, _rmm| {
         let rtt_addr = arg[0];
         let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
@@ -80,12 +78,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if !is_valid_rtt_cmd(ipa, level) {
             return Err(Error::RmiErrorInput);
         }
-        rmi.rtt_destroy(rd, rtt_addr, ipa, level)?;
+        crate::rtt::destroy(rd, rtt_addr, ipa, level)?;
         Ok(())
     });
 
     listen!(mainloop, rmi::RTT_INIT_RIPAS, |arg, _ret, rmm| {
-        let rmi = rmm.rmi;
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let ipa = arg[1];
@@ -97,15 +94,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if !is_valid_rtt_cmd(ipa, level) {
             return Err(Error::RmiErrorInput);
         }
-        rmi.rtt_init_ripas(rd.id(), ipa, level)?;
+        crate::rtt::init_ripas(rd.id(), ipa, level)?;
 
         HashContext::new(&rmm.rsi, &rd)?.measure_ripas_granule(ipa, level as u8)?;
 
         Ok(())
     });
 
-    listen!(mainloop, rmi::RTT_SET_RIPAS, |arg, _ret, rmm| {
-        let rmi = rmm.rmi;
+    listen!(mainloop, rmi::RTT_SET_RIPAS, |arg, _ret, _rmm| {
         let ipa = arg[2];
         let level = arg[3];
         let ripas = arg[4];
@@ -139,9 +135,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         if ripas as u64 == RIPAS_EMPTY {
-            rmi.make_shared(rd.id(), ipa, level)?;
+            crate::rtt::make_shared(rd.id(), ipa, level)?;
         } else if ripas as u64 == RIPAS_RAM {
-            rmi.make_exclusive(rd.id(), ipa, level)?;
+            crate::rtt::make_exclusive(rd.id(), ipa, level)?;
         } else {
             unreachable!();
         }
@@ -149,8 +145,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::RTT_READ_ENTRY, |arg, ret, rmm| {
-        let rmi = rmm.rmi;
+    listen!(mainloop, rmi::RTT_READ_ENTRY, |arg, ret, _rmm| {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let ipa = arg[1];
@@ -159,14 +154,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        let res = rmi.rtt_read_entry(rd.id(), ipa, level)?;
+        let res = crate::rtt::read_entry(rd.id(), ipa, level)?;
         ret[1..5].copy_from_slice(&res[0..4]);
 
         Ok(())
     });
 
     listen!(mainloop, rmi::DATA_CREATE, |arg, _ret, rmm| {
-        let rmi = rmm.rmi;
         // target_pa: location where realm data is created.
         let target_pa = arg[0];
         let rd = arg[1];
@@ -209,14 +203,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         *target_page = src_page;
 
         // 4. map ipa to taget_pa in S2 table
-        rmi.data_create(realm_id, ipa, target_pa)?;
+        crate::rtt::data_create(realm_id, ipa, target_pa)?;
 
         set_granule(&mut target_page_granule, GranuleState::Data)?;
         Ok(())
     });
 
     listen!(mainloop, rmi::DATA_CREATE_UNKNOWN, |arg, _ret, rmm| {
-        let rmi = rmm.rmi;
         // target_phys: location where realm data is created.
         let target_pa = arg[0];
         let ipa = arg[2];
@@ -237,7 +230,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rmm.page_table.map(target_pa, true);
 
         // 1. map ipa to target_pa in S2 table
-        rmi.data_create(realm_id, ipa, target_pa)?;
+        crate::rtt::data_create(realm_id, ipa, target_pa)?;
 
         // TODO: 2. perform measure
         // L0czek - not needed here see: tf-rmm/runtime/rmi/rtt.c:883
@@ -245,14 +238,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::DATA_DESTROY, |arg, _ret, rmm| {
+    listen!(mainloop, rmi::DATA_DESTROY, |arg, _ret, _rmm| {
         // rd granule lock
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let realm_id = rd.id();
         let ipa = arg[1];
 
-        let pa = rmm.rmi.data_destroy(realm_id, ipa)?;
+        let pa = crate::rtt::data_destroy(realm_id, ipa)?;
 
         // data granule lock and change state
         set_state_and_get_granule!(pa, GranuleState::Delegated)?;
@@ -260,8 +253,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     // Map an unprotected IPA to a non-secure PA.
-    listen!(mainloop, rmi::RTT_MAP_UNPROTECTED, |arg, _ret, rmm| {
-        let rmi = rmm.rmi;
+    listen!(mainloop, rmi::RTT_MAP_UNPROTECTED, |arg, _ret, _rmm| {
         let ipa = arg[1];
         let level = arg[2];
         let host_s2tte = arg[3];
@@ -277,13 +269,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if !is_valid_rtt_cmd(ipa, level) {
             return Err(Error::RmiErrorInput);
         }
-        rmi.rtt_map_unprotected(rd, ipa, level, host_s2tte)?;
+        crate::rtt::map_unprotected(rd, ipa, level, host_s2tte)?;
         Ok(())
     });
 
     // Unmap a non-secure PA at an unprotected IPA
-    listen!(mainloop, rmi::RTT_UNMAP_UNPROTECTED, |arg, _ret, rmm| {
-        let rmi = rmm.rmi;
+    listen!(mainloop, rmi::RTT_UNMAP_UNPROTECTED, |arg, _ret, _rmm| {
         let ipa = arg[1];
 
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
@@ -294,7 +285,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if !is_valid_rtt_cmd(ipa, level) {
             return Err(Error::RmiErrorInput);
         }
-        rmi.rtt_unmap_unprotected(realm_id, ipa, level)?;
+        crate::rtt::unmap_unprotected(realm_id, ipa, level)?;
         Ok(())
     });
 }

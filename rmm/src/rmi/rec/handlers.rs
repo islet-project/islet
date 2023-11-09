@@ -9,6 +9,8 @@ use crate::host::pointer::Pointer as HostPointer;
 use crate::host::pointer::PointerMut as HostPointerMut;
 use crate::listen;
 use crate::measurement::HashContext;
+use crate::realm::context::set_reg;
+use crate::realm::vcpu::create_vcpu;
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmi::realm::{rd::State, Rd};
@@ -21,7 +23,6 @@ extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_CREATE, |arg, ret, rmm| {
-        let rmi = rmm.rmi;
         let rec = arg[0];
         let rd = arg[1];
         let params_ptr = arg[2];
@@ -50,7 +51,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rmm.page_table.map(rec, true);
         let rec = rec_granule.content_mut::<Rec<'_>>();
 
-        match rmi.create_vcpu(rd.id()) {
+        match create_vcpu(rd.id()) {
             Ok(vcpuid) => {
                 ret[1] = vcpuid;
                 rec.init(owner, vcpuid, params.flags)?;
@@ -59,17 +60,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         for (idx, gpr) in params.gprs.iter().enumerate() {
-            if rmi
-                .set_reg(rd.id(), rec.vcpuid(), idx, *gpr as usize)
-                .is_err()
-            {
+            if set_reg(rd.id(), rec.vcpuid(), idx, *gpr as usize).is_err() {
                 return Err(Error::RmiErrorInput);
             }
         }
-        if rmi
-            .set_reg(rd.id(), rec.vcpuid(), 31, params.pc as usize)
-            .is_err()
-        {
+        if set_reg(rd.id(), rec.vcpuid(), 31, params.pc as usize).is_err() {
             return Err(Error::RmiErrorInput);
         }
         rec.set_vtcr(prepare_vtcr(rd)?);
@@ -92,7 +87,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     listen!(mainloop, rmi::REC_ENTER, |arg, ret, rmm| {
-        let rmi = rmm.rmi;
         let run_pa = arg[1];
 
         // grab the lock for Rec
@@ -133,13 +127,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             do_host_call(&arg, ret, rmm, rec, &mut run)?;
         }
 
-        rmi.receive_gic_state_from_host(realm_id, rec.vcpuid(), &run)?;
-        rmi.emulate_mmio(realm_id, rec.vcpuid(), &run)?;
+        crate::gic::receive_state_from_host(realm_id, rec.vcpuid(), &run)?;
+        crate::mmio::emulate_mmio(realm_id, rec.vcpuid(), &run)?;
 
         let ripas = rec.ripas_addr() as usize;
         if ripas > 0 {
-            rmi.set_reg(realm_id, rec.vcpuid(), 0, 0)?;
-            rmi.set_reg(realm_id, rec.vcpuid(), 1, ripas)?;
+            set_reg(realm_id, rec.vcpuid(), 0, 0)?;
+            set_reg(realm_id, rec.vcpuid(), 1, ripas)?;
             rec.set_ripas(0, 0, 0, 0);
         }
 
@@ -157,7 +151,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             unsafe { run.set_imm(0) };
 
             rec.set_state(RecState::Running);
-            match rmi.run(realm_id, rec.vcpuid(), 0) {
+            match crate::rmi::rec::run(realm_id, rec.vcpuid(), 0) {
                 Ok(realm_exit_res) => {
                     (ret_ns, ret[0]) = handle_realm_exit(realm_exit_res, rmm, &mut rec, &mut run)?
                 }
@@ -169,8 +163,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 break;
             }
         }
-        rmi.send_gic_state_to_host(realm_id, rec.vcpuid(), &mut run)?;
-        rmi.send_timer_state_to_host(realm_id, rec.vcpuid(), &mut run)?;
+        crate::gic::send_state_to_host(realm_id, rec.vcpuid(), &mut run)?;
+        crate::realm::timer::send_state_to_host(realm_id, rec.vcpuid(), &mut run)?;
 
         // NOTICE: do not modify `run` after copy_to_host_or_ret!(). it won't have any effect.
         copy_to_host_or_ret!(Run, &run, run_pa);

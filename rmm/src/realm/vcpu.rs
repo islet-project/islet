@@ -1,6 +1,12 @@
 use super::Realm;
 
+use crate::gic;
+use crate::realm::registry::get_realm;
+use crate::realm::registry::RMS;
+use crate::realm::timer;
+use crate::rmi::error::Error;
 use alloc::sync::{Arc, Weak};
+use armv9a::bits_in_reg;
 use armv9a::regs::*;
 use spin::Mutex;
 
@@ -86,4 +92,26 @@ pub unsafe fn current() -> Option<&'static mut VCPU<crate::realm::context::Conte
         0 => None,
         current => Some(&mut *(current as *mut VCPU<crate::realm::context::Context>)),
     }
+}
+
+pub fn create_vcpu(id: usize) -> Result<usize, Error> {
+    let realm = get_realm(id).ok_or(Error::RmiErrorInput)?;
+
+    let page_table = realm.lock().page_table.lock().get_base_address();
+    let vttbr =
+        bits_in_reg(VTTBR_EL2::VMID, id as u64) | bits_in_reg(VTTBR_EL2::BADDR, page_table as u64);
+
+    let vcpu = VCPU::new(realm.clone());
+    vcpu.lock().context.sys_regs.vttbr = vttbr;
+    timer::init_timer(&mut vcpu.lock());
+    gic::init_gic(&mut vcpu.lock());
+
+    realm.lock().vcpus.push(vcpu);
+    let vcpuid = realm.lock().vcpus.len() - 1;
+    Ok(vcpuid)
+}
+
+pub fn remove(id: usize) -> Result<(), Error> {
+    RMS.lock().1.remove(&id).ok_or(Error::RmiErrorInput)?;
+    Ok(())
 }

@@ -1,6 +1,7 @@
 use crate::event::RsiHandle;
 use crate::granule::GranuleState;
 use crate::listen;
+use crate::realm::context::{get_reg, set_reg};
 use crate::rmi;
 use crate::rmi::realm::{rd::State, Rd};
 use crate::rmi::rec::run::Run;
@@ -71,15 +72,11 @@ extern crate alloc;
 
 pub fn set_event_handler(rsi: &mut RsiHandle) {
     let dummy =
-        |_arg: &[usize], ret: &mut [usize], rmm: &Monitor, rec: &mut Rec<'_>, _run: &mut Run| {
-            let rmi = rmm.rmi;
+        |_arg: &[usize], ret: &mut [usize], _rmm: &Monitor, rec: &mut Rec<'_>, _run: &mut Run| {
             let vcpuid = rec.vcpuid();
             let realmid = rec.realmid()?;
 
-            if rmi
-                .set_reg(realmid, vcpuid, 0, PsciReturn::SUCCESS)
-                .is_err()
-            {
+            if set_reg(realmid, vcpuid, 0, PsciReturn::SUCCESS).is_err() {
                 warn!(
                     "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
                     realmid, vcpuid
@@ -89,12 +86,11 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             Ok(())
         };
 
-    listen!(rsi, PSCI_VERSION, |_arg, ret, rmm, rec, _run| {
-        let rmi = rmm.rmi;
+    listen!(rsi, PSCI_VERSION, |_arg, ret, _rmm, rec, _run| {
         let vcpuid = rec.vcpuid();
         let realmid = rec.realmid()?;
 
-        if rmi.set_reg(realmid, vcpuid, 0, psci_version()).is_err() {
+        if set_reg(realmid, vcpuid, 0, psci_version()).is_err() {
             warn!(
                 "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
                 realmid, vcpuid
@@ -121,12 +117,11 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         Ok(())
     });
 
-    listen!(rsi, SMC32::FEATURES, |_arg, ret, rmm, rec, _run| {
-        let rmi = rmm.rmi;
+    listen!(rsi, SMC32::FEATURES, |_arg, ret, _rmm, rec, _run| {
         let vcpuid = rec.vcpuid();
         let realmid = rec.realmid()?;
 
-        let feature_id = rmi.get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
+        let feature_id = get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
         let retval = match feature_id {
             SMC32::CPU_SUSPEND
             | SMC64::CPU_SUSPEND
@@ -141,7 +136,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             | SMCCC_VERSION => PsciReturn::SUCCESS,
             _ => PsciReturn::NOT_SUPPORTED,
         };
-        if rmi.set_reg(realmid, vcpuid, 0, retval).is_err() {
+        if set_reg(realmid, vcpuid, 0, retval).is_err() {
             warn!(
                 "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
                 realmid, vcpuid
@@ -151,12 +146,11 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         Ok(())
     });
 
-    listen!(rsi, SMCCC_VERSION, |_arg, ret, rmm, rec, _run| {
-        let rmi = rmm.rmi;
+    listen!(rsi, SMCCC_VERSION, |_arg, ret, _rmm, rec, _run| {
         let vcpuid = rec.vcpuid();
         let realmid = rec.realmid()?;
 
-        if rmi.set_reg(realmid, vcpuid, 0, smccc_version()).is_err() {
+        if set_reg(realmid, vcpuid, 0, smccc_version()).is_err() {
             warn!(
                 "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
                 realmid, vcpuid

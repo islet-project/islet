@@ -1,10 +1,7 @@
 use crate::event::{Mainloop, RsiHandle};
 use crate::mm::translation::PageTable;
-use crate::realm;
-use crate::rmi::RMI;
 
 pub struct Monitor {
-    pub rmi: RMI,
     pub rsi: RsiHandle,
     pub page_table: PageTable,
 }
@@ -12,7 +9,6 @@ pub struct Monitor {
 impl Monitor {
     pub fn new() -> Self {
         Self {
-            rmi: realm::registry::RMI::new(),
             rsi: RsiHandle::new(),
             page_table: PageTable::get_ref(),
         }

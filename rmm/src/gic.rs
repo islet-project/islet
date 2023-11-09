@@ -1,5 +1,9 @@
 use crate::realm::context::Context;
+use crate::realm::registry::get_realm;
 use crate::realm::vcpu::VCPU;
+use crate::rmi::error::Error;
+use crate::rmi::error::InternalError::*;
+use crate::rmi::rec::run::Run;
 
 use armv9a::regs::*;
 use lazy_static::lazy_static;
@@ -226,4 +230,40 @@ pub fn save_state(vcpu: &mut VCPU<Context>) {
     *&mut gic_state.ich_misr_el2 = unsafe { ICH_MISR_EL2.get() };
 
     unsafe { ICH_HCR_EL2.set(gic_state.ich_hcr_el2 & !ICH_HCR_EL2_EN_BIT) };
+}
+
+pub fn receive_state_from_host(id: usize, vcpu: usize, run: &Run) -> Result<(), Error> {
+    let realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))?;
+    let locked_realm = realm.lock();
+    let vcpu = locked_realm
+        .vcpus
+        .get(vcpu)
+        .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
+    let gic_state = &mut vcpu.lock().context.gic_state;
+    let nr_lrs = GIC_FEATURES.nr_lrs;
+
+    gic_state.ich_lr_el2[..nr_lrs].copy_from_slice(&unsafe { run.entry_gic_lrs() }[..nr_lrs]);
+    gic_state.ich_hcr_el2 &= !ICH_HCR_EL2_NS_MASK;
+    gic_state.ich_hcr_el2 |= (unsafe { run.entry_gic_hcr() } & ICH_HCR_EL2_NS_MASK);
+    Ok(())
+}
+
+pub fn send_state_to_host(id: usize, vcpu: usize, run: &mut Run) -> Result<(), Error> {
+    let realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))?;
+    let mut locked_realm = realm.lock();
+    let vcpu = locked_realm
+        .vcpus
+        .get_mut(vcpu)
+        .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
+    let gic_state = &mut vcpu.lock().context.gic_state;
+    let nr_lrs = GIC_FEATURES.nr_lrs;
+
+    (&mut unsafe { run.exit_gic_lrs_mut() }[..nr_lrs])
+        .copy_from_slice(&gic_state.ich_lr_el2[..nr_lrs]);
+    unsafe {
+        run.set_gic_misr(gic_state.ich_misr_el2);
+        run.set_gic_vmcr(gic_state.ich_vmcr_el2);
+        run.set_gic_hcr(gic_state.ich_hcr_el2 & (ICH_HCR_EL2_EOI_COUNT_MASK | ICH_HCR_EL2_NS_MASK));
+    }
+    Ok(())
 }

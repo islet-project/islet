@@ -1,13 +1,13 @@
 use crate::event::realmexit::*;
 use crate::event::{Context, RsiHandle};
 use crate::granule::GRANULE_MASK;
+use crate::realm::context::get_reg;
 use crate::realm::mm::stage2_tte::S2TTE;
 use crate::rmi::error::Error;
 use crate::rmi::rec::run::Run;
 use crate::rmi::rec::Rec;
 use crate::rmi::rtt::is_protected_ipa;
 use crate::rmi::rtt::RTT_PAGE_LEVEL;
-use crate::rmi::RMI;
 use crate::Monitor;
 use crate::{rmi, rsi};
 use armv9a::{EsrEl2, EMULATABLE_ABORT_MASK, HPFAR_EL2, NON_EMULATABLE_ABORT_MASK};
@@ -43,7 +43,7 @@ pub fn handle_realm_exit(
             ret
         }
         RecExitReason::Sync(ExitSyncType::DataAbort) => {
-            handle_data_abort(realm_exit_res, rmm, rec, run)?
+            handle_data_abort(realm_exit_res, rec, run)?
         }
         RecExitReason::IRQ => unsafe {
             run.set_exit_reason(rmi::EXIT_IRQ);
@@ -83,19 +83,18 @@ fn is_non_emulatable_data_abort(
     Ok(ret)
 }
 
-fn get_write_val(rmi: RMI, realm_id: usize, vcpu_id: usize, esr_el2: u64) -> Result<u64, Error> {
+fn get_write_val(realm_id: usize, vcpu_id: usize, esr_el2: u64) -> Result<u64, Error> {
     let esr_el2 = EsrEl2::new(esr_el2);
     let rt = esr_el2.get_masked_value(EsrEl2::SRT) as usize;
     let write_val = match rt == 31 {
         true => 0, // xzr
-        false => rmi.get_reg(realm_id, vcpu_id, rt)? as u64 & esr_el2.get_access_size_mask(),
+        false => get_reg(realm_id, vcpu_id, rt)? as u64 & esr_el2.get_access_size_mask(),
     };
     Ok(write_val)
 }
 
 fn handle_data_abort(
     realm_exit_res: [usize; 4],
-    rmm: &Monitor,
     rec: &mut Rec<'_>,
     run: &mut Run,
 ) -> Result<usize, Error> {
@@ -118,7 +117,7 @@ fn handle_data_abort(
             true => (esr_el2 & NON_EMULATABLE_ABORT_MASK, 0),
             false => {
                 if esr_el2 & EsrEl2::WNR != 0 {
-                    let write_val = get_write_val(rmm.rmi, realm_id, rec.vcpuid(), esr_el2)?;
+                    let write_val = get_write_val(realm_id, rec.vcpuid(), esr_el2)?;
                     unsafe {
                         run.set_gpr(0, write_val)?;
                     }

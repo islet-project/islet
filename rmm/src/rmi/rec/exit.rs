@@ -8,7 +8,6 @@ use crate::rmi::rec::run::Run;
 use crate::rmi::rec::Rec;
 use crate::rmi::rtt::is_protected_ipa;
 use crate::rmi::rtt::RTT_PAGE_LEVEL;
-use crate::rmi::RMI;
 use crate::Monitor;
 use crate::{rmi, rsi};
 use armv9a::{EsrEl2, EMULATABLE_ABORT_MASK, HPFAR_EL2, NON_EMULATABLE_ABORT_MASK};
@@ -44,7 +43,7 @@ pub fn handle_realm_exit(
             ret
         }
         RecExitReason::Sync(ExitSyncType::DataAbort) => {
-            handle_data_abort(realm_exit_res, rmm, rec, run)?
+            handle_data_abort(realm_exit_res, rec, run)?
         }
         RecExitReason::IRQ => unsafe {
             run.set_exit_reason(rmi::EXIT_IRQ);
@@ -84,7 +83,7 @@ fn is_non_emulatable_data_abort(
     Ok(ret)
 }
 
-fn get_write_val(_rmi: RMI, realm_id: usize, vcpu_id: usize, esr_el2: u64) -> Result<u64, Error> {
+fn get_write_val(realm_id: usize, vcpu_id: usize, esr_el2: u64) -> Result<u64, Error> {
     let esr_el2 = EsrEl2::new(esr_el2);
     let rt = esr_el2.get_masked_value(EsrEl2::SRT) as usize;
     let write_val = match rt == 31 {
@@ -96,7 +95,6 @@ fn get_write_val(_rmi: RMI, realm_id: usize, vcpu_id: usize, esr_el2: u64) -> Re
 
 fn handle_data_abort(
     realm_exit_res: [usize; 4],
-    rmm: &Monitor,
     rec: &mut Rec<'_>,
     run: &mut Run,
 ) -> Result<usize, Error> {
@@ -119,7 +117,7 @@ fn handle_data_abort(
             true => (esr_el2 & NON_EMULATABLE_ABORT_MASK, 0),
             false => {
                 if esr_el2 & EsrEl2::WNR != 0 {
-                    let write_val = get_write_val(rmm.rmi, realm_id, rec.vcpuid(), esr_el2)?;
+                    let write_val = get_write_val(realm_id, rec.vcpuid(), esr_el2)?;
                     unsafe {
                         run.set_gpr(0, write_val)?;
                     }

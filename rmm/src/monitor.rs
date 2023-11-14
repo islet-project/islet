@@ -8,11 +8,9 @@ pub struct Monitor {
 }
 
 #[cfg(kani)]
-// `rsi` is removed in model checking harnesses
+// `rsi` and `page_table` are removed in model checking harnesses
 // to reduce overall state space
-pub struct Monitor {
-    pub page_table: PageTable,
-}
+pub struct Monitor {}
 
 impl Monitor {
     #[cfg(not(kani))]
@@ -24,9 +22,7 @@ impl Monitor {
     }
     #[cfg(kani)]
     pub fn new() -> Self {
-        Self {
-            page_table: PageTable::get_ref(),
-        }
+        Self {}
     }
 
     pub fn run(&self) {

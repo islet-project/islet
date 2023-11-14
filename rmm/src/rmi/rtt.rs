@@ -196,6 +196,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // data granule lock for the target page
         let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
         let target_page = target_page_granule.content_mut::<DataPage>();
+        #[cfg(not(kani))]
+        // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.map(target_pa, true);
 
         // read src page
@@ -232,6 +234,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // 0. Make sure granule state can make a transition to DATA
         // data granule lock for the target page
         let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
+        #[cfg(not(kani))]
+        // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.map(target_pa, true);
 
         // 1. map ipa to target_pa in S2 table

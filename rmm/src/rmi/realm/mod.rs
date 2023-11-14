@@ -51,6 +51,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         let mut rd_granule = get_granule_if!(rd, GranuleState::Delegated)?;
         let rd_obj = rd_granule.content_mut::<Rd>();
+        #[cfg(not(kani))]
+        // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.map(rd, true);
 
         let params = host::copy_from::<Params>(params_ptr).ok_or(Error::RmiErrorInput)?;
@@ -96,6 +98,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         };
 
         eplilog().map_err(|e| {
+            #[cfg(not(kani))]
+            // `page_table` is currently not reachable in model checking harnesses
             rmm.page_table.unmap(rd);
             remove(params.vmid as usize).expect("Realm should be created before.");
             e
@@ -118,6 +122,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // change state when everything goes fine.
         set_granule(&mut rd_granule, GranuleState::Delegated)?;
+        #[cfg(not(kani))]
+        // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.unmap(arg[0]);
 
         Ok(())

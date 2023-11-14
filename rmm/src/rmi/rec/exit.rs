@@ -24,6 +24,8 @@ pub fn handle_realm_exit(
 ) -> Result<(bool, usize), Error> {
     let mut return_to_ns = true;
     let ret = match RecExitReason::from(realm_exit_res[0]) {
+        #[cfg(not(kani))]
+        // `rsi` is currently not reachable in model checking harnesses
         RecExitReason::Sync(ExitSyncType::RSI) => {
             trace!("REC_ENTER ret: {:#X?}", realm_exit_res);
             let rsi = &rmm.rsi;

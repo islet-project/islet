@@ -99,6 +99,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
         crate::rtt::init_ripas(rd.id(), ipa, level)?;
 
+        #[cfg(not(kani))]
         HashContext::new(rd)?.measure_ripas_granule(ipa, level as u8)?;
 
         Ok(())
@@ -200,6 +201,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // read src page
         let src_page = copy_from_host_or_ret!(DataPage, src_pa);
 
+        #[cfg(not(kani))]
         HashContext::new(rd)?.measure_data_granule(&src_page, ipa, flags)?;
 
         // 3. copy src to _data

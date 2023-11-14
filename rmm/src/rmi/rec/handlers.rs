@@ -72,6 +72,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rec.set_vtcr(prepare_vtcr(rd)?);
 
         rd.inc_rec_index();
+        #[cfg(not(kani))]
         HashContext::new(rd)?.measure_rec_params(&params)?;
 
         #[cfg(feature = "gst_page_table")]

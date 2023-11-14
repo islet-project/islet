@@ -51,6 +51,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         let mut rd_granule = get_granule_if!(rd, GranuleState::Delegated)?;
         let rd_obj = rd_granule.content_mut::<Rd>();
+        #[cfg(not(kani))]
         rmm.page_table.map(rd, true);
 
         let params = copy_from_host_or_ret!(Params, params_ptr);
@@ -92,6 +93,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         };
 
         eplilog().map_err(|e| {
+            #[cfg(not(kani))]
             rmm.page_table.unmap(rd);
             remove(id).expect("Realm should be created before.");
             e
@@ -114,6 +116,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // change state when everything goes fine.
         set_granule(&mut rd_granule, GranuleState::Delegated)?;
+        #[cfg(not(kani))]
         rmm.page_table.unmap(arg[0]);
 
         Ok(())

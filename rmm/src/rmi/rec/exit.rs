@@ -12,6 +12,7 @@ use crate::Monitor;
 use crate::{rmi, rsi};
 use armv9a::{EsrEl2, EMULATABLE_ABORT_MASK, HPFAR_EL2, NON_EMULATABLE_ABORT_MASK};
 
+#[cfg(not(kani))]
 pub fn handle_realm_exit(
     realm_exit_res: [usize; 4],
     rmm: &Monitor,
@@ -63,6 +64,18 @@ pub fn handle_realm_exit(
         _ => rmi::SUCCESS,
     };
 
+    Ok((return_to_ns, ret))
+}
+
+#[cfg(kani)]
+pub fn handle_realm_exit(
+    realm_exit_res: [usize; 4],
+    rmm: &Monitor,
+    rec: &mut Rec,
+    run: &mut Run,
+) -> Result<(bool, usize), Error> {
+    let return_to_ns = true;
+    let ret = rmi::SUCCESS;
     Ok((return_to_ns, ret))
 }
 

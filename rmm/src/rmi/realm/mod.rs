@@ -85,6 +85,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         rd_obj.set_hash_algo(params.hash_algo);
 
+        #[cfg(not(kani))]
+        // `rsi` is currently not reachable in model checking harnesses
         HashContext::new(rd_obj)?.measure_realm_create(&params)?;
 
         let mut eplilog = move || {

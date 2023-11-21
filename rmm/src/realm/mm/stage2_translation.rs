@@ -131,6 +131,7 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
     ///   else,
     ///      None
     fn ipa_to_pa(&mut self, guest: GuestPhysAddr, level: usize) -> Option<PhysAddr> {
+        let offset = guest.as_usize() % BasePageSize::SIZE;
         let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
         let mut pa = None;
         let res = self.root_pgtlb.entry(guest, level, false, |entry| {
@@ -138,7 +139,7 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
             Ok(None)
         });
         if res.is_ok() {
-            pa
+            pa.map(|aligned_pa| aligned_pa + offset.into())
         } else {
             None
         }

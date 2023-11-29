@@ -1,0 +1,28 @@
+lang: "en-US"
+
+tag_identity:
+  id: "366D0A0A-5988-45ED-8488-2F2A544F6242"
+  version: 0
+
+entities:
+  - name: "ACME Ltd."
+    regid: "https://example.com"
+    comid_roles:
+      - tagCreator
+      - creator
+      - maintainer
+    corim_roles:
+      - manifestCreator
+
+
+validity:
+  not-before: "2021-12-31T00:00:00Z"
+  not-after: "2025-12-31T00:00:00Z"
+
+profiles:
+  - "http://arm.com/cca/ssd/1"
+  - "http://arm.com/CCA-SSD/1.0.0"
+
+environment:
+  vendor: "ACME"
+  model: "ACME"

@@ -1,3 +1,5 @@
+[workspace]
+
 [package]
 name = "reliant-party"
 version = "0.1.0"
@@ -12,7 +14,7 @@ env_logger ="*"
 hex = "*"
 log = "*"
 tinyvec = "*"
-rust-rsi = { path = "../../../lib/rust-rsi" }
-ratls = { path = "../../../lib/ratls/ratls" }
-realm-verifier = { path = "../../../lib/realm-verifier" }
-veraison-verifier = { path = "../../../lib/ratls/veraison-verifier" }
+rust-rsi = { git = "https://github.com/Samsung/islet-ra" }
+ratls = { git = "https://github.com/Samsung/islet-ra" }
+realm-verifier = { git = "https://github.com/Samsung/islet-ra" }
+veraison-verifier = { git = "https://github.com/Samsung/islet-ra" }

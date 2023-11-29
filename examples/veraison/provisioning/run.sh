@@ -1,32 +1,24 @@
 #!/bin/bash
 
-################################################################
-#  This file needs to be upgraded for the islet-ra repository  #
-################################################################
-
 set -exuo pipefail
 
-ROOT=$(git rev-parse --show-toplevel)
-DEMO=$ROOT/demo
-ROCLI=$ROOT/bin/rocli
-CLAIMS=$DEMO/claims
-TOKEN=$DEMO/token/token.bin
-VTS_KEY=skey.jwk
-CPAK="$CLAIMS/cpak_public.pem"
+ROOT="$(git rev-parse --show-toplevel)"
+DEMO="$ROOT/examples/veraison"
+ROCLI="$DEMO/bin/rocli"
+PROV="$DEMO/provisioning"
+TOKEN="$PROV/token/token.bin"
+CPAK="$PROV/claims/cpak_public.pem"
+CONFIG="$PROV/config.yml"
 
-while getopts "ht:k:" arg; do
+while getopts "ht:c:" arg; do
   case $arg in
     h)
-      echo -e "Usage: ./run.sh -t <token path> -k <Veraison vts key> -c <cpak public pem>"
+      echo -e "Usage: ./run.sh -t <token path> -c <cpak public pem>"
       exit 0
       ;;
     t)
       TOKEN=$OPTARG
       echo "Using $TOKEN"
-      ;;
-    k)
-      VTS_KEY=$OPTARG
-      echo "Using $VTS_KEY"
       ;;
     c)
       CPAK=$OPTARG
@@ -35,9 +27,9 @@ while getopts "ht:k:" arg; do
   esac
 done
 
-if ! [ -f "$ROCLI" ]; then
-    cargo install --path "$ROOT" --root "$ROOT";
-fi
+#if ! [ -f "$ROCLI" ]; then
+#    cargo install --path "$ROOT" --root "$ROOT";
+#fi
 
 function loginfo () {
     echo -e "\e[0;32m$1\e[0m"
@@ -45,8 +37,6 @@ function loginfo () {
 
 ######  Generating Comids and Corim
 loginfo "Creating Endorsements"
-
-CONFIG=$DEMO/config.yml
 
 $ROCLI --config "$CONFIG" -o endorsements.json \
     --token "$TOKEN" endorsements \

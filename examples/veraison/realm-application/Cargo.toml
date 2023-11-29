@@ -1,3 +1,5 @@
+[workspace]
+
 [package]
 name = "realm-application"
 version = "0.1.0"
@@ -9,8 +11,8 @@ description = "Realm application for the remote attestation"
 
 [dependencies]
 clap = { version = "*", features = ["derive"] }
-rust-rsi = { path = "../../../lib/rust-rsi" }
-ratls = { path = "../../../lib/ratls/ratls" }
+rust-rsi = { git = "https://github.com/Samsung/islet-ra" }
+ratls = { git = "https://github.com/Samsung/islet-ra" }
 
 [profile.release]
 strip = true

@@ -15,3 +15,9 @@ sdk/sdk-example-c
 docs/
 
 rusty-tags.vi*
+
+.crates.toml
+.crates2.json
+
+/examples/veraison/bin
+/hes/out

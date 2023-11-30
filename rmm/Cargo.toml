@@ -8,7 +8,6 @@ edition = "2021"
 armv9a = { path = "../lib/armv9a" }
 ciborium = { version = "*", default-features = false }
 coset = "*"
-hashbrown = "0.14"
 hex = { version = "*", default-features = false, features = ["alloc"] }
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 linked_list_allocator = "0.10.4"

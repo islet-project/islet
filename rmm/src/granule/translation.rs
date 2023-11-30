@@ -7,7 +7,7 @@ use vmsa::error::Error;
 use vmsa::page::{Page, PageSize};
 use vmsa::page_table::{Level, PageTable, PageTableMethods};
 
-use hashbrown::HashMap;
+use alloc::collections::BTreeMap;
 
 pub const DRAM_SIZE: usize = 0x7C00_0000 + 0x8000_0000;
 
@@ -27,8 +27,8 @@ pub type L1PageTable =
 
 pub struct GranuleStatusTable {
     pub root_pgtlb: L0PageTable,
-    l1_tables: HashMap<usize, L1PageTable>,
-    // TODO: replace this HashMap with a more efficient structure.
+    l1_tables: BTreeMap<usize, L1PageTable>,
+    // TODO: replace this BTreeMap with a more efficient structure.
     //    to do so, we need to do refactoring on how we manage entries in PageTable.
     //    e.g., moving storage (`entries: [E; N]`) out of PageTable, and each impl (GST, RMM, RTT) is in charge of handling that.
 }
@@ -37,7 +37,7 @@ impl GranuleStatusTable {
     pub fn new() -> Self {
         Self {
             root_pgtlb: L0PageTable::new(),
-            l1_tables: HashMap::new(),
+            l1_tables: BTreeMap::new(),
         }
     }
 

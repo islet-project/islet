@@ -36,6 +36,7 @@ run-simulated-c:
 	@g++ examples/c_api/attest_seal_test.cc -lislet_sdk \
 		$(CFLAGS) \
 		-L$(ROOT)/out/x86_64-unknown-linux-gnu/release \
+		-lssl -lcrypto -lpthread -ldl \
 		-o sdk-example-c
 	@LD_LIBRARY_PATH=$(ROOT)/out/x86_64-unknown-linux-gnu/release/ ./sdk-example-c
 

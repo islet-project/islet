@@ -15,7 +15,6 @@ bincode = "1.0"
 cca_token = { path = "../lib/cca-token" }
 cfg-if = "1.0"
 cose = { path = "../lib/cose" }
-rand = "0.8"
-rsa = "0.9.2"
+openssl = "0.10.60"
 rsi_el0 = { path = "../lib/rsi-el0" }
 serde = { version = "1.0", features = ["derive"] }

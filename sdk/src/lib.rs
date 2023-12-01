@@ -45,6 +45,6 @@ mod tests {
         let plaintext = b"Plaintext";
         let sealed = seal(plaintext).unwrap();
         let unsealed = unseal(&sealed).unwrap();
-        assert_eq!(plaintext, &unsealed[..]);
+        assert_eq!(plaintext, &unsealed[..plaintext.len()]);
     }
 }

@@ -31,7 +31,7 @@ fn sealing() -> Result<(), Error> {
     let plaintext = b"Plaintext";
     let sealed = seal(plaintext)?;
     let unsealed = unseal(&sealed)?;
-    assert_eq!(plaintext, &unsealed[..]);
+    assert_eq!(plaintext, &unsealed[..plaintext.len()]);
     Ok(())
 }
 

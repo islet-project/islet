@@ -162,6 +162,7 @@ jobs:
       working-directory: sdk
       run: make test
 
-    - name: Run sdk build (aarch64)
-      working-directory: sdk
-      run: make sdk
+# FIXME: openssl should be installed on aarch64 target
+#    - name: Run sdk build (aarch64)
+#      working-directory: sdk
+#      run: make sdk

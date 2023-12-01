@@ -30,7 +30,6 @@ sudo ip addr flush dev ${ifname}
 
 # Assign IP to armbr0
 sudo ip addr add ${host_ip}/24 brd + dev armbr0
-sudo ip route add default via ${gateway} dev armbr0
 
 # 4. create a tap device
 sudo ip tuntap add dev ARM${user} mode tap user ${user}
@@ -39,5 +38,5 @@ sudo ip link set ARM${user} master armbr0
 sudo ip route add ${route_ip}/24 via ${fvp_ip}
 
 # 5. add NAT functionality to properly interact with remote hosts
-sudo echo 1 >/proc/sys/net/ipv4/ip_forward
+echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
 sudo iptables -t nat -A POSTROUTING -j MASQUERADE

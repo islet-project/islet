@@ -6,6 +6,8 @@ SDK_INCLUDE= -I$(HERE)/include
 SDK_LDFLAGS= -L$(ROOT)/out/aarch64-unknown-linux-gnu/release -lislet_sdk
 
 SHARED_DIR = $(ROOT)/out/shared
+OPENSSL_ARM64_ROOT = $(ROOT)/assets/openssl
+OPENSSL_ARM64_FLAG = OPENSSL_STATIC=1 OPENSSL_LIB_DIR=$(OPENSSL_ARM64_ROOT)/lib OPENSSL_INCLUDE_DIR=$(OPENSSL_ARM64_ROOT)/include
 
 CFLAGS += $(SDK_INCLUDE)
 LDFLAGS += $(SDK_LDFLAGS)
@@ -13,13 +15,13 @@ LDFLAGS += $(SDK_LDFLAGS)
 all: simulated sdk
 
 sdk:
-	@cargo build -r --target=aarch64-unknown-linux-gnu
+	@$(OPENSSL_ARM64_FLAG) cargo build -r --target=aarch64-unknown-linux-gnu
 
 sdk-example:
-	cargo build -r --example aarch64 --target=aarch64-unknown-linux-gnu
+	@$(OPENSSL_ARM64_FLAG) cargo build -r --example aarch64 --target=aarch64-unknown-linux-gnu
 
 sdk-example-c: examples/c_api/attest_seal_test.cc
-	@RUSTFLAGS="-C target-feature=-crt-static" cargo build -r --target=aarch64-unknown-linux-gnu
+	@$(OPENSSL_ARM64_FLAG) RUSTFLAGS="-C target-feature=-crt-static" cargo build -r --target=aarch64-unknown-linux-gnu
 	@$(GPP_ARM64) $< $(CFLAGS) $(LDFLAGS) -o $@
 
 test:

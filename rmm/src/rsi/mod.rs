@@ -1,4 +1,6 @@
 pub mod attestation;
+//#[cfg(feature = "cloak")]
+pub mod channel;
 pub mod constraint;
 pub mod error;
 pub mod hostcall;
@@ -35,6 +37,7 @@ define_interface! {
         IPA_STATE_SET           = 0xc400_0197,
         IPA_STATE_GET           = 0xc400_0198,
         HOST_CALL               = 0xc400_0199,
+        LOCAL_CHANNEL_SEND      = 0xc400_019a,
     }
 }
 

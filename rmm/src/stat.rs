@@ -8,7 +8,7 @@ use spin::mutex::Mutex;
 //      But if RMI, RSI commands are handled by 'Enum', then it can be fixed
 //      by using the max enum value like MAX_KIND
 const RMI_CMD_MIN: usize = rmi::VERSION;
-const RMI_CMD_MAX: usize = rmi::RTT_SET_RIPAS;
+const RMI_CMD_MAX: usize = rmi::LOCAL_CHANNEL_SETUP;
 const RMI_CMD_CNT: usize = RMI_CMD_MAX - RMI_CMD_MIN + 1;
 
 const RSI_CMD_MIN: usize = rsi::ABI_VERSION;

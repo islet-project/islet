@@ -11,7 +11,7 @@ use vmsa::error::Error as MmError;
 extern crate alloc;
 
 // defined in trusted-firmware-a/include/services/rmmd_svc.h
-const MARK_REALM: usize = 0xc400_01b0;
+pub const MARK_REALM: usize = 0xc400_01b0;
 const MARK_NONSECURE: usize = 0xc400_01b1;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {

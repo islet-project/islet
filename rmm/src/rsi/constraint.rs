@@ -20,6 +20,11 @@ lazy_static! {
             rsi::IPA_STATE_GET,
             Constraint::new(rsi::IPA_STATE_GET, 2, 1),
         );
+        //#[cfg(feature = "cloak")]
+        m.insert(
+            rsi::LOCAL_CHANNEL_SEND,
+            Constraint::new(rsi::LOCAL_CHANNEL_SEND, 2, 1),
+        );
         m.insert(
             psci::PSCI_VERSION,
             Constraint::new(psci::PSCI_VERSION, 2, 1),

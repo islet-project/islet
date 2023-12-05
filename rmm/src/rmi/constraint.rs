@@ -87,6 +87,8 @@ lazy_static! {
             rmi::RTT_SET_RIPAS,
             Constraint::new(rmi::RTT_SET_RIPAS, 6, 2),
         );
+        //#[cfg(feature = "cloak")]
+        m.insert(rmi::LOCAL_CHANNEL_SETUP, Constraint::new(rmi::LOCAL_CHANNEL_SETUP, 6, 1));
         m.insert(rmi::REQ_COMPLETE, Constraint::new(rmi::REQ_COMPLETE, 4, 2));
         m
     };

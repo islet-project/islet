@@ -73,6 +73,8 @@ impl RsiHandle {
     fn set_event_handlers(&mut self) {
         rsi::set_event_handler(self);
         psci::set_event_handler(self);
+        //#[cfg(feature = "cloak")]
+        rsi::channel::set_event_handler(self);
     }
 
     pub fn add_event_handler(&mut self, code: usize, handler: Handler) {

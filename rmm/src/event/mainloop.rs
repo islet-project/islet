@@ -33,6 +33,8 @@ impl Mainloop {
         rmi::rec::set_event_handler(self);
         rmi::rtt::set_event_handler(self);
         rmi::version::set_event_handler(self);
+        //#[cfg(feature = "cloak")]
+        rmi::channel::set_event_handler(self);
     }
 
     pub fn boot_complete(&mut self) {

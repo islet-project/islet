@@ -1,3 +1,5 @@
+//#[cfg(feature = "cloak")]
+pub mod channel;
 pub mod constraint;
 pub mod error;
 pub mod features;
@@ -33,6 +35,7 @@ define_interface! {
          REC_AUX_COUNT          = 0xc400_0167,
          RTT_INIT_RIPAS         = 0xc400_0168,
          RTT_SET_RIPAS          = 0xc400_0169,
+         LOCAL_CHANNEL_SETUP    = 0xc400_016a,
     }
 }
 
@@ -81,6 +84,8 @@ pub const EXIT_PSCI: u8 = 3;
 pub const EXIT_RIPAS_CHANGE: u8 = 4;
 pub const EXIT_HOST_CALL: u8 = 5;
 pub const EXIT_SERROR: u8 = 6;
+//#[cfg(feature = "cloak")]
+pub const EXIT_LOCAL_CHANNEL_SEND: u8 = 7;
 
 pub struct MapProt(usize);
 

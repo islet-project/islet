@@ -119,7 +119,9 @@ jobs:
         ./scripts/deps/rust.sh
 
     - name: Check bash scripts coding-style
-      run: ./assets/formatter/shfmt -d -ci -bn -fn `find scripts/. -name *.sh`
+      run: |
+        ./assets/formatter/shfmt -d -ci -bn -fn `find scripts/. -name *.sh`
+        ./assets/formatter/shfmt -d -ci -bn -fn `find examples/cross-platform-e2ee/. -name *.sh`
 
     - name: Check local packages and all of its dependencies for errors
       run: >

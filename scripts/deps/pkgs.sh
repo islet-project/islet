@@ -14,6 +14,7 @@ sudo apt install -y -qq --no-install-recommends \
 	flex bison \
 	bzip2 \
 	srecord \
-	git wget make vim bc pkg-config
+	git wget make vim bc pkg-config \
+	g++-aarch64-linux-gnu
 
 pip3 install toml

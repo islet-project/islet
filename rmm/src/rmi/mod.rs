@@ -36,6 +36,7 @@ define_interface! {
          RTT_INIT_RIPAS         = 0xc400_0168,
          RTT_SET_RIPAS          = 0xc400_0169,
          LOCAL_CHANNEL_SETUP    = 0xc400_016a,
+         LOCAL_CHANNEL_DESTROY    = 0xc400_016b,
     }
 }
 

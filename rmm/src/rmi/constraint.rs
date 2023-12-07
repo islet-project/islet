@@ -89,6 +89,7 @@ lazy_static! {
         );
         //#[cfg(feature = "cloak")]
         m.insert(rmi::LOCAL_CHANNEL_SETUP, Constraint::new(rmi::LOCAL_CHANNEL_SETUP, 6, 1));
+        m.insert(rmi::LOCAL_CHANNEL_DESTROY, Constraint::new(rmi::LOCAL_CHANNEL_DESTROY, 6, 1));
         m.insert(rmi::REQ_COMPLETE, Constraint::new(rmi::REQ_COMPLETE, 4, 2));
         m
     };

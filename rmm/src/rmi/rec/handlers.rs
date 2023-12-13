@@ -70,7 +70,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rec.set_vtcr(prepare_vtcr(rd)?);
 
         rd.inc_rec_index();
-        HashContext::new(&rmm.rsi, &rd)?.measure_rec_params(&params)?;
+        HashContext::new(&rd)?.measure_rec_params(&params)?;
 
         set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec)
     });

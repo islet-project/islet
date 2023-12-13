@@ -12,6 +12,7 @@ use crate::{
 };
 
 use self::claims::RealmClaims;
+use crate::rmm_el3::{plat_token, realm_attest_key};
 
 const DUMMY_PERSONALIZATION_VALUE: [u8; 64] = [0; 64];
 
@@ -146,4 +147,26 @@ impl Attestation {
             .expect("Failed to create P384 signature");
         signature.to_vec()
     }
+}
+
+pub fn get_token(
+    attest_pa: usize,
+    challenge: &[u8],
+    measurements: &[Measurement],
+    hash_algo: u8,
+) -> usize {
+    // TODO: consider storing attestation object somewhere,
+    // as RAK and token do not change during rmm lifetime.
+    let token = Attestation::new(&plat_token(), &realm_attest_key()).create_attestation_token(
+        challenge,
+        measurements,
+        hash_algo,
+    );
+
+    unsafe {
+        let pa_ptr = attest_pa as *mut u8;
+        core::ptr::copy(token.as_ptr(), pa_ptr, token.len());
+    }
+
+    token.len()
 }

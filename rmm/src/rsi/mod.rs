@@ -2,15 +2,14 @@ pub mod attestation;
 pub mod constraint;
 pub mod error;
 pub mod hostcall;
+pub mod measurement;
 pub mod psci;
 
 use crate::define_interface;
 use crate::event::RsiHandle;
 use crate::granule::{is_granule_aligned, GranuleState};
 use crate::listen;
-use crate::measurement::{
-    HashContext, Measurement, MeasurementError, MEASUREMENTS_SLOT_NR, MEASUREMENTS_SLOT_RIM,
-};
+use crate::measurement::{HashContext, Measurement, MEASUREMENTS_SLOT_NR, MEASUREMENTS_SLOT_RIM};
 use crate::realm::config::realm_config;
 use crate::realm::context::{get_reg, set_reg};
 use crate::realm::mm::address::GuestPhysAddr;
@@ -90,28 +89,6 @@ pub fn do_host_call(
     Ok(())
 }
 
-pub trait Interface {
-    fn measurement_read(
-        &self,
-        realmid: usize,
-        index: usize,
-        out: &mut Measurement,
-    ) -> Result<(), error::Error>;
-    fn measurement_extend(
-        &self,
-        realmid: usize,
-        index: usize,
-        f: impl Fn(&mut Measurement) -> Result<(), MeasurementError>,
-    ) -> Result<(), error::Error>;
-    fn get_attestation_token(
-        &self,
-        attest_pa: usize,
-        challenge: &[u8],
-        measurements: &[Measurement],
-        hash_algo: u8,
-    ) -> usize;
-}
-
 pub fn set_event_handler(rsi: &mut RsiHandle) {
     listen!(rsi, ATTEST_TOKEN_INIT, |_arg, ret, _rmm, rec, _| {
         let realmid = rec.realmid()?;
@@ -138,7 +115,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         Ok(())
     });
 
-    listen!(rsi, ATTEST_TOKEN_CONTINUE, |_arg, ret, rmm, rec, _| {
+    listen!(rsi, ATTEST_TOKEN_CONTINUE, |_arg, ret, _rmm, rec, _| {
         let realmid = rec.realmid()?;
         let ipa_bits = rec.ipa_bits()?;
 
@@ -176,7 +153,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             .lock()
             .measurements;
 
-        let attest_size = rmm.rsi.get_attestation_token(
+        let attest_size = crate::rsi::attestation::get_token(
             pa.into(),
             rec.attest_challenge(),
             &measurements,
@@ -207,7 +184,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         Ok(())
     });
 
-    listen!(rsi, MEASUREMENT_READ, |_arg, ret, rmm, rec, _| {
+    listen!(rsi, MEASUREMENT_READ, |_arg, ret, _rmm, rec, _| {
         let vcpuid = rec.vcpuid();
         let realmid = rec.realmid()?;
         let mut measurement = Measurement::empty();
@@ -220,7 +197,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             return Ok(());
         }
 
-        rmm.rsi.measurement_read(realmid, index, &mut measurement)?;
+        crate::rsi::measurement::read(realmid, index, &mut measurement)?;
         set_reg(realmid, vcpuid, 0, SUCCESS)?;
         for (ind, chunk) in measurement
             .as_slice()
@@ -235,7 +212,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         Ok(())
     });
 
-    listen!(rsi, MEASUREMENT_EXTEND, |_arg, ret, rmm, rec, _| {
+    listen!(rsi, MEASUREMENT_EXTEND, |_arg, ret, _rmm, rec, _| {
         let vcpuid = rec.vcpuid();
         let realmid = rec.realmid()?;
 
@@ -260,7 +237,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
         let rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
         let rd = rd.content::<Rd>();
-        HashContext::new(&rmm.rsi, &rd)?.extend_measurement(&buffer[0..size], index)?;
+        HashContext::new(&rd)?.extend_measurement(&buffer[0..size], index)?;
 
         set_reg(realmid, vcpuid, 0, SUCCESS)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;

@@ -82,7 +82,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::RTT_INIT_RIPAS, |arg, _ret, rmm| {
+    listen!(mainloop, rmi::RTT_INIT_RIPAS, |arg, _ret, _rmm| {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let ipa = arg[1];
@@ -96,7 +96,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
         crate::rtt::init_ripas(rd.id(), ipa, level)?;
 
-        HashContext::new(&rmm.rsi, &rd)?.measure_ripas_granule(ipa, level as u8)?;
+        HashContext::new(&rd)?.measure_ripas_granule(ipa, level as u8)?;
 
         Ok(())
     });
@@ -197,7 +197,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // read src page
         let src_page = copy_from_host_or_ret!(DataPage, src_pa);
 
-        HashContext::new(&rmm.rsi, &rd)?.measure_data_granule(&src_page, ipa, flags)?;
+        HashContext::new(&rd)?.measure_data_granule(&src_page, ipa, flags)?;
 
         // 3. copy src to _data
         *target_page = src_page;

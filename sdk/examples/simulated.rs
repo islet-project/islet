@@ -19,7 +19,7 @@ fn attestation() -> Result<(), Error> {
     }
 
     if let Some(ClaimData::Bstr(data)) = parse(&claims, config::STR_REALM_INITIAL_MEASUREMENT) {
-        println!("Realm initial measurement: {:X?}", &data);
+        println!("Realm initial measurement: {:X?}", hex::encode(&data));
     } else {
         assert!(false, "Wrong RIM");
     }

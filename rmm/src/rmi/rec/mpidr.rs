@@ -17,7 +17,7 @@ impl From<u64> for MPIDR {
 
 impl MPIDR {
     // B2.30 RecIndex function
-    pub fn index(self) -> usize {
+    pub fn index(&self) -> usize {
         let aff0 = self.get_masked_value(MPIDR::AFF0) as usize;
         let aff1 = self.get_masked_value(MPIDR::AFF1) as usize;
         let aff2 = self.get_masked_value(MPIDR::AFF2) as usize;

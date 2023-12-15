@@ -95,7 +95,7 @@ impl S2TTE {
         Ok((S2TTE::from(s2tte as usize), last_level))
     }
 
-    pub fn is_valid(self, level: usize, is_ns: bool) -> bool {
+    pub fn is_valid(&self, level: usize, is_ns: bool) -> bool {
         let ns = self.get_masked_value(S2TTE::NS);
         let ns_valid = if is_ns { ns == 1 } else { ns == 0 };
         ns_valid
@@ -105,7 +105,7 @@ impl S2TTE {
                     && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L012_BLOCK))
     }
 
-    pub fn is_host_ns_valid(self, level: usize) -> bool {
+    pub fn is_host_ns_valid(&self, level: usize) -> bool {
         let tmp = S2TTE::new(!0);
         let addr_mask = match level {
             1 => tmp.get_masked(S2TTE::ADDR_L1_PAGE),
@@ -133,33 +133,33 @@ impl S2TTE {
         return true;
     }
 
-    pub fn is_unassigned(self) -> bool {
+    pub fn is_unassigned(&self) -> bool {
         self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
             && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::UNASSIGNED
     }
 
-    pub fn is_destroyed(self) -> bool {
+    pub fn is_destroyed(&self) -> bool {
         self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
             && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::DESTROYED
     }
 
-    pub fn is_assigned(self) -> bool {
+    pub fn is_assigned(&self) -> bool {
         self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
             && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::ASSIGNED
     }
 
     // level should be the value returned in page table walking
     // (== the last level that has been reached)
-    pub fn is_table(self, level: usize) -> bool {
+    pub fn is_table(&self, level: usize) -> bool {
         (level < RTT_PAGE_LEVEL) && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L012_TABLE
     }
 
-    pub fn is_invalid_ripas(self) -> bool {
+    pub fn is_invalid_ripas(&self) -> bool {
         (self.get_masked_value(S2TTE::DESC_TYPE) != desc_type::LX_INVALID)
             && (self.get_ripas() != invalid_ripas::RAM)
     }
 
-    pub fn address(self, level: usize) -> Option<PhysAddr> {
+    pub fn address(&self, level: usize) -> Option<PhysAddr> {
         match level {
             1 => Some(PhysAddr::from(self.get_masked(S2TTE::ADDR_L1_PAGE))),
             2 => Some(PhysAddr::from(self.get_masked(S2TTE::ADDR_L2_PAGE))),
@@ -168,7 +168,7 @@ impl S2TTE {
         }
     }
 
-    pub fn get_ripas(self) -> u64 {
+    pub fn get_ripas(&self) -> u64 {
         self.get_masked_value(S2TTE::INVALID_RIPAS)
     }
 }

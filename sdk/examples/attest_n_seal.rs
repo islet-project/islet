@@ -19,7 +19,7 @@ fn attestation() -> Result<(), Error> {
     }
 
     if let Some(ClaimData::Bstr(data)) = parse(&claims, config::STR_REALM_INITIAL_MEASUREMENT) {
-        println!("Realm initial measurement: {:X?}", &data);
+        println!("Realm initial measurement: {:X?}", hex::encode(&data));
     } else {
         assert!(false, "Wrong RIM");
     }
@@ -36,7 +36,6 @@ fn sealing() -> Result<(), Error> {
 }
 
 fn main() {
-    println!("# ISLET SDK examples: An example app running on aarch64");
     println!("Attestation result {:?}", attestation());
     println!("Sealing result {:?}", sealing());
 }

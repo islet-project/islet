@@ -18,7 +18,7 @@ sdk:
 	@$(OPENSSL_ARM64_FLAG) cargo build -r --target=aarch64-unknown-linux-gnu
 
 sdk-example:
-	@$(OPENSSL_ARM64_FLAG) cargo build -r --example aarch64 --target=aarch64-unknown-linux-gnu
+	@$(OPENSSL_ARM64_FLAG) cargo build -r --example attest_n_seal --target=aarch64-unknown-linux-gnu
 
 sdk-example-c: examples/c_api/attest_seal_test.cc
 	@$(OPENSSL_ARM64_FLAG) RUSTFLAGS="-C target-feature=-crt-static" cargo build -r --target=aarch64-unknown-linux-gnu
@@ -31,7 +31,7 @@ simulated:
 	@cargo build -r --target=x86_64-unknown-linux-gnu
 
 run-simulated:
-	@cargo run -r --example simulated --target=x86_64-unknown-linux-gnu
+	@cargo run -r --example attest_n_seal --target=x86_64-unknown-linux-gnu
 
 run-simulated-c:
 	@cargo build -r --target=x86_64-unknown-linux-gnu
@@ -44,7 +44,7 @@ run-simulated-c:
 
 fvp: sdk sdk-example
 	@mkdir -p $(SHARED_DIR)
-	@install -m755 $(ROOT)/out/aarch64-unknown-linux-gnu/release/examples/aarch64 $(SHARED_DIR)/sdk-example
+	@install -m755 $(ROOT)/out/aarch64-unknown-linux-gnu/release/examples/attest_n_seal $(SHARED_DIR)/sdk-example
 	@$(MAKE) sdk-example-c
 	@cp -p $(ROOT)/out/aarch64-unknown-linux-gnu/release/libislet_sdk.a  $(SHARED_DIR)
 	@install -m755 sdk-example-c $(SHARED_DIR)

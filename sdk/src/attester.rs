@@ -24,7 +24,10 @@ fn attest_aarch64(user_data: &[u8]) -> Result<Report, Error> {
     challenge[..user_data.len()].clone_from_slice(&user_data);
 
     match rsi_el0::attestation_token(&challenge) {
-        Ok(token) => Ok(Report { buffer: token }),
+        Ok(token) => Ok(Report {
+            buffer: token,
+            user_data: Vec::new(), // Dummy field
+        }),
         Err(error) => {
             println!("Failed to get an attestation report. {:?}", error);
             Err(Error::Report)

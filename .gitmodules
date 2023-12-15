@@ -57,3 +57,6 @@
 	path = third-party/kvmtool-rim-measurer
 	url = https://github.com/Samsung/islet-asset
 	branch = 3rd-kvmtool-rim-measurer
+[submodule "third-party/certifier"]
+	path = third-party/certifier
+	url = https://github.com/vmware-research/certifier-framework-for-confidential-computing

@@ -21,3 +21,8 @@ rusty-tags.vi*
 
 /examples/veraison/bin
 /hes/out
+
+examples/cross-platform-e2ee/gflags/
+examples/cross-platform-e2ee/googletest/
+examples/cross-platform-e2ee/protobuf/
+examples/cross-platform-e2ee/third-party-arm/

@@ -14,13 +14,21 @@ use crate::{
 use self::claims::RealmClaims;
 use crate::rmm_el3::{plat_token, realm_attest_key};
 
+// Arbitrary number.
+pub const MAX_CCA_TOKEN_SIZE: usize = 4096;
+// This mostly depends on amount of measurement slots used.
+// In the maximum it could take around 6kB.
+// Currently platform token size is a little over 1kB.
+pub const MAX_PLATFORM_TOKEN_SIZE: usize = 2048;
+pub const MAX_CHALLENGE_SIZE: usize = 64;
+
 const DUMMY_PERSONALIZATION_VALUE: [u8; 64] = [0; 64];
 
 const CCA_TOKEN_COLLECTION: u64 = 399;
 const CCA_PLATFORM_TOKEN: u64 = 44234;
 const CCA_REALM_DELEGATED_TOKEN: u64 = 44241;
 
-type PlatformToken = ArrayVec<[u8; 4096]>;
+type PlatformToken = ArrayVec<[u8; MAX_PLATFORM_TOKEN_SIZE]>;
 // 48B - the length of EC-P384 private key
 type RAKPriv = ArrayVec<[u8; 48]>;
 
@@ -30,6 +38,7 @@ pub struct Attestation {
     rak_priv: RAKPriv,
 }
 
+// TODO: Can we keep this context anywhere?
 impl Attestation {
     pub fn new(platform_token: &[u8], rak_priv: &[u8]) -> Self {
         let mut at = Self::default();
@@ -147,24 +156,12 @@ impl Attestation {
     }
 }
 
-pub fn get_token(
-    attest_pa: usize,
-    challenge: &[u8],
-    measurements: &[Measurement],
-    hash_algo: u8,
-) -> usize {
+pub fn get_token(challenge: &[u8], measurements: &[Measurement], hash_algo: u8) -> Vec<u8> {
     // TODO: consider storing attestation object somewhere,
     // as RAK and token do not change during rmm lifetime.
-    let token = Attestation::new(&plat_token(), &realm_attest_key()).create_attestation_token(
+    Attestation::new(&plat_token(), &realm_attest_key()).create_attestation_token(
         challenge,
         measurements,
         hash_algo,
-    );
-
-    unsafe {
-        let pa_ptr = attest_pa as *mut u8;
-        core::ptr::copy(token.as_ptr(), pa_ptr, token.len());
-    }
-
-    token.len()
+    )
 }

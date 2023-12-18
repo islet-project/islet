@@ -5,9 +5,11 @@ pub mod hostcall;
 pub mod measurement;
 pub mod psci;
 
+use alloc::vec::Vec;
+
 use crate::define_interface;
 use crate::event::RsiHandle;
-use crate::granule::{is_granule_aligned, GranuleState};
+use crate::granule::{is_granule_aligned, GranuleState, GRANULE_SIZE};
 use crate::listen;
 use crate::measurement::{HashContext, Measurement, MEASUREMENTS_SLOT_NR, MEASUREMENTS_SLOT_RIM};
 use crate::realm::config::realm_config;
@@ -94,6 +96,28 @@ pub fn do_host_call(
     Ok(())
 }
 
+fn get_token_part(
+    context: &mut Rec<'_>,
+    size: usize,
+) -> core::result::Result<(Vec<u8>, usize), Error> {
+    let rd_granule = get_granule_if!(context.owner()?, GranuleState::RD)?;
+    let rd = rd_granule.content::<Rd>();
+    let hash_algo = rd.hash_algo(); // Rd dropped
+    let measurements = rd.measurements;
+
+    // FIXME: This should be stored instead of generating it for every call.
+    let token =
+        crate::rsi::attestation::get_token(context.attest_challenge(), &measurements, hash_algo);
+
+    let offset = context.attest_token_offset();
+    let part_size = core::cmp::min(size, token.len() - offset);
+    let part_end = offset + part_size;
+
+    context.set_attest_offset(part_end);
+
+    Ok((token[offset..part_end].to_vec(), token.len() - part_end))
+}
+
 pub fn set_event_handler(rsi: &mut RsiHandle) {
     listen!(rsi, ATTEST_TOKEN_INIT, |_arg, ret, _rmm, rec, _| {
         let vcpuid = rec.vcpuid();
@@ -111,11 +135,10 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
         rec.set_attest_challenge(&challenge);
         rec.set_attest_state(RmmRecAttestState::AttestInProgress);
+        rec.set_attest_offset(0);
 
         set_reg(rd, vcpuid, 0, SUCCESS)?;
-
-        // TODO: Calculate real token size
-        set_reg(rd, vcpuid, 1, 4096)?;
+        set_reg(rd, vcpuid, 1, attestation::MAX_CCA_TOKEN_SIZE)?;
 
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
@@ -126,7 +149,6 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
         let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
-        let hash_algo = rd.hash_algo();
 
         let vcpuid = rec.vcpuid();
 
@@ -145,27 +167,42 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             return Ok(());
         }
 
-        let pa = rd
+        let attest_pa: usize = rd
             .s2_table()
             .lock()
             .ipa_to_pa(GuestPhysAddr::from(attest_ipa), RTT_PAGE_LEVEL)
-            .ok_or(Error::RmiErrorInput)?;
+            .ok_or(Error::RmiErrorInput)?
+            .into();
 
-        let measurements = rd.measurements;
+        let pa_offset = get_reg(rd, vcpuid, 2)?;
+        let buffer_size = get_reg(rd, vcpuid, 3)?;
+
+        if pa_offset + buffer_size < pa_offset || pa_offset + buffer_size > GRANULE_SIZE {
+            warn!("Buffer addres region invalid");
+            set_reg(rd, vcpuid, 0, ERROR_INPUT)?;
+            ret[0] = rmi::SUCCESS_REC_ENTER;
+            return Ok(());
+        }
 
         #[cfg(not(kani))]
         // `rsi` is currently not reachable in model checking harnesses
-        let attest_size = crate::rsi::attestation::get_token(
-            pa.into(),
-            rec.attest_challenge(),
-            &measurements,
-            hash_algo,
-        );
+        {
+            let (token_part, token_left) = get_token_part(rec, buffer_size)?;
 
-        set_reg(rd, vcpuid, 0, SUCCESS)?;
-        #[cfg(not(kani))]
-        // `rsi` is currently not reachable in model checking harnesses
-        set_reg(rd, vcpuid, 1, attest_size)?;
+            unsafe {
+                let pa_ptr = attest_pa as *mut u8;
+                core::ptr::copy(token_part.as_ptr(), pa_ptr.add(pa_offset), token_part.len());
+            }
+
+            if token_left == 0 {
+                set_reg(rd, vcpuid, 0, SUCCESS)?;
+                rec.set_attest_state(RmmRecAttestState::NoAttestInProgress);
+            } else {
+                set_reg(rd, vcpuid, 0, INCOMPLETE)?;
+            }
+
+            set_reg(rd, vcpuid, 1, token_part.len())?;
+        }
 
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())

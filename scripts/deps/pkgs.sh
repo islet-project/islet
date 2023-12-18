@@ -5,7 +5,7 @@ set -e
 apt update && apt -y install sudo
 
 sudo apt install -y -qq --no-install-recommends \
-	gcc-multilib cmake libssl-dev \
+	gcc-multilib g++-multilib cmake libssl-dev \
 	binutils python3-pip \
 	device-tree-compiler xterm fakeroot mtools fdisk cpio \
 	dosfstools e2fsprogs \
@@ -15,6 +15,6 @@ sudo apt install -y -qq --no-install-recommends \
 	bzip2 \
 	srecord \
 	git wget make vim bc pkg-config \
-	g++-aarch64-linux-gnu
+	bridge-utils
 
 pip3 install toml

@@ -18,5 +18,7 @@ cp $ROOT/out/x86_64-unknown-linux-gnu/release/libislet_sdk.a $CERTIFIER/third_pa
 # Build server app
 cd $EXAMPLE_DIR
 make -f islet_example_app.mak clean
-make -f islet_example_app.mak
+OPENSSL_INCLUDE=$ROOT/assets/openssl/include \
+	OPENSSL_LIB=$ROOT/assets/openssl/lib-x64 \
+	make -f islet_example_app.mak
 cp islet_example_app.exe $TARGET

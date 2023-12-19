@@ -6,7 +6,7 @@ cd /shared
 ./certifier-client \
 	--data_dir=./client/ \
 	--operation=cold-init \
-	--measurement_file="example_app.measurement" \
+	--measurement_file="client.measurement" \
 	--policy_store_file=policy_store \
 	--policy_host=193.168.10.15 \
 	--server_app_host=193.168.10.15 \
@@ -15,7 +15,7 @@ cd /shared
 ./certifier-client \
 	--data_dir=./client/ \
 	--operation=get-certified \
-	--measurement_file="example_app.measurement" \
+	--measurement_file="client.measurement" \
 	--policy_store_file=policy_store \
 	--policy_store_file=policy_store \
 	--policy_host=193.168.10.15 \

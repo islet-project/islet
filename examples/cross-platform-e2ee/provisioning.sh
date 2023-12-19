@@ -11,6 +11,10 @@ CERTIFIER=$ROOT/third-party/certifier
 EXAMPLE=$CERTIFIER/sample_apps/simple_app_under_islet
 FVP_SHARED=$ROOT/out/shared
 
+# Set your measurements
+SERVER_MEASUREMENT=580bd77074f789f34841ea9920579ff29a59b9452b606f73811132b31c689da9
+CLIENT_MEASUREMENT=491cf94bdb951308672a839776359d6ac22808bad2d318226ef0ea2979693e2e
+
 cd $EXAMPLE
 mkdir -p provisioning service server client
 mkdir -p $FVP_SHARED/client
@@ -31,10 +35,13 @@ $CERTIFIER/utilities/embed_policy_key.exe \
 
 cd $EXAMPLE/provisioning
 
-## !TODO: Support different measurements between server & client
 $CERTIFIER/utilities/measurement_init.exe \
-	--mrenclave=580bd77074f789f34841ea9920579ff29a59b9452b606f73811132b31c689da9 \
-	--out_file=example_app.measurement
+	--mrenclave=$SERVER_MEASUREMENT \
+	--out_file=server.measurement
+
+$CERTIFIER/utilities/measurement_init.exe \
+	--mrenclave=$CLIENT_MEASUREMENT \
+	--out_file=client.measurement
 
 cd $EXAMPLE/provisioning
 cp -p policy_cert_file.bin cca_emulated_islet_key_cert.bin
@@ -58,7 +65,7 @@ $CERTIFIER/utilities/make_signed_claim_from_vse_clause.exe \
 
 $CERTIFIER/utilities/make_unary_vse_clause.exe \
 	--key_subject="" \
-	--measurement_subject=example_app.measurement \
+	--measurement_subject=server.measurement \
 	--verb="is-trusted" \
 	--output=ts2.bin
 
@@ -74,9 +81,29 @@ $CERTIFIER/utilities/make_signed_claim_from_vse_clause.exe \
 	--private_key_file=policy_key_file.bin \
 	--output=signed_claim_2.bin
 
+$CERTIFIER/utilities/make_unary_vse_clause.exe \
+	--key_subject="" \
+	--measurement_subject=client.measurement \
+	--verb="is-trusted" \
+	--output=ts3.bin
+
+$CERTIFIER/utilities/make_indirect_vse_clause.exe \
+	--key_subject=policy_key_file.bin \
+	--verb="says" \
+	--clause=ts3.bin \
+	--output=vse_policy3.bin
+
+$CERTIFIER/utilities/make_signed_claim_from_vse_clause.exe \
+	--vse_file=vse_policy3.bin \
+	--duration=9000 \
+	--private_key_file=policy_key_file.bin \
+	--output=signed_claim_3.bin
+
 $CERTIFIER/utilities/package_claims.exe \
-	--input=signed_claim_1.bin,signed_claim_2.bin \
+	--input=signed_claim_1.bin,signed_claim_2.bin,signed_claim_3.bin \
 	--output=policy.bin
+
+$CERTIFIER/utilities/print_packaged_claims.exe --input=policy.bin
 
 ## Server & Client
 cd $EXAMPLE/provisioning

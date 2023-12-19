@@ -6,8 +6,10 @@ SDK_INCLUDE= -I$(HERE)/include
 SDK_LDFLAGS= -L$(ROOT)/out/aarch64-unknown-linux-gnu/release -lislet_sdk
 
 SHARED_DIR = $(ROOT)/out/shared
-OPENSSL_ARM64_ROOT = $(ROOT)/assets/openssl
-OPENSSL_ARM64_FLAG = OPENSSL_STATIC=1 OPENSSL_LIB_DIR=$(OPENSSL_ARM64_ROOT)/lib OPENSSL_INCLUDE_DIR=$(OPENSSL_ARM64_ROOT)/include
+OPENSSL_ROOT = $(ROOT)/assets/openssl
+OPENSSL_INCLUDE = $(OPENSSL_ROOT)/include
+OPENSSL_ARM64_FLAG = OPENSSL_STATIC=1 OPENSSL_LIB_DIR=$(OPENSSL_ROOT)/lib-arm64 OPENSSL_INCLUDE_DIR=$(OPENSSL_INCLUDE)
+OPENSSL_X64_FLAG = OPENSSL_STATIC=1 OPENSSL_LIB_DIR=$(OPENSSL_ROOT)/lib-x64 OPENSSL_INCLUDE_DIR=$(OPENSSL_INCLUDE)
 
 CFLAGS += $(SDK_INCLUDE)
 LDFLAGS += $(SDK_LDFLAGS)
@@ -28,13 +30,13 @@ test:
 	@cargo test -- --nocapture
 
 simulated:
-	@cargo build -r --target=x86_64-unknown-linux-gnu
+	@$(OPENSSL_X64_FLAG) cargo build -r --target=x86_64-unknown-linux-gnu
 
 run-simulated:
 	@cargo run -r --example attest_n_seal --target=x86_64-unknown-linux-gnu
 
 run-simulated-c:
-	@cargo build -r --target=x86_64-unknown-linux-gnu
+	@$(OPENSSL_X64_FLAG) cargo build -r --target=x86_64-unknown-linux-gnu
 	@g++ examples/c_api/attest_seal_test.cc -lislet_sdk \
 		$(CFLAGS) \
 		-L$(ROOT)/out/x86_64-unknown-linux-gnu/release \

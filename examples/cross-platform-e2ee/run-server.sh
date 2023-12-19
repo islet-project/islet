@@ -10,7 +10,7 @@ cd $EXAMPLE_DIR
 $EXAMPLE_DIR/certifier-server \
 	--data_dir=./server/ \
 	--operation=cold-init \
-	--measurement_file="example_app.measurement" \
+	--measurement_file="server.measurement" \
 	--policy_store_file=policy_store \
 	--policy_host=193.168.10.15 --server_app_host=193.168.10.15 \
 	--print_all=true
@@ -18,7 +18,7 @@ $EXAMPLE_DIR/certifier-server \
 $EXAMPLE_DIR/certifier-server \
 	--data_dir=./server/ \
 	--operation=get-certified \
-	--measurement_file="example_app.measurement" \
+	--measurement_file="server.measurement" \
 	--policy_store_file=policy_store \
 	--policy_host=193.168.10.15 --server_app_host=193.168.10.15 \
 	--print_all=true
@@ -26,7 +26,7 @@ $EXAMPLE_DIR/certifier-server \
 $EXAMPLE_DIR/certifier-server \
 	--data_dir=./server/ \
 	--operation=run-app-as-server \
-	--measurement_file="example_app.measurement" \
 	--policy_store_file=policy_store \
-	--policy_host=193.168.10.15 --server_app_host=193.168.10.15 \
+	--policy_host=193.168.10.15 \
+	--server_app_host=193.168.10.15 \
 	--print_all=true

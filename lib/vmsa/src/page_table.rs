@@ -312,6 +312,7 @@ impl<A: Address, L: HasSubtable, E: Entry, const N: usize> PageTableMethods<A, L
     for PageTable<A, L, E, N>
 where
     L::NextLevel: Level,
+    [E; L::NextLevel::NUM_ENTRIES]: Sized,
 {
     fn entry<S: PageSize, F: FnMut(&mut E) -> Result<Option<EntryGuard<'_, E::Inner>>, Error>>(
         &mut self,
@@ -369,8 +370,6 @@ where
 
         if L::THIS_LEVEL < S::MAP_TABLE_LEVEL {
             self.entries[index].set_with_page_table_flags_via_alloc(index, || {
-                assert_eq!(N, L::NextLevel::NUM_ENTRIES);
-
                 let subtable = unsafe {
                     alloc::alloc::alloc_zeroed(
                         alloc::alloc::Layout::from_size_align(
@@ -379,12 +378,15 @@ where
                         )
                         .unwrap(),
                     )
-                } as *mut PageTable<A, L::NextLevel, E, N>;
+                }
+                    as *mut PageTable<A, L::NextLevel, E, { L::NextLevel::NUM_ENTRIES }>;
 
                 if subtable as usize != 0 {
-                    let subtable_ptr = subtable as *mut PageTable<A, L::NextLevel, E, N>;
+                    let subtable_ptr = subtable
+                        as *mut PageTable<A, L::NextLevel, E, { L::NextLevel::NUM_ENTRIES }>;
                     unsafe {
-                        let arr: [E; N] = core::array::from_fn(|_| E::new());
+                        let arr: [E; L::NextLevel::NUM_ENTRIES] =
+                            core::array::from_fn(|_| E::new());
                         (*subtable_ptr).entries = arr;
                     }
                 }

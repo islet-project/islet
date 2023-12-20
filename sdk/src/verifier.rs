@@ -14,9 +14,11 @@ pub fn verify(report: &Report) -> Result<Claims, TokenError> {
     let claims = verify_token(&report.buffer)?;
 
     cfg_if::cfg_if! {
-        if #[cfg(target_arch="x86_64")] {
+        if #[cfg(target_arch = "x86_64")] {
           let mut claims = claims;
-          replace_user_data(&mut claims, report.user_data.clone());
+          if !report.user_data.is_empty() {
+              replace_user_data(&mut claims, report.user_data.clone());
+          }
         }
     }
 

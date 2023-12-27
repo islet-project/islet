@@ -167,3 +167,17 @@ jobs:
     - name: Run sdk build (aarch64)
       working-directory: sdk
       run: make sdk
+
+  cli:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: |
+        ./scripts/deps/assets.sh
+        ./scripts/deps/rust.sh
+
+    - name: Run cli build (x86_64, aarch64)
+      working-directory: cli
+      run: make

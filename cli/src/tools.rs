@@ -17,20 +17,6 @@ pub(crate) fn file_write(filename: &str, data: &[u8]) -> std::io::Result<()>
     File::create(filename)?.write_all(data)
 }
 
-#[cfg(target_arch = "aarch64")]
-pub(crate) fn hexdump(data: &[u8], line: usize, header: Option<&str>)
-{
-    if let Some(h) = header {
-        println!("{}", h);
-    }
-    let mut cur = 0;
-    while cur < data.len() {
-        let line_len = std::cmp::min(line, data.len() - cur);
-        println!("{:02X?}", &data[cur..cur + line_len]);
-        cur += line_len;
-    }
-}
-
 pub(crate) fn random_data(len: usize) -> Vec<u8>
 {
     let rng = rand::thread_rng();

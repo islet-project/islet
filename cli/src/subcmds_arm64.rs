@@ -28,7 +28,7 @@ pub(crate) fn measur_read(args: &MeasurReadArgs) -> GenericResult
 
     match &args.output {
         Some(f) => tools::file_write(f, &data)?,
-        None => tools::hexdump(&data, 8, None),
+        None => println!("{:X?}", hex::encode(data)),
     }
 
     Ok(())

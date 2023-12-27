@@ -1,8 +1,6 @@
-use crate::tools;
+use crate::{tools, GenericResult};
 use clap::Args;
 use colored::Colorize;
-
-pub(crate) type GenericResult = Result<(), Box<dyn std::error::Error>>;
 
 pub(crate) fn version() -> GenericResult
 {
@@ -133,7 +131,10 @@ pub(crate) fn test(args: &TestArgs) -> GenericResult
 {
     match crate::checks::run_tests(args.verbose) {
         Ok(_) => (),
-        Err(e) => {println!("{}: {}", "FAILED".red(), e); ()},
+        Err(e) => {
+            println!("{}: {}", "FAILED".red(), e);
+            ()
+        }
     }
 
     Ok(())

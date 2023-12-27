@@ -1,5 +1,16 @@
-mod checks;
-mod subcmds;
+cfg_if::cfg_if! {
+    if #[cfg(target_arch="aarch64")] {
+        mod checks;
+        mod subcmds_arm64;
+        use subcmds_arm64 as subcmds;
+    } else if #[cfg(target_arch="x86_64")] {
+        mod subcmds_x64;
+        use subcmds_x64 as subcmds;
+    } else {
+        unreachable!();
+    }
+}
+
 mod tools;
 
 use clap::{Parser, Subcommand};
@@ -12,35 +23,63 @@ struct Cli
     command: Commands,
 }
 
-#[derive(Subcommand, Debug)]
-enum Commands
-{
-    /// Prints RSI ABI version
-    Version,
-    /// Gets given measurement
-    MeasurRead(subcmds::MeasurReadArgs),
-    /// Extends given measurement
-    MeasurExtend(subcmds::MeasurExtendArgs),
-    /// Gets attestation token
-    Attest(subcmds::AttestArgs),
-    /// Verifies and prints the token from a file
-    Verify(subcmds::VerifyArgs),
-    /// Verifies and prints the token from a file
-    Test(subcmds::TestArgs),
+cfg_if::cfg_if! {
+    if #[cfg(target_arch="aarch64")] {
+        #[derive(Subcommand, Debug)]
+        enum Commands
+        {
+            /// Prints RSI ABI version
+            Version,
+            /// Gets given measurement
+            MeasurRead(subcmds::MeasurReadArgs),
+            /// Extends given measurement
+            MeasurExtend(subcmds::MeasurExtendArgs),
+            /// Gets attestation token
+            Attest(subcmds::AttestArgs),
+            /// Verifies and prints the token from a file
+            Verify(subcmds::VerifyArgs),
+            /// Verifies and prints the token from a file
+            Test(subcmds::TestArgs),
+        }
+    } else if #[cfg(target_arch="x86_64")] {
+        #[derive(Subcommand, Debug)]
+        enum Commands
+        {
+            /// Gets attestation token
+            Attest(subcmds::AttestArgs),
+            /// Verifies and prints the token from a file
+            Verify(subcmds::VerifyArgs),
+        }
+    } else {
+        unreachable!();
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>>
 {
     let cli = Cli::parse();
 
-    match &cli.command {
-        Commands::Version => subcmds::version()?,
-        Commands::MeasurRead(args) => subcmds::measur_read(args)?,
-        Commands::MeasurExtend(args) => subcmds::measur_extend(args)?,
-        Commands::Attest(args) => subcmds::attest(args)?,
-        Commands::Verify(args) => subcmds::verify(args)?,
-        Commands::Test(args) => subcmds::test(args)?,
-    };
+    cfg_if::cfg_if! {
+        if #[cfg(target_arch="aarch64")] {
+            match &cli.command {
+                Commands::Version => subcmds::version()?,
+                Commands::MeasurRead(args) => subcmds::measur_read(args)?,
+                Commands::MeasurExtend(args) => subcmds::measur_extend(args)?,
+                Commands::Attest(args) => subcmds::attest(args)?,
+                Commands::Verify(args) => subcmds::verify(args)?,
+                Commands::Test(args) => subcmds::test(args)?,
+            };
+        } else if #[cfg(target_arch="x86_64")] {
+            match &cli.command {
+                Commands::Attest(args) => subcmds::attest(args)?,
+                Commands::Verify(args) => subcmds::verify(args)?,
+            }
+        } else {
+            unreachable!();
+        }
+    }
 
     Ok(())
 }
+
+pub(crate) type GenericResult = Result<(), Box<dyn std::error::Error>>;

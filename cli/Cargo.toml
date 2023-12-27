@@ -15,6 +15,7 @@ cfg-if = "1.0"
 ciborium = "*"
 clap = { version = "*", features = ["derive"] }
 colored = "*"
+hex = "*"
 islet_sdk = { path = "../sdk" }
 nix = "*"
 rand = "*"

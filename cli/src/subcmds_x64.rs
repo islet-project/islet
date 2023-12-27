@@ -1,6 +1,41 @@
 use crate::{tools, GenericResult};
 use clap::Args;
 
+use islet_sdk::prelude as sdk;
+
+#[derive(Args, Debug)]
+pub(crate) struct MeasurReadArgs
+{
+    /// index to read, must be 0-4 (0 for the RIM, 1 or greater for the REM)
+    #[arg(short = 'n', long,
+          value_parser = clap::value_parser!(u32).range(0..=4))]
+    index: u32,
+}
+
+// TODO: Add error handling
+pub(crate) fn measur_read(args: &MeasurReadArgs) -> GenericResult
+{
+    let report = sdk::attest(b"").expect("Failed to get an attestation report.");
+    let claims = sdk::verify(&report).expect("Failed to verify the attestation report.");
+
+    match &args.index {
+        0 => {
+            if let Some(sdk::ClaimData::Bstr(data)) =
+                sdk::parse(&claims, sdk::config::STR_REALM_INITIAL_MEASUREMENT)
+            {
+                println!("{:X?}", hex::encode(data));
+            } else {
+                panic!("Failed to get the RIM.");
+            }
+        }
+        _ => {
+            panic!("REM is not supported yet.");
+        }
+    }
+
+    Ok(())
+}
+
 #[derive(Args, Debug)]
 pub(crate) struct AttestArgs
 {

@@ -16,15 +16,7 @@ impl Verifier {
     }
 
     pub fn verify(&self, sig: &[u8], data: &[u8]) -> Result<(), &'static str> {
-        println!("== Signature Verification:");
         let sig_hex = hex::encode(sig);
-        println!(
-            "Sign Algo\t = [{:?}]\nPublic Key\t = [{:?}]\nData\t\t = [{:?}]\nSignature\t = [{:?}]",
-            self.algorithm,
-            hex::encode(&self.key_public_raw),
-            hex::encode(data),
-            sig_hex
-        );
         match self.algorithm {
             Algorithm::ES256 => {
                 use p256::ecdsa::signature::Verifier;
@@ -47,7 +39,6 @@ impl Verifier {
                 return Err("ES512 is not supported.");
             }
         }
-        println!("== End of Signature Verification\n");
         Ok(())
     }
 }

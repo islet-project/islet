@@ -43,10 +43,37 @@ policies by editing the `provisioning.sh` script and
 specifying your own values for the following variables:
 *Those instructions are quoted from [well-descripted document](https://github.com/vmware-research/certifier-framework-for-confidential-computing/blob/main/sample_apps/simple_app_under_islet/instructions.md)*
 
+You can get the server measurement with cli on the host machine:
+```sh
+$ cd $(islet)/cli
+$ make x86_64
+$ ./islet measur-read --index 0
+Simulated attestation operation on x86_64.
+"580bd77074f789f34841ea9920579ff29a59b9452b606f73811132b31c689da9"
+```
+
+You also can get the client measurement with cli on the realm:
+
+```sh
+$ $(islet)/scripts/fvp-cca -nw=linux -rm=linux --hes
+$ telnet localhost 5000
+$ ./launch-realm.sh
+# cd /shared
+# insmod rsi.ko
+# ./islet measur-read --index 0
+[ 2533.544864] rsi: device rsi open
+[ 2533.664676] rsi: ioctl: measurement_read: 0
+[ 2533.831443] rsi: device rsi released
+"8a1d5cd26a0ee477067d18e2ff051687d18e1450b513508ba98910fa262b1fa3"
+```
+
+After getting measurments,
+edit the script `provisioning.sh`.
+
 ```
 # Set your measurements
 SERVER_MEASUREMENT=580bd77074f789f34841ea9920579ff29a59b9452b606f73811132b31c689da9
-CLIENT_MEASUREMENT=491cf94bdb951308672a839776359d6ac22808bad2d318226ef0ea2979693e2e
+CLIENT_MEASUREMENT=8a1d5cd26a0ee477067d18e2ff051687d18e1450b513508ba98910fa262b1fa3
 ```
 
 Once you have edited the script,

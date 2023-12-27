@@ -128,6 +128,10 @@ def prepare_sdk():
     print("[!] Building RSI kernel module...")
     make(RSI_KO)
 
+def prepare_cli():
+    print("[!] Building CLI...")
+    make(CLI)
+
 def prepare_islet_hes():
     print("[!] Building islet-hes... ")
     run(["cargo", "build", "--release"], cwd=HES_APP)
@@ -613,6 +617,7 @@ if __name__ == "__main__":
                 place_realm_at_shared(args.rmm, args.realm_ip, args.fvp_tap_ip, args.host_ip, args.no_kvm_unit_tests, args.no_prebuilt_ml)
                 if args.no_sdk is False:
                     prepare_sdk()
+                    prepare_cli()
 
     if not args.build_only and args.hes:
         signal.signal(signal.SIGTERM, custom_signal_handler)

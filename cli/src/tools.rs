@@ -17,6 +17,7 @@ pub(crate) fn file_write(filename: &str, data: &[u8]) -> std::io::Result<()>
     File::create(filename)?.write_all(data)
 }
 
+#[cfg(target_arch = "aarch64")]
 pub(crate) fn hexdump(data: &[u8], line: usize, header: Option<&str>)
 {
     if let Some(h) = header {

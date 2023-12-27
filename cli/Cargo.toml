@@ -5,12 +5,13 @@ name = "islet_cli"
 version = "0.1.0"
 edition = "2021"
 authors = ["Islet Contributors"]
-description = "Command line interface for ISLET"
+description = "Command Line Interface for ISLET"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 cca_token = { path = "../lib/cca-token" }
+cfg-if = "1.0"
 ciborium = "*"
 clap = { version = "*", features = ["derive"] }
 colored = "*"

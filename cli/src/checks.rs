@@ -1,4 +1,4 @@
-use crate::{subcmds::GenericResult, tools};
+use crate::{tools, GenericResult};
 use colored::Colorize;
 
 // HELPER FUNCTIONS
@@ -6,8 +6,11 @@ use colored::Colorize;
 fn start(positive: bool, name: &str)
 {
     print!("TEST CASE: ");
-    if positive { print!("{}", "POS: ".blue()); }
-    else { print!("{}", "NEG: ".magenta()); }
+    if positive {
+        print!("{}", "POS: ".blue());
+    } else {
+        print!("{}", "NEG: ".magenta());
+    }
     print!("\"{}\": ", name.yellow());
 }
 
@@ -32,12 +35,16 @@ fn expect_err<V, E: std::error::Error>(res: Result<V, E>, err: &str) -> GenericR
         Ok(_) => Err("Expected error, OK returned".into()),
         Err(e) => {
             if e.to_string() != err {
-                let msg = format!("Wrong error, got: \"{}\", expected: \"{}\"", e.to_string(), err);
+                let msg = format!(
+                    "Wrong error, got: \"{}\", expected: \"{}\"",
+                    e.to_string(),
+                    err
+                );
                 Err(msg.into())
             } else {
                 Ok(())
             }
-        },
+        }
     }
 }
 
@@ -102,7 +109,10 @@ fn test_negative_extend_measurement_index() -> GenericResult
 {
     start(false, "extend_measurement, wrong index");
     let extend = tools::random_data(rsi_el0::MAX_MEASUR_LEN as usize);
-    expect_err(rsi_el0::measurement_extend(5, &extend), "EFAULT: Bad address")?;
+    expect_err(
+        rsi_el0::measurement_extend(5, &extend),
+        "EFAULT: Bad address",
+    )?;
     success()
 }
 

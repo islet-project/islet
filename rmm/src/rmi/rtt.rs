@@ -47,7 +47,7 @@ fn is_valid_rtt_cmd(ipa: usize, level: usize) -> bool {
     if ipa & mask as usize != ipa {
         return false;
     }
-    return true;
+    true
 }
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
@@ -96,7 +96,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
         crate::rtt::init_ripas(rd.id(), ipa, level)?;
 
-        HashContext::new(&rd)?.measure_ripas_granule(ipa, level as u8)?;
+        HashContext::new(rd)?.measure_ripas_granule(ipa, level as u8)?;
 
         Ok(())
     });
@@ -197,7 +197,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // read src page
         let src_page = copy_from_host_or_ret!(DataPage, src_pa);
 
-        HashContext::new(&rd)?.measure_data_granule(&src_page, ipa, flags)?;
+        HashContext::new(rd)?.measure_data_granule(&src_page, ipa, flags)?;
 
         // 3. copy src to _data
         *target_page = src_page;

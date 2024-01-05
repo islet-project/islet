@@ -80,7 +80,7 @@ impl<'a> Inner<'a> {
     }
 
     fn fill(&mut self) {
-        if self.dirty == true {
+        if self.dirty {
             return;
         }
 
@@ -94,7 +94,7 @@ impl<'a> Inner<'a> {
             let rw_start = &__RW_START__ as *const u64 as u64;
             let ro_size = rw_start - base_address;
             let rw_size = &__RW_END__ as *const u64 as u64 - rw_start;
-            let uart_phys = 0x1c0c0000 as u64;
+            let uart_phys: u64 = 0x1c0c_0000;
             self.set_pages(
                 VirtAddr::from(base_address),
                 PhysAddr::from(base_address),

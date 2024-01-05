@@ -6,7 +6,6 @@ use super::guard::EntryGuard;
 use super::page::{Page, PageIter, PageSize};
 
 use alloc::alloc::Layout;
-
 use core::marker::PhantomData;
 
 // Safety/TODO:

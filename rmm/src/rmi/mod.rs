@@ -86,7 +86,7 @@ pub struct MapProt(usize);
 
 impl From<usize> for MapProt {
     fn from(prot: usize) -> Self {
-        Self(prot as usize)
+        Self(prot)
     }
 }
 

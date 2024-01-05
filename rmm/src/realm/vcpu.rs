@@ -40,7 +40,7 @@ impl<T: Context + Default> VCPU<T> {
     pub fn new(realm: Arc<Mutex<Realm<T>>>) -> Arc<Mutex<Self>> {
         Arc::<Mutex<Self>>::new_cyclic(|me| {
             Mutex::new(Self {
-                realm: realm,
+                realm,
                 me: me.clone(),
                 state: State::Ready,
                 context: T::new(),

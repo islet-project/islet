@@ -21,7 +21,7 @@ impl<T: HostAccessor> Pointer<T> {
     ///   (2) T::validate():  this function is used to validate each field in T. (e.g., a constraint on parameter value)
     /// It returns a guard object only if it passes the two steps.
     #[inline]
-    pub fn acquire<'a>(&'a self) -> Option<PointerGuard<'a, T>> {
+    pub fn acquire(&self) -> Option<PointerGuard<'_, T>> {
         if T::acquire(self.ptr as usize) {
             let guard = PointerGuard { inner: self };
             if !guard.validate() {
@@ -80,7 +80,7 @@ impl<T: HostAccessor> PointerMut<T> {
     }
 
     #[inline]
-    pub fn acquire<'a>(&'a mut self) -> Option<PointerMutGuard<'a, T>> {
+    pub fn acquire(&mut self) -> Option<PointerMutGuard<'_, T>> {
         if T::acquire(self.ptr as usize) {
             let guard = PointerMutGuard { inner: self };
             if !guard.validate() {

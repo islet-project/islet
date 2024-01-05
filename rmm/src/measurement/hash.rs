@@ -91,7 +91,7 @@ impl Hasher {
         obj: &dyn Hashable,
         mut out: impl AsMut<[u8]>,
     ) -> Result<(), MeasurementError> {
-        obj.hash(&self, out.as_mut())
+        obj.hash(self, out.as_mut())
     }
 
     pub fn output_size(&self) -> usize {

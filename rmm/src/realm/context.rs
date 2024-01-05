@@ -95,16 +95,13 @@ pub fn get_reg(id: usize, vcpu: usize, register: usize) -> Result<usize, Error> 
 
 impl crate::realm::vcpu::Context for Context {
     fn new() -> Self {
-        let mut context: Self = Default::default();
-
         // Set appropriate sys registers
-        context.spsr =
-            SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M & 0b0101);
-
         // TODO: enable floating point
         // CPTR_EL2, CPACR_EL1, update vectors.s, etc..
-
-        context
+        Self {
+            spsr: SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M & 0b0101),
+            ..Default::default()
+        }
     }
 
     unsafe fn into_current(vcpu: &mut VCPU<Self>) {

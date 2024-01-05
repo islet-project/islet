@@ -70,7 +70,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rec.set_vtcr(prepare_vtcr(rd)?);
 
         rd.inc_rec_index();
-        HashContext::new(&rd)?.measure_rec_params(&params)?;
+        HashContext::new(rd)?.measure_rec_params(&params)?;
 
         set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec)
     });
@@ -91,7 +91,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // grab the lock for Rec
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
-        let mut rec = rec_granule.content_mut::<Rec<'_>>();
+        let rec = rec_granule.content_mut::<Rec<'_>>();
         let realm_id = rec.realmid()?;
 
         if !rec.runnable() {
@@ -124,7 +124,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         trace!("{:?}", run);
 
         if rec.host_call_pending() {
-            do_host_call(&arg, ret, rmm, rec, &mut run)?;
+            do_host_call(arg, ret, rmm, rec, &mut run)?;
         }
 
         crate::gic::receive_state_from_host(realm_id, rec.vcpuid(), &run)?;
@@ -153,13 +153,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             rec.set_state(RecState::Running);
             match crate::rmi::rec::run(realm_id, rec.vcpuid(), 0) {
                 Ok(realm_exit_res) => {
-                    (ret_ns, ret[0]) = handle_realm_exit(realm_exit_res, rmm, &mut rec, &mut run)?
+                    (ret_ns, ret[0]) = handle_realm_exit(realm_exit_res, rmm, rec, &mut run)?
                 }
                 Err(_) => ret[0] = rmi::ERROR_REC,
             }
             rec.set_state(RecState::Ready);
 
-            if ret_ns == true {
+            if ret_ns {
                 break;
             }
         }

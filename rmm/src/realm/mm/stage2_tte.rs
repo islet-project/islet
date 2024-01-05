@@ -130,7 +130,7 @@ impl S2TTE {
             return false;
         }
 
-        return true;
+        true
     }
 
     pub fn is_unassigned(&self) -> bool {

@@ -218,16 +218,16 @@ pub fn save_state(vcpu: &mut VCPU<Context>) {
     let nr_aprs = GIC_FEATURES.nr_aprs;
 
     for i in 0..=nr_lrs {
-        *&mut gic_state.ich_lr_el2[i] = get_lr(i);
+        gic_state.ich_lr_el2[i] = get_lr(i);
     }
     for i in 0..=nr_aprs {
-        *&mut gic_state.ich_ap0r_el2[i] = get_ap0r(i);
-        *&mut gic_state.ich_ap1r_el2[i] = get_ap1r(i);
+        gic_state.ich_ap0r_el2[i] = get_ap0r(i);
+        gic_state.ich_ap1r_el2[i] = get_ap1r(i);
     }
 
-    *&mut gic_state.ich_vmcr_el2 = unsafe { ICH_VMCR_EL2.get() };
-    *&mut gic_state.ich_hcr_el2 = unsafe { ICH_HCR_EL2.get() };
-    *&mut gic_state.ich_misr_el2 = unsafe { ICH_MISR_EL2.get() };
+    gic_state.ich_vmcr_el2 = unsafe { ICH_VMCR_EL2.get() };
+    gic_state.ich_hcr_el2 = unsafe { ICH_HCR_EL2.get() };
+    gic_state.ich_misr_el2 = unsafe { ICH_MISR_EL2.get() };
 
     unsafe { ICH_HCR_EL2.set(gic_state.ich_hcr_el2 & !ICH_HCR_EL2_EN_BIT) };
 }
@@ -258,8 +258,7 @@ pub fn send_state_to_host(id: usize, vcpu: usize, run: &mut Run) -> Result<(), E
     let gic_state = &mut vcpu.lock().context.gic_state;
     let nr_lrs = GIC_FEATURES.nr_lrs;
 
-    (&mut unsafe { run.exit_gic_lrs_mut() }[..nr_lrs])
-        .copy_from_slice(&gic_state.ich_lr_el2[..nr_lrs]);
+    (unsafe { run.exit_gic_lrs_mut() }[..nr_lrs]).copy_from_slice(&gic_state.ich_lr_el2[..nr_lrs]);
     unsafe {
         run.set_gic_misr(gic_state.ich_misr_el2);
         run.set_gic_vmcr(gic_state.ich_vmcr_el2);

@@ -70,7 +70,7 @@ pub fn ipa_bits(feat_reg0: usize) -> usize {
 pub fn validate(feat_reg0: usize) -> bool {
     const MIN_IPA_SIZE: usize = 32;
     let s2sz = extract(feat_reg0, S2SZ_SHIFT, S2SZ_WIDTH);
-    if s2sz < MIN_IPA_SIZE || s2sz > S2SZ_VALUE {
+    if !(MIN_IPA_SIZE..=S2SZ_VALUE).contains(&s2sz) {
         return false;
     }
 

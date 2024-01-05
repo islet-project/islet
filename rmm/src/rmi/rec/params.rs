@@ -89,7 +89,7 @@ impl HostAccessor for Params {
             return false;
         }
 
-        return true;
+        true
     }
 }
 

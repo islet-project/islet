@@ -188,9 +188,9 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
             Ok(None)
         });
         if let Ok(x) = res {
-            return Some((pte, x.1));
+            Some((pte, x.1))
         } else {
-            return None;
+            None
         }
     }
 
@@ -207,9 +207,9 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
             Ok(None)
         });
         if let Ok(_x) = res {
-            return Ok(());
+            Ok(())
         } else {
-            return Err(Error::RmiErrorInput);
+            Err(Error::RmiErrorInput)
         }
     }
 

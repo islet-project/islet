@@ -37,13 +37,13 @@ impl<'a, E> Deref for EntryGuard<'a, E> {
     type Target = E;
 
     fn deref(&self) -> &Self::Target {
-        &*self.inner
+        &self.inner
     }
 }
 
 impl<'a, E> DerefMut for EntryGuard<'a, E> {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut *self.inner
+        &mut self.inner
     }
 }
 

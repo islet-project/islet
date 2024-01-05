@@ -229,12 +229,14 @@ pub fn run(id: usize, vcpu: usize, incr_pc: usize) -> Result<[usize; 4], Error> 
             .elr
     );
 
-    get_realm(id)
+    if let Some(vcpu) = get_realm(id)
         .ok_or(Error::RmiErrorOthers(NotExistRealm))?
         .lock()
         .vcpus
         .get(vcpu)
-        .map(|vcpu| VCPU::into_current(&mut *vcpu.lock()));
+    {
+        VCPU::into_current(&mut *vcpu.lock())
+    }
 
     trace!("Switched to VCPU {} on Realm {}", vcpu, id);
     let ret = enter();

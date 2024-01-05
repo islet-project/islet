@@ -167,7 +167,7 @@ impl Inner {
 
     pub fn check_parent(&self, parent: &Inner) -> Result<(), Error> {
         if let Some(src_parent) = &self.granule.parent {
-            if src_parent as *const Inner == parent as *const Inner {
+            if core::ptr::eq(src_parent, parent) {
                 Ok(())
             } else {
                 Err(Error::MmStateError)

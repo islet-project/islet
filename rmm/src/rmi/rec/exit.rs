@@ -95,7 +95,7 @@ fn get_write_val(realm_id: usize, vcpu_id: usize, esr_el2: u64) -> Result<u64, E
 
 fn handle_data_abort(
     realm_exit_res: [usize; 4],
-    rec: &mut Rec<'_>,
+    rec: &Rec<'_>,
     run: &mut Run,
 ) -> Result<usize, Error> {
     let realm_id = rec.realmid()?;

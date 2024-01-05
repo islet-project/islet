@@ -3,7 +3,7 @@ use crate::bits_in_reg;
 define_sys_register!(
     MPIDR_EL1,     // ref. D7.2.74
     AFF2[23 - 16], // Affinity level 2
-    AFF1[15 - 08]  // Affinity level 1
+    AFF1[15 - 8]   // Affinity level 1
 );
 
 define_sys_register!(CurrentEL, EL[3 - 2]);
@@ -20,7 +20,7 @@ define_sys_register!(
     // Instruction Length for synchronous exceptions.
     IL[25 - 25],
     // Syndrome information.
-    ISS[24 - 00]
+    ISS[24 - 0]
 );
 
 define_bits!(
@@ -30,7 +30,7 @@ define_bits!(
     // Instruction Length for synchronous exceptions.
     IL[25 - 25],
     // Syndrome information.
-    ISS[24 - 00]
+    ISS[24 - 0]
 );
 
 define_sys_register!(
@@ -40,8 +40,8 @@ define_sys_register!(
     // Instruction Length for synchronous exceptions.
     IL[25 - 25],
     // Instruction Specific Syndrome.
-    ISS[24 - 00],
-    ISS_BRK_CMT[15 - 00],
+    ISS[24 - 0],
+    ISS_BRK_CMT[15 - 0],
     S1PTW[7 - 7],
     DFSC[5 - 0]
 );
@@ -158,17 +158,17 @@ define_sys_register!(
     TWI[13 - 13], // Traps WFI instruction
     DC[12 - 12],  // Default cacheable
     BSU[11 - 10], // Barrier shareability upgrade
-    FB[09 - 09],  // Forces broadcast
-    VSE[08 - 08], // Virtual System Error/Asynchronous Abort.
-    VI[07 - 07],  // Virtual IRQ interrupt
-    VF[06 - 06],  // Virtual FRQ interrupt
-    AMO[05 - 05], // Asynchronous abort and error interrupt routing
-    IMO[04 - 04], // Physical IRQ routing
-    FMO[03 - 03], // Physical FIQ routing
-    PTW[02 - 02], // Protected Table Walk
-    SWIO[01 - 01],
-    VM[00 - 00],             // Virtualization enable
-    RES0[63 - 34 | 29 - 29]  //RES1[01 - 01]
+    FB[9 - 9],    // Forces broadcast
+    VSE[8 - 8],   // Virtual System Error/Asynchronous Abort.
+    VI[7 - 7],    // Virtual IRQ interrupt
+    VF[6 - 6],    // Virtual FRQ interrupt
+    AMO[5 - 5],   // Asynchronous abort and error interrupt routing
+    IMO[4 - 4],   // Physical IRQ routing
+    FMO[3 - 3],   // Physical FIQ routing
+    PTW[2 - 2],   // Protected Table Walk
+    SWIO[1 - 1],
+    VM[0 - 0],               // Virtualization enable
+    RES0[63 - 34 | 29 - 29]  //RES1[1 - 1]
 );
 
 define_sys_register!(
@@ -190,9 +190,9 @@ define_sys_register!(
     TGran16[23 - 20],
     BigEndEL0[19 - 16],
     SNSMem[15 - 12],
-    BigEnd[11 - 08],
-    ASIDBits[07 - 04],
-    PARange[03 - 00]
+    BigEnd[11 - 8],
+    ASIDBits[7 - 4],
+    PARange[3 - 0]
 );
 
 define_sys_register!(

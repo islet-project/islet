@@ -32,13 +32,13 @@ pub fn restore_state(vcpu: &VCPU<Context>) {
 pub fn save_state(vcpu: &mut VCPU<Context>) {
     let timer = &mut vcpu.context.timer;
 
-    *&mut timer.cntvoff_el2 = unsafe { CNTVOFF_EL2.get() };
-    *&mut timer.cntv_cval_el0 = unsafe { CNTV_CVAL_EL0.get() };
-    *&mut timer.cntv_ctl_el0 = unsafe { CNTV_CTL_EL0.get() };
-    *&mut timer.cntpoff_el2 = unsafe { S3_4_C14_C0_6.get() }; // CNTPOFF_EL2
-    *&mut timer.cntp_cval_el0 = unsafe { CNTP_CVAL_EL0.get() };
-    *&mut timer.cntp_ctl_el0 = unsafe { CNTP_CTL_EL0.get() };
-    *&mut timer.cnthctl_el2 = unsafe { S3_4_C14_C1_0.get() };
+    timer.cntvoff_el2 = unsafe { CNTVOFF_EL2.get() };
+    timer.cntv_cval_el0 = unsafe { CNTV_CVAL_EL0.get() };
+    timer.cntv_ctl_el0 = unsafe { CNTV_CTL_EL0.get() };
+    timer.cntpoff_el2 = unsafe { S3_4_C14_C0_6.get() }; // CNTPOFF_EL2
+    timer.cntp_cval_el0 = unsafe { CNTP_CVAL_EL0.get() };
+    timer.cntp_ctl_el0 = unsafe { CNTP_CTL_EL0.get() };
+    timer.cnthctl_el2 = unsafe { S3_4_C14_C1_0.get() };
 }
 
 pub fn send_state_to_host(id: usize, vcpu: usize, run: &mut Run) -> Result<(), Error> {

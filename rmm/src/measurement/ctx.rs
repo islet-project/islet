@@ -30,7 +30,7 @@ impl<'a> HashContext<'a> {
 
     pub fn extend_measurement(&self, buffer: &[u8], index: usize) -> Result<(), rsi::error::Error> {
         crate::rsi::measurement::extend(self.rd.id(), index, |current| {
-            let old_value = current.clone();
+            let old_value = *current;
 
             self.hasher.hash_fields_into(current, |h| {
                 h.hash(&old_value.as_ref()[0..self.hasher.output_size()]);
@@ -54,7 +54,7 @@ impl<'a> HashContext<'a> {
         }
 
         crate::rsi::measurement::extend(self.rd.id(), MEASUREMENTS_SLOT_RIM, |current| {
-            let oldrim = current.clone();
+            let oldrim = *current;
 
             self.hasher.hash_fields_into(current, |h| {
                 h.hash_u8(MEASURE_DESC_TYPE_DATA); // desc type
@@ -75,7 +75,7 @@ impl<'a> HashContext<'a> {
             .hash_object_into(params, &mut params_measurement)?;
 
         crate::rsi::measurement::extend(self.rd.id(), MEASUREMENTS_SLOT_RIM, |current| {
-            let oldrim = current.clone();
+            let oldrim = *current;
 
             self.hasher.hash_fields_into(current, |h| {
                 h.hash_u8(MEASURE_DESC_TYPE_REC); // desc type
@@ -90,7 +90,7 @@ impl<'a> HashContext<'a> {
 
     pub fn measure_ripas_granule(&self, ipa: usize, level: u8) -> Result<(), rsi::error::Error> {
         crate::rsi::measurement::extend(self.rd.id(), MEASUREMENTS_SLOT_RIM, |current| {
-            let oldrim = current.clone();
+            let oldrim = *current;
 
             self.hasher.hash_fields_into(current, |h| {
                 h.hash_u8(MEASURE_DESC_TYPE_RIPAS); // desc type

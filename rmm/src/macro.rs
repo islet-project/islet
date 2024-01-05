@@ -16,34 +16,34 @@ macro_rules! define_interface {
 macro_rules! print {
     ($($arg:tt)*) => {
         let buffer = alloc::format!($($arg)*);
-        let _ = $crate::io::stdout().write_all(buffer.as_bytes());
+        let _ = crate::io::stdout().write_all(buffer.as_bytes());
     };
 }
 
 #[macro_export]
 macro_rules! println {
-    () => {$crate::print!("\n")};
-    ($fmt:expr) => {$crate::print!(concat!($fmt, "\n"))};
-    ($fmt:expr, $($arg:tt)*) => {$crate::print!(concat!($fmt, "\n"), $($arg)*)};
+    () => {crate::print!("\n")};
+    ($fmt:expr) => {crate::print!(concat!($fmt, "\n"))};
+    ($fmt:expr, $($arg:tt)*) => {crate::print!(concat!($fmt, "\n"), $($arg)*)};
 }
 
 #[macro_export]
 macro_rules! eprint {
     ($fmt:expr) => {
         let buffer = concat!("\x1b[0;31m", $fmt, "\x1b[0m");
-        let _ = $crate::io::stdout().write_all(buffer.as_bytes());
+        let _ = crate::io::stdout().write_all(buffer.as_bytes());
     };
     ($fmt:expr, $($arg:tt)*) => {{
         let buffer = alloc::format!(concat!("\x1b[0;31m", $fmt, "\x1b[0m"), $($arg)*);
-        let _ = $crate::io::stdout().write_all(buffer.as_bytes());
+        let _ = crate::io::stdout().write_all(buffer.as_bytes());
     }};
 }
 
 #[macro_export]
 macro_rules! eprintln {
-    () => {$crate::eprint!("\n")};
-    ($fmt:expr) => {$crate::eprint!(concat!($fmt, "\n"))};
-    ($fmt:expr, $($arg:tt)*) => {$crate::eprint!(concat!($fmt, "\n"), $($arg)*)};
+    () => {crate::eprint!("\n")};
+    ($fmt:expr) => {crate::eprint!(concat!($fmt, "\n"))};
+    ($fmt:expr, $($arg:tt)*) => {crate::eprint!(concat!($fmt, "\n"), $($arg)*)};
 }
 
 #[macro_export]
@@ -58,8 +58,7 @@ macro_rules! const_assert {
 macro_rules! const_assert_eq {
     ($left:expr, $right:expr) => {
         const _: () = {
-            $crate::const_assert!($left == $right);
-            ()
+            crate::const_assert!($left == $right);
         };
     };
 }
@@ -67,7 +66,7 @@ macro_rules! const_assert_eq {
 #[macro_export]
 macro_rules! const_assert_size {
     ($struct:ty, $size:expr) => {
-        $crate::const_assert_eq!(core::mem::size_of::<$struct>(), ($size));
+        crate::const_assert_eq!(core::mem::size_of::<$struct>(), ($size));
     };
 }
 

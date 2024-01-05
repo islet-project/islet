@@ -71,7 +71,7 @@ impl From<u32> for Syndrome {
             }
             0b10_0110 => Syndrome::SPAlignmentFault,
             0b11_1100 => Syndrome::Brk((origin & ESR_EL2::ISS_BRK_CMT as u32) as u16),
-            ec => Syndrome::Other(ec as u32),
+            ec => Syndrome::Other(ec),
         }
     }
 }

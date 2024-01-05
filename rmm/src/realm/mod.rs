@@ -35,15 +35,14 @@ impl<T: Context + Default> Realm<T> {
     ) -> Arc<Mutex<Self>> {
         Arc::new({
             let vcpus = Vec::new();
-            let realm = Mutex::new(Self {
+            Mutex::new(Self {
                 id,
                 vmid,
                 state: State::New,
-                vcpus: vcpus,
-                page_table: page_table,
+                vcpus,
+                page_table,
                 measurements: [Measurement::empty(); MEASUREMENTS_SLOT_NR],
-            });
-            realm
+            })
         })
     }
 }

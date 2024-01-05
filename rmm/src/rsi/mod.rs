@@ -42,7 +42,9 @@ pub const ERROR_INPUT: usize = 1;
 pub const ERROR_STATE: usize = 2;
 pub const INCOMPLETE: usize = 3;
 
-pub const VERSION: usize = (1 << 16) | 0;
+const ABI_VERSION_MAJOR: usize = 1;
+const ABI_VERSION_MINOR: usize = 0;
+pub const VERSION: usize = (ABI_VERSION_MAJOR << 16) | ABI_VERSION_MINOR;
 
 extern crate alloc;
 
@@ -237,7 +239,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
         let rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
         let rd = rd.content::<Rd>();
-        HashContext::new(&rd)?.extend_measurement(&buffer[0..size], index)?;
+        HashContext::new(rd)?.extend_measurement(&buffer[0..size], index)?;
 
         set_reg(realmid, vcpuid, 0, SUCCESS)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;

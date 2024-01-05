@@ -87,7 +87,7 @@ impl Run {
     }
 
     pub unsafe fn set_cntv_ctl(&mut self, val: u64) {
-        *(&mut (*(*self.exit.inner).cnt.inner).v_ctl) = val;
+        (*(*self.exit.inner).cnt.inner).v_ctl = val;
     }
 
     pub unsafe fn set_cntv_cval(&mut self, val: u64) {
@@ -370,6 +370,6 @@ impl HostAccessor for Run {
                 }
             }
         }
-        return true;
+        true
     }
 }

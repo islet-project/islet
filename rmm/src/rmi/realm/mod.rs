@@ -57,7 +57,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if params.rtt_base as usize == rd {
             return Err(Error::RmiErrorInput);
         }
-        if !(params.rtt_base as usize % GRANULE_SIZE == 0) {
+        if params.rtt_base as usize % GRANULE_SIZE != 0 {
             return Err(Error::RmiErrorInput);
         }
         let _ = get_granule_if!(params.rtt_base as usize, GranuleState::Delegated)?;
@@ -119,7 +119,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 fn create_realm(vmid: u16, rtt_base: usize) -> Result<usize, Error> {
     let mut rms = RMS.lock();
 
-    for (_, realm) in &rms.1 {
+    for realm in rms.1.values() {
         if vmid == realm.lock().vmid {
             return Err(Error::RmiErrorInput);
         }

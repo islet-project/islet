@@ -12,5 +12,5 @@ type RealmMap = BTreeMap<usize, RealmMutex>;
 pub static RMS: Spinlock<(usize, RealmMap)> = Spinlock::new((0, BTreeMap::new()));
 
 pub fn get_realm(id: usize) -> Option<RealmMutex> {
-    RMS.lock().1.get(&id).map(|realm| Arc::clone(realm))
+    RMS.lock().1.get(&id).map(Arc::clone)
 }

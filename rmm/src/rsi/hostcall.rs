@@ -27,7 +27,7 @@ impl HostCall {
     // Safety: union type should be initialized
     // Check UB
     pub fn imm(&self) -> u16 {
-        unsafe { self.inner.val.imm as u16 }
+        unsafe { self.inner.val.imm }
     }
 }
 

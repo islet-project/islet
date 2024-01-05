@@ -49,7 +49,7 @@ impl<S: PageSize, A: Address> Page<S, A> {
         assert!(first.addr <= last.addr);
         PageIter {
             current: first,
-            last: last,
+            last,
         }
     }
 

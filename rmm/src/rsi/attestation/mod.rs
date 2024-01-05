@@ -1,6 +1,6 @@
 pub mod claims;
 
-use alloc::{boxed::Box, string::String, vec::Vec};
+use alloc::{boxed::Box, string::String, vec, vec::Vec};
 use ciborium::{ser, Value};
 use coset::{CoseSign1Builder, HeaderBuilder, TaggedCborSerializable};
 use ecdsa::signature::Signer;
@@ -69,12 +69,10 @@ impl Attestation {
             Value::Bytes(self.platform_token.to_vec()),
         );
 
-        let mut token_map: Vec<(Value, Value)> = Vec::new();
-        token_map.push(platform_token_entry);
-        token_map.push(realm_token_entry);
+        let token_map: Vec<(Value, Value)> = vec![platform_token_entry, realm_token_entry];
 
         ser::into_writer(
-            &Value::Tag(CCA_TOKEN_COLLECTION.into(), Box::new(Value::Map(token_map))),
+            &Value::Tag(CCA_TOKEN_COLLECTION, Box::new(Value::Map(token_map))),
             &mut cca_token,
         )
         .expect("Failed to serialize CCA token");
@@ -109,15 +107,15 @@ impl Attestation {
             String::from("sha-256"),
         );
 
-        let mut claims_map: Vec<(Value, Value)> = Vec::new();
-
-        claims_map.push(claims.challenge.into());
-        claims_map.push(claims.personalization_value.into());
-        claims_map.push(claims.rim.into());
-        claims_map.push(claims.rems.into());
-        claims_map.push(claims.measurement_hash_algo.into());
-        claims_map.push(claims.rak_pub.into());
-        claims_map.push(claims.rak_pub_hash_algo.into());
+        let claims_map: Vec<(Value, Value)> = vec![
+            claims.challenge.into(),
+            claims.personalization_value.into(),
+            claims.rim.into(),
+            claims.rems.into(),
+            claims.measurement_hash_algo.into(),
+            claims.rak_pub.into(),
+            claims.rak_pub_hash_algo.into(),
+        ];
 
         let mut realm_token = Vec::new();
         ser::into_writer(&Value::Map(claims_map), &mut realm_token)

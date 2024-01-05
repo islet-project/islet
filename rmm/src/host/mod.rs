@@ -42,7 +42,7 @@ pub struct DataPage([u8; GRANULE_SIZE]);
 
 impl DataPage {
     pub unsafe fn as_ptr(&self) -> *const u8 {
-        self.0.as_ptr() as *const u8
+        self.0.as_ptr()
     }
 
     pub unsafe fn as_mut_ptr(&mut self) -> *mut u8 {
@@ -56,9 +56,7 @@ impl DataPage {
 
 impl Default for DataPage {
     fn default() -> Self {
-        Self {
-            0: [0; GRANULE_SIZE],
-        }
+        Self([0; GRANULE_SIZE])
     }
 }
 

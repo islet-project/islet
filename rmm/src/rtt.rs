@@ -60,8 +60,8 @@ pub fn create(id: usize, rtt_addr: usize, ipa: usize, level: usize) -> Result<()
         let map_size = match level {
             3 => GRANULE_SIZE, // 4096
             2 => GRANULE_SIZE << S2TTE_STRIDE,
-            1 => GRANULE_SIZE << S2TTE_STRIDE * 2,
-            0 => GRANULE_SIZE << S2TTE_STRIDE * 3,
+            1 => GRANULE_SIZE << (S2TTE_STRIDE * 2),
+            0 => GRANULE_SIZE << (S2TTE_STRIDE * 3),
             _ => unreachable!(),
         };
         let mut flags = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
@@ -123,12 +123,11 @@ pub fn destroy(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(),
 
     let mut g_rtt = get_granule_if!(rtt_addr, GranuleState::RTT)?;
 
-    let parent_s2tte;
-    if rd.addr_in_par(ipa) {
-        parent_s2tte = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::DESTROYED);
+    let parent_s2tte = if rd.addr_in_par(ipa) {
+        bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::DESTROYED)
     } else {
-        parent_s2tte = INVALID_UNPROTECTED;
-    }
+        INVALID_UNPROTECTED
+    };
 
     get_realm(id)
         .ok_or(Error::RmiErrorOthers(NotExistRealm))?
@@ -420,7 +419,7 @@ pub fn data_destroy(id: usize, ipa: usize) -> Result<usize, Error> {
         .ok_or(Error::RmiErrorRtt(0))?
         .into(); //XXX: check this again
 
-    let mut flags = 0 as u64;
+    let mut flags = 0;
     if valid {
         flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::DESTROYED);
     } else {

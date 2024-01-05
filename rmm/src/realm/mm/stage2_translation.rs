@@ -12,10 +12,11 @@ use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::mm::translation_granule_4k::RawPTE;
 use crate::realm::mm::IPATranslation;
 use crate::rmi::error::Error;
+use alloc::alloc::Layout;
 use vmsa::address::PhysAddr;
 use vmsa::page::{Page, PageIter, PageSize};
 use vmsa::page_table::Entry;
-use vmsa::page_table::{Level, PageTable, PageTableMethods};
+use vmsa::page_table::{Level, MemAlloc, PageTable, PageTableMethods};
 
 use armv9a::{bits_in_reg, define_bitfield, define_bits, define_mask};
 
@@ -111,6 +112,30 @@ impl<'a> Stage2Translation<'a> {
                 );
             }
         }
+    }
+}
+
+impl<'a> MemAlloc for Stage2Translation<'a> {
+    unsafe fn alloc(layout: Layout) -> *mut u8 {
+        error!("alloc for Stage2Translation is not allowed. {:?}", layout);
+        // Safety: the caller must do proper error handling with this null pointer.
+        core::ptr::null_mut()
+    }
+
+    unsafe fn alloc_zeroed(layout: Layout) -> *mut u8 {
+        error!(
+            "alloc_zeroed for Stage2Translation is not allowed. {:?}",
+            layout
+        );
+        // Safety: the caller must do proper error handling with this null pointer.
+        core::ptr::null_mut()
+    }
+
+    unsafe fn dealloc(ptr: *mut u8, layout: Layout) {
+        error!(
+            "dealloc for Stage2Translation is not allowed. {:?}, {:?}",
+            ptr, layout
+        );
     }
 }
 

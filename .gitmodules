@@ -1,61 +1,61 @@
 [submodule "assets"]
 	path = assets
-	url = https://github.com/Samsung/islet-asset
+	url = https://github.com/islet-project/assets
 [submodule "third-party/nw-linux"]
 	path = third-party/nw-linux
-	url = https://github.com/samsung/islet-asset
+	url = https://github.com/islet-project/assets
 	branch = 3rd-nw-linux
 [submodule "third-party/optee-build"]
 	path = third-party/optee-build
-	url = https://github.com/samsung/islet-asset
+	url = https://github.com/islet-project/assets
 	branch = 3rd-optee-build
 [submodule "third-party/realm-linux"]
 	path = third-party/realm-linux
-	url = https://github.com/samsung/islet-asset
+	url = https://github.com/islet-project/assets
 	branch = 3rd-realm-linux
 [submodule "third-party/tf-a-tests"]
 	path = third-party/tf-a-tests
-	url = https://github.com/samsung/islet-asset
+	url = https://github.com/islet-project/assets
 	branch = 3rd-tf-a-tests
 [submodule "third-party/tf-a"]
 	path = third-party/tf-a
-	url = https://github.com/samsung/islet-asset
+	url = https://github.com/islet-project/assets
 	branch = 3rd-tf-a
 [submodule "third-party/tf-rmm"]
 	path = third-party/tf-rmm
-	url = https://github.com/samsung/islet-asset
+	url = https://github.com/islet-project/assets
 	branch = 3rd-tf-rmm
 [submodule "third-party/android-kernel"]
 	path = third-party/android-kernel
-	url = https://github.com/samsung/islet-asset
+	url = https://github.com/islet-project/assets
 	branch = 3rd-android-kernel
 [submodule "third-party/gki-build"]
 	path = third-party/gki-build
-	url = https://github.com/samsung/islet-asset
+	url = https://github.com/islet-project/assets
 	branch = 3rd-gki-build
 [submodule "third-party/kvmtool"]
 	path = third-party/kvmtool
-	url = https://github.com/samsung/islet-asset
+	url = https://github.com/islet-project/assets
 	branch = 3rd-kvmtool
 [submodule "third-party/kvm-unit-tests"]
 	path = third-party/kvm-unit-tests
-	url = https://github.com/samsung/islet-asset
+	url = https://github.com/islet-project/assets
 	branch = 3rd-kvm-unit-tests
 [submodule "third-party/cca-rmm-acs"]
 	path = third-party/cca-rmm-acs
-	url = https://github.com/samsung/islet-asset
+	url = https://github.com/islet-project/assets
 	branch = 3rd-cca-rmm-acs
 [submodule "third-party/mbedtls"]
 	path = third-party/mbedtls
-	url = https://github.com/samsung/islet-asset
+	url = https://github.com/islet-project/assets
 	branch = 3rd-mbedtls
 [submodule "third-party/tf-a-rss"]
 	path = third-party/tf-a-rss
-	url = https://github.com/Samsung/islet-asset
+	url = https://github.com/islet-project/assets
 	branch = 3rd-tf-a-rss
 [submodule "third-party/kvmtool-rim-measurer"]
 	path = third-party/kvmtool-rim-measurer
-	url = https://github.com/Samsung/islet-asset
+	url = https://github.com/islet-project/assets
 	branch = 3rd-kvmtool-rim-measurer
 [submodule "third-party/certifier"]
 	path = third-party/certifier

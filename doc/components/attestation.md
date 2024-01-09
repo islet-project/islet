@@ -12,7 +12,7 @@ An attestation report (shortly, *report*) is an *evidence* produced by *attester
 - *CCA Platform token*: it is used to assure that *attester* is running on a secure CCA platform. It covers the measurements of CCA platform components (e.g., RMM and EL3M) and whether it is in debug state.
 - *Realm token*: this token is used to hold the measurement of Realm, which is equivalent to a virtual machine that may contain kernel and root file system.
 
-You can quickly test and see what this report looks like through [our CLI tool](https://samsung.github.io/islet/components/cli.html).
+You can quickly test and see what this report looks like through [our CLI tool](https://islet-project.github.io/islet/components/cli.html).
 
 ## Appraisal policy
 

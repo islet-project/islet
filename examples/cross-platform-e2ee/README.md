@@ -47,7 +47,7 @@ You can get the server measurement with cli on the host machine:
 ```sh
 $ cd $(islet)/cli
 $ make x86_64
-$ ./islet measur-read --index 0
+$ ./islet measurement-read --index 0
 Simulated attestation operation on x86_64.
 "580bd77074f789f34841ea9920579ff29a59b9452b606f73811132b31c689da9"
 ```
@@ -60,7 +60,7 @@ $ telnet localhost 5000
 $ ./launch-realm.sh
 # cd /shared
 # insmod rsi.ko
-# ./islet measur-read --index 0
+# ./islet measurement-read --index 0
 [ 2533.544864] rsi: device rsi open
 [ 2533.664676] rsi: ioctl: measurement_read: 0
 [ 2533.831443] rsi: device rsi released

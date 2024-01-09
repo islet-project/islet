@@ -5,7 +5,7 @@
  * the upstream kernel like the version split below.
  */
 
-use super::{CHALLENGE_LEN, MAX_MEASUR_LEN, MAX_TOKEN_LEN};
+use super::{CHALLENGE_LEN, MAX_MEASUREMENT_LEN, MAX_TOKEN_LEN};
 
 mod internal {
     use super::{RsiAttestation, RsiMeasurement};
@@ -21,7 +21,7 @@ mod internal {
 pub struct RsiMeasurement {
     pub(super) index: u32,
     pub(super) data_len: u32,
-    pub(super) data: [u8; MAX_MEASUR_LEN as usize],
+    pub(super) data: [u8; MAX_MEASUREMENT_LEN as usize],
 }
 
 impl RsiMeasurement {
@@ -29,15 +29,15 @@ impl RsiMeasurement {
         Self {
             index,
             data_len: 0,
-            data: [0; MAX_MEASUR_LEN as usize],
+            data: [0; MAX_MEASUREMENT_LEN as usize],
         }
     }
 
     pub(super) fn new_from_data(index: u32, src: &[u8]) -> Self {
         // panic on wrong size here to avoid obscured panic below
-        assert!(!src.is_empty() && src.len() <= MAX_MEASUR_LEN as usize);
+        assert!(!src.is_empty() && src.len() <= MAX_MEASUREMENT_LEN as usize);
 
-        let mut data = [0u8; MAX_MEASUR_LEN as usize];
+        let mut data = [0u8; MAX_MEASUREMENT_LEN as usize];
         data[..src.len()].copy_from_slice(src);
         Self {
             index,

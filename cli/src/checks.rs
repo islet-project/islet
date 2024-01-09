@@ -61,7 +61,7 @@ fn test_positive_read_measurement_rim() -> GenericResult
 {
     start(true, "read_measurement RIM, check length");
     let data = rsi_el0::measurement_read(0)?;
-    check_len(&data, rsi_el0::MAX_MEASUR_LEN as usize)?;
+    check_len(&data, rsi_el0::MAX_MEASUREMENT_LEN as usize)?;
     success()
 }
 
@@ -69,9 +69,9 @@ fn test_positive_read_measurement_rems() -> GenericResult
 {
     start(true, "read_measurement REMs, check length");
     let data = rsi_el0::measurement_read(1)?;
-    check_len(&data, rsi_el0::MAX_MEASUR_LEN as usize)?;
+    check_len(&data, rsi_el0::MAX_MEASUREMENT_LEN as usize)?;
     let data = rsi_el0::measurement_read(4)?;
-    check_len(&data, rsi_el0::MAX_MEASUR_LEN as usize)?;
+    check_len(&data, rsi_el0::MAX_MEASUREMENT_LEN as usize)?;
     success()
 }
 
@@ -85,7 +85,7 @@ fn test_negative_read_measurement_index() -> GenericResult
 fn test_positive_extend_measurement_basic() -> GenericResult
 {
     start(true, "extend_measurement, basic");
-    let extend = tools::random_data(rsi_el0::MAX_MEASUR_LEN as usize);
+    let extend = tools::random_data(rsi_el0::MAX_MEASUREMENT_LEN as usize);
     rsi_el0::measurement_extend(1, &extend)?;
     success()
 }
@@ -95,7 +95,7 @@ fn test_positive_extend_measurement_check() -> GenericResult
     start(true, "extend_measurement, verify change");
     for index in [1, 4] {
         let data = rsi_el0::measurement_read(index)?;
-        let extend = tools::random_data(rsi_el0::MAX_MEASUR_LEN as usize);
+        let extend = tools::random_data(rsi_el0::MAX_MEASUREMENT_LEN as usize);
         rsi_el0::measurement_extend(index, &extend)?;
         let new_data = rsi_el0::measurement_read(index)?;
         if data == new_data {
@@ -108,7 +108,7 @@ fn test_positive_extend_measurement_check() -> GenericResult
 fn test_negative_extend_measurement_index() -> GenericResult
 {
     start(false, "extend_measurement, wrong index");
-    let extend = tools::random_data(rsi_el0::MAX_MEASUR_LEN as usize);
+    let extend = tools::random_data(rsi_el0::MAX_MEASUREMENT_LEN as usize);
     expect_err(
         rsi_el0::measurement_extend(5, &extend),
         "EFAULT: Bad address",

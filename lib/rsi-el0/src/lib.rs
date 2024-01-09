@@ -5,7 +5,7 @@ pub(crate) mod kernel;
 
 use nix::{fcntl::OFlag, libc::O_RDWR, sys::stat::Mode};
 
-pub const MAX_MEASUR_LEN: u16 = 0x40;
+pub const MAX_MEASUREMENT_LEN: u16 = 0x40;
 pub const CHALLENGE_LEN: u16 = 0x40;
 pub const MAX_TOKEN_LEN: u16 = 0x1000;
 

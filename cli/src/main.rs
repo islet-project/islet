@@ -31,9 +31,9 @@ cfg_if::cfg_if! {
             /// Prints RSI ABI version
             Version,
             /// Gets given measurement
-            MeasurRead(subcmds::MeasurReadArgs),
+            MeasurementRead(subcmds::MeasurementReadArgs),
             /// Extends given measurement
-            MeasurExtend(subcmds::MeasurExtendArgs),
+            MeasurementExtend(subcmds::MeasurementExtendArgs),
             /// Gets attestation token
             Attest(subcmds::AttestArgs),
             /// Verifies and prints the token from a file
@@ -46,7 +46,7 @@ cfg_if::cfg_if! {
         enum Commands
         {
             /// Gets given measurement
-            MeasurRead(subcmds::MeasurReadArgs),
+            MeasurementRead(subcmds::MeasurementReadArgs),
             /// Gets attestation token
             Attest(subcmds::AttestArgs),
             /// Verifies and prints the token from a file
@@ -65,15 +65,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
         if #[cfg(target_arch="aarch64")] {
             match &cli.command {
                 Commands::Version => subcmds::version()?,
-                Commands::MeasurRead(args) => subcmds::measur_read(args)?,
-                Commands::MeasurExtend(args) => subcmds::measur_extend(args)?,
+                Commands::MeasurementRead(args) => subcmds::measurement_read(args)?,
+                Commands::MeasurementExtend(args) => subcmds::measurement_extend(args)?,
                 Commands::Attest(args) => subcmds::attest(args)?,
                 Commands::Verify(args) => subcmds::verify(args)?,
                 Commands::Test(args) => subcmds::test(args)?,
             };
         } else if #[cfg(target_arch="x86_64")] {
             match &cli.command {
-                Commands::MeasurRead(args) => subcmds::measur_read(args)?,
+                Commands::MeasurementRead(args) => subcmds::measurement_read(args)?,
                 Commands::Attest(args) => subcmds::attest(args)?,
                 Commands::Verify(args) => subcmds::verify(args)?,
             }

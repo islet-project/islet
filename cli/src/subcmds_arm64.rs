@@ -10,7 +10,7 @@ pub(crate) fn version() -> GenericResult
 }
 
 #[derive(Args, Debug)]
-pub(crate) struct MeasurReadArgs
+pub(crate) struct MeasurementReadArgs
 {
     /// index to read, must be 0-4
     #[arg(short = 'n', long,
@@ -22,7 +22,7 @@ pub(crate) struct MeasurReadArgs
     output: Option<String>,
 }
 
-pub(crate) fn measur_read(args: &MeasurReadArgs) -> GenericResult
+pub(crate) fn measurement_read(args: &MeasurementReadArgs) -> GenericResult
 {
     let data = rsi_el0::measurement_read(args.index)?;
 
@@ -35,7 +35,7 @@ pub(crate) fn measur_read(args: &MeasurReadArgs) -> GenericResult
 }
 
 #[derive(Args, Debug)]
-pub(crate) struct MeasurExtendArgs
+pub(crate) struct MeasurementExtendArgs
 {
     /// index to extend, must be 1-4
     #[arg(short = 'n', long,
@@ -43,8 +43,8 @@ pub(crate) struct MeasurExtendArgs
     index: u32,
 
     /// length of random data to use (1-64)
-    #[arg(short, long, default_value_t = rsi_el0::MAX_MEASUR_LEN.into(),
-          value_parser = clap::value_parser!(u32).range(1..=rsi_el0::MAX_MEASUR_LEN.into()))]
+    #[arg(short, long, default_value_t = rsi_el0::MAX_MEASUREMENT_LEN.into(),
+          value_parser = clap::value_parser!(u32).range(1..=rsi_el0::MAX_MEASUREMENT_LEN.into()))]
     random: u32,
 
     /// filename to extend the measurement with (1-64 bytes), none to use random
@@ -52,14 +52,14 @@ pub(crate) struct MeasurExtendArgs
     input: Option<String>,
 }
 
-pub(crate) fn measur_extend(args: &MeasurExtendArgs) -> GenericResult
+pub(crate) fn measurement_extend(args: &MeasurementExtendArgs) -> GenericResult
 {
     let data = match &args.input {
         None => tools::random_data(args.random as usize),
         Some(f) => tools::file_read(f)?,
     };
 
-    if data.is_empty() || data.len() > rsi_el0::MAX_MEASUR_LEN as usize {
+    if data.is_empty() || data.len() > rsi_el0::MAX_MEASUREMENT_LEN as usize {
         println!("Data must be within 1-64 bytes range");
         return Err(Box::new(nix::Error::E2BIG));
     }

@@ -4,7 +4,7 @@ use clap::Args;
 use islet_sdk::prelude as sdk;
 
 #[derive(Args, Debug)]
-pub(crate) struct MeasurReadArgs
+pub(crate) struct MeasurementReadArgs
 {
     /// index to read, must be 0-4 (0 for the RIM, 1 or greater for the REM)
     #[arg(short = 'n', long,
@@ -13,7 +13,7 @@ pub(crate) struct MeasurReadArgs
 }
 
 // TODO: Add error handling
-pub(crate) fn measur_read(args: &MeasurReadArgs) -> GenericResult
+pub(crate) fn measurement_read(args: &MeasurementReadArgs) -> GenericResult
 {
     let report = sdk::attest(b"").expect("Failed to get an attestation report.");
     let claims = sdk::verify(&report).expect("Failed to verify the attestation report.");

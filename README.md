@@ -53,7 +53,7 @@ safety and concurrency safety.
 Moving forward, we also plan to incorporate formal 
 verification techniques to further enhance the security of our design and implementation.
 
-For more information, please visit our [developer site](https://samsung.github.io/islet/).
+For more information, please visit our [developer site](https://islet-project.github.io/islet/).
 
 ## A demo video (Confidential ML)
 

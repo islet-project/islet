@@ -8,7 +8,7 @@ You can run Confidential Applications not only on Arm FVP(arm64)
 but also on Host PC(x86_64, simulated version) with `Islet SDK`.
 
 For more information about `Islet SDK`,
-please refer [this document](https://samsung.github.io/islet/components/sdk.html).
+please refer [this document](https://islet-project.github.io/islet/components/sdk.html).
 
 ## Setting Rust environment
 The first step is to prepare Rust environment.

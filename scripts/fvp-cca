@@ -112,10 +112,22 @@ def prepare_rsi_test():
         print("[!] Failed to build rsi-test")
         sys.exit(1)
 
+def prepare_realm_aosp():
+    new_env = environ.copy()
+    new_env["BUILD_CONFIG"] = "../android-kernel/build.config.gki.aarch64.realm"
+    new_env["OUT_DIR"] = RW_AOSP_OUT
+    new_env["KMI_SYMBOL_LIST_STRICT_MODE"] = "0"
+    new_env["SKIP_MRPROPER"] = "1"
+
+    print("[!] Building Android kernel for realm...")
+    run(["build/build.sh"], cwd=AOSP_BUILD_SCRIPT, new_env=new_env)
+
 def prepare_realm(name):
     print("[!] Building realm(%s)... " % name)
     if args.realm == "rsi-test":
         prepare_rsi_test()
+    elif args.realm == "aosp":
+        prepare_realm_aosp()
     else:
         srcdir = os.path.join(REALM, name)
         run(["make"], cwd=srcdir)
@@ -208,7 +220,7 @@ def get_rmm_features(args):
 
         if args.stat == True:
             features += ["--features", "stat"]
-        if args.realm == "linux" or args.use_prebuilt == True:
+        if args.realm == "linux" or args.realm == "aosp" or args.use_prebuilt == True:
             features += ["--features", "realm_linux"]
 
     if features:
@@ -270,12 +282,12 @@ def prepare_nw_aosp(no_prebuilt_initrd):
     new_env["SKIP_MRPROPER"] = "1"
 
     print("[!] Building Android kernel...")
-    run("build/build.sh", cwd=NW_AOSP_BUILD_SCRIPT, new_env=new_env)
+    run(["build/build.sh"], cwd=AOSP_BUILD_SCRIPT, new_env=new_env)
 
     print("[!] Building boot image...")
     args = [
         "cp",
-        "%s/%s/arch/arm64/boot/Image" % (NW_AOSP_BUILD_SCRIPT, NW_AOSP_OUT),
+        "%s/%s/arch/arm64/boot/Image" % (AOSP_BUILD_SCRIPT, NW_AOSP_OUT),
         "%s/Image_aosp" % OUT
     ]
     run(args, cwd=ROOT)
@@ -342,7 +354,7 @@ def run_fvp_tf_a_tests(debug):
     args = ["./FVP_Base_RevC-2xAEMvA",
             "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
-            "-f", CONFIG,
+            "-f", FVP_CONFIG,
             "-Q", "1000"]
     if debug:
         args += ["--cadi-server"]
@@ -355,7 +367,7 @@ def run_fvp_linux(debug, trace, no_telnet):
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
             "-C", "bp.virtioblockdevice.image_path=%s/boot.img" % OUT,
             "-C", "bp.virtiop9device.root_path=%s" % SHARED_PATH,
-            "-f", CONFIG,
+            "-f", FVP_CONFIG,
             "-Q", "1000"]
     if no_telnet:
         args += ["-C", "bp.terminal_0.start_telnet=0",
@@ -389,7 +401,7 @@ def run_fvp_linux_net(debug, host_ip, fvp_ip, fvp_tap_ip, realm_ip, route_ip, ga
             "-C", "bp.virtiop9device.root_path=%s" % SHARED_PATH,
             "-C", "bp.virtio_net.hostbridge.interfaceName=ARM%s" % user_name,
             "-C", "bp.virtio_net.enabled=1",
-            "-f", CONFIG,
+            "-f", FVP_CONFIG,
             "-Q", "1000"]
     if debug:
         args += ["--cadi-server"]
@@ -409,7 +421,7 @@ def run_fvp_aosp(debug):
             "-C", "bp.virtio_net.hostbridge.userNetworking=1",
             "-C", "bp.virtio_net.hostbridge.userNetPorts=5555=5555",
             "-C",  "bp.virtio_net.enabled=1",
-            "-f", CONFIG,
+            "-f", FVP_CONFIG_AOSP,
             "-Q", "1000"]
     if debug:
         args += ["--cadi-server"]
@@ -491,7 +503,7 @@ def clean_repo(target):
         run(["rm", "-rf", "out"], cwd=ROOT)
 
 def get_all_realms():
-    realms = []
+    realms = ["aosp"]
     for dirp in glob.glob(os.path.join(REALM, "*/")):
         realms.append(os.path.basename(dirp.rstrip("/")))
 

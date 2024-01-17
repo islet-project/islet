@@ -13,6 +13,7 @@ ln -sf ../../cli/README.md cli.md
 ln -sf ../../rmm/README.md rmm.md
 cd ${ROOT}/doc/usecases
 ln -sf ../../examples/confidential-ml/README.md confidential-ml.md
+ln -sf ../../examples/cross-platform-e2ee/README.md cross-platform-e2ee.md
 
 # RMM crate
 rm -rf ${ROOT}/doc/plat-doc

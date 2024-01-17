@@ -19,6 +19,7 @@
   - [Secure interactions with the Host](./platform-development/secure-interaction.md)
 - [Use Cases](./usecases/index.md)
   - [Confidential Machine Learning](./usecases/confidential_ml.md)
+  - [Cross Platform E2EE](./usecases/cross-platform-e2ee.md)
 - [Rust Crates](./crates/index.md)
   - [Realm Management Monitor](./plat-doc/islet_rmm/index.html)
   - [Confidential Application SDK](./app-doc/islet_sdk/index.html)

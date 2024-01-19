@@ -60,3 +60,6 @@
 [submodule "third-party/certifier"]
 	path = third-party/certifier
 	url = https://github.com/vmware-research/certifier-framework-for-confidential-computing
+[submodule "third-party/cargo-geiger"]
+	path = third-party/cargo-geiger
+	url = https://github.com/bitboom/cargo-geiger

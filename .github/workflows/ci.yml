@@ -181,3 +181,19 @@ jobs:
     - name: Run cli build (x86_64, aarch64)
       working-directory: cli
       run: make
+
+  rust-unsafe-analysis:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install dependencies
+      run: ./scripts/init-unsafe-analysis.sh
+
+    - name: Run unsafe analyzer
+      run: ./scripts/analyze-unsafe.sh
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: tools
+        path: out/unsafe-analysis.log

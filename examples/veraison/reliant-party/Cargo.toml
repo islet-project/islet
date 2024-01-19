@@ -14,7 +14,7 @@ env_logger ="*"
 hex = "*"
 log = "*"
 tinyvec = "*"
-rust-rsi = { git = "https://github.com/Samsung/islet-ra" }
-ratls = { git = "https://github.com/Samsung/islet-ra" }
-realm-verifier = { git = "https://github.com/Samsung/islet-ra" }
-veraison-verifier = { git = "https://github.com/Samsung/islet-ra" }
+rust-rsi = { git = "https://github.com/islet-project/remote-attestation" }
+ratls = { git = "https://github.com/islet-project/remote-attestation" }
+realm-verifier = { git = "https://github.com/islet-project/remote-attestation" }
+veraison-verifier = { git = "https://github.com/islet-project/remote-attestation" }

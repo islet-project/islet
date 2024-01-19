@@ -1,5 +1,5 @@
 ROOT = $(shell git rev-parse --show-toplevel)
-ISLET_RA := ${ROOT}/../islet-ra
+ISLET_RA := ${ROOT}/../remote-attestation
 ROCLI = ${ISLET_RA}/tools/rocli
 RSICTL = ${ISLET_RA}/tools/rsictl
 OUT = ${ROOT}/out/shared

@@ -11,8 +11,8 @@ description = "Realm application for the remote attestation"
 
 [dependencies]
 clap = { version = "*", features = ["derive"] }
-rust-rsi = { git = "https://github.com/Samsung/islet-ra" }
-ratls = { git = "https://github.com/Samsung/islet-ra" }
+rust-rsi = { git = "https://github.com/islet-project/remote-attestation" }
+ratls = { git = "https://github.com/islet-project/remote-attestation" }
 
 [profile.release]
 strip = true

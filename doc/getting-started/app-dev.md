@@ -43,7 +43,7 @@ Sealing result Ok(())
 
 ## Example code snippet
 Below is code snippet of the example.
-You can refer [the whole example code](https://github.com/Samsung/islet/blob/main/sdk/examples/simulated.rs).
+You can refer [the whole example code](https://github.com/islet-project/islet/blob/main/sdk/examples/simulated.rs).
 
 ```rust
 use islet_sdk::prelude::*;
@@ -60,4 +60,3 @@ let sealed = seal(plaintext)?;
 let unsealed = unseal(&sealed)?;
 assert_eq!(plaintext, &unsealed[..]);
 ```
-

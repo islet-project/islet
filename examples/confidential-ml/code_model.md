@@ -1,7 +1,7 @@
 ## Try out confidential code generation in ML setting
 
 This section explains how to try out confidential code generation in ML setting. (For this model, FL is not supported)
-We prepare [a docker image](https://github.com/Samsung/islet/releases/download/example-confidential-ml-v1.1/cca_ubuntu_release.tar.gz) that contains everything needed to try out this example and it involves 4 different instances-- *certifier-service*, *runtime*, *model-provider*, *device*-- meaning that you need to open 4 terminals for each of them.
+We prepare [a docker image](https://github.com/islet-project/islet/releases/download/example-confidential-ml-v1.1/cca_ubuntu_release.tar.gz) that contains everything needed to try out this example and it involves 4 different instances-- *certifier-service*, *runtime*, *model-provider*, *device*-- meaning that you need to open 4 terminals for each of them.
 
 In this example, *device* is not involved in ML operations (inference and training), they just pass user-input on to *runtime* and then *runtime* does inference with the code model and give the result(code) back to *device*.
 The code model is a pre-trained model and *runtime* will not do training with user-input. This is the way that most state-of-the-art chatbots work these days.
@@ -16,7 +16,7 @@ the quality of the output might be low. See [this csv file](./model_provider/cod
 Before trying this example, please do the following first to import and run a docker image.
 (Note that this docker image is based on Ubuntu 22.04)
 ```
-$ wget https://github.com/Samsung/islet/releases/download/example-confidential-ml-v1.1/cca_ubuntu_release.tar.gz
+$ wget https://github.com/islet-project/islet/releases/download/example-confidential-ml-v1.1/cca_ubuntu_release.tar.gz
 $ gzip -d cca_ubuntu_release.tar.gz
 $ cat cca_ubuntu_release.tar | sudo docker import - cca_release:latest
 $ sudo docker run --net=host -it -d --name=cca_ubuntu_release cca_release /bin/bash
@@ -165,7 +165,7 @@ $ <browser> open a browser and go in http://localhost:8000
 $ <browser> type a request in the chatbox, such as "write a function to add two numbers",
   and then device(terminal-5) passes the request on to the runtime(terminal-3),
   and eventually, the chatbot in the browser will show the prediction (code) made by runtime.
-  
+
   Here is the code:
   int min(int a, int b) {
       return a > b ? b : a;
@@ -223,7 +223,7 @@ $ <browser> open a browser and go in http://193.168.10.15:8000
 $ <browser> type a request in the chatbox, such as "write a function to add two numbers",
   and then device(terminal-5) passes the request on to the runtime(terminal-3),
   and eventually, the chatbot in the browser will show the prediction (code) made by runtime.
-  
+
   Here is the code:
   int min(int a, int b) {
       return a > b ? b : a;

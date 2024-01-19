@@ -4,7 +4,7 @@ Platform components include from Realm Management Monitor(RMM) to Realm.
 
 `Islet` provides Rust-based RMM and scripts to compose Confidential Computing Platform.
 You can explore CCA platform with our scripts and
-powerful [third-party projects](https://github.com/Samsung/islet/tree/main/third-party).
+powerful [third-party projects](https://github.com/islet-project/islet/tree/main/third-party).
 
 ## Setting build environment
 
@@ -39,8 +39,8 @@ $ LD_LIBRARY_PATH=./ ./sdk-example-c
 ```
 
 ## Running a linux realm with a networking support and prebuilt examples
-See [examples](https://github.com/Samsung/islet/tree/main/examples).
-To get details about its network configuration, see [network.md](https://github.com/Samsung/islet/blob/main/doc/network.md)
+See [examples](https://github.com/islet-project/islet/tree/main/examples).
+To get details about its network configuration, see [network.md](https://github.com/islet-project/islet/blob/main/doc/network.md)
 
 ## Testing the realm features
 ```bash

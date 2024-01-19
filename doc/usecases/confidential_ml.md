@@ -65,4 +65,4 @@ We see that this attack could be addressed to some extent by designing and imple
 ## Time to play around with real examples
 
 Anyone can try out what we've explained so far, that is to say, running traditional ML or federated learning on top of ISLET with simple ML models.
-Check out [this markdown file](https://github.com/Samsung/islet/tree/main/examples/confidential-ml) to play around with ISLET for confidential ML!
+Check out [this markdown file](https://github.com/islet-project/islet/tree/main/examples/confidential-ml) to play around with ISLET for confidential ML!

@@ -6,7 +6,7 @@ For example, the paper named [A Tale of Two Worlds](https://people.cs.kuleuven.b
 many TEE SDKs made some mistakes while implementing such interfaces.
 Also, it's not trivial to mitigate [Iago attacks](https://hovav.net/ucsd/dist/iago.pdf) that most TEEs inherently are affected by.
 
-As ISLET aims to bring the best level of security, we take those problems seriously and try to tackle them through the syntax of Rust.
+As Islet aims to bring the best level of security, we take those problems seriously and try to tackle them through the syntax of Rust.
 This page shows the way we're doing that aspect.
 
 ## Secure host memory access
@@ -56,7 +56,7 @@ impl HostAccessor for Params {
 In ARM CCA, each RMI/RSI command has a different number of input/output parameters.
 So we need to take special care in accessing such parameters.
 
-To catch any mistakes regarding this in advance, ISLET developers must explicitly define `Constraint` as follows.
+To catch any mistakes regarding this in advance, Islet developers must explicitly define `Constraint` as follows.
 ```rust
 // (1) define RMI/RSI constraints
 lazy_static! {

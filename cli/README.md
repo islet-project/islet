@@ -1,5 +1,5 @@
 # Command Line Interface
-ISLET provides Command Line Interface (CLI) which can explore CCA operations.
+Islet provides Command Line Interface (CLI) which can explore CCA operations.
 CLI supports both x86_64 (simulated) and aarch64.
 
 You can explore Attestation like below

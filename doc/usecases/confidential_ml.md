@@ -1,4 +1,4 @@
-# Confidential machine learning with ISLET
+# Confidential machine learning with Islet
 
 ## Introduction
 
@@ -13,7 +13,7 @@ On top of it, there are still security issues remaining even when you use federa
 These problems mentioned by far have led us to try to find out a practical yet general solution that can cover every type of machine learning (from traditional to federated).
 And that solution is what we call *confidential machine learning* (shortly, *confidential ML*), which is based on *trusted execution environments (TEE)*. Admittedly, Confidential ML is not new and many companies working on TEE already have services that offer confidential ML but to some limited extent. Specifically, what most companies are caring about is only server-side aspects and device-side aspects have not been seriously considered, and thus they all fail to build an end-to-end confidential ML service.
 
-In this article, we're going to explore how ISLET makes a unique addition to confidential ML to accomplish a real end-to-end confidential ML service,
+In this article, we're going to explore how Islet makes a unique addition to confidential ML to accomplish a real end-to-end confidential ML service,
 ranging from traditional ML to federated learning.
 
 ## Issues in traditional ML
@@ -26,19 +26,19 @@ While most confidential computing platforms are targeting cloud servers (e.g., I
 
 The problem is, while *data leak* can easily be eliminated by running servers on confidential computing platforms such as Intel SGX or AMD SEV, we have no way to protect *model leak* against malicious or honest-but-curious devices. And this cannot be solved without the aid of a device-side confidential computing platform.
 
-## ISLET for traditional ML
+## Islet for traditional ML
 
-ISLET can tackle the above privacy issues that traditional ML has, by extending confidential computing to mobile devices.
+Islet can tackle the above privacy issues that traditional ML has, by extending confidential computing to mobile devices.
 There are three different components involved in this confidential traditional ML: (1) *model-provider*, (2) *device (data-provider)*, (3) *runtime*.
 
 *model-provider* is the owner of AI models and wants to prevent any other components from seeing their models that contain confidential information.
 *device* represents mobile devices and thus sends local data to *runtime* to benefit from ML services. We assume *device* here belongs to a specific vendor like Samsung.
 Lastly, *runtime* provides ML functionalities and acts as a server. It takes data from *device* and model from *model-provider* and does actual ML stuff.
 In this setting, *runtime* and *model-provider* can be running on confidential computing platforms that public cloud vendors such as Azure or Google cloud provide,
-while *device* can be running on ISLET which is based on ARM CCA.
+while *device* can be running on Islet which is based on ARM CCA.
 
 Roughly thinking, putting everything into the scope of confidential computing suffices to solve both *data leak* and *model leak*. But this holds true only if it's assumed that those three components mutually trust each other.
-For example, *runtime* expects *device* to keep their AI models in ISLET and not to reveal them anywhere else. But, *device* can freely break that assumption and take AI models out of ISLET with the intent of uncovering how their models work, which raises *model leak*.
+For example, *runtime* expects *device* to keep their AI models in Islet and not to reveal them anywhere else. But, *device* can freely break that assumption and take AI models out of Islet with the intent of uncovering how their models work, which raises *model leak*.
 
 To prevent this from happening, we need one more assumption that all codes of those three components are open-sourced and therefore everyone can see and audit them.
 If *runtime* is programmed to keep user data local and it is open-sourced, we can assure that in no circumstances will *data leak* happen. It is the same in *model leak*.
@@ -53,7 +53,7 @@ By doing a comparison between two global models in a row, a malicious device can
 
 One more interesting attack is what is called *poisoning attack*. As the name suggests, some devices can train with a large number of fake data in order to poison a global model in attackers' favor. For example, attackers might want to induce a victim to visit a specific place in order to leak the victim's private information in person. To do so, they can generate tons of data that would lead AI models to recommend visiting a specific place no matter what users ask.
 
-## ISLET for federated learning
+## Islet for federated learning
 
 To stop the aforementioned attacks (*inversion attack*, *inference attack*, and *poisoning attack*), we can take the same approach as we did with traditional ML. The only difference would have to do with *runtime* as runtime servers would not do ML operations (training and inference) in federated learning. Instead, they do a so-called aggregation algorithm to build a new global model from local models that each device sends up.
 
@@ -64,5 +64,5 @@ We see that this attack could be addressed to some extent by designing and imple
 
 ## Time to play around with real examples
 
-Anyone can try out what we've explained so far, that is to say, running traditional ML or federated learning on top of ISLET with simple ML models.
-Check out [this markdown file](https://github.com/islet-project/islet/tree/main/examples/confidential-ml) to play around with ISLET for confidential ML!
+Anyone can try out what we've explained so far, that is to say, running traditional ML or federated learning on top of Islet with simple ML models.
+Check out [this markdown file](https://github.com/islet-project/islet/tree/main/examples/confidential-ml) to play around with Islet for confidential ML!

@@ -25,7 +25,7 @@ You can easily explore confidential computing APIs on your x86_64 host machine.
 $ cd sdk
 $ make run-simulated
 
-# ISLET SDK examples: A simulated app running on x86_64
+# Islet SDK examples: A simulated app running on x86_64
 Simulated attestation operation on x86_64.
 Verify Realm Signature.
 == Signature Verification:

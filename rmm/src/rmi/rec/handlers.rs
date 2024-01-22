@@ -139,7 +139,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         let wfx_flag = unsafe { run.entry_flags() };
         if wfx_flag & (REC_ENTRY_FLAG_TRAP_WFI | REC_ENTRY_FLAG_TRAP_WFE) != 0 {
-            warn!("ISLET does not support re-configuring the WFI(E) trap");
+            warn!("Islet does not support re-configuring the WFI(E) trap");
             warn!("TWI(E) in HCR_EL2 is currently fixed to 'no trap'");
         }
 

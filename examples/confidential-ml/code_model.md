@@ -73,7 +73,7 @@ int add2(int a, int b) {
 ---- inference done! ----
 ```
 
-#### How to test with ISLET
+#### How to test with Islet
 
 In this setting, three instances (*certifier-service*, *runtime*, *model-provider*) run on the host PC directly while only one instance (*device*) runs on ARM FVP on the same host PC.
 

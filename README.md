@@ -59,10 +59,10 @@ For more information, please visit our [developer site](https://islet-project.gi
 
 ![this page](https://github.com/islet-project/islet/raw/main/examples/confidential-ml/video/confidential_ml.gif)
 
-- This video shows how ISLET achieves an end-to-end confidential machine learning with a chat-bot scenario.
+- This video shows how Islet achieves an end-to-end confidential machine learning with a chat-bot scenario.
 - This video flows as follows.
   1. It starts with a slide that describes all components involved in this demo. All components will run on confidential computing platforms.
   2. (*feed an ML model*) The model provider feeds the ML model into the ML server. This is done through a secure channel established with the aid of the certifier framework.
-  3. (*run a coding assistant*) A mobile device user asks a chat-bot application that runs on ISLET for generating a function. And then, that request is passed on to the ML server through a secure channel. Finally, the user can see the result (i.e., function).
+  3. (*run a coding assistant*) A mobile device user asks a chat-bot application that runs on Islet for generating a function. And then, that request is passed on to the ML server through a secure channel. Finally, the user can see the result (i.e., function).
   4. (*launch a malicious server*) This time, we launch a malicious server to show a failure case. When it attempts to join the certifier service (on the right side of the screen), it will not pass authentication as it results in a different measurement. Therefore, the malicious server cannot interact with the mobile device user in the first place.
 - To download this video, click [here](https://github.com/islet-project/islet/raw/main/examples/confidential-ml/video/confidential_ml.mp4).

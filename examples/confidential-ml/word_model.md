@@ -56,11 +56,11 @@ epoch: 90, loss: 0.000,0.000
 ---- training done! ----
 ```
 
-#### How to test with ISLET
+#### How to test with Islet
 
 In this setting, three instances (*certifier-service*, *runtime*, *model-provider*) run on the host PC directly while only one instance (*device1*) runs on ARM FVP on the same host PC.
 
-[TODO] Note that in this setting *device1* runs on ARM FVP but it does not use ISLET's attestation APIs as of now. Once ISLET's attestation APIs get merged into *certifier framework*, it accordingly gets switched to using ISLET attestation APIs instead of simulated enclave.
+[TODO] Note that in this setting *device1* runs on ARM FVP but it does not use Islet's attestation APIs as of now. Once Islet's attestation APIs get merged into *certifier framework*, it accordingly gets switched to using Islet attestation APIs instead of simulated enclave.
 
 First of all, be sure to run a docker image with the following options to be able to interact with ARM FVP.
 ```
@@ -170,11 +170,11 @@ $ <terminal-4: device1>  # once downloading a gloabl model successfully, it gets
    prediction: white             # shows a correct answer, as the global model reflects "white" which device2 typed in
 ```
 
-#### How to test with ISLET
+#### How to test with Islet
 
 In this setting, four instances (*certifier-service*, *runtime*, *model-provider*, *device1*) run on the host PC directly while only one instance (*device2*) runs on ARM FVP on the same host PC.
 
-[TODO] Note that in this setting *device1* runs on ARM FVP but it does not use ISLET's attestation APIs as of now. Once ISLET's attestation APIs get merged into *certifier framework*, it accordingly gets switched to using ISLET attestation APIs instead of simulated enclave.
+[TODO] Note that in this setting *device1* runs on ARM FVP but it does not use Islet's attestation APIs as of now. Once Islet's attestation APIs get merged into *certifier framework*, it accordingly gets switched to using Islet attestation APIs instead of simulated enclave.
 
 First of all, be sure to run a docker image with the following options to be able to interact with ARM FVP.
 ```

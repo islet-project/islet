@@ -66,4 +66,4 @@ See [this](./WORD_MODEL.md) to know instructions to play around with this model.
 If you are interested in what this model is like, see [this python script](./model-provider/model.py).
 
 As these two models are not build to show how good they are in terms of ML accuracy,
-we think they are good enough to prove the concept of ISLET.
+we think they are good enough to prove the concept of Islet.

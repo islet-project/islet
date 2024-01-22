@@ -1,15 +1,15 @@
-# ISLET SDK
-ISLET SDK is an open source SDK
+# Islet SDK
+Islet SDK is an open source SDK
 which provides confidential computing primitives to enclaves.
 There are two types of component which can use our API.
 One is the application type running on EL0.
 The other is the VM type running on EL1.
-ISLET SDK focuses the application type first.
+Islet SDK focuses the application type first.
 We believe that you can easily migrate
 the existing applications to the Arm CCA World.
 
 ## Supported Languages
-ISLET SDK is written in `rust` but we also support `C/C++`.
+Islet SDK is written in `rust` but we also support `C/C++`.
 We use `cbindgen` which is the powerful tool
 to create headers for rust libraries which expose public C/C++ APIs.
 
@@ -21,7 +21,7 @@ to create headers for rust libraries which expose public C/C++ APIs.
 ```
 
 ## Confidential Computing Primitives
-Currently ISLET SDK provides `Attestation` and `Sealing`. You can check reference code snippets.
+Currently Islet SDK provides `Attestation` and `Sealing`. You can check reference code snippets.
 
 ### Attestation
 #### Rust code snippet

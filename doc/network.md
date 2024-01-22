@@ -12,7 +12,7 @@ In our network configuration, each of the three has different static IP address 
 Under this setting, any of the three can act as either server or client.
 
 And here is how to make "*FVP Host* and *Realm*" capable of communicating through to *PC Host*.
-First of all, make sure you are in the root directory of ISLET and go through the following instructions.
+First of all, make sure you are in the root directory of Islet and go through the following instructions.
 In most cases, you would probably not have to customize network-related arguments and feed them into `fvp-cca`. Using a default configuration would be sufficient.
 ```
 # full command:

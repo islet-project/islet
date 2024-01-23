@@ -15,7 +15,7 @@ to demonstrate E2EE between x64 and arm64 platforms.
 ## Components
 This example consists of three main components:
 
-![xplat-e2ee-components](res/xplat-e2ee-components.png)
+![xplat-e2ee-components](https://github.com/islet-project/islet/blob/main/examples/cross-platform-e2ee/res/xplat-e2ee-components.png?raw=true)
 
 - Certifier Service: An x64 service responsible for performing attestation and checking against a pre-written policy
 - E2EE Server App: An x64 application that requests attestation to the service and attempts to establish a secure channel with the client

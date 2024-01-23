@@ -14,6 +14,7 @@ ln -sf ../../rmm/README.md rmm.md
 cd ${ROOT}/doc/usecases
 ln -sf ../../examples/confidential-ml/README.md confidential-ml.md
 ln -sf ../../examples/cross-platform-e2ee/README.md cross-platform-e2ee.md
+ln -sf ../../examples/veraison/README.md remote-attestation.md
 
 # RMM crate
 rm -rf ${ROOT}/doc/plat-doc

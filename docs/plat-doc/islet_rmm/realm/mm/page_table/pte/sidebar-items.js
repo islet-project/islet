@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["attribute","page_type","permission","shareable"]};

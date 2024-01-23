@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["mair_idx","page_type","permission","shareable"]};

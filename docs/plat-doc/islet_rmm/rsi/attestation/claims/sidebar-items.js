@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["CHALLENGE_LABEL","EXTENSIBLE_MEASUREMENTS_LABEL","HASH_ALGO_ID_LABEL","INITIAL_MEASUREMENT_LABEL","PERSONALIZATION_VALUE_LABEL","PUBLIC_KEY_HASH_ALOG_ID_LABEL","PUBLIC_KEY_LABEL","REM_SLOT_NR"],"struct":["Claim","Data","MeasurementEntry","RealmClaims"],"type":["Challenge","HashAlgo","PersonalizationValue","RAKPubKey","REMs","RIM"]};

@@ -1,0 +1,1355 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Islet Documentation</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/cca.html"><strong aria-hidden="true">1.1.</strong> About CCA</a></li><li class="chapter-item expanded "><a href="getting-started/app-dev.html"><strong aria-hidden="true">1.2.</strong> Application Developer</a></li><li class="chapter-item expanded "><a href="getting-started/plat-dev.html"><strong aria-hidden="true">1.3.</strong> Platform Developer</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="network.html"><strong aria-hidden="true">1.3.1.</strong> Network Configuration</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="components/index.html"><strong aria-hidden="true">2.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/cca_design.html"><strong aria-hidden="true">2.1.</strong> CCA platform architecture</a></li><li class="chapter-item expanded "><a href="components/rmm.html"><strong aria-hidden="true">2.2.</strong> Realm Management Monitor</a></li><li class="chapter-item expanded "><a href="components/cli.html"><strong aria-hidden="true">2.3.</strong> Command Line Interface</a></li><li class="chapter-item expanded "><a href="components/sdk.html"><strong aria-hidden="true">2.4.</strong> Software Development Kit</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="sdk-sdd.html"><strong aria-hidden="true">2.4.1.</strong> SDK Design</a></li></ol></li><li class="chapter-item expanded "><a href="components/attestation.html"><strong aria-hidden="true">2.5.</strong> Attestation</a></li><li class="chapter-item expanded "><a href="components/certifier.html"><strong aria-hidden="true">2.6.</strong> Certifier</a></li></ol></li><li class="chapter-item expanded "><a href="platform-development/index.html"><strong aria-hidden="true">3.</strong> Platform development</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="platform-development/secure-interaction.html"><strong aria-hidden="true">3.1.</strong> Secure interactions with the Host</a></li></ol></li><li class="chapter-item expanded "><a href="usecases/index.html"><strong aria-hidden="true">4.</strong> Use Cases</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usecases/confidential_ml.html"><strong aria-hidden="true">4.1.</strong> Confidential Machine Learning</a></li><li class="chapter-item expanded "><a href="usecases/cross-platform-e2ee.html"><strong aria-hidden="true">4.2.</strong> Cross Platform E2EE</a></li><li class="chapter-item expanded "><a href="usecases/remote-attestation.html"><strong aria-hidden="true">4.3.</strong> Remote Attestation</a></li></ol></li><li class="chapter-item expanded "><a href="crates/index.html"><strong aria-hidden="true">5.</strong> Rust Crates</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="plat-doc/islet_rmm/index.html"><strong aria-hidden="true">5.1.</strong> Realm Management Monitor</a></li><li class="chapter-item expanded "><a href="app-doc/islet_sdk/index.html"><strong aria-hidden="true">5.2.</strong> Confidential Application SDK</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Islet Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <p align="center"><img src="https://github.com/islet-project/islet/blob/main/doc/res/logo-title.jpg?raw=true" height="100px"></p>
+<p>Islet is an open-source software project written in Rust that enables confidential computing
+on ARM architecture devices using the ARMv9 CCA.
+The primary objective of Islet is to enable on-device confidential computing
+and protect user privacy on end user devices.</p>
+<p>While current confidential computing solutions mainly focus on server-side
+protection,  it is equally important to safeguard user information at the user
+device level  since that is where private data collection initially occurs.
+Furthermore, as more and more users rely on privacy apps such as private
+messengers,  secure emails, password managers, and web browsers with privacy
+settings,  there is a growing need to ensure privacy on user devices.
+Islet, an open-source project, addresses this need by providing a platform
+for ARM-based confidential computing.</p>
+<p>Enabling CC on user devices will not only establish end-to-end CC throughout
+the entire data processing path,
+but it will also help create a secure computation model
+that enables processing of user private data on the user device
+using the same components that previously were employed at the server side
+without disclosing business logic.
+Furthermore, on-device confidential computing will be a key enabler for
+machine-to-machine computing without the need for server intervention</p>
+<h2 id="feature-overview"><a class="header" href="#feature-overview">Feature Overview</a></h2>
+<ul>
+<li>Realm Management Monitor</li>
+<li>Hardware Enforced Security</li>
+<li>Confidential Computing API Standardization</li>
+<li>Use case : Confidential Machine Learning</li>
+</ul>
+<h2 id="overall-architecture"><a class="header" href="#overall-architecture">Overall Architecture</a></h2>
+<p>Islet provides a platform for running virtual machines (VMs)
+confidentially, with standard SDKs for easy integration with other confidential
+computing frameworks at upper layers.
+The platform consists of two key components:
+the Islet Realm Management Monitor (Islet-RMM) and Islet Hardware Enforced Security (Islet-HES).</p>
+<ul>
+<li><code>Islet RMM</code> operates at EL2 in the Realm world on the application processor cores
+and manages the confidential VMs, known as realms.</li>
+<li>On the other hand, <code>Islet HES</code> performs device boot measurement, generates
+platform attestation reports, and manages sealing key functionality within a secure
+hardware IP apart from the main application processor.</li>
+</ul>
+<p><img src="doc/res/overview.png" alt="islet-overview" /></p>
+<p>In designing Islet, we aim to to address the current security challenges in confidential
+computing technologies right from the very beginning.
+To ensure that our software is built with safety in mind, we have chosen to use the
+Rust programming language, known for its unique security model that ensures memory
+safety and concurrency safety.
+Moving forward, we also plan to incorporate formal
+verification techniques to further enhance the security of our design and implementation.</p>
+<p>For more information, please visit our <a href="https://islet-project.github.io/islet/">developer site</a>.</p>
+<h2 id="a-demo-video-confidential-ml"><a class="header" href="#a-demo-video-confidential-ml">A demo video (Confidential ML)</a></h2>
+<p><img src="https://github.com/islet-project/islet/raw/main/examples/confidential-ml/video/confidential_ml.gif" alt="this page" /></p>
+<ul>
+<li>This video shows how Islet achieves an end-to-end confidential machine learning with a chat-bot scenario.</li>
+<li>This video flows as follows.
+<ol>
+<li>It starts with a slide that describes all components involved in this demo. All components will run on confidential computing platforms.</li>
+<li>(<em>feed an ML model</em>) The model provider feeds the ML model into the ML server. This is done through a secure channel established with the aid of the certifier framework.</li>
+<li>(<em>run a coding assistant</em>) A mobile device user asks a chat-bot application that runs on Islet for generating a function. And then, that request is passed on to the ML server through a secure channel. Finally, the user can see the result (i.e., function).</li>
+<li>(<em>launch a malicious server</em>) This time, we launch a malicious server to show a failure case. When it attempts to join the certifier service (on the right side of the screen), it will not pass authentication as it results in a different measurement. Therefore, the malicious server cannot interact with the mobile device user in the first place.</li>
+</ol>
+</li>
+<li>To download this video, click <a href="https://github.com/islet-project/islet/raw/main/examples/confidential-ml/video/confidential_ml.mp4">here</a>.</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="contents"><a class="header" href="#contents">Contents</a></h1>
+<ul>
+<li><a href="https://islet-project.github.io/islet/getting-started/cca.html">1.1. About CCA</a></li>
+<li><a href="https://islet-project.github.io/islet/getting-started/app-dev.html">1.2. Application Developer</a></li>
+<li><a href="https://islet-project.github.io/islet/getting-started/plat-dev.html">1.3. Platform Developer</a></li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="arm-confidential-compute-architecture-cca"><a class="header" href="#arm-confidential-compute-architecture-cca">ARM Confidential Compute Architecture (CCA)</a></h1>
+<p><a href="https://www.arm.com/architecture/security-features/arm-confidential-compute-architecture">ARM CCA</a> is the latest confidential computing technology that can extend confidential computing through to mobile devices (i.e., Samsung galaxy). For ARM-based devices, TrustZone has been the pillar of secure compute for over a decade and adopted for various use cases. However, one weakness of TrustZone makes it hard to keep up with an increasing number of applications that want to benefit from TrustZone. That is the lack of dynamic yet flexible memory allocation strategy.</p>
+<p>To isolate TrustZone from normal worlds (non-secure worlds), hardware manufacturer like Samsung have had to dedicate some portion of physical memory to TrustZone,
+which raises a conventional memory-related tradeoff. To be fair, it's not a problem that only belongs to TrustZone, some other TEEs (e.g., SGX) also suffer from it.
+And this is one of the reasons why recent confidential computing architectures take secure virtual machine approach (e.g., AMD SEV, Intel TDX, ARM CCA) over process-based ones (e.g., Intel SGX).</p>
+<p>From the hardware manufacturer perspective, the capability of dynamic secure memory allocation is definitely the most appealing feature among others.
+But, this is not the only thing Islet is excited about. Islet can benefit from ARM CCA in many aspects that include but not limited to:</p>
+<ul>
+<li>dynamic secure memory allocation, which allows more secure applications to coexist with non-secure applications.</li>
+<li>attestation, which allows other entities (e.g., service provider) to easily verify applications running on mobile devices, which in turn making things easier to build complex trustworthy services.</li>
+<li>device protection, which could be accomplished by a so-called secure virtualization as specified in <a href="https://community.arm.com/arm-community-blogs/b/architectures-and-processors-blog/posts/introducing-arms-dynamic-trustzone-technology">this blog post</a>.</li>
+</ul>
+<p>On top of the above features, what's interesting to Islet is that CCA leaves the role of implementing key components that act as TCB (Trusted Computing Base) to manufacturers. In other words, hardware vendors can augment CCA to solve their unique challenges as long as their implementations adhere to the CCA specification.
+This flexibility would get significantly important considering updates when a new threat to confidential computing emerges.
+For example, there had been a lot of side-channel attacks targeting Intel SGX. However, since Intel SGX puts all security-related codes in hardware, such attacks couldn't be mitigated by platform updates, demanding updates on a per-application basis.</p>
+<p>We believe that Islet takes advantages of strong features of CCA while augmenting CCA in many aspects to get to the point where mobile device users truly get a great security experience.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="application-developer"><a class="header" href="#application-developer">Application Developer</a></h1>
+<p>Application developers are who want to develop Confidential Applications.
+Confidential Application is kind of application running on Confidential Computing.</p>
+<p>We provides <code>Islet SDK</code> which supports to build Confidential Applications.
+<code>Islet SDK</code> provides Confidential Computing API (Attestation, Sealing).
+You can run Confidential Applications not only on Arm FVP(arm64)
+but also on Host PC(x86_64, simulated version) with <code>Islet SDK</code>.</p>
+<p>For more information about <code>Islet SDK</code>,
+please refer <a href="https://islet-project.github.io/islet/components/sdk.html">this document</a>.</p>
+<h2 id="setting-rust-environment"><a class="header" href="#setting-rust-environment">Setting Rust environment</a></h2>
+<p>The first step is to prepare Rust environment.</p>
+<pre><code class="language-sh">$ ./scripts/deps/rust.sh
+</code></pre>
+<h2 id="run-the-example-app-with-sdk"><a class="header" href="#run-the-example-app-with-sdk">Run the example app with SDK</a></h2>
+<p>You can easily explore confidential computing APIs on your x86_64 host machine.
+<code>Islet SDK</code> provides code examples and the build script.</p>
+<pre><code class="language-sh">$ cd sdk
+$ make run-simulated
+
+# Islet SDK examples: A simulated app running on x86_64
+Simulated attestation operation on x86_64.
+Verify Realm Signature.
+== Signature Verification:
+Sign Algo	 = [ES384]
+Public Key	 = [&quot;0476f988091be585ed41801aecfab858548c63057e16b
+Data		 = [&quot;846a5369676e61747572653144a1013822405901b6a70
+Signature	 = [&quot;ec4f3b28a00feabd1f58f94acb27fdc7957545409f1c9
+== End of Signature Verification
+
+...
+
+Attestation result Ok(())
+Sealing result Ok(())
+</code></pre>
+<h2 id="example-code-snippet"><a class="header" href="#example-code-snippet">Example code snippet</a></h2>
+<p>Below is code snippet of the example.
+You can refer <a href="https://github.com/islet-project/islet/blob/main/sdk/examples/simulated.rs">the whole example code</a>.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use islet_sdk::prelude::*;
+
+// Attestation
+let user_data = b&quot;User data&quot;;
+let report = attest(user_data)?;
+let claims = verify(&amp;report)?;
+println!(&quot;Debug: {:?}&quot;, claims);
+
+// Sealing
+let plaintext = b&quot;Plaintext&quot;;
+let sealed = seal(plaintext)?;
+let unsealed = unseal(&amp;sealed)?;
+assert_eq!(plaintext, &amp;unsealed[..]);
+<span class="boring">}</span></code></pre></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="platform-developer"><a class="header" href="#platform-developer">Platform Developer</a></h1>
+<p>Platform developers are who want to develop Confidential Computing Platform Components.
+Platform components include from Realm Management Monitor(RMM) to Realm.</p>
+<p><code>Islet</code> provides Rust-based RMM and scripts to compose Confidential Computing Platform.
+You can explore CCA platform with our scripts and
+powerful <a href="https://github.com/islet-project/islet/tree/main/third-party">third-party projects</a>.</p>
+<h2 id="setting-build-environment"><a class="header" href="#setting-build-environment">Setting build environment</a></h2>
+<p>The first step is to prepare to build our project.</p>
+<pre><code class="language-bash">./scripts/init.sh
+</code></pre>
+<h2 id="running-a-linux-realm"><a class="header" href="#running-a-linux-realm">Running a linux realm</a></h2>
+<pre><code class="language-bash">// Start FVP on host
+$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=tf-rmm
+
+// Run a linux realm on fvp
+$ ./launch-realm.sh
+</code></pre>
+<h2 id="running-sdk-sample-apps-after-running-a-linux-realm"><a class="header" href="#running-sdk-sample-apps-after-running-a-linux-realm">Running SDK sample apps after <a href="getting-started/plat-dev.html#running-a-linux-realm">running a linux realm</a></a></h2>
+<pre><code class="language-bash">// Move to shared dir on realm
+$ cd /shared
+
+// Insert RSI kernel module
+$ inmod rsi.ko
+
+// Run the sample app (rust)
+$ ./sdk-example
+
+// Run the sample app (c)
+$ LD_LIBRARY_PATH=./ ./sdk-example-c
+</code></pre>
+<h2 id="running-a-linux-realm-with-a-networking-support-and-prebuilt-examples"><a class="header" href="#running-a-linux-realm-with-a-networking-support-and-prebuilt-examples">Running a linux realm with a networking support and prebuilt examples</a></h2>
+<p>See <a href="https://github.com/islet-project/islet/tree/main/examples">examples</a>.
+To get details about its network configuration, see <a href="https://github.com/islet-project/islet/blob/main/doc/network.md">network.md</a></p>
+<h2 id="testing-the-realm-features"><a class="header" href="#testing-the-realm-features">Testing the realm features</a></h2>
+<pre><code class="language-bash">// Start FVP on fvp
+$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=tf-rmm
+
+// Test the realm features on fvp
+$ ./test-realm.sh [attest]
+</code></pre>
+<h2 id="testing-rmms-with-tf-a-tests"><a class="header" href="#testing-rmms-with-tf-a-tests">Testing RMMs with tf-a-tests</a></h2>
+<pre><code># Islet RMM
+$ ./scripts/fvp-cca --normal-world=tf-a-tests --rmm=islet
+
+# TF RMM
+$ ./scripts/fvp-cca --normal-world=tf-a-tests --rmm=tf-rmm
+</code></pre>
+<h2 id="testing-rmms-with-acs"><a class="header" href="#testing-rmms-with-acs">Testing RMMs with <a href="https://github.com/ARM-software/cca-rmm-acs">ACS</a></a></h2>
+<pre><code># TF RMM
+$ ./scripts/fvp-cca --normal-world=acs --rmm=tf-rmm
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="network-configuration"><a class="header" href="#network-configuration">Network configuration</a></h1>
+<h2 id="enable-the-capability-of-networking"><a class="header" href="#enable-the-capability-of-networking">Enable the capability of networking</a></h2>
+<p>In the environment of FVP-based emulation, there are many components involved so enabling a network is not an easy task.
+The three components involved are:</p>
+<ul>
+<li>(1) <em>PC Host</em> (Ubuntu only supported at this time of writing), which tries to launch FVP Host.</li>
+<li>(2) <em>FVP Host</em>, which is going to be running as a guest machine of PC Host.</li>
+<li>(3) <em>Realm</em>, which is going to be launched by FVP Host and acts as a guest to FVP Host.</li>
+</ul>
+<p>In our network configuration, each of the three has different static IP address so that they can communicate with each other by specifying a proper destination IP address.
+Under this setting, any of the three can act as either server or client.</p>
+<p>And here is how to make &quot;<em>FVP Host</em> and <em>Realm</em>&quot; capable of communicating through to <em>PC Host</em>.
+First of all, make sure you are in the root directory of Islet and go through the following instructions.
+In most cases, you would probably not have to customize network-related arguments and feed them into <code>fvp-cca</code>. Using a default configuration would be sufficient.</p>
+<pre><code># full command:
+# ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=tf-rmm --host-ip=&lt;PC Host IP&gt; --fvp-ip=&lt;FVP IP&gt; --fvp-tap-ip=&lt;FVP Tap Device IP&gt; --realm-ip=&lt;Realm IP&gt; --route-ip=&lt;Route IP&gt; --gateway=&lt;Gateway IP of PC Host&gt; --ifname=&lt;Interface name&gt;
+
+$ ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=tf-rmm
+  # this takes a default network configuration in which
+  # --host-ip: 193.168.10.15
+  # --fvp-ip: 193.168.10.5
+  # --fvp-tap-ip: 193.168.20.20
+  # --realm-ip: 193.168.20.10
+  # --route-ip: 193.168.20.0
+  # --gateway-ip: 193.168.10.1
+  # --ifname: eth0
+</code></pre>
+<p>FVP is able to communicate through Host to external networks in a similar way to what most VMs do.
+To do so, it is required to assign a real IP address (wired or wireless) into the PC host while IP addresses for FVP Host and Realm do not have to be a real IP,
+since the PC Host takes the role of NAT in order to hide their IPs from external networks. </p>
+<h2 id="a-closer-look-at-network-configuration"><a class="header" href="#a-closer-look-at-network-configuration">A closer look at network configuration</a></h2>
+<p>This is how the aforementioned three components interact with each other:</p>
+<pre><code>// A default configuration
+// Realm:     IP: 193.168.20.10 (static address),  Gateway: 193.168.20.20 (the tap device of FVP Host)
+// FVP Host:  IP: 193.168.10.5 (static address),   Tap: 193.168.20.20
+// PC Host:   IP: 193.168.10.15 (a real IP address + bridge/tap device + network address translation)
+
+Realm &lt;----------------&gt; FVP Host  &lt;-----------------&gt; PC Host
+      (tap network)  (ipv4_forward) (tap network)
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="contents-1"><a class="header" href="#contents-1">Contents</a></h1>
+<ul>
+<li><a href="https://islet-project.github.io/islet/components/cca_design.html">2.1. CCA platform architecture</a></li>
+<li><a href="https://islet-project.github.io/islet/components/rmm.html">2.2. Realm Management Monitor</a></li>
+<li><a href="https://islet-project.github.io/islet/components/cli.html">2.3. Command Line Interface</a></li>
+<li><a href="https://islet-project.github.io/islet/components/sdk.html">2.4. Software Development Kit</a></li>
+<li><a href="https://islet-project.github.io/islet/components/attestation.html">2.5. Attestation</a></li>
+<li><a href="https://islet-project.github.io/islet/components/certifier.html">2.6. Certifier</a></li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="platform-architectures"><a class="header" href="#platform-architectures">Platform architectures</a></h1>
+<p>This page aims to describe an overall CCA platform architecture and what components Islet is going to make a valuable addition to as a manufacturer.</p>
+<h2 id="the-general-cca-architecture"><a class="header" href="#the-general-cca-architecture">The general CCA architecture</a></h2>
+<p><img src="components/./cca_diagram_1.jpg" alt="diagram_1" /></p>
+<p>The general CCA architecture is depicted above. From the high level perspective, you think of this architecture as the one similar to a conventional TrustZone application programming model where one application breaks down into two pieces, one for normal world and the other one for secure world. More precisely, a virtual machine that runs on the normal world can securely delegate confidential operations to a corresponding realm.</p>
+<p>You might not want to split up an application into two pieces. Instead, you may want to put a whole application in Realm and run it without code changes as confidential container does.
+That scenario can also be realized and is specified in the next section.</p>
+<p>In this architecture, RMM (Realm Management Monitor) and Monitor (also known as EL3 Monitor, shortly EL3M) are called trusted firmware components that CCA relies on for security, therefore they must be securely implemented and verified. Monitor manages GPT (Granule Protection Table) which tracks which world each physical page belongs to and is responsible for context switching between different worlds (i.e., between Realm world and Normal world).</p>
+<p>More specifically, a physical page assigned to a realm is marked as a realm page in GPT and it is used in memory translation. So, when a VM that runs on Normal world attempts to access that page, it will result in a translation fault. This is how CCA offers isolation between different worlds and enables dynamic secure memory allocation.</p>
+<p>On top of it, RMM takes the responsibility of isolating a realm from the other realms, by making use of existing virtualization-based isolation technologies such as NPT (Nested Page Table). Also, it controls the execution of Realm as typical hypervisors do and is responsible for interacting with Normal world to provide some services, for example sending a network packet through VirtIO to Normal world.</p>
+<p>Lastly, HES (Hardware Enforced Security) represents a dedicated hardware component that is separated from CPUs and behaves as RoT (Root of Trust). Detaching the ability of RoT from Monitor (i.e., firmware that runs on CPU) helps to minimize the responsibility of RMM.</p>
+<h2 id="the-reference-implementation-of-cca"><a class="header" href="#the-reference-implementation-of-cca">The reference implementation of CCA</a></h2>
+<p><img src="components/./cca_diagram_2.jpg" alt="diagram_2" /></p>
+<p>ARM has been working hard to bring and merge the reference implementation of CCA into a open-source ecosystem. The above picture depicts the current reference implementation of CCA at the time of this writing. Red boxes represent components that are making up of the reference implementation.
+They implement and manage <a href="https://www.trustedfirmware.org/projects/tf-rmm/">TF-RMM</a> and <a href="https://www.trustedfirmware.org/projects/tf-a/">TF-A</a> for RMM and Monitor, respectively, and use them for the reference implementation of CCA.
+Also, for HES, they implement <a href="https://tf-m-user-guide.trustedfirmware.org/platform/arm/rss/readme.html">RSS</a> that runs on a dedicated MCU (Micro Controller Unit) isolated from CPUs.</p>
+<p>For a software stack of virtualization, ARM currently uses a combination of KVM and kvmtool which is a light-weight VMM (virtual machine monitor). kvmtool is a tiny VMM written in C and offers basic functionalities to launch and manage a KVM VM, including virtio. To launch a realm, kvmtool takes as input a kernel binary and a root file system and asks TF-A (Monitor) for creating and executing the realm. That request passes through a linux kernel that supports interaction with Monitor.</p>
+<p>Lastly, an OS kernel that runs on Realm has to be updated to interact with TF-RMM. For example, a realm can ask TF-RMM for generating an attestation report.</p>
+<h2 id="islet-implementation"><a class="header" href="#islet-implementation">Islet implementation</a></h2>
+<p><img src="components/./cca_diagram_3.jpg" alt="diagram_3" /></p>
+<p>This picture shows what Islet is working on to augment CCA in the direction we want. The most important part would be Islet RMM which adheres to the specification of RMM but is written in Rust. We choose Rust to benefit from its strong type system and compile-time security, making things easier to reason about the security of complicated software.</p>
+<p>In addition to rewriting RMM in Rust, we're planning to put in some new features that are needed to accomplish our goals and could differentiate Islet RMM from TF RMM.
+Note that what features to add in are still in internal discussion.
+Also, we're working on designing and developing our own HES tailored for real hardware platforms.</p>
+<p>Other than the above components, Islet currently relies on the reference implementation of CCA.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="rust-based-realm-management-monitor"><a class="header" href="#rust-based-realm-management-monitor">Rust-based Realm Management Monitor</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="command-line-interface"><a class="header" href="#command-line-interface">Command Line Interface</a></h1>
+<p>Islet provides Command Line Interface (CLI) which can explore CCA operations.
+CLI supports both x86_64 (simulated) and aarch64.</p>
+<p>You can explore Attestation like below</p>
+<pre><code class="language-sh">$ cd cli
+$ make x86_64
+$ ./islet attest --output=./report
+$ ./islet verify --input=./report
+
+== Signature Verification:
+Sign Algo        = [ES384]
+Public Key       = [&quot;0476f988091be585ed41801aecfab858...]
+Data             = [&quot;846a5369676e61747572653144a10138...]
+Signature        = [&quot;ec4f3b28a00feabd1f58f94acb27fdc7...]
+== End of Signature Verification
+
+== Realm Token cose:
+Protected header               = Header { alg: Some(Assigned(ES
+Unprotected header             = Header { alg: None, crit: [],
+Signature                      = [ec4f3b28a00feabd1f58f94acb27f
+== End of Realm Token cose
+
+== Realm Token:
+Realm challenge                (#10) = [abababababababababababa
+Realm personalization value    (#44235) = [00000000000000000000
+Realm hash algo id             (#44236) = &quot;sha-256&quot;
+Realm public key hash algo id  (#44240) = &quot;sha-256&quot;
+Realm signing public key       (#44237) = [0476f988091be585ed41
+Realm initial measurement      (#44238) = [6190eb90b293886c172e
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="islet-sdk"><a class="header" href="#islet-sdk">Islet SDK</a></h1>
+<p>Islet SDK is an open source SDK
+which provides confidential computing primitives to enclaves.
+There are two types of component which can use our API.
+One is the application type running on EL0.
+The other is the VM type running on EL1.
+Islet SDK focuses the application type first.
+We believe that you can easily migrate
+the existing applications to the Arm CCA World.</p>
+<h2 id="supported-languages"><a class="header" href="#supported-languages">Supported Languages</a></h2>
+<p>Islet SDK is written in <code>rust</code> but we also support <code>C/C++</code>.
+We use <code>cbindgen</code> which is the powerful tool
+to create headers for rust libraries which expose public C/C++ APIs.</p>
+<pre><code>+--------+                           +---------+
+| sdk    | =&gt; cbindgen =&gt; header  =&gt; | app     |
+| (rust) | =&gt; cdylib   =&gt; library =&gt; | (c/c++) |
++--------+                           +---------+
+</code></pre>
+<h2 id="confidential-computing-primitives"><a class="header" href="#confidential-computing-primitives">Confidential Computing Primitives</a></h2>
+<p>Currently Islet SDK provides <code>Attestation</code> and <code>Sealing</code>. You can check reference code snippets.</p>
+<h3 id="attestation"><a class="header" href="#attestation">Attestation</a></h3>
+<h4 id="rust-code-snippet"><a class="header" href="#rust-code-snippet">Rust code snippet</a></h4>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>use islet_sdk::prelude::*;
+
+let user_data = b&quot;User data&quot;;
+let report = attest(user_data)?;
+let claims = verify(&amp;report)?;
+
+print_claim(&amp;claims);
+
+if let Some(ClaimData::Bstr(data)) = parse(&amp;claims, config::STR_USER_DATA) {
+    assert_eq!(user_data, &amp;data[..user_data.len()]);
+} else {
+    assert!(false, &quot;Wrong user data&quot;);
+}
+
+if let Some(ClaimData::Text(data)) = parse(&amp;claims, config::STR_PLAT_PROFILE) {
+    assert_eq!(data, &quot;http://arm.com/CCA-SSD/1.0.0&quot;);
+} else {
+    assert!(false, &quot;Wrong platform profile&quot;);
+}
+
+if let Some(ClaimData::Bstr(data)) = parse(&amp;claims, config::STR_REALM_INITIAL_MEASUREMENT) {
+    println!(&quot;Realm initial measurement: {:X?}&quot;, &amp;data);
+} else {
+    assert!(false, &quot;Wrong RIM&quot;);
+}
+<span class="boring">}</span></code></pre></pre>
+<h4 id="c-code-snippet"><a class="header" href="#c-code-snippet">C++ code snippet</a></h4>
+<pre><code class="language-cpp">using byte = unsigned char;
+
+byte report[2048], claims[1024], claim[1024];
+int report_len, claims_len, claim_len;
+
+std::string user_data(&quot;User Custom data&quot;);
+if (!islet_attest((const byte*)user_data.c_str(), user_data.size(), report, &amp;report_len))
+    return -1;
+
+if (!islet_verify(report, report_len, claims, &amp;claims_len))
+    return -1;
+
+islet_print_claims(claims, claims_len);
+
+const char CLAIM_USER_DATA[] = &quot;User data&quot;; // Claim title 
+if (!islet_parse(&quot;User data&quot;, claims_out.data(), claims_out_len, value_out.data(), &amp;value_out_len))
+    return -1;
+
+printf(&quot;Claim[User data]: %s\n&quot;, (char*) value);
+</code></pre>
+<h3 id="sealing"><a class="header" href="#sealing">Sealing</a></h3>
+<h4 id="rust-code-snippet-1"><a class="header" href="#rust-code-snippet-1">Rust code snippet</a></h4>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>let plaintext = b&quot;Plaintext&quot;;
+let sealed = seal(plaintext)?;
+let unsealed = unseal(&amp;sealed)?;
+assert_eq!(plaintext, &amp;unsealed[..]);   
+<span class="boring">}</span></code></pre></pre>
+<h4 id="c-code-snippet-1"><a class="header" href="#c-code-snippet-1">C++ code snippet</a></h4>
+<pre><code class="language-cpp">using byte = unsigned char;
+
+byte sealed[2048], unsealed[2048];
+memset(sealed, 0, sizeof(sealed));
+memset(unsealed, 0, sizeof(unsealed));
+int sealed_len = 0, unsealed_len = 0;
+
+std::string plaintext(&quot;Plaintext&quot;);
+if (islet_seal((const byte*)plaintext.c_str(), plaintext.size(), sealed, &amp;sealed_len))
+    return -1;
+
+if (islet_unseal(sealed, sealed_len, unsealed, &amp;unsealed_len))
+    return -1;
+
+printf(&quot;Success sealing round trip.\n&quot;);
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="sdk-software-design-document"><a class="header" href="#sdk-software-design-document">SDK Software Design Document</a></h1>
+<h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
+<ol>
+<li><a href="sdk-sdd.html#introduction">SDK Introduction</a></li>
+<li><a href="sdk-sdd.html#system-architecture">System Architecture</a></li>
+<li><a href="sdk-sdd.html#apis-interfaces">APIs and Interfaces</a></li>
+<li><a href="sdk-sdd.html#functional-requirements">Functional Requirements</a></li>
+<li><a href="sdk-sdd.html#non-functional-requirements">Non Functional Requirements</a></li>
+<li><a href="sdk-sdd.html#testing-strategy">Testing Strategy</a></li>
+<li><a href="sdk-sdd.html#conclusion">Conclusion</a></li>
+</ol>
+<h2 id="1-sdk-introduction"><a class="header" href="#1-sdk-introduction">1. SDK Introduction <a name="introduction"></a></a></h2>
+<h3 id="overview"><a class="header" href="#overview">Overview</a></h3>
+<p>This Software Design Document outlines
+the architecture and functionality of the SDK,
+which provides confidential computing features for realm developers.
+The SDK aims to offer a set of tools and APIs that enable those features within realms.
+The SDK encompasses the following key features:</p>
+<ul>
+<li><strong>Attestation</strong>
+<ul>
+<li>The ability to verify the authenticity and integrity of data, actions, or entities within realms</li>
+<li>Established this feature securely with our own HES(Hardware enforced security)</li>
+</ul>
+</li>
+<li><strong>Secure Channel</strong>
+<ul>
+<li>Securely data transmission that is resistant to overhearing and tampering</li>
+<li>Collaborated with <a href="https://github.com/vmware-research/certifier-framework-for-confidential-computing">the multi-part C.C. Framework</a></li>
+</ul>
+</li>
+<li><strong>Sealing</strong>
+<ul>
+<li>Securely storing and protecting sensitive data to prevent unauthorized access and tampering</li>
+<li>Provided this feature in a simulated version</li>
+</ul>
+</li>
+</ul>
+<h3 id="limitation"><a class="header" href="#limitation">Limitation</a></h3>
+<p>SDK provieds sealing features only simulated version.</p>
+<h2 id="2-system-architecture"><a class="header" href="#2-system-architecture">2. System Architecture <a name="system-architecture"></a></a></h2>
+<h3 id="component-structure"><a class="header" href="#component-structure">Component Structure</a></h3>
+<p>The SDK follows a modular architecture. The architecture comprises:</p>
+<ul>
+<li><strong>Attester Module</strong>: Retrieves the attestation report generated by RMM.</li>
+<li><strong>Verifier Module</strong>: Incorporates the logic for the realm token and platform token verification.</li>
+<li><strong>Parser Module</strong>: Provides parsing specific claims of the attestation report.</li>
+<li><strong>Sealing Module</strong>: Implements encryption functions in compliance with the multi-part C.C. framework</li>
+<li><strong>C API Module</strong>: Provides C APIs for the multi-part C.C. Framework to achieve secure channel functionality.</li>
+<li><strong>RSI Dispatcher Module</strong>: Dispatches RSI commands to RMM and get results from RMM </li>
+</ul>
+<p>To support <code>secure channel</code>
+the C API module exposes <code>attester, verifier and sealing modules</code> to the multi-part C.C framework.
+Islet SDK interacts with several components to provide C.C. primitives securely.
+The detailed SDK component and connector view is shown below.</p>
+<p><em>NOTE: Delegated attestation module of Islet RMM works in progress.
+SDK uses <a href="https://www.trustedfirmware.org/projects/tf-rmm/">the reference RMM</a> now,
+which means SDK is loosely coupled with RMM.</em></p>
+<p><img src="./res/sdk-cc-view.png" alt="cc-view" /></p>
+<h3 id="security-considerations"><a class="header" href="#security-considerations">Security Considerations</a></h3>
+<p>The SDK complies with <a href="https://www.arm.com/architecture/security-features/arm-confidential-compute-architecture">the Arm CCA RMM specification</a> and <a href="https://documentation-service.arm.com/static/610aaec33d73a34b640e333b?token=">the CCA Security Model</a>.
+According to the recommendation, Security Model R0004, SDK utilizes our own HES-enabled system.</p>
+<h2 id="3-apis-and-interfaces"><a class="header" href="#3-apis-and-interfaces">3. APIs and Interfaces <a name="apis-interfaces"></a></a></h2>
+<p>The SDK provides the following interfaces:</p>
+<ul>
+<li>Rust APIs for attestation and sealing</li>
+<li>C APIs to multi-part C.C. framework for secure channel</li>
+<li>Low-level interfaces to RMM for the RSI dispatcher</li>
+</ul>
+<p>The realm developers can use Rust APIs and C APIs directly for attestation and sealing.
+The realm developers can use multi-part C.C. framework for secure channel.
+Low-level interfaces are abstracted to communicate between RMM and SDK internally.</p>
+<p>The below diagram shows how API calls flow.
+<img src="./res/sdk-function-call-flow.png" alt="function-call-flow" /></p>
+<h2 id="4-functional-requirements"><a class="header" href="#4-functional-requirements">4. Functional Requirements <a name="functional-requirements"></a></a></h2>
+<p>The SDK defines functional requirements to provide C.C. primitives.
+Function requirements cover Rust APIs, CAPIs and internal interfaces.
+The APIs should be tested using <a href="sdk-sdd.html#testing-strategy">Testing Strategy</a>.</p>
+<div class="table-wrapper"><table><thead><tr><th>No</th><th>Name</th><th>Description</th></tr></thead><tbody>
+<tr><td>FR1</td><td>Attestation Report Generation</td><td>The SDK must provide methods to get a CCA attestation report</td></tr>
+<tr><td>FR2</td><td>Attestation Report Verification</td><td>The SDK must provide methods to verify a CCA attestation report</td></tr>
+<tr><td>FR3</td><td>Attestation Report Parser</td><td>The SDK must provide methods to parse a CCA attestation report</td></tr>
+<tr><td>FR4</td><td>Simulated Attestation Report Generation</td><td>The SDK must provide methods to get a CCA attestation report (simulated ver x86_64)</td></tr>
+<tr><td>FR5</td><td>Simulated Attestation Report Verification</td><td>The SDK must provide methods to verify the CCA attestation report  (simulated ver x86_64)</td></tr>
+<tr><td>FR6</td><td>Simulated Sealing</td><td>The SDK must provide methods to seal user data (simulated on x86_64)</td></tr>
+<tr><td>FR7</td><td>Simulated Unsealing</td><td>The SDK must provide methods to unseal sealed user data (simulated on x86_64)</td></tr>
+<tr><td>FR8</td><td>Secure Channel</td><td>The SDK must provide methods to secure channel using multi-part C.C framework</td></tr>
+<tr><td>FR9</td><td>RSI Dispatcher</td><td>The SDK must provide methods to dispatch RSI commands to RMM</td></tr>
+</tbody></table>
+</div>
+<h2 id="5-non-functional-requirements"><a class="header" href="#5-non-functional-requirements">5. Non-Functional Requirements <a name="non-functional-requirements"></a></a></h2>
+<p>The SDK defines non functional requirements as compliance standards.
+The standards include the CCA RMM spec, the CCA Security Model and the multi-part C.C framework.</p>
+<div class="table-wrapper"><table><thead><tr><th>No</th><th>Name</th><th>Description</th></tr></thead><tbody>
+<tr><td>NFR1</td><td>Compliance</td><td>Adheres to the Arm CCA specification</td></tr>
+<tr><td>NFR2</td><td>Unit Testing</td><td>Comprehensive unit testing for all SDK components</td></tr>
+<tr><td>NFR3</td><td>Deployment</td><td>Provides guidelines for deploying the SDK to multi-part C.C framework</td></tr>
+<tr><td>NFR4</td><td>RMM Independency</td><td>Makes loose coupling with RMM to support other spec compliant RMM</td></tr>
+</tbody></table>
+</div>
+<h2 id="6-testing-strategy"><a class="header" href="#6-testing-strategy">6. Testing Strategy <a name="testing-strategy"></a></a></h2>
+<p>The SDK provides our own unit tests for Rust APIs(Attestation and Sealing).
+The SDK provides <a href="https://github.com/vmware-research/certifier-framework-for-confidential-computing/tree/main/src/islet/islet_test">the test code</a> to the multi-party C.C framework for C APIs(Attestation and Sealing) and secure channel.</p>
+<h3 id="attestation-1"><a class="header" href="#attestation-1">Attestation</a></h3>
+<ul>
+<li>Components
+<ul>
+<li>Islet SDK unit tests</li>
+<li>Multi-part C.C. framework test applications</li>
+</ul>
+</li>
+<li>Related FRs
+<ul>
+<li>FR1. Attestation Report Generation</li>
+<li>FR2. Attestation Report Verification</li>
+<li>FR3. Attestation Report Parser</li>
+<li>FR4. Simulated Attestation Report Generation</li>
+<li>FR5. Simulated Attestation Report Verification</li>
+</ul>
+</li>
+<li>Validation methods
+<ul>
+<li>Rust APIs should be passed by SDK unit tests on both x86_64 and aarch64 systems.</li>
+<li>C APIs should be worked with the multi-part C.C. framework on both x86_64 and aarch64 systems.</li>
+</ul>
+</li>
+</ul>
+<h3 id="sealing-1"><a class="header" href="#sealing-1">Sealing</a></h3>
+<ul>
+<li>Components
+<ul>
+<li>Islet SDK unit tests</li>
+<li>Multi-part C.C framework test applications</li>
+</ul>
+</li>
+<li>Related FRs
+<ul>
+<li>FR6. Simulated Sealing</li>
+<li>FR7. Simulated Unsealing</li>
+</ul>
+</li>
+<li>Validation methods
+<ul>
+<li>Rust APIs should be passed by SDK unit tests on the x86_64 system.</li>
+<li>C APIs should be worked with the multi-part C.C. framework on the x86_64 system.</li>
+</ul>
+</li>
+</ul>
+<h3 id="secure-channel"><a class="header" href="#secure-channel">Secure Channel</a></h3>
+<ul>
+<li>Components
+<ul>
+<li>Islet SDK unit tests</li>
+<li>Multi-part C.C Framework test applications</li>
+<li>Multi-part C.C Framework attestation service</li>
+</ul>
+</li>
+<li>Related FRs
+<ul>
+<li>FR8. Secure Channel</li>
+</ul>
+</li>
+<li>Validation methods
+<ul>
+<li>C APIs should be worked with the multi-part C.C. framework on both x86_64 and aarch64 systems.</li>
+</ul>
+</li>
+</ul>
+<h2 id="7-conclusion"><a class="header" href="#7-conclusion">7. Conclusion <a name="conclusion"></a></a></h2>
+<p>This Software Design Document provides a comprehensive overview of the SDK's architecture, functionality, functional and non-functional requirements for utilizing attestation, sealing and secure channel features on realms.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="attestation-2"><a class="header" href="#attestation-2">Attestation</a></h1>
+<p>Remote Attestation (RA) is the key of confidential computing platform, which is basically a method that convinces to <em>verifier</em> that a program (<em>attester</em>) is running on a proper confidential computing platform (e.g., SGX or ARM CCA).
+Unfortunately, at the beginning of ARM TrustZone which has been widely adopted by mobile device vendors up to this date, it lacks the support of RA in the form of a specification. Some research papers (e.g., <a href="https://dl.acm.org/doi/10.1145/3319535.3363205">SecTEE</a>) have proposed a method to bring RA into TrustZone. However, due to the lack of standardization, RA comes in vendor-specific forms.</p>
+<p>To address this problem, ARM CCA has been designed from the beginning, having RA in mind, and comes with a  document (<a href="https://developer.arm.com/documentation/DEN0096/latest">ARM CCA Security Model</a>). On top of it, the attestation token format and the architecture described in that document align well with <em><a href="https://datatracker.ietf.org/wg/rats/about/">Remote ATtestation procedureS (RATS)</a></em> specification, which is in active development to standardize RA stuff. This is a good thing as it implies that RA of CCA is not tightly coupled with a specific protocol, rather can connect to any attestation protocol.</p>
+<h2 id="report"><a class="header" href="#report">Report</a></h2>
+<p>An attestation report (shortly, <em>report</em>) is an <em>evidence</em> produced by <em>attester</em> and consumed by <em>verifier</em>. In ARM CCA, report consists of two different tokens:</p>
+<ul>
+<li><em>CCA Platform token</em>: it is used to assure that <em>attester</em> is running on a secure CCA platform. It covers the measurements of CCA platform components (e.g., RMM and EL3M) and whether it is in debug state.</li>
+<li><em>Realm token</em>: this token is used to hold the measurement of Realm, which is equivalent to a virtual machine that may contain kernel and root file system.</li>
+</ul>
+<p>You can quickly test and see what this report looks like through <a href="https://islet-project.github.io/islet/components/cli.html">our CLI tool</a>.</p>
+<h2 id="appraisal-policy"><a class="header" href="#appraisal-policy">Appraisal policy</a></h2>
+<p>According to RATS, there is a term named <em>Appraisal Policy (shortly, Policy)</em>, which is central to how to build a real-world service on top of RA. You can basically think of Policy as a set of rules that <em>verifier</em> wants to enforce.
+For example, what tokens in a report say is basically sort of measurements signed by secure cryptographic keys. So, to build a meaningful security service around it, you have to write down Policy like &quot;(1) Realm must have the measurement of X, (2) the measurement of CCA Platform software must be Y&quot;.</p>
+<p>As you may notice, managing Policy is out of scope of CCA as this is inherently not dependent on CCA. Instead, there are several open-source projects that take on this capability, for example, <a href="https://github.com/veraison/">Veraison</a> and <a href="https://github.com/vmware-research/certifier-framework-for-confidential-computing/">Certifier Framework</a>. They all aim to implement a standardized way to express and enforce Policy. (note that they sometimes are treated as a unified verification service as they are able to work across various TEEs)</p>
+<p>Islet might be able to work with any verification service in theory, but currently bases the ability to handle Policy on Certifier Framework.
+You can see further details <a href="components/./certifier.html">here</a> on what Certifier Framework is and how Islet uses it.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="certifier-framework"><a class="header" href="#certifier-framework">Certifier framework</a></h1>
+<p><a href="https://github.com/vmware-research/certifier-framework-for-confidential-computing">Certifier framework</a> is a framework designed to bring the ability to handle Policy into reality in an TEE-agnostic way. It offers a set of client APIs that can plug into various TEEs including Islet (ARM CCA) and server called Ceritifer Service, which takes the role of verifying attestation reports that come from various TEEs.
+Islet currently adopts this framework to realize end-to-end confidential services that are likely to involve two or more different TEEs.</p>
+<h2 id="what-we-can-do-with-certifier-framework"><a class="header" href="#what-we-can-do-with-certifier-framework">What we can do with Certifier Framework</a></h2>
+<p>To get what we can do with Certifier Framework, we want to show you a simple example in which client and server want to communicate through a secure channel authenticated by confidential computing platforms. There are three components involved-- <em>certifier service</em> which this framework offers by default, <em>client</em> which runs on CCA, and <em>server</em> which runs on SGX or AMD SEV.
+The goal of the certifier framework is to allow only pre-defined applications to pass authentication, and thus block malicious applications in the first place.</p>
+<p>The first thing we need to do to build this service is to write down Policy, that is to say, embedding a set of claims into a format called Policy. The Policy would look like this in verbal form:</p>
+<ul>
+<li>The measurement of application trying to join this service must be one of Client_Measurement and Server_Measurement.</li>
+<li>Applications trying to join this service run on a secure confidential computing platform.</li>
+</ul>
+<p>After making an agreement on the policy, authentic client and server are going to be launched and generate an attestation report and send it to the certifier service.
+And then, the certifier service verifies that report based on the policy, in other words, verifying if that report doesn't violate any claims in the policy.
+Only if properly verified, the certifier service issues <em>admission cert</em> which is going to be used to build a secure channel between client and server.
+From that point on, they can trust each other and send messages to each other securely.</p>
+<h2 id="a-more-complex-example"><a class="header" href="#a-more-complex-example">A more complex example</a></h2>
+<p>For a more realistic case, we've built Confidential ML on top of the certifier framework.
+See <a href="components/../usecases/confidential_ml.html">this page</a> to know what it is in more depth.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="contents-2"><a class="header" href="#contents-2">Contents</a></h1>
+<ul>
+<li><a href="https://islet-project.github.io/islet/platform-development/secure-interaction.html">3.1. Secure interactions with Host</a></li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="secure-interactions-with-the-host"><a class="header" href="#secure-interactions-with-the-host">Secure interactions with the Host</a></h1>
+<p>In most TEEs, interacting with the host (or the non-secure environment) is the most error-prone part
+as the host can pass anything for malicious purposes.
+For example, the paper named <a href="https://people.cs.kuleuven.be/~jo.vanbulck/ccs19-tale.pdf">A Tale of Two Worlds</a> demonstrated that
+many TEE SDKs made some mistakes while implementing such interfaces.
+Also, it's not trivial to mitigate <a href="https://hovav.net/ucsd/dist/iago.pdf">Iago attacks</a> that most TEEs inherently are affected by.</p>
+<p>As Islet aims to bring the best level of security, we take those problems seriously and try to tackle them through the syntax of Rust.
+This page shows the way we're doing that aspect.</p>
+<h2 id="secure-host-memory-access"><a class="header" href="#secure-host-memory-access">Secure host memory access</a></h2>
+<p>In ARM CCA, for some cases, RMM needs to map host memory and read/write something from/to that memory.
+For example, when <code>RMI_REALM_CREATE</code> is invoked, RMM has to get a physical memory address where parameters are placed at
+and read them from that memory.
+These accesses must be securely done as insecure implementations may open things up for attackers to break ARM CCA.</p>
+<p>We use <code>copy_from_host_or_ret!</code> and <code>copy_to_host_or_ret!</code> as a means of secure host memory access.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>listen!(mainloop, rmi::REALM_CREATE, |arg, ret, rmm| {
+    let rmi = rmm.rmi;
+    let mm = rmm.mm;
+    // key arguments
+    // -- Params: the type of what the host passes
+    // -- arg[1]: a physical address that points to where we should read from
+    let params = copy_from_host_or_ret!(Params, arg[1], mm);
+    // ... use params ...
+}
+<span class="boring">}</span></code></pre></pre>
+<p>What these two macros do is,</p>
+<ol>
+<li>do per-struct security checks and map host memory into RMM only if it passes all checks.</li>
+<li>copy from/to host memory to RMM stack memory that is bound to each CPU.</li>
+<li>unmap host memory</li>
+</ol>
+<p>After it gets done, we can access <code>params</code> that reside in RMM memory, not host memory.
+So it's secure against concurrency-based attacks such as double-fetch attacks. </p>
+<p>If some additional security checks on some field value are needed (e.g., <code>Params.hash_algo</code> should be either 0 or 1),
+you can do it via <code>validate()</code> in <code>Accessor</code> trait. The specified validation is called before RMM accesses host memory.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl HostAccessor for Params {
+    fn validate(&amp;self) -&gt; bool {
+        if self.hash_algo == 0 || self.hash_algo == 1 {
+            true
+        } else {
+            false
+        }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h2 id="rmirsi-command-validation"><a class="header" href="#rmirsi-command-validation">RMI/RSI command validation</a></h2>
+<p>In ARM CCA, each RMI/RSI command has a different number of input/output parameters.
+So we need to take special care in accessing such parameters.</p>
+<p>To catch any mistakes regarding this in advance, Islet developers must explicitly define <code>Constraint</code> as follows.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// (1) define RMI/RSI constraints
+lazy_static! {
+    static ref CONSTRAINTS: BTreeMap&lt;Command, Constraint&gt; = {
+        // This line says that RMI_DATA_CREATE has 6 input arguments and 1 output argument.
+        m.insert(rmi::DATA_CREATE, Constraint::new(rmi::DATA_CREATE, 6, 1));
+    }
+}
+
+// (2) check defined constraints at runtime
+listen!(mainloop, rmi::DATA_CREATE, |arg, _ret, rmm| {
+    // when you access arg[0], nothing happens because it doesn't cause an out-of-bound access.
+    let target_pa = arg[0];
+    // but, if you access arg[7], run-time panic occurs as this RMI command only has 6 arguments.
+    // you can catch this error in the testing phase and fix it in advance.
+    let xxx = arg[7];
+}
+<span class="boring">}</span></code></pre></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="contents-3"><a class="header" href="#contents-3">Contents</a></h1>
+<ul>
+<li><a href="https://islet-project.github.io/islet/usecases/confidential_ml.html">4.1. Confidential Machine Learning</a></li>
+<li><a href="https://islet-project.github.io/islet/usecases/cross-platform-e2ee.html">4.2. Cross Platform E2EE</a></li>
+<li><a href="https://islet-project.github.io/islet/usecases/remote-attestation.html">4.3. Remote Attestation</a></li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="confidential-machine-learning-with-islet"><a class="header" href="#confidential-machine-learning-with-islet">Confidential machine learning with Islet</a></h1>
+<h2 id="introduction"><a class="header" href="#introduction">Introduction</a></h2>
+<p>In order for traditional machine learning (ML) to work, <em>data provider</em> (e.g., mobile device) would have no choice but to give their data to <em>server</em> which offers the ability to run ML operations (inference and training). It apparently raises an issue of user data privacy because <em>data provider</em> might want to keep their data local.</p>
+<p>Federated learning (FL), also known as privacy-preserving machine learning, has come to the rescue of this privacy issue by the concept of on-device training. More technically, in this way, it would no longer send user data to <em>server</em> but instead send <em>model parameters</em> derived as a result of on-device training.</p>
+<p>On one hand, federated learning is a good thing for security, but on the other hand, practical issues are remaining, which hinder the wide adoption of it. The thing is, a lot of ML services have already been built over traditional ML, so it's never going to be easy to turn them into a federated learning compatible form. Some of them might want to stick to traditional ML as security could not be a big priority.</p>
+<p>On top of it, there are still security issues remaining even when you use federated learning. For example, say that you are working for an AI company specializing in model development and your AI models have to be treated as private assets. But for machine learning to work, you have to send your model down to devices and trust they do not see or reveal your model. Also, there have been academic papers that demonstrate it's still possible to learn something about user data through adversarial ML attacks even in the federated learning setting (e.g., <a href="https://arxiv.org/abs/2003.14053">paper-1</a>, <a href="https://www.usenix.org/system/files/sec20summer_fang_prepub.pdf">paper-2</a>).</p>
+<p>These problems mentioned by far have led us to try to find out a practical yet general solution that can cover every type of machine learning (from traditional to federated).
+And that solution is what we call <em>confidential machine learning</em> (shortly, <em>confidential ML</em>), which is based on <em>trusted execution environments (TEE)</em>. Admittedly, Confidential ML is not new and many companies working on TEE already have services that offer confidential ML but to some limited extent. Specifically, what most companies are caring about is only server-side aspects and device-side aspects have not been seriously considered, and thus they all fail to build an end-to-end confidential ML service.</p>
+<p>In this article, we're going to explore how Islet makes a unique addition to confidential ML to accomplish a real end-to-end confidential ML service,
+ranging from traditional ML to federated learning.</p>
+<h2 id="issues-in-traditional-ml"><a class="header" href="#issues-in-traditional-ml">Issues in traditional ML</a></h2>
+<p>In traditional ML, there are two kinds of privacy leaks:</p>
+<ul>
+<li><em>data leak</em>: devices have to send data in order for servers to do ML operations including inference and training. In this case, those servers can see user data without permission.</li>
+<li><em>model leak</em>: to reduce latency and retrieve an ML outcome quickly, devices can download an ML model from servers and do on-device inferences using ML frameworks such as TensorFlow lite. In this case, devices can see an ML model that should be treated as secret to servers.</li>
+</ul>
+<p>While most confidential computing platforms are targeting cloud servers (e.g., Intel SGX and AMD SEV), most ML clients come from mobile devices where confidential computing is out of reach at the time of this writing. Of course, most mobile devices based on ARM have TrustZone, which is one instance of TEE, but it is typically not allowed for 3rd party applications to get protected by TrustZone as it is built for vendor-specific confidential information.</p>
+<p>The problem is, while <em>data leak</em> can easily be eliminated by running servers on confidential computing platforms such as Intel SGX or AMD SEV, we have no way to protect <em>model leak</em> against malicious or honest-but-curious devices. And this cannot be solved without the aid of a device-side confidential computing platform.</p>
+<h2 id="islet-for-traditional-ml"><a class="header" href="#islet-for-traditional-ml">Islet for traditional ML</a></h2>
+<p>Islet can tackle the above privacy issues that traditional ML has, by extending confidential computing to mobile devices.
+There are three different components involved in this confidential traditional ML: (1) <em>model-provider</em>, (2) <em>device (data-provider)</em>, (3) <em>runtime</em>.</p>
+<p><em>model-provider</em> is the owner of AI models and wants to prevent any other components from seeing their models that contain confidential information.
+<em>device</em> represents mobile devices and thus sends local data to <em>runtime</em> to benefit from ML services. We assume <em>device</em> here belongs to a specific vendor like Samsung.
+Lastly, <em>runtime</em> provides ML functionalities and acts as a server. It takes data from <em>device</em> and model from <em>model-provider</em> and does actual ML stuff.
+In this setting, <em>runtime</em> and <em>model-provider</em> can be running on confidential computing platforms that public cloud vendors such as Azure or Google cloud provide,
+while <em>device</em> can be running on Islet which is based on ARM CCA.</p>
+<p>Roughly thinking, putting everything into the scope of confidential computing suffices to solve both <em>data leak</em> and <em>model leak</em>. But this holds true only if it's assumed that those three components mutually trust each other.
+For example, <em>runtime</em> expects <em>device</em> to keep their AI models in Islet and not to reveal them anywhere else. But, <em>device</em> can freely break that assumption and take AI models out of Islet with the intent of uncovering how their models work, which raises <em>model leak</em>.</p>
+<p>To prevent this from happening, we need one more assumption that all codes of those three components are open-sourced and therefore everyone can see and audit them.
+If <em>runtime</em> is programmed to keep user data local and it is open-sourced, we can assure that in no circumstances will <em>data leak</em> happen. It is the same in <em>model leak</em>.
+To check if a program that is about to launch matches what we expect (e.g., <em>runtime</em> that doesn't leak user data), we need to take the measurement of that program and associate that with the attestation process. We use <a href="https://github.com/vmware-research/certifier-framework-for-confidential-computing">Certifier framework</a> to realize this verification as that framework is designed to work across various TEEs in a unified manner, satisfying our requirement.</p>
+<h2 id="issues-in-federated-learning"><a class="header" href="#issues-in-federated-learning">Issues in federated learning</a></h2>
+<p>As mentioned earlier, in federated learning, someone may think <em>data leak</em> will not happen as training is done on the device side, and thus user data never leaves devices. But this assumption has turned out to be wrong as several attacks have demonstrated that malicious servers (or honest-but-curious servers) can infer user data from model parameters (i.e., weights). For example, <a href="https://arxiv.org/abs/2003.14053">this paper</a> proposed an attack that extrapolates what data was used in on-device training from model parameters and successfully demonstrated it could recover some images used. (which is called <em>inversion attack</em>)</p>
+<p>There is another kind of attack, which is called <em>inference attack</em>, that malicious devices can launch. A malicious device might want to know what data is used in another device. In federated learning, each device can download new global models, which reflect training results from all devices. This means that a newly downloaded model has information about data from other devices, which is what a malicious device can exploit for inference attacks.
+By doing a comparison between two global models in a row, a malicious device can learn something about another device's data, for example, whether an image used in training includes someone on glasses or not.</p>
+<p>One more interesting attack is what is called <em>poisoning attack</em>. As the name suggests, some devices can train with a large number of fake data in order to poison a global model in attackers' favor. For example, attackers might want to induce a victim to visit a specific place in order to leak the victim's private information in person. To do so, they can generate tons of data that would lead AI models to recommend visiting a specific place no matter what users ask.</p>
+<h2 id="islet-for-federated-learning"><a class="header" href="#islet-for-federated-learning">Islet for federated learning</a></h2>
+<p>To stop the aforementioned attacks (<em>inversion attack</em>, <em>inference attack</em>, and <em>poisoning attack</em>), we can take the same approach as we did with traditional ML. The only difference would have to do with <em>runtime</em> as runtime servers would not do ML operations (training and inference) in federated learning. Instead, they do a so-called aggregation algorithm to build a new global model from local models that each device sends up.</p>
+<p>For the former two attacks (inversion and inference), the open-source based security argument could still work in the same way. This is because, to launch them, attackers have to run programs that contain codes to do those attacks, leading to a measurement that is different than the allowed ones.</p>
+<p>As for the last one (poisoning), it could not get protected in the same way as what actually breaks security comes from &quot;data&quot; not &quot;program&quot;. In other words, even if <em>device</em> is authentic, a model could be trained with fake data, considering an attacker who is capable of taking control of &quot;data&quot; fed into the model.
+We see that this attack could be addressed to some extent by designing and implementing peripheral protections (e.g., building a secure channel from keyboard hardware all the way to a secure application) on top of CCA primitives.</p>
+<h2 id="time-to-play-around-with-real-examples"><a class="header" href="#time-to-play-around-with-real-examples">Time to play around with real examples</a></h2>
+<p>Anyone can try out what we've explained so far, that is to say, running traditional ML or federated learning on top of Islet with simple ML models.
+Check out <a href="https://github.com/islet-project/islet/tree/main/examples/confidential-ml">this markdown file</a> to play around with Islet for confidential ML!</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="cross-platform-end-to-end-encryption-e2ee"><a class="header" href="#cross-platform-end-to-end-encryption-e2ee">Cross-platform End-To-End Encryption (E2EE)</a></h1>
+<h2 id="e2ee-with-attestation"><a class="header" href="#e2ee-with-attestation">E2EE with attestation</a></h2>
+<p>E2EE is a type of communication security that
+ensures only the intended recipients can
+read the messages being sent and received.
+This example demonstrates
+how to integrate remote attestation validation
+into the E2EE establishment process
+using the <a href="https://github.com/vmware-research/certifier-framework-for-confidential-computing">Certifier Framework</a>.
+Our example extends the framework's <a href="https://github.com/vmware-research/certifier-framework-for-confidential-computing/tree/main/sample_apps/simple_app_under_islet">sample application</a>
+to demonstrate E2EE between x64 and arm64 platforms.</p>
+<h2 id="components"><a class="header" href="#components">Components</a></h2>
+<p>This example consists of three main components:</p>
+<p><img src="https://github.com/islet-project/islet/blob/main/examples/cross-platform-e2ee/res/xplat-e2ee-components.png?raw=true" alt="xplat-e2ee-components" /></p>
+<ul>
+<li>Certifier Service: An x64 service responsible for performing attestation and checking against a pre-written policy</li>
+<li>E2EE Server App: An x64 application that requests attestation to the service and attempts to establish a secure channel with the client</li>
+<li>E2EE Client App: An arm64 application that requests attestation to the service and attempts to establish a secure channel with the server</li>
+</ul>
+<h2 id="helper-scripts"><a class="header" href="#helper-scripts">Helper Scripts</a></h2>
+<p>We provide several helper scripts to simplify building and running the example:</p>
+<ul>
+<li>setup.sh: Installs required dependencies such as protobuf and gflags</li>
+<li>provisioning.sh: Configures the necessary measurements and policies for the service, server, and client</li>
+<li>build-{service, server, client}.sh: Builds each component separately</li>
+<li>run-{service, server, client}.sh: Starts each component separately</li>
+</ul>
+<h2 id="how-to-run-this-example"><a class="header" href="#how-to-run-this-example">How to run this example</a></h2>
+<h3 id="1-install-dependencies"><a class="header" href="#1-install-dependencies">1. Install Dependencies</a></h3>
+<p>First, navigate to the examples directory and
+execute the setup script to install required dependencies:</p>
+<pre><code class="language-sh">$ cd $(islet)/examples/cross-platform-e2ee
+$ ./setup.sh
+</code></pre>
+<h3 id="2-configure-measurements-and-policies"><a class="header" href="#2-configure-measurements-and-policies">2. Configure Measurements and Policies</a></h3>
+<p>Next, configure the necessary measurements and
+policies by editing the <code>provisioning.sh</code> script and
+specifying your own values for the following variables:
+<em>Those instructions are quoted from <a href="https://github.com/vmware-research/certifier-framework-for-confidential-computing/blob/main/sample_apps/simple_app_under_islet/instructions.md">well-descripted document</a></em></p>
+<p>You can get the server measurement with cli on the host machine:</p>
+<pre><code class="language-sh">$ cd $(islet)/cli
+$ make x86_64
+$ ./islet measurement-read --index 0
+Simulated attestation operation on x86_64.
+&quot;580bd77074f789f34841ea9920579ff29a59b9452b606f73811132b31c689da9&quot;
+</code></pre>
+<p>You also can get the client measurement with cli on the realm:</p>
+<pre><code class="language-sh">$ $(islet)/scripts/fvp-cca -nw=linux -rm=linux --hes
+$ telnet localhost 5000
+$ ./launch-realm.sh
+# cd /shared
+# insmod rsi.ko
+# ./islet measurement-read --index 0
+[ 2533.544864] rsi: device rsi open
+[ 2533.664676] rsi: ioctl: measurement_read: 0
+[ 2533.831443] rsi: device rsi released
+&quot;8a1d5cd26a0ee477067d18e2ff051687d18e1450b513508ba98910fa262b1fa3&quot;
+</code></pre>
+<p>After getting measurments,
+edit the script <code>provisioning.sh</code>.</p>
+<pre><code># Set your measurements
+SERVER_MEASUREMENT=580bd77074f789f34841ea9920579ff29a59b9452b606f73811132b31c689da9
+CLIENT_MEASUREMENT=8a1d5cd26a0ee477067d18e2ff051687d18e1450b513508ba98910fa262b1fa3
+</code></pre>
+<p>Once you have edited the script,
+run it to generate the necessary keys and certificates:</p>
+<pre><code class="language-sh">$ ./provisioning.sh
+...
+...
+3 blocks
+1: Key[rsa, policyKey, b1a4dd71c6ea998df84b84689acb3b2eece897ca] says Key[rsa, policyAuthority, b1a4dd71c6ea998df84b84689acb3b2eece897ca] is-trusted-for-attestation
+2: Key[rsa, policyKey, b1a4dd71c6ea998df84b84689acb3b2eece897ca] says Measurement[580bd77074f789f34841ea9920579ff29a59b9452b606f73811132b31c689da9]  is-trusted
+3: Key[rsa, policyKey, b1a4dd71c6ea998df84b84689acb3b2eece897ca] says Measurement[491cf94bdb951308672a839776359d6ac22808bad2d318226ef0ea2979693e2e]  is-trusted
+</code></pre>
+<h3 id="3-run-network-enabled-fvp"><a class="header" href="#3-run-network-enabled-fvp">3. Run network enabled FVP</a></h3>
+<p>The client runs on the FVP,
+so you need to enable networking on FVP
+before starting the client.
+Follow these steps to do so:
+<em>For more information about the network setting
+refer <a href="https://samsung.github.io/islet/network.html">this</a>.</em></p>
+<pre><code class="language-sh">$ cd $(islet)
+$ ./scripts/fvp-cca --normal-world=linux-net --realm=linux --hes
+</code></pre>
+<p>Then, in the host Linux environment on FVP, launch the realm:</p>
+<pre><code class="language-sh">$ ./launch-realm.sh net
+</code></pre>
+<p>Finally, in the realm Linux environment on FVP,
+set the realm IP address and
+load the RSI kernel module:</p>
+<p><em>You have to set current host machine time on realm linux.
+Because the service issues SSL certificates
+based host machine time
+to the server and the client</em></p>
+<pre><code class="language-sh">$ cd /shared
+$ ./set-realm-ip.sh
+$ date ${CURRENT_HOST_MACHINE_TIME} // ex) 122112002023
+$ insmod rsi.ko
+</code></pre>
+<h3 id="4-build-components"><a class="header" href="#4-build-components">4. Build components</a></h3>
+<p>Now that you've configured everything,
+build the components using the provided build scripts:</p>
+<pre><code class="language-sh">// Compile the service
+$ ./build-service.sh
+
+// Compile the client
+$ ./build-server.sh
+
+// Cross-compile the client
+$ ./build-client.sh
+</code></pre>
+<h3 id="5-run-components"><a class="header" href="#5-run-components">5. Run components</a></h3>
+<p>With all components built, you're ready to start them:</p>
+<p>Open three separate terminal windows or tabs.
+In the first window, start the certifier service:</p>
+<pre><code class="language-sh">$ ./run-service.sh
+</code></pre>
+<p>In the second window, start the server app:</p>
+<pre><code class="language-sh">$ ./run-server.sh
+</code></pre>
+<p>In the third window,
+switch to the /shared directory on FVP and start the client app:</p>
+<pre><code class="language-sh">$ cd /shared
+$ ./run-client.sh
+</code></pre>
+<p>That's it!
+Now you may see the server and client
+successfully establish an end-to-end encrypted connection.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="introduction-1"><a class="header" href="#introduction-1">Introduction</a></h1>
+<p>The process consists of several parts:</p>
+<ul>
+<li>provisioning</li>
+<li>gathering measurements</li>
+<li>feeding measurements to veraison and realm verifier</li>
+<li>running realm for verification purposes</li>
+<li>running verification services (veraison/realm verifier)</li>
+<li>verification itself</li>
+</ul>
+<p>It is best and even sometimes required that all the required repos are placed in
+one directory. I'll call it <code>CCA</code> and it will be referred throughout this file.</p>
+<p>The following repos will be used:</p>
+<ul>
+<li>
+<p>Islet: https://github.com/islet-project/islet that provides:</p>
+<ul>
+<li>the whole SW/FW stack and scripts for running the emulated environment under the FVP</li>
+<li>Islet HES https://github.com/islet-project/islet/tree/main/hes</li>
+<li>kvmtool-rim-measurer from https://github.com/islet-project/islet/tree/main/third-party/</li>
+</ul>
+</li>
+<li>
+<p>Islet Remote Attestation: https://github.com/islet-project/remote-attestation that provides:</p>
+<ul>
+<li>rocli: https://github.com/islet-project/remote-attestation/tree/main/tools/rocli
+Tool for provisioning reference token and CPAK to the Veraison services.</li>
+<li>realm-verifier: https://github.com/islet-project/remote-attestation/tree/main/lib/realm-verifier
+A library for veryfing RIM and REMs with reference values.</li>
+<li>ratls: https://github.com/islet-project/remote-attestation/tree/main/lib/ratls
+A library implementing RaTLS protocol for attestation purposes.</li>
+<li>rust-rsi: https://github.com/islet-project/remote-attestation/tree/main/lib/rust-rsi
+A library implementing token and RSI related functionalities (fetching, parsing).</li>
+</ul>
+</li>
+<li>
+<p>veraison: https://github.com/veraison/services</p>
+<ul>
+<li>Please use 5a48655b3a9c3960667ef14df7860186238b6bcd commit. Newer versions
+might not work at the moment.</li>
+</ul>
+</li>
+</ul>
+<h1 id="preparation"><a class="header" href="#preparation">Preparation</a></h1>
+<p>The 3 aforementioned repositories should be checked out on the same level so it
+should look like following:</p>
+<pre><code>CCA/islet
+CCA/remote-attestation
+CCA/services   (this is veraison repository)
+</code></pre>
+<p>Now run <code>make</code> inside the <code>CCA/islet/examples/veraison</code> directory. This compiles
+some tools that will be used for this demo and places them inside proper
+directories. It also copies the <code>root-ca.crt</code> used by <code>realm-application</code>.</p>
+<pre><code>CCA/islet/examples/veraison $ make
+</code></pre>
+<p>The files installed are:</p>
+<ul>
+<li><code>root-ca.crt</code> copied to <code>CCA/islet/out/shared</code></li>
+<li><code>rsictl</code> installed in <code>CCA/islet/out/shared/bin</code></li>
+<li><code>realm-application</code> installed in <code>CCA/islet/out/shared/bin</code></li>
+<li><code>rocli</code> installed in <code>CCA/islet/examples/veraison/bin</code></li>
+<li><code>reliant-party</code> installed in <code>CCA/islet/examples/veraison/bin</code></li>
+</ul>
+<h1 id="provisioning"><a class="header" href="#provisioning">Provisioning</a></h1>
+<p>This is emulated by generating CPAK public key using one of camellia-hes
+utilities:</p>
+<pre><code>CCA/islet/hes/cpak-generator $ cargo run
+</code></pre>
+<p>This will by default generate a CPAK using dummy GUK and dummy BL2 hash files
+from <code>CCA/islet/hes/res</code> directory and save both key binary and PEM format
+respectively as:</p>
+<pre><code>CCA/islet/hes/out/cpak_public.bin
+CCA/islet/hes/out/cpak_public.pem
+</code></pre>
+<h1 id="gathering-measurements"><a class="header" href="#gathering-measurements">Gathering measurements</a></h1>
+<p>There are 2 things we need to measure here. Platform and realm.</p>
+<h2 id="plaftorm-measurement"><a class="header" href="#plaftorm-measurement">Plaftorm measurement</a></h2>
+<p>The platform measurement is done by getting the whole CCA token. Platform
+measurements are saved there.</p>
+<p>This is performed by some specifically prepared realm (e.g. one provided by
+<code>CCA/islet/scripts/fvp-cca</code>). To do this do the following:</p>
+<pre><code>CCA/islet $ ./scripts/init.sh
+CCA/islet $ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=islet --hes --rmm-log-level info
+</code></pre>
+<p>The first command will initialize the scripts and download all required
+components. The second command will build the platform and the realm and run the
+FVP emulator and HES application.</p>
+<p>If run under X environment terminals should open with telnet 5000/5003. If not
+we can run those telnets manually on two separate terminals:</p>
+<pre><code>$ telnet localhost 5000
+$ telnet localhost 5003
+</code></pre>
+<p>Port 5000 is the main terminal with console. 5003 is RMM. We don't need the
+output of the second one, but the telnet itself is necessary for FVP to work
+properly (buffering reasons).</p>
+<p>When the FVP linux is booted we need to run the realm:</p>
+<pre><code>$ ./launch-realm.sh
+</code></pre>
+<p>This will take a lot of time (FVP is slow). Wait until you have a realm
+loaded. Then load RSI module and get the token:</p>
+<pre><code>Welcome to Buildroot
+buildroot login: root
+
+# cd /shared
+shared # insmod rsi.ko
+shared # ./bin/rsictl attest -o token.bin
+</code></pre>
+<p>For the token its challenge value will be randomized, but in here it doesn't
+matter. Now we can kill the FVP (ctrl-c on the FVP terminal). Eventually the
+following command may be required as FVP doesn't always close cleanly:</p>
+<pre><code>$ pkill -9 -i fvp
+</code></pre>
+<p>The generated token is saved as the following file:</p>
+<pre><code>CCA/islet/out/shared/token.bin
+</code></pre>
+<h2 id="realm-measurement"><a class="header" href="#realm-measurement">Realm measurement</a></h2>
+<p>Realm measurement is done by generating a json file containing realm information
+that will be fed to realm verifier.</p>
+<p>This is performed by a small helper program called <code>kvmtool-rim-measurer</code>. It basically
+runs a modified lkvm tool that calculates and displays the RIM
+value. The process looks as follows:</p>
+<ul>
+<li>generate/get the realm you want to use (for now generated by fvp-cca script,
+those files can be taken from <code>CCA/islet/out/shared</code>,
+<code>Image.realm initramfs-realm.cpio.gz realm.sh</code>)</li>
+<li>Build the kvmtool-rim-measurer tool according to the description https://github.com/islet-project/assets/blob/3rd-kvmtool-rim-measurer/BUILD-RIM-MEASURER</li>
+<li>Create a dedicated directory for realm files (e.g. <code>CCA/islet/out/rim-extractor</code>) and copy the realm files we want to measure to that folder</li>
+<li>copy the resulting <code>lkvm-rim-measurer</code> to the <code>CCA/islet/out/rim-extractor</code> folder</li>
+<li>substitute <code>lkvm</code> to <code>lkvm-rim-measurer</code> in the <code>CCA/islet/out/rim-extractor/realm.sh</code> script</li>
+<li>get into the <code>CCA/islet/out/rim-extractor</code> folder and run the <code>realm.sh</code> script</li>
+<li>The `lkvm-rim-measurer`` will display the resulting RIM (e.g. RIM: F58AF6D6A022F113627B1E0B1E0D9B9A1BFB460207AC29721E84BCEF4B4F5CE08351684444BC11CF329D1D4C807BB621807916C2DF4F56B7326E8D16692546A8)</li>
+</ul>
+<p>Create a <code>realm.json</code> file according to the below template and replace the <code>TO_BE_REPLACED</code> term with the extracted RIM value.</p>
+<pre><code class="language-json">{
+    &quot;version&quot;: &quot;0.1&quot;,
+    &quot;issuer&quot;: {
+        &quot;name&quot;: &quot;Samsung&quot;,
+        &quot;url&quot;: &quot;https://cca-realms.samsung.com/&quot;
+    },
+    &quot;realm&quot;: {
+        &quot;uuid&quot;: &quot;f7e3e8ef-e0cc-4098-98f8-3a12436da040&quot;,
+        &quot;name&quot;: &quot;Data Processing Service&quot;,
+        &quot;version&quot;: &quot;1.0.0&quot;,
+        &quot;release-timestamp&quot;: &quot;2024-11-27T05:21:31Z&quot;,
+        &quot;attestation-protocol&quot;: &quot;HTTPS/RA-TLSv1.0&quot;,
+        &quot;port&quot;: 8088,
+        &quot;reference-values&quot;: {
+            &quot;rim&quot;: &quot;TO_BE_REPLACED&quot;,
+            &quot;rems&quot;: [
+                [
+                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
+                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
+                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
+                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;
+                ],
+                [
+                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
+                    &quot;7d43aefe4c6a955cd0753bccee2e707232d2b44b84c4607ac925597419ac104d&quot;,
+                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
+                    &quot;9e6f6535ee6cf18be0eae95d0a2fd6876ccdc216a172e8f15607fe1a814d0b6c&quot;
+                ]
+            ],
+            &quot;hash-algo&quot;: &quot;sha-256&quot;
+        }
+    }
+}
+</code></pre>
+<p>The resulting json should be saved as the following file:</p>
+<pre><code>CCA/islet/out/rim-extractor/realm.json
+</code></pre>
+<p>Caveat: only RIM is supported for now, the REMs are placeholders.</p>
+<h1 id="provisioningmeasurement-summary"><a class="header" href="#provisioningmeasurement-summary">Provisioning/Measurement summary</a></h1>
+<p>Those 2 processes should end with the following things</p>
+<ul>
+<li>Prepared realm that won't be modified anymore:
+<code>Image.realm initramfs-realm.cpio.gz realm.sh</code>
+For now we use the one generated by fvp-cca</li>
+<li>Public CPAK key: <code>cpak_public.bin cpak_public.pem</code></li>
+<li>Platform measurement: <code>token.bin</code></li>
+<li>Realm measurement: <code>realm.json</code></li>
+</ul>
+<p>Those token and measurement files should be <em>sent</em> to verification services
+using a <em>safe</em> communication channel.</p>
+<h1 id="running-realm-for-verification-purposes"><a class="header" href="#running-realm-for-verification-purposes">Running realm for verification purposes</a></h1>
+<p>This is done in almost the same way we run realm to get the token.</p>
+<p>Run the FVP with HES and network this time. Use the --run-only param from now on
+not to regenerate the realm anymore so our measurements won't get stale:</p>
+<pre><code>CCA/islet $ ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=islet --hes --rmm-log-level info --run-only
+</code></pre>
+<p>When FVP is booted run the realm:</p>
+<pre><code># ./launch-realm.sh net
+</code></pre>
+<p>Inside the realm you need to do the following:</p>
+<ul>
+<li>configure the network</li>
+<li>load the RSI module</li>
+<li>set the date for the certificates to work properly</li>
+</ul>
+<p>This is how it looks:</p>
+<pre><code>Welcome to Buildroot
+buildroot login: root
+
+# cd /shared
+shared # ./set-realm-ip.sh
+shared # insmod rsi.ko
+shared # date 120512002023
+</code></pre>
+<h1 id="running-and-provisioning-verification-services-veraison-realm-verifier"><a class="header" href="#running-and-provisioning-verification-services-veraison-realm-verifier">Running and provisioning verification services (Veraison, realm-verifier)</a></h1>
+<p>First of all, before deploying Veraison, apply a patch to Veraison code (https://github.com/veraison/services):</p>
+<pre><code>CCA/services $ cat ../islet/examples/veraison/veraison-patch | git apply
+</code></pre>
+<p>Then it's possible to deploy a Veraison Docker and source some useful
+commands from veraison env file:</p>
+<pre><code>CCA/services $ make docker-deploy
+CCA/services $ source deployments/docker/env.bash
+</code></pre>
+<p>Check if all 3 veraison services are running:</p>
+<pre><code>$ veraison status
+         vts: running
+provisioning: running
+verification: running
+</code></pre>
+<p>Now install go dependencies for rocli script:</p>
+<pre><code>$ go install github.com/veraison/corim/cocli@latest
+$ go install github.com/veraison/ear/arc@latest
+$ go install github.com/veraison/evcli@latest
+</code></pre>
+<p>And run provisioning of token and cpak in PEM format:</p>
+<pre><code>CCA/islet/examples/veraison/provisioning $ ./run.sh -t &lt;path/to/token.bin&gt; -c &lt;path/to/cpak_public.pem&gt;
+</code></pre>
+<p>This will provision a reference token and public CPAK to allow
+Veraison verification.</p>
+<p>It's possible to see current values stored in Veraison:</p>
+<pre><code>$ veraison stores
+</code></pre>
+<p>And if required, they also should be cleared before they can be
+provisioned again:</p>
+<pre><code>$ veraison clear-stores
+</code></pre>
+<p>Run reliant-party, which is provisioned with <code>realm.json</code> and
+acts as Reliant Party with communication to realm and Veraison
+services (this binary takes several parameters, most should not be of
+any concern apart from passing latest reference values in <code>realm.json</code>):</p>
+<pre><code>CCA/islet/examples/veraison $ ./bin/reliant-party -r &lt;path/to/realm.json&gt;
+</code></pre>
+<p>If needed, '-b' option can be used to pass different network interface binding
+(the default is 0.0.0.0:1337):</p>
+<pre><code>CCA/islet/examples/veraison $ ./bin/reliant-party -r &lt;path/to/realm.json&gt; -b &lt;LOCAL_IP:PORT&gt;
+</code></pre>
+<p>Reliant-party awaits on given IP:PORT for communication from Realm and
+utilizes our <code>ratls</code> Rust library and <code>realm-verifier</code> library (for <code>realm.json</code>
+reference values verification) to verify client CCA token.</p>
+<h1 id="verification-itself"><a class="header" href="#verification-itself">Verification itself</a></h1>
+<p>On the realm side (the one we already run) just trigger the verification
+process. This is done using <code>realm-application</code> (<code>CCA/islet/examples/veraison/realm-application</code>).
+It will initialize RATLS connection to verification service by performing the necessary steps:</p>
+<ul>
+<li>receive challenge value from verification service</li>
+<li>request the token from RMM/TF-A/HES using the challenge</li>
+<li>send the received token to verification service</li>
+<li>establish safe connection if verification services agrees to do so</li>
+</ul>
+<p>This is done with the following command on the realm:</p>
+<pre><code>shared # ./bin/realm-application -r root-ca.crt -u &lt;SERVER_IP:PORT&gt;
+</code></pre>
+<p>That command will take a very long time as Realm on FVP is slow and it does
+asymmetric cryptography (RSA key generation).</p>
+<h1 id="verification-success"><a class="header" href="#verification-success">Verification success</a></h1>
+<p>When verification succeeds, both <code>realm-application</code> and <code>realm-verifier</code> should not
+output any errors. For both binaries you can set RUST_LOG
+environmental variable to change log level (info, debug):</p>
+<p>Realm:</p>
+<pre><code>shared # RUST_LOG=info ./bin/realm-application -r root-ca.crt -u &lt;SERVER_IP:PORT&gt;
+</code></pre>
+<p>Reliant party:</p>
+<pre><code>CCA/islet/examples/veraison $ RUST_LOG=info ./bin/reliant-party -r &lt;path/to/realm.json&gt; -b &lt;LOCAL_IP:PORT&gt;
+</code></pre>
+<p>With that log level realm client should report successful socket write
+with 'GIT' message and verifying server should output that message.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="contents-4"><a class="header" href="#contents-4">Contents</a></h1>
+<ul>
+<li><a href="https://islet-project.github.io/islet/plat-doc/monitor/index.html">5.1. Realm Management Monitor</a></li>
+<li><a href="https://islet-project.github.io/islet/app-doc/islet_sdk/index.html">5.2. Confidential Application SDK</a></li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `islet_rmm` crate."><title>islet_rmm - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-47e7ab555ef2818a.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0-nightly (ec08a0337 2023-09-04)" data-channel="nightly" data-search-js="search-5d3eaacf19ebf04f.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-f194925aa375ae96.css" data-theme-dark-css="dark-1dd4d1ce031e15de.css" data-theme-ayu-css="ayu-49e58d069f567085.css" ><script src="../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-ef3a2de404864b0b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../static.files/light-f194925aa375ae96.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../static.files/dark-1dd4d1ce031e15de.css"><link rel="stylesheet" href="../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="plat-doc/islet_rmm/../islet_rmm/index.html"><img class="rust-logo" src="plat-doc/islet_rmm/../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 id=""><a class="header" href="#"></a></h2></nav><nav class="sidebar"><a class="logo-container" href="plat-doc/islet_rmm/../islet_rmm/index.html"><img class="rust-logo" src="plat-doc/islet_rmm/../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 id="crate-islet_rmm" class="location"><a class="header" href="#crate-islet_rmm"><a href="plat-doc/islet_rmm/index.html#">Crate islet_rmm</a></a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 0.0.1</li><li><a id="all-types" href="plat-doc/islet_rmm/all.html">All Items</a></li></ul><section><ul class="block"><li><a href="plat-doc/islet_rmm/index.html#modules">Modules</a></li><li><a href="plat-doc/islet_rmm/index.html#macros">Macros</a></li><li><a href="plat-doc/islet_rmm/index.html#functions">Functions</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="plat-doc/islet_rmm/../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="plat-doc/islet_rmm/../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="plat-doc/islet_rmm/../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 id="crate-islet_rmm-1"><a class="header" href="#crate-islet_rmm-1">Crate <a class="mod" href="plat-doc/islet_rmm/index.html#">islet_rmm</a><button id="copy-path" title="Copy item path to clipboard"><img src="plat-doc/islet_rmm/../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></a></h1><span class="out-of-band"><a class="src" href="plat-doc/islet_rmm/../src/islet_rmm/lib.rs.html#1-162">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><h2 id="modules" class="small-section-header"><a class="header" href="#modules"><a href="plat-doc/islet_rmm/index.html#modules">Modules</a></a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/allocator/index.html" title="mod islet_rmm::allocator">allocator</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/asm/index.html" title="mod islet_rmm::asm">asm</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/config/index.html" title="mod islet_rmm::config">config</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/cpu/index.html" title="mod islet_rmm::cpu">cpu</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/error/index.html" title="mod islet_rmm::error">error</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/event/index.html" title="mod islet_rmm::event">event</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/exception/index.html" title="mod islet_rmm::exception">exception</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/gic/index.html" title="mod islet_rmm::gic">gic</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/granule/index.html" title="mod islet_rmm::granule">granule</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/host/index.html" title="mod islet_rmm::host">host</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/io/index.html" title="mod islet_rmm::io">io</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/logger/index.html" title="mod islet_rmm::logger">logger</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/macro/index.html" title="mod islet_rmm::macro">macro</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/mm/index.html" title="mod islet_rmm::mm">mm</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/mmio/index.html" title="mod islet_rmm::mmio">mmio</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/panic/index.html" title="mod islet_rmm::panic">panic</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/realm/index.html" title="mod islet_rmm::realm">realm</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/rmi/index.html" title="mod islet_rmm::rmi">rmi</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/rsi/index.html" title="mod islet_rmm::rsi">rsi</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/rtt/index.html" title="mod islet_rmm::rtt">rtt</a></div></li></ul><h2 id="macros" class="small-section-header"><a class="header" href="#macros"><a href="plat-doc/islet_rmm/index.html#macros">Macros</a></a></h2><ul class="item-table"><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.const_assert.html" title="macro islet_rmm::const_assert">const_assert</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.const_assert_eq.html" title="macro islet_rmm::const_assert_eq">const_assert_eq</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.const_assert_size.html" title="macro islet_rmm::const_assert_size">const_assert_size</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.copy_from_host_or_ret.html" title="macro islet_rmm::copy_from_host_or_ret">copy_from_host_or_ret</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.copy_to_host_or_ret.html" title="macro islet_rmm::copy_to_host_or_ret">copy_to_host_or_ret</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.define_interface.html" title="macro islet_rmm::define_interface">define_interface</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.eprint.html" title="macro islet_rmm::eprint">eprint</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.eprintln.html" title="macro islet_rmm::eprintln">eprintln</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.get_granule.html" title="macro islet_rmm::get_granule">get_granule</a></div><div class="desc docblock-short">Safety / Usage: “granule transaction” a set of APIs that define how to access “granule” and contents inside it.</div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.get_granule_if.html" title="macro islet_rmm::get_granule_if">get_granule_if</a></div><div class="desc docblock-short">get_granule_if!(addr: a physical address, state: a granule state you expect it to be)</div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.listen.html" title="macro islet_rmm::listen">listen</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.offset_of.html" title="macro islet_rmm::offset_of">offset_of</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.print.html" title="macro islet_rmm::print">print</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.println.html" title="macro islet_rmm::println">println</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.set_state_and_get_granule.html" title="macro islet_rmm::set_state_and_get_granule">set_state_and_get_granule</a></div><div class="desc docblock-short">set_state_and_get_granule!(addr: a physical address, state: a granule state you want to set)</div></li></ul><h2 id="functions" class="small-section-header"><a class="header" href="#functions"><a href="plat-doc/islet_rmm/index.html#functions">Functions</a></a></h2><ul class="item-table"><li><div class="item-name"><a class="fn" href="plat-doc/islet_rmm/fn.rmm_exit.html" title="fn islet_rmm::rmm_exit">rmm_exit</a><sup title="unsafe function">⚠</sup></div><div class="desc docblock-short">Call <code>rmm_exit</code> within <code>exception/vectors.s</code> and jumps to EL1.</div></li><li><div class="item-name"><a class="fn" href="plat-doc/islet_rmm/fn.start.html" title="fn islet_rmm::start">start</a><sup title="unsafe function">⚠</sup></div></li></ul></section></div></main></body></html><div style="break-before: page; page-break-before: always;"></div><!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `islet_sdk` crate."><title>islet_sdk - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-47e7ab555ef2818a.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="islet_sdk" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0-nightly (ec08a0337 2023-09-04)" data-channel="nightly" data-search-js="search-5d3eaacf19ebf04f.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-f194925aa375ae96.css" data-theme-dark-css="dark-1dd4d1ce031e15de.css" data-theme-ayu-css="ayu-49e58d069f567085.css" ><script src="../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-ef3a2de404864b0b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../static.files/light-f194925aa375ae96.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../static.files/dark-1dd4d1ce031e15de.css"><link rel="stylesheet" href="../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="app-doc/islet_sdk/../islet_sdk/index.html"><img class="rust-logo" src="app-doc/islet_sdk/../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 id="-1"><a class="header" href="#-1"></a></h2></nav><nav class="sidebar"><a class="logo-container" href="app-doc/islet_sdk/../islet_sdk/index.html"><img class="rust-logo" src="app-doc/islet_sdk/../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 id="crate-islet_sdk" class="location"><a class="header" href="#crate-islet_sdk"><a href="app-doc/islet_sdk/index.html#">Crate islet_sdk</a></a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 0.1.0</li><li><a id="all-types" href="app-doc/islet_sdk/all.html">All Items</a></li></ul><section><ul class="block"><li><a href="app-doc/islet_sdk/index.html#modules">Modules</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="app-doc/islet_sdk/../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="app-doc/islet_sdk/../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="app-doc/islet_sdk/../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 id="crate-islet_sdk-1"><a class="header" href="#crate-islet_sdk-1">Crate <a class="mod" href="app-doc/islet_sdk/index.html#">islet_sdk</a><button id="copy-path" title="Copy item path to clipboard"><img src="app-doc/islet_sdk/../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></a></h1><span class="out-of-band"><a class="src" href="app-doc/islet_sdk/../src/islet_sdk/lib.rs.html#1-50">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><h2 id="modules" class="small-section-header"><a class="header" href="#modules"><a href="app-doc/islet_sdk/index.html#modules">Modules</a></a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/attester/index.html" title="mod islet_sdk::attester">attester</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/c_api/index.html" title="mod islet_sdk::c_api">c_api</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/config/index.html" title="mod islet_sdk::config">config</a></div><div class="desc docblock-short">cbindgen:ignore</div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/error/index.html" title="mod islet_sdk::error">error</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/prelude/index.html" title="mod islet_sdk::prelude">prelude</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/report/index.html" title="mod islet_sdk::report">report</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/sealing/index.html" title="mod islet_sdk::sealing">sealing</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/verifier/index.html" title="mod islet_sdk::verifier">verifier</a></div></li></ul></section></div></main></body></html>
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </div>
+    </body>
+</html>

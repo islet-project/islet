@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["ipa_bits","set_event_handler","validate"]};

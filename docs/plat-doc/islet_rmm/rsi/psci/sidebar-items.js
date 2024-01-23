@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["PSCI_VERSION","SMCCC_ARCH_FEATURES","SMCCC_VERSION"],"fn":["set_event_handler"],"struct":["SMC32","SMC64"]};

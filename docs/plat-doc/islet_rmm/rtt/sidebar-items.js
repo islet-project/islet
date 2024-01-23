@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["create","data_create","data_destroy","destroy","get_ripas","init_ripas","make_exclusive","make_shared","map_unprotected","read_entry","unmap_unprotected"]};

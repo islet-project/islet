@@ -1,0 +1,506 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Remote Attestation - Islet Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon.svg">
+        <link rel="shortcut icon" href="../favicon.png">
+        <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+        <link rel="stylesheet" href="../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="../getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../getting-started/cca.html"><strong aria-hidden="true">1.1.</strong> About CCA</a></li><li class="chapter-item expanded "><a href="../getting-started/app-dev.html"><strong aria-hidden="true">1.2.</strong> Application Developer</a></li><li class="chapter-item expanded "><a href="../getting-started/plat-dev.html"><strong aria-hidden="true">1.3.</strong> Platform Developer</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../network.html"><strong aria-hidden="true">1.3.1.</strong> Network Configuration</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../components/index.html"><strong aria-hidden="true">2.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../components/cca_design.html"><strong aria-hidden="true">2.1.</strong> CCA platform architecture</a></li><li class="chapter-item expanded "><a href="../components/rmm.html"><strong aria-hidden="true">2.2.</strong> Realm Management Monitor</a></li><li class="chapter-item expanded "><a href="../components/cli.html"><strong aria-hidden="true">2.3.</strong> Command Line Interface</a></li><li class="chapter-item expanded "><a href="../components/sdk.html"><strong aria-hidden="true">2.4.</strong> Software Development Kit</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../sdk-sdd.html"><strong aria-hidden="true">2.4.1.</strong> SDK Design</a></li></ol></li><li class="chapter-item expanded "><a href="../components/attestation.html"><strong aria-hidden="true">2.5.</strong> Attestation</a></li><li class="chapter-item expanded "><a href="../components/certifier.html"><strong aria-hidden="true">2.6.</strong> Certifier</a></li></ol></li><li class="chapter-item expanded "><a href="../platform-development/index.html"><strong aria-hidden="true">3.</strong> Platform development</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../platform-development/secure-interaction.html"><strong aria-hidden="true">3.1.</strong> Secure interactions with the Host</a></li></ol></li><li class="chapter-item expanded "><a href="../usecases/index.html"><strong aria-hidden="true">4.</strong> Use Cases</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../usecases/confidential_ml.html"><strong aria-hidden="true">4.1.</strong> Confidential Machine Learning</a></li><li class="chapter-item expanded "><a href="../usecases/cross-platform-e2ee.html"><strong aria-hidden="true">4.2.</strong> Cross Platform E2EE</a></li><li class="chapter-item expanded "><a href="../usecases/remote-attestation.html" class="active"><strong aria-hidden="true">4.3.</strong> Remote Attestation</a></li></ol></li><li class="chapter-item expanded "><a href="../crates/index.html"><strong aria-hidden="true">5.</strong> Rust Crates</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../plat-doc/islet_rmm/index.html"><strong aria-hidden="true">5.1.</strong> Realm Management Monitor</a></li><li class="chapter-item expanded "><a href="../app-doc/islet_sdk/index.html"><strong aria-hidden="true">5.2.</strong> Confidential Application SDK</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Islet Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p>The process consists of several parts:</p>
+<ul>
+<li>provisioning</li>
+<li>gathering measurements</li>
+<li>feeding measurements to veraison and realm verifier</li>
+<li>running realm for verification purposes</li>
+<li>running verification services (veraison/realm verifier)</li>
+<li>verification itself</li>
+</ul>
+<p>It is best and even sometimes required that all the required repos are placed in
+one directory. I'll call it <code>CCA</code> and it will be referred throughout this file.</p>
+<p>The following repos will be used:</p>
+<ul>
+<li>
+<p>Islet: https://github.com/islet-project/islet that provides:</p>
+<ul>
+<li>the whole SW/FW stack and scripts for running the emulated environment under the FVP</li>
+<li>Islet HES https://github.com/islet-project/islet/tree/main/hes</li>
+<li>kvmtool-rim-measurer from https://github.com/islet-project/islet/tree/main/third-party/</li>
+</ul>
+</li>
+<li>
+<p>Islet Remote Attestation: https://github.com/islet-project/remote-attestation that provides:</p>
+<ul>
+<li>rocli: https://github.com/islet-project/remote-attestation/tree/main/tools/rocli
+Tool for provisioning reference token and CPAK to the Veraison services.</li>
+<li>realm-verifier: https://github.com/islet-project/remote-attestation/tree/main/lib/realm-verifier
+A library for veryfing RIM and REMs with reference values.</li>
+<li>ratls: https://github.com/islet-project/remote-attestation/tree/main/lib/ratls
+A library implementing RaTLS protocol for attestation purposes.</li>
+<li>rust-rsi: https://github.com/islet-project/remote-attestation/tree/main/lib/rust-rsi
+A library implementing token and RSI related functionalities (fetching, parsing).</li>
+</ul>
+</li>
+<li>
+<p>veraison: https://github.com/veraison/services</p>
+<ul>
+<li>Please use 5a48655b3a9c3960667ef14df7860186238b6bcd commit. Newer versions
+might not work at the moment.</li>
+</ul>
+</li>
+</ul>
+<h1 id="preparation"><a class="header" href="#preparation">Preparation</a></h1>
+<p>The 3 aforementioned repositories should be checked out on the same level so it
+should look like following:</p>
+<pre><code>CCA/islet
+CCA/remote-attestation
+CCA/services   (this is veraison repository)
+</code></pre>
+<p>Now run <code>make</code> inside the <code>CCA/islet/examples/veraison</code> directory. This compiles
+some tools that will be used for this demo and places them inside proper
+directories. It also copies the <code>root-ca.crt</code> used by <code>realm-application</code>.</p>
+<pre><code>CCA/islet/examples/veraison $ make
+</code></pre>
+<p>The files installed are:</p>
+<ul>
+<li><code>root-ca.crt</code> copied to <code>CCA/islet/out/shared</code></li>
+<li><code>rsictl</code> installed in <code>CCA/islet/out/shared/bin</code></li>
+<li><code>realm-application</code> installed in <code>CCA/islet/out/shared/bin</code></li>
+<li><code>rocli</code> installed in <code>CCA/islet/examples/veraison/bin</code></li>
+<li><code>reliant-party</code> installed in <code>CCA/islet/examples/veraison/bin</code></li>
+</ul>
+<h1 id="provisioning"><a class="header" href="#provisioning">Provisioning</a></h1>
+<p>This is emulated by generating CPAK public key using one of camellia-hes
+utilities:</p>
+<pre><code>CCA/islet/hes/cpak-generator $ cargo run
+</code></pre>
+<p>This will by default generate a CPAK using dummy GUK and dummy BL2 hash files
+from <code>CCA/islet/hes/res</code> directory and save both key binary and PEM format
+respectively as:</p>
+<pre><code>CCA/islet/hes/out/cpak_public.bin
+CCA/islet/hes/out/cpak_public.pem
+</code></pre>
+<h1 id="gathering-measurements"><a class="header" href="#gathering-measurements">Gathering measurements</a></h1>
+<p>There are 2 things we need to measure here. Platform and realm.</p>
+<h2 id="plaftorm-measurement"><a class="header" href="#plaftorm-measurement">Plaftorm measurement</a></h2>
+<p>The platform measurement is done by getting the whole CCA token. Platform
+measurements are saved there.</p>
+<p>This is performed by some specifically prepared realm (e.g. one provided by
+<code>CCA/islet/scripts/fvp-cca</code>). To do this do the following:</p>
+<pre><code>CCA/islet $ ./scripts/init.sh
+CCA/islet $ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=islet --hes --rmm-log-level info
+</code></pre>
+<p>The first command will initialize the scripts and download all required
+components. The second command will build the platform and the realm and run the
+FVP emulator and HES application.</p>
+<p>If run under X environment terminals should open with telnet 5000/5003. If not
+we can run those telnets manually on two separate terminals:</p>
+<pre><code>$ telnet localhost 5000
+$ telnet localhost 5003
+</code></pre>
+<p>Port 5000 is the main terminal with console. 5003 is RMM. We don't need the
+output of the second one, but the telnet itself is necessary for FVP to work
+properly (buffering reasons).</p>
+<p>When the FVP linux is booted we need to run the realm:</p>
+<pre><code>$ ./launch-realm.sh
+</code></pre>
+<p>This will take a lot of time (FVP is slow). Wait until you have a realm
+loaded. Then load RSI module and get the token:</p>
+<pre><code>Welcome to Buildroot
+buildroot login: root
+
+# cd /shared
+shared # insmod rsi.ko
+shared # ./bin/rsictl attest -o token.bin
+</code></pre>
+<p>For the token its challenge value will be randomized, but in here it doesn't
+matter. Now we can kill the FVP (ctrl-c on the FVP terminal). Eventually the
+following command may be required as FVP doesn't always close cleanly:</p>
+<pre><code>$ pkill -9 -i fvp
+</code></pre>
+<p>The generated token is saved as the following file:</p>
+<pre><code>CCA/islet/out/shared/token.bin
+</code></pre>
+<h2 id="realm-measurement"><a class="header" href="#realm-measurement">Realm measurement</a></h2>
+<p>Realm measurement is done by generating a json file containing realm information
+that will be fed to realm verifier.</p>
+<p>This is performed by a small helper program called <code>kvmtool-rim-measurer</code>. It basically
+runs a modified lkvm tool that calculates and displays the RIM
+value. The process looks as follows:</p>
+<ul>
+<li>generate/get the realm you want to use (for now generated by fvp-cca script,
+those files can be taken from <code>CCA/islet/out/shared</code>,
+<code>Image.realm initramfs-realm.cpio.gz realm.sh</code>)</li>
+<li>Build the kvmtool-rim-measurer tool according to the description https://github.com/islet-project/assets/blob/3rd-kvmtool-rim-measurer/BUILD-RIM-MEASURER</li>
+<li>Create a dedicated directory for realm files (e.g. <code>CCA/islet/out/rim-extractor</code>) and copy the realm files we want to measure to that folder</li>
+<li>copy the resulting <code>lkvm-rim-measurer</code> to the <code>CCA/islet/out/rim-extractor</code> folder</li>
+<li>substitute <code>lkvm</code> to <code>lkvm-rim-measurer</code> in the <code>CCA/islet/out/rim-extractor/realm.sh</code> script</li>
+<li>get into the <code>CCA/islet/out/rim-extractor</code> folder and run the <code>realm.sh</code> script</li>
+<li>The `lkvm-rim-measurer`` will display the resulting RIM (e.g. RIM: F58AF6D6A022F113627B1E0B1E0D9B9A1BFB460207AC29721E84BCEF4B4F5CE08351684444BC11CF329D1D4C807BB621807916C2DF4F56B7326E8D16692546A8)</li>
+</ul>
+<p>Create a <code>realm.json</code> file according to the below template and replace the <code>TO_BE_REPLACED</code> term with the extracted RIM value.</p>
+<pre><code class="language-json">{
+    &quot;version&quot;: &quot;0.1&quot;,
+    &quot;issuer&quot;: {
+        &quot;name&quot;: &quot;Samsung&quot;,
+        &quot;url&quot;: &quot;https://cca-realms.samsung.com/&quot;
+    },
+    &quot;realm&quot;: {
+        &quot;uuid&quot;: &quot;f7e3e8ef-e0cc-4098-98f8-3a12436da040&quot;,
+        &quot;name&quot;: &quot;Data Processing Service&quot;,
+        &quot;version&quot;: &quot;1.0.0&quot;,
+        &quot;release-timestamp&quot;: &quot;2024-11-27T05:21:31Z&quot;,
+        &quot;attestation-protocol&quot;: &quot;HTTPS/RA-TLSv1.0&quot;,
+        &quot;port&quot;: 8088,
+        &quot;reference-values&quot;: {
+            &quot;rim&quot;: &quot;TO_BE_REPLACED&quot;,
+            &quot;rems&quot;: [
+                [
+                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
+                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
+                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
+                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;
+                ],
+                [
+                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
+                    &quot;7d43aefe4c6a955cd0753bccee2e707232d2b44b84c4607ac925597419ac104d&quot;,
+                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
+                    &quot;9e6f6535ee6cf18be0eae95d0a2fd6876ccdc216a172e8f15607fe1a814d0b6c&quot;
+                ]
+            ],
+            &quot;hash-algo&quot;: &quot;sha-256&quot;
+        }
+    }
+}
+</code></pre>
+<p>The resulting json should be saved as the following file:</p>
+<pre><code>CCA/islet/out/rim-extractor/realm.json
+</code></pre>
+<p>Caveat: only RIM is supported for now, the REMs are placeholders.</p>
+<h1 id="provisioningmeasurement-summary"><a class="header" href="#provisioningmeasurement-summary">Provisioning/Measurement summary</a></h1>
+<p>Those 2 processes should end with the following things</p>
+<ul>
+<li>Prepared realm that won't be modified anymore:
+<code>Image.realm initramfs-realm.cpio.gz realm.sh</code>
+For now we use the one generated by fvp-cca</li>
+<li>Public CPAK key: <code>cpak_public.bin cpak_public.pem</code></li>
+<li>Platform measurement: <code>token.bin</code></li>
+<li>Realm measurement: <code>realm.json</code></li>
+</ul>
+<p>Those token and measurement files should be <em>sent</em> to verification services
+using a <em>safe</em> communication channel.</p>
+<h1 id="running-realm-for-verification-purposes"><a class="header" href="#running-realm-for-verification-purposes">Running realm for verification purposes</a></h1>
+<p>This is done in almost the same way we run realm to get the token.</p>
+<p>Run the FVP with HES and network this time. Use the --run-only param from now on
+not to regenerate the realm anymore so our measurements won't get stale:</p>
+<pre><code>CCA/islet $ ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=islet --hes --rmm-log-level info --run-only
+</code></pre>
+<p>When FVP is booted run the realm:</p>
+<pre><code># ./launch-realm.sh net
+</code></pre>
+<p>Inside the realm you need to do the following:</p>
+<ul>
+<li>configure the network</li>
+<li>load the RSI module</li>
+<li>set the date for the certificates to work properly</li>
+</ul>
+<p>This is how it looks:</p>
+<pre><code>Welcome to Buildroot
+buildroot login: root
+
+# cd /shared
+shared # ./set-realm-ip.sh
+shared # insmod rsi.ko
+shared # date 120512002023
+</code></pre>
+<h1 id="running-and-provisioning-verification-services-veraison-realm-verifier"><a class="header" href="#running-and-provisioning-verification-services-veraison-realm-verifier">Running and provisioning verification services (Veraison, realm-verifier)</a></h1>
+<p>First of all, before deploying Veraison, apply a patch to Veraison code (https://github.com/veraison/services):</p>
+<pre><code>CCA/services $ cat ../islet/examples/veraison/veraison-patch | git apply
+</code></pre>
+<p>Then it's possible to deploy a Veraison Docker and source some useful
+commands from veraison env file:</p>
+<pre><code>CCA/services $ make docker-deploy
+CCA/services $ source deployments/docker/env.bash
+</code></pre>
+<p>Check if all 3 veraison services are running:</p>
+<pre><code>$ veraison status
+         vts: running
+provisioning: running
+verification: running
+</code></pre>
+<p>Now install go dependencies for rocli script:</p>
+<pre><code>$ go install github.com/veraison/corim/cocli@latest
+$ go install github.com/veraison/ear/arc@latest
+$ go install github.com/veraison/evcli@latest
+</code></pre>
+<p>And run provisioning of token and cpak in PEM format:</p>
+<pre><code>CCA/islet/examples/veraison/provisioning $ ./run.sh -t &lt;path/to/token.bin&gt; -c &lt;path/to/cpak_public.pem&gt;
+</code></pre>
+<p>This will provision a reference token and public CPAK to allow
+Veraison verification.</p>
+<p>It's possible to see current values stored in Veraison:</p>
+<pre><code>$ veraison stores
+</code></pre>
+<p>And if required, they also should be cleared before they can be
+provisioned again:</p>
+<pre><code>$ veraison clear-stores
+</code></pre>
+<p>Run reliant-party, which is provisioned with <code>realm.json</code> and
+acts as Reliant Party with communication to realm and Veraison
+services (this binary takes several parameters, most should not be of
+any concern apart from passing latest reference values in <code>realm.json</code>):</p>
+<pre><code>CCA/islet/examples/veraison $ ./bin/reliant-party -r &lt;path/to/realm.json&gt;
+</code></pre>
+<p>If needed, '-b' option can be used to pass different network interface binding
+(the default is 0.0.0.0:1337):</p>
+<pre><code>CCA/islet/examples/veraison $ ./bin/reliant-party -r &lt;path/to/realm.json&gt; -b &lt;LOCAL_IP:PORT&gt;
+</code></pre>
+<p>Reliant-party awaits on given IP:PORT for communication from Realm and
+utilizes our <code>ratls</code> Rust library and <code>realm-verifier</code> library (for <code>realm.json</code>
+reference values verification) to verify client CCA token.</p>
+<h1 id="verification-itself"><a class="header" href="#verification-itself">Verification itself</a></h1>
+<p>On the realm side (the one we already run) just trigger the verification
+process. This is done using <code>realm-application</code> (<code>CCA/islet/examples/veraison/realm-application</code>).
+It will initialize RATLS connection to verification service by performing the necessary steps:</p>
+<ul>
+<li>receive challenge value from verification service</li>
+<li>request the token from RMM/TF-A/HES using the challenge</li>
+<li>send the received token to verification service</li>
+<li>establish safe connection if verification services agrees to do so</li>
+</ul>
+<p>This is done with the following command on the realm:</p>
+<pre><code>shared # ./bin/realm-application -r root-ca.crt -u &lt;SERVER_IP:PORT&gt;
+</code></pre>
+<p>That command will take a very long time as Realm on FVP is slow and it does
+asymmetric cryptography (RSA key generation).</p>
+<h1 id="verification-success"><a class="header" href="#verification-success">Verification success</a></h1>
+<p>When verification succeeds, both <code>realm-application</code> and <code>realm-verifier</code> should not
+output any errors. For both binaries you can set RUST_LOG
+environmental variable to change log level (info, debug):</p>
+<p>Realm:</p>
+<pre><code>shared # RUST_LOG=info ./bin/realm-application -r root-ca.crt -u &lt;SERVER_IP:PORT&gt;
+</code></pre>
+<p>Reliant party:</p>
+<pre><code>CCA/islet/examples/veraison $ RUST_LOG=info ./bin/reliant-party -r &lt;path/to/realm.json&gt; -b &lt;LOCAL_IP:PORT&gt;
+</code></pre>
+<p>With that log level realm client should report successful socket write
+with 'GIT' message and verifying server should output that message.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../usecases/cross-platform-e2ee.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../crates/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../usecases/cross-platform-e2ee.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../crates/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

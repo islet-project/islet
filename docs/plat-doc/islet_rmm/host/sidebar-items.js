@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["pointer"],"struct":["DataPage"],"trait":["Accessor"]};

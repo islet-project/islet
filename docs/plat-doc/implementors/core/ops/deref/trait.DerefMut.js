@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"islet_rmm":[["impl&lt;'a, T: <a class=\"trait\" href=\"islet_rmm/host/trait.Accessor.html\" title=\"trait islet_rmm::host::Accessor\">HostAccessor</a>&gt; <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/ops/deref/trait.DerefMut.html\" title=\"trait core::ops::deref::DerefMut\">DerefMut</a> for <a class=\"struct\" href=\"islet_rmm/host/pointer/struct.PointerMutGuard.html\" title=\"struct islet_rmm::host::pointer::PointerMutGuard\">PointerMutGuard</a>&lt;'a, T&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

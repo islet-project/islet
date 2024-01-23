@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["ABI_VERSION","ATTEST_TOKEN_CONTINUE","ATTEST_TOKEN_INIT","ERROR_INPUT","ERROR_STATE","HOST_CALL","INCOMPLETE","IPA_STATE_GET","IPA_STATE_SET","MEASUREMENT_EXTEND","MEASUREMENT_READ","REALM_CONFIG","SUCCESS","VERSION"],"fn":["do_host_call","set_event_handler","to_str"],"mod":["attestation","constraint","error","hostcall","measurement","psci"]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["GRANULE_MASK","GRANULE_SHIFT","GRANULE_SIZE"],"enum":["L0Table","L1Table"],"fn":["check_granule_parent","create_granule_status_table","is_granule_aligned","is_not_in_realm","set_granule","set_granule_raw","set_granule_with_parent","to_rmi_result","validate_addr"],"mod":["entry","translation"],"struct":["GranuleState"]};

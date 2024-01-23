@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["stdout"],"struct":["Stdout"],"trait":["ConsoleWriter","Device","Write"],"type":["Result"]};

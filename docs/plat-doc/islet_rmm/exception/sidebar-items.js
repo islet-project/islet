@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"mod":["lower","trap"],"static":["vectors"]};

@@ -1,0 +1,1 @@
+../../examples/cross-platform-e2ee/README.md

@@ -1,16 +1,21 @@
 #!/bin/bash
 
 set -exuo pipefail
+shopt -s expand_aliases
 
 ROOT="$(git rev-parse --show-toplevel)"
 DEMO="$ROOT/examples/veraison"
+DOCKER_DIR="$DEMO/services/deployments/docker"
 ROCLI="$DEMO/bin/rocli"
 PROV="$DEMO/provisioning"
 TOKEN="$PROV/token/token.bin"
 CPAK="$PROV/claims/cpak_public.pem"
+CPAK_TYPE="pkix-base64-key"
 CONFIG="$PROV/config.yml"
 
-while getopts "ht:c:" arg; do
+source "$DOCKER_DIR/env.bash"
+
+while getopts "ht:c:e:" arg; do
   case $arg in
     h)
       echo -e "Usage: ./run.sh -t <token path> -c <cpak public pem>"
@@ -23,6 +28,10 @@ while getopts "ht:c:" arg; do
     c)
       CPAK=$OPTARG
       echo "Using $CPAK"
+      ;;
+    e)
+      CPAK_TYPE=$OPTARG
+      echo "Using $CPAK_TYPE"
       ;;
   esac
 done
@@ -40,7 +49,8 @@ loginfo "Creating Endorsements"
 
 $ROCLI --config "$CONFIG" -o endorsements.json \
     --token "$TOKEN" endorsements \
-    --cpak "$CPAK"
+    --cpak "$CPAK" \
+    --cpak-type "$CPAK_TYPE"
 
 loginfo "Endorsements:"
 cat ./endorsements.json | jq
@@ -73,13 +83,13 @@ cocli corim create --template=corim.json --comid=endorsements.cbor --comid=refva
 
 loginfo "Provisioning generated Corim"
 cocli corim submit --corim-file=corim.cbor \
-    --api-server="http://localhost:8888/endorsement-provisioning/v1/submit" \
-    --media-type="application/corim-unsigned+cbor; profile=http://arm.com/cca/ssd/1"
+    --api-server="http://provisioning-service:8888/endorsement-provisioning/v1/submit" \
+    '--media-type='\''application/corim-unsigned+cbor; profile=http://arm.com/cca/ssd/1'\'''
 
 ##### Verifying as relaying party
 
 loginfo "Verifying token as relaying party"
 evcli cca verify-as relying-party \
-    --api-server=http://localhost:8080/challenge-response/v1/newSession \
+    --api-server=http://verification-service:8080/challenge-response/v1/newSession \
     --token=$TOKEN | tr -d '"' > ear.jwt
 arc verify -p=pkey.jwk ear.jwt

@@ -13,6 +13,7 @@ use crate::rmi::realm::Rd;
 use crate::rmi::rtt::RTT_PAGE_LEVEL;
 use crate::rmi::rtt::S2TTE_STRIDE;
 use crate::rmi::rtt_entry_state;
+use crate::{get_granule, get_granule_if};
 use armv9a::bits_in_reg;
 
 pub fn create(id: usize, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), Error> {

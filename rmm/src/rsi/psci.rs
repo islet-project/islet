@@ -7,6 +7,7 @@ use crate::rmi::realm::{rd::State, Rd};
 use crate::rmi::rec::run::Run;
 use crate::rmi::rec::Rec;
 use crate::Monitor;
+use crate::{get_granule, get_granule_if};
 
 pub const SMCCC_VERSION: usize = 0x8000_0000;
 pub const SMCCC_ARCH_FEATURES: usize = 0x8000_0001;

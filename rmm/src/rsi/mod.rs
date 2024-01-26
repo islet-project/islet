@@ -22,6 +22,7 @@ use crate::rmi::rec::{Rec, RmmRecAttestState};
 use crate::rmi::rtt::{is_protected_ipa, validate_ipa, RTT_PAGE_LEVEL};
 use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 use crate::Monitor;
+use crate::{get_granule, get_granule_if};
 
 define_interface! {
     command {

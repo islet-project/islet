@@ -58,7 +58,7 @@ impl Params {
                 return Err(Error::RmiErrorInput);
             }
 
-            get_granule_if!(addr, GranuleState::Delegated)?;
+            let _aux_granule = get_granule_if!(addr, GranuleState::Delegated)?;
         }
 
         Ok(())

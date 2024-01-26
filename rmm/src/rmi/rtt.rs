@@ -13,6 +13,9 @@ use crate::measurement::HashContext;
 use crate::realm::mm::stage2_tte::S2TTE;
 use crate::rmi;
 use crate::rmi::error::Error;
+#[cfg(not(feature = "gst_page_table"))]
+use crate::{get_granule, get_granule_if};
+#[cfg(feature = "gst_page_table")]
 use crate::{get_granule, get_granule_if, set_state_and_get_granule};
 
 pub const RTT_MIN_BLOCK_LEVEL: usize = 2;
@@ -248,7 +251,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let pa = crate::rtt::data_destroy(realm_id, ipa)?;
 
         // data granule lock and change state
+        #[cfg(feature = "gst_page_table")]
         set_state_and_get_granule!(pa, GranuleState::Delegated)?;
+        #[cfg(not(feature = "gst_page_table"))]
+        {
+            let mut granule = get_granule!(pa)?;
+            set_granule(&mut granule, GranuleState::Delegated)?;
+        }
         Ok(())
     });
 

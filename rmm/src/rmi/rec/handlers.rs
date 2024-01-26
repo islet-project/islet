@@ -4,7 +4,10 @@ use super::run::{Run, REC_ENTRY_FLAG_TRAP_WFE, REC_ENTRY_FLAG_TRAP_WFI};
 use super::vtcr::{activate_stage2_mmu, prepare_vtcr};
 use super::Rec;
 use crate::event::Mainloop;
+#[cfg(feature = "gst_page_table")]
 use crate::granule::{set_granule, set_granule_with_parent, GranuleState};
+#[cfg(not(feature = "gst_page_table"))]
+use crate::granule::{set_granule, GranuleState};
 use crate::host::pointer::Pointer as HostPointer;
 use crate::host::pointer::PointerMut as HostPointerMut;
 use crate::listen;
@@ -45,7 +48,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if rec_index != rd.rec_index() {
             return Err(Error::RmiErrorInput);
         }
-
         // set Rec_state and grab the lock for Rec granule
         let mut rec_granule = get_granule_if!(rec, GranuleState::Delegated)?;
         rmm.page_table.map(rec, true);
@@ -72,7 +74,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rd.inc_rec_index();
         HashContext::new(rd)?.measure_rec_params(&params)?;
 
-        set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec)
+        #[cfg(feature = "gst_page_table")]
+        return set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec);
+        #[cfg(not(feature = "gst_page_table"))]
+        return set_granule(&mut rec_granule, GranuleState::Rec);
     });
 
     listen!(mainloop, rmi::REC_DESTROY, |arg, _ret, rmm| {

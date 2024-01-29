@@ -3,5 +3,6 @@ target = "aarch64-unknown-none-softfloat"
 
 [target.aarch64-unknown-none-softfloat]
 rustflags = [
-  "-C", "link-args=-Tplat/fvp/memory.x",
+  "-C", "link-args=-Tplat/fvp/memory.x", 
+  "-C", "target-feature=+neon",
 ]

@@ -5,8 +5,6 @@ use super::error::Error;
 use super::guard::EntryGuard;
 use super::page::{Page, PageIter, PageSize};
 
-use alloc::alloc::Layout;
-
 use core::marker::PhantomData;
 
 // Safety/TODO:
@@ -78,29 +76,11 @@ pub trait Entry {
     fn points_to_table_or_page(&self) -> bool;
 }
 
-/// Safety: the caller must do proper error handling if it's failed to allocate memory
-pub trait MemAlloc {
-    unsafe fn alloc(layout: Layout) -> *mut u8 {
-        alloc::alloc::alloc(layout)
-    }
-
-    unsafe fn alloc_zeroed(layout: Layout) -> *mut u8 {
-        alloc::alloc::alloc_zeroed(layout)
-    }
-
-    unsafe fn dealloc(ptr: *mut u8, layout: Layout) {
-        alloc::alloc::dealloc(ptr, layout);
-    }
-}
-
 pub struct PageTable<A, L, E, const N: usize> {
     entries: [E; N],
     level: PhantomData<L>,
     address: PhantomData<A>,
 }
-
-impl<A: Address, L: Level, E: Entry, const N: usize> MemAlloc for PageTable<A, L, E, N> {}
-impl<A: Address, L: HasSubtable, E: Entry, const N: usize> MemAlloc for PageTable<A, L, E, N> {}
 
 pub trait PageTableMethods<A: Address, L, E: Entry, const N: usize> {
     fn new_with_base(base: usize) -> Result<*mut PageTable<A, L, E, N>, Error>;
@@ -175,8 +155,9 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
         assert_eq!(N, L::NUM_ENTRIES);
 
         let table = unsafe {
-            Self::alloc_zeroed(
-                Layout::from_size_align(L::TABLE_SIZE * size, L::TABLE_ALIGN * align).unwrap(),
+            alloc::alloc::alloc_zeroed(
+                alloc::alloc::Layout::from_size_align(L::TABLE_SIZE * size, L::TABLE_ALIGN * align)
+                    .unwrap(),
             )
         };
         if table as usize == 0 {
@@ -269,9 +250,9 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
 
     default fn drop(&mut self) {
         unsafe {
-            Self::dealloc(
+            alloc::alloc::dealloc(
                 self as *mut PageTable<A, L, E, N> as *mut u8,
-                Layout::from_size_align(L::TABLE_SIZE, L::TABLE_ALIGN).unwrap(),
+                alloc::alloc::Layout::from_size_align(L::TABLE_SIZE, L::TABLE_ALIGN).unwrap(),
             );
         }
     }
@@ -353,8 +334,8 @@ where
         if L::THIS_LEVEL < S::MAP_TABLE_LEVEL {
             self.entries[index].set_with_page_table_flags_via_alloc(index, || {
                 let subtable = unsafe {
-                    Self::alloc_zeroed(
-                        Layout::from_size_align(
+                    alloc::alloc::alloc_zeroed(
+                        alloc::alloc::Layout::from_size_align(
                             L::NextLevel::TABLE_SIZE,
                             L::NextLevel::TABLE_ALIGN,
                         )
@@ -403,9 +384,9 @@ where
             }
         }
         unsafe {
-            Self::dealloc(
+            alloc::alloc::dealloc(
                 self as *mut PageTable<A, L, E, N> as *mut u8,
-                Layout::from_size_align(L::TABLE_SIZE, L::TABLE_SIZE).unwrap(),
+                alloc::alloc::Layout::from_size_align(L::TABLE_SIZE, L::TABLE_SIZE).unwrap(),
             );
         }
     }

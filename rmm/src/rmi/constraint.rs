@@ -22,7 +22,7 @@ impl Constraint {
 
 fn pick(cmd: Command) -> Option<Constraint> {
     let constraint = match cmd {
-        rmi::VERSION => Constraint::new(rmi::VERSION, 1, 1),
+        rmi::VERSION => Constraint::new(rmi::VERSION, 2, 3),
         rmi::GRANULE_DELEGATE => Constraint::new(rmi::GRANULE_DELEGATE, 2, 1),
         rmi::GRANULE_UNDELEGATE => Constraint::new(rmi::GRANULE_UNDELEGATE, 2, 1),
         rmi::DATA_CREATE => Constraint::new(rmi::DATA_CREATE, 6, 1),

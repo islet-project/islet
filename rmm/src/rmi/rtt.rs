@@ -253,6 +253,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     // Map an unprotected IPA to a non-secure PA.
+
     listen!(mainloop, rmi::RTT_MAP_UNPROTECTED, |arg, _ret, _rmm| {
         let ipa = arg[1];
         let level = arg[2];
@@ -272,8 +273,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         crate::rtt::map_unprotected(rd, ipa, level, host_s2tte)?;
         Ok(())
     });
+    /*
+    listen!(mainloop, rmi::RTT_MAP_UNPROTECTED, |_arg, _ret, _rmm| {
+        Err(Error::RmiErrorInput)
+    }); */
 
     // Unmap a non-secure PA at an unprotected IPA
+    
     listen!(mainloop, rmi::RTT_UNMAP_UNPROTECTED, |arg, _ret, _rmm| {
         let ipa = arg[1];
 
@@ -288,6 +294,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         crate::rtt::unmap_unprotected(realm_id, ipa, level)?;
         Ok(())
     });
+    /*
+    listen!(mainloop, rmi::RTT_UNMAP_UNPROTECTED, |_arg, _ret, _rmm| {
+        Err(Error::RmiErrorInput)
+    }); */
 }
 
 fn realm_ipa_size(ipa_bits: usize) -> usize {

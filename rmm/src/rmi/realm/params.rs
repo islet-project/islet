@@ -5,6 +5,8 @@ use crate::measurement::Hashable;
 use crate::rmi::features;
 use crate::rmi::rtt::{RTT_PAGE_LEVEL, S2TTE_STRIDE};
 use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
+use crate::alloc::string::ToString;
+use core::str;
 
 const PADDING: [usize; 5] = [248, 767, 960, 6, 2020];
 
@@ -14,7 +16,7 @@ pub struct Params {
     padding0: [u8; PADDING[0]],
     pub hash_algo: u8,
     padding1: [u8; PADDING[1]],
-    pub rpv: [u8; 64],
+    pub rpv: [u8; 64],  // no_shared_region if rpv[0] = 0x1
     padding2: [u8; PADDING[2]],
     pub vmid: u16,
     padding3: [u8; PADDING[3]],
@@ -70,7 +72,7 @@ impl Hashable for Params {
             alg.hash(self.padding0);
             alg.hash_u8(self.hash_algo);
             alg.hash(self.padding1);
-            alg.hash([0u8; 64]); // rpv is not used
+            alg.hash(self.rpv);
             alg.hash(self.padding2);
             alg.hash_u16(0); // vmid is not used
             alg.hash(self.padding3);
@@ -111,6 +113,20 @@ impl HostAccessor for Params {
 impl Params {
     pub fn ipa_bits(&self) -> usize {
         features::ipa_bits(self.features_0 as usize)
+    }
+    
+    pub fn no_shared_region(&self) -> bool {
+        let no_shared_region_str = "no_shared_region".to_string();
+        let rpv_str = match str::from_utf8(&self.rpv) {
+            Ok(v) => v,
+            Err(_) => return false,
+        };
+
+        if rpv_str == no_shared_region_str {
+            true
+        } else {
+            false
+        }
     }
 }
 

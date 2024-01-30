@@ -13,16 +13,20 @@ pub struct Rd {
     rec_index: usize,
     s2_starting_level: isize,
     hash_algo: u8,
+    no_shared_region: bool,
 }
 
 impl Rd {
-    pub fn init(&mut self, id: usize, rtt_base: usize, ipa_bits: usize, s2_starting_level: isize) {
+    pub fn init(&mut self, id: usize, rtt_base: usize, ipa_bits: usize, s2_starting_level: isize, no_shared_region: bool) {
         self.realm_id = id;
         self.state = State::New;
         self.rtt_base = rtt_base;
         self.ipa_bits = ipa_bits;
         self.rec_index = 0;
         self.s2_starting_level = s2_starting_level;
+        self.no_shared_region = no_shared_region;
+
+        info!("[JB] rd_init, no_shared_region: {}", self.no_shared_region);
     }
 
     pub fn id(&self) -> usize {
@@ -55,6 +59,10 @@ impl Rd {
 
     pub fn s2_starting_level(&self) -> isize {
         self.s2_starting_level
+    }
+
+    pub fn no_shared_region(&self) -> bool {
+        self.no_shared_region
     }
 
     pub fn inc_rec_index(&mut self) {

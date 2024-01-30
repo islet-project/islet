@@ -72,7 +72,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 params.ipa_bits(),
                 params.rtt_level_start as isize,
                 params.no_shared_region(),
-                &expected_measurement,
             )
         })?;
 

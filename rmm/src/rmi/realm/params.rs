@@ -16,7 +16,7 @@ pub struct Params {
     padding0: [u8; PADDING[0]],
     pub hash_algo: u8,
     padding1: [u8; PADDING[1]],
-    pub rpv: [u8; 64], // no_shared_region if rpv[0] = 0x1
+    pub rpv: [u8; 64],  // no_shared_region if rpv[0] = 0x1
     padding2: [u8; PADDING[2]],
     pub vmid: u16,
     padding3: [u8; PADDING[3]],
@@ -131,14 +131,6 @@ impl Params {
         } else {
             false
         }
-    }
-
-    pub fn expected_measurement(&self, out: &mut [u8; 64]) {
-        // padding4[0..64) --> expected_measurement
-        for (dst, src) in out.as_mut().iter_mut().zip(self.padding4.as_ref()) {
-            *dst = *src;
-        }
-        info!("[JB] expected_measurement: {:x?}", out);
     }
 }
 

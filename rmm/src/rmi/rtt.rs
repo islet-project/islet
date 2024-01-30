@@ -279,7 +279,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     }); */
 
     // Unmap a non-secure PA at an unprotected IPA
-
     listen!(mainloop, rmi::RTT_UNMAP_UNPROTECTED, |arg, _ret, _rmm| {
         let ipa = arg[1];
 

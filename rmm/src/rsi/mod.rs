@@ -32,6 +32,7 @@ use safe_abstraction::raw_ptr::assume_safe;
 define_interface! {
     command {
         ABI_VERSION             = 0xc400_0190,
+        FEATURES                = 0xc400_0191,
         MEASUREMENT_READ        = 0xc400_0192,
         MEASUREMENT_EXTEND      = 0xc400_0193,
         ATTEST_TOKEN_INIT       = 0xc400_0194,
@@ -203,6 +204,23 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
             set_reg(rd, vcpuid, 1, token_part.len())?;
         }
+
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
+    });
+
+    listen!(rsi, FEATURES, |_arg, ret, _rmm, rec, _| {
+        let vcpuid = rec.vcpuid();
+        let realmid = rec.realmid()?;
+
+        let _index = get_reg(realmid, vcpuid, 1);
+
+        set_reg(realmid, vcpuid, 0, SUCCESS)?;
+
+        // B5.3.3 In the current version of the interface, this commands returns
+        // zero regardless of the index provided.
+
+        set_reg(realmid, vcpuid, 1, 0)?;
 
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())

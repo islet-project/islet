@@ -17,10 +17,6 @@
 	path = third-party/tf-a-tests
 	url = https://github.com/islet-project/assets
 	branch = 3rd-tf-a-tests
-[submodule "third-party/tf-a"]
-	path = third-party/tf-a
-	url = https://github.com/islet-project/assets
-	branch = 3rd-tf-a
 [submodule "third-party/tf-rmm"]
 	path = third-party/tf-rmm
 	url = https://github.com/islet-project/assets
@@ -49,10 +45,6 @@
 	path = third-party/mbedtls
 	url = https://github.com/islet-project/assets
 	branch = 3rd-mbedtls
-[submodule "third-party/tf-a-rss"]
-	path = third-party/tf-a-rss
-	url = https://github.com/islet-project/assets
-	branch = 3rd-tf-a-rss
 [submodule "third-party/kvmtool-rim-measurer"]
 	path = third-party/kvmtool-rim-measurer
 	url = https://github.com/islet-project/assets
@@ -63,3 +55,10 @@
 [submodule "third-party/cargo-geiger"]
 	path = third-party/cargo-geiger
 	url = https://github.com/bitboom/cargo-geiger
+[submodule "third-party/tf-a"]
+	path = third-party/tf-a
+	url = https://github.com/islet-project/arm-trusted-firmware
+[submodule "third-party/tf-a-rss"]
+	path = third-party/tf-a-rss
+	url = https://github.com/islet-project/arm-trusted-firmware
+	branch = rss

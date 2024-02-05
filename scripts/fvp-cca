@@ -156,6 +156,8 @@ def prepare_bootloaders(rmm, bl33, hes):
             "CROSS_COMPILE=%s" % CROSS_COMPILE,
             "PLAT=fvp",
             "ENABLE_RME=1",
+            "ENABLE_CONSOLE_GETC=1",
+            "CFLAGS=-DARM_COT_cca=1",
             "FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts",
             "DEBUG=0",
             "BL33=%s" % bl33,

@@ -134,6 +134,9 @@ jobs:
         cd rmm && cargo fmt -- --check && cd -
         cd plat/fvp && cargo fmt -- --check
 
+    - name: Check clippy lints
+      run: ./scripts/clippy.sh
+
     - uses: actions-rs/audit-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}

@@ -194,7 +194,6 @@ pub extern "C" fn handle_lower_exception(
                 let fipa = unsafe { HPFAR_EL2.get_masked(HPFAR_EL2::FIPA) } << 8;
                 debug!("fipa: {:X}", fipa);
                 debug!("esr_el2: {:X}", esr);
-                debug!("vcpu: {:?}", vcpu);
                 RET_TO_RMM
             }
             Syndrome::SysRegInst => {

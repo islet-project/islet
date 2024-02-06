@@ -47,6 +47,4 @@ impl<'a, E> DerefMut for EntryGuard<'a, E> {
     }
 }
 
-pub trait Content {
-    const FLAGS: u64;
-}
+pub trait Content {}

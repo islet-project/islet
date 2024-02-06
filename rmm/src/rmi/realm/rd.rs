@@ -1,4 +1,3 @@
-use crate::granule::GranuleState;
 use crate::rmi::rtt::realm_par_size;
 
 use vmsa::guard::Content;
@@ -75,9 +74,7 @@ impl Rd {
     }
 }
 
-impl Content for Rd {
-    const FLAGS: u64 = GranuleState::RD;
-}
+impl Content for Rd {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum State {

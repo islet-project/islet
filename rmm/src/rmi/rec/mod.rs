@@ -16,8 +16,6 @@ use core::cell::OnceCell;
 
 pub use self::handlers::set_event_handler;
 
-use crate::granule::GranuleState;
-
 use vmsa::guard::Content;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -178,9 +176,7 @@ impl Rec<'_> {
     }
 }
 
-impl Content for Rec<'_> {
-    const FLAGS: u64 = GranuleState::Rec;
-}
+impl Content for Rec<'_> {}
 
 fn enter() -> [usize; 4] {
     unsafe {

@@ -2,7 +2,7 @@ use core::mem::size_of;
 use vmsa::address::PhysAddr;
 
 use super::address::GuestPhysAddr;
-use crate::granule::{GranuleState, GRANULE_SIZE};
+use crate::granule::GRANULE_SIZE;
 use crate::realm::mm::page_table::pte::{attribute, shareable};
 use crate::realm::registry::get_realm;
 use crate::rmi::error::{Error, InternalError::NotExistRealm};
@@ -34,9 +34,7 @@ pub mod desc_type {
 #[derive(Copy, Clone)]
 pub struct RttPage([u64; GRANULE_SIZE / size_of::<u64>()]);
 
-impl Content for RttPage {
-    const FLAGS: u64 = GranuleState::RTT;
-}
+impl Content for RttPage {}
 
 impl RttPage {
     pub fn len(&self) -> usize {

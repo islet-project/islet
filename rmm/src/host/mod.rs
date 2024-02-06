@@ -2,7 +2,7 @@
 pub mod pointer;
 
 use crate::granule::validate_addr;
-use crate::granule::{GranuleState, GRANULE_SIZE};
+use crate::granule::GRANULE_SIZE;
 use crate::mm::translation::PageTable;
 
 use vmsa::guard::Content;
@@ -62,6 +62,4 @@ impl Default for DataPage {
 
 impl Accessor for DataPage {}
 
-impl Content for DataPage {
-    const FLAGS: u64 = GranuleState::Data;
-}
+impl Content for DataPage {}

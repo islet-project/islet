@@ -12,3 +12,6 @@ pub const RMM_HEAP_SIZE: usize = 16 * 1024 * 1024;
 
 pub const VM_STACK_SIZE: usize = 1 << 15;
 pub const STACK_ALIGN: usize = 16;
+
+// TODO: Acquire this address properly.
+pub const RMM_SHARED_BUFFER_START: usize = 0xFFBFF000;

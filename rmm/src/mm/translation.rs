@@ -1,6 +1,6 @@
 use super::page_table::entry::Entry;
 use super::page_table::{attr, L1Table};
-use crate::config::PAGE_SIZE;
+use crate::config::{PAGE_SIZE, RMM_SHARED_BUFFER_START};
 use crate::mm::page::BasePageSize;
 use crate::mm::page_table::entry::PTDesc;
 
@@ -95,6 +95,7 @@ impl<'a> Inner<'a> {
             let ro_size = rw_start - base_address;
             let rw_size = &__RW_END__ as *const u64 as u64 - rw_start;
             let uart_phys: u64 = 0x1c0c_0000;
+            let shared_start = RMM_SHARED_BUFFER_START;
             self.set_pages(
                 VirtAddr::from(base_address),
                 PhysAddr::from(base_address),
@@ -113,6 +114,12 @@ impl<'a> Inner<'a> {
                 PhysAddr::from(uart_phys),
                 1,
                 rw_flags | device_flags,
+            );
+            self.set_pages(
+                VirtAddr::from(shared_start),
+                PhysAddr::from(shared_start),
+                PAGE_SIZE,
+                rw_flags | rmm_flags,
             );
         }
         //TODO Set dirty only if pages are updated, not added

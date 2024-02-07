@@ -10,15 +10,12 @@ mod utils;
 use crate::asm;
 use crate::config;
 use alloc::vec::Vec;
+use config::RMM_SHARED_BUFFER_START;
 use spinning_top::Spinlock;
 
 // TODO: move those consts to a more appropriate place
 const SHA256_DIGEST_SIZE: usize = 32;
 const ATTEST_KEY_CURVE_ECC_SECP384R1: usize = 0;
-
-// TODO: Acquire this address properly.
-// This is PA address, but Islet seems to be mapped 1:1 so it also works as VA.
-const RMM_SHARED_BUFFER_START: usize = 0xFFBFF000;
 
 static RMM_SHARED_BUFFER_LOCK: Spinlock<usize> = Spinlock::new(RMM_SHARED_BUFFER_START);
 static REALM_ATTEST_KEY: Spinlock<Vec<u8>> = Spinlock::new(Vec::new());

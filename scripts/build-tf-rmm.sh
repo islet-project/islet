@@ -6,7 +6,7 @@ ROOT=$(git rev-parse --show-toplevel)
 
 cd $ROOT/third-party/tf-rmm
 export CROSS_COMPILE=$1
-cmake -DRMM_CONFIG=fvp_defcfg -S . -B build
+cmake -DRMM_CONFIG=fvp_defcfg -DLOG_LEVEL=40 -S . -B build
 cmake --build build
 
 cp build/Release/rmm.img $ROOT/out/tf-rmm.img

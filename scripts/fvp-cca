@@ -152,6 +152,9 @@ def prepare_bootloaders(rmm, bl33, hes):
     args = []
 
     if hes:
+        # Features removed below (ENABLE_*=0 lines) are just so the TF-A with
+        # PSA/RSS fits into BL31 space. They mights cause some issues and maybe
+        # some other need to be chosen. Basics seem to work fin though.
         args = [
             "CROSS_COMPILE=%s" % CROSS_COMPILE,
             "PLAT=fvp",
@@ -161,11 +164,20 @@ def prepare_bootloaders(rmm, bl33, hes):
             "FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts",
             "DEBUG=0",
             "BL33=%s" % bl33,
-            "PLAT_RSS_NOT_SUPPORTED=0",
             "PLAT_RSS_COMMS_USE_SERIAL=1",
             "MEASURED_BOOT=1",
             "MBEDTLS_DIR=%s" % MBEDTLS,
+            "ENABLE_FEAT_AMUv1p1=0",
             "ENABLE_MPAM_FOR_LOWER_ELS=0",
+            "ENABLE_FEAT_GCS=0",
+            "ENABLE_FEAT_RAS=0",
+            "ENABLE_TRBE_FOR_NS=0",
+            "ENABLE_SYS_REG_TRACE_FOR_NS=0",
+            "ENABLE_TRF_FOR_NS=0",
+            "ENABLE_FEAT_S2PIE=0",
+            "ENABLE_FEAT_S1PIE=0",
+            "ENABLE_FEAT_S2POE=0",
+            "ENABLE_FEAT_S1POE=0",
         ]
     else:
         args = [

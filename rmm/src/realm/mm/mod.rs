@@ -19,4 +19,7 @@ pub trait IPATranslation: Debug + Send + Sync {
     fn ipa_to_pte_set(&mut self, guest: GuestPhysAddr, level: usize, val: u64)
         -> Result<(), Error>;
     fn clean(&mut self);
+
+    // [JB] Cloak
+    fn walk(&mut self) -> usize;
 }

@@ -206,6 +206,38 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
             self.dirty = false;
         }
     }
+
+    fn walk(&mut self) -> usize {
+        // walk through protected address space
+        let start: GuestPhysAddr = GuestPhysAddr::from(0 as usize);
+        let end: GuestPhysAddr = GuestPhysAddr::from(((1 as usize) << 48) as usize);
+        let guest_start: Page<BasePageSize, GuestPhysAddr> =
+            Page::<BasePageSize, GuestPhysAddr>::including_address(start);
+        let guest_end: Page<BasePageSize, GuestPhysAddr> =
+            Page::<BasePageSize, GuestPhysAddr>::including_address(end);
+        let mut ns_count: usize = 0;
+
+        let mut func = |pte: u64, _ipa: usize, level: usize| {
+            // if VALID (bit-0) == '1' and NS (bit-55) == '0', ...
+            let raw_pte = RawPTE::new(pte);
+            let valid = raw_pte.get_masked_value(RawPTE::VALID);
+            let ns = raw_pte.get_masked_value(RawPTE::NS);
+            if level == BasePageSize::MAP_TABLE_LEVEL && valid != 0 {
+                //info!("[WALK] ipa: {:x}, ns: {:x}", ipa, ns);
+                if ns != 0 {
+                    ns_count += 1;
+                }
+            }
+        };
+        let _ = self.root_pgtlb.walk(
+            guest_start,
+            guest_end,
+            BasePageSize::MAP_TABLE_LEVEL,
+            &mut func,
+        );
+        info!("[WALK] after walk, ns_count: {}", ns_count);
+        ns_count
+    }
 }
 
 impl<'a> fmt::Debug for Stage2Translation<'a> {

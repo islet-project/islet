@@ -1,3 +1,4 @@
+use crate::alloc::string::ToString;
 use crate::const_assert_eq;
 use crate::granule::{GRANULE_SHIFT, GRANULE_SIZE};
 use crate::host::Accessor as HostAccessor;
@@ -5,8 +6,7 @@ use crate::measurement::Hashable;
 use crate::rmi::features;
 use crate::rmi::rtt::{RTT_PAGE_LEVEL, S2TTE_STRIDE};
 use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
-use crate::alloc::string::ToString;
-use core::str;
+use core::ffi::CStr;
 
 const PADDING: [usize; 5] = [248, 767, 960, 6, 2020];
 
@@ -16,7 +16,7 @@ pub struct Params {
     padding0: [u8; PADDING[0]],
     pub hash_algo: u8,
     padding1: [u8; PADDING[1]],
-    pub rpv: [u8; 64],  // no_shared_region if rpv[0] = 0x1
+    pub rpv: [u8; 64], // no_shared_region if rpv[0] = 0x1
     padding2: [u8; PADDING[2]],
     pub vmid: u16,
     padding3: [u8; PADDING[3]],
@@ -114,14 +114,16 @@ impl Params {
     pub fn ipa_bits(&self) -> usize {
         features::ipa_bits(self.features_0 as usize)
     }
-    
+
     pub fn no_shared_region(&self) -> bool {
         let no_shared_region_str = "no_shared_region".to_string();
-        let rpv_str = match str::from_utf8(&self.rpv) {
-            Ok(v) => v,
+        // [TODO] remove unwrap
+        let rpv_str = match CStr::from_bytes_until_nul(&self.rpv) {
+            Ok(v) => v.to_str().unwrap().to_string(),
             Err(_) => return false,
         };
 
+        info!("[JB] rpv_str: {}, str: {}", rpv_str, no_shared_region_str);
         if rpv_str == no_shared_region_str {
             true
         } else {

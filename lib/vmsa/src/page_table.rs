@@ -136,6 +136,14 @@ pub trait PageTableMethods<A: Address, L, E: Entry, const N: usize> {
     ) -> Result<(Option<EntryGuard<'_, E::Inner>>, usize), Error>;
     fn drop(&mut self);
     fn unset_page<S: PageSize>(&mut self, guest: Page<S, A>);
+
+    fn walk<S: PageSize, F: FnMut(u64, usize, usize)> (
+        &mut self,
+        guest_start: Page<S, A>,
+        guest_end: Page<S, A>,
+        level: usize,
+        func: &mut F,
+    ) -> Result<(), Error>;
 }
 
 impl<A: Address, L: Level, E: Entry, const N: usize> PageTable<A, L, E, N> {
@@ -265,6 +273,35 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
                 Ok(None)
             });
         }
+    }
+
+    default fn walk<S: PageSize, F: FnMut(u64, usize, usize)> (
+        &mut self,
+        guest_start: Page<S, A>,
+        guest_end: Page<S, A>,
+        level: usize,
+        func: &mut F
+    ) -> Result<(), Error> {
+        assert!(L::THIS_LEVEL == S::MAP_TABLE_LEVEL);
+        if level > S::MAP_TABLE_LEVEL {
+            return Err(Error::MmInvalidLevel);
+        }
+        if level != L::THIS_LEVEL {
+            return Err(Error::MmInvalidLevel);
+        }
+
+        let start_addr = guest_start.address().into();
+        let end_addr = guest_end.address().into();
+        let mut cur_addr = start_addr;
+
+        while cur_addr < end_addr {
+            let index = E::index::<L>(cur_addr);
+            let pte = self.entries[index].pte();
+            func(pte, cur_addr, L::THIS_LEVEL);
+            cur_addr += S::SIZE;
+        }
+
+        Ok(())
     }
 }
 
@@ -399,6 +436,54 @@ where
             });
         }
     }
+
+    fn walk<S: PageSize, F: FnMut(u64, usize, usize)> (
+        &mut self,
+        guest_start: Page<S, A>,
+        guest_end: Page<S, A>,
+        level: usize,
+        func: &mut F
+    ) -> Result<(), Error> {
+        assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
+        if level > S::MAP_TABLE_LEVEL {
+            return Err(Error::MmInvalidLevel);
+        }
+
+        let start_addr = guest_start.address().into();
+        let end_addr = guest_end.address().into();
+        let mut cur_addr = start_addr;
+        
+        let interval: usize = match L::THIS_LEVEL {
+            1 => 1 * 1024 * 1024 * 1024,  // 1gb
+            2 => 2 * 1024 * 1024, // 2mb
+            3 => 4 * 1024, // 4kb
+            _ => 4 * 1024, 
+        };
+
+        while cur_addr < end_addr {
+            let start_page = Page::<S, A>::including_address(A::from(cur_addr));
+            let end_page = Page::<S, A>::including_address(A::from(cur_addr + interval));
+
+            if L::THIS_LEVEL < level {
+                match self.subtable::<S>(start_page) {
+                    Ok(subtable) => {
+                        let _ = subtable.walk(start_page, end_page, level, func);
+                    }
+                    Err(_) => {},
+                }
+            }
+            else {
+                // LargePage or HugePage
+                let index = E::index::<L>(cur_addr);
+                let pte = self.entries[index].pte();
+                func(pte, cur_addr, L::THIS_LEVEL);
+            }
+
+            cur_addr += interval;
+        }
+
+        Ok(())
+    }
 }
 
 impl<A: Address, L: HasSubtable, E: Entry, const N: usize> PageTable<A, L, E, N>
@@ -413,6 +498,9 @@ where
         assert!(L::THIS_LEVEL < S::MAP_TABLE_LEVEL);
 
         let index = E::index::<L>(page.address().into());
+        if index >= self.entries.len() {
+            return Err(Error::MmSubtableError);
+        }
         match self.entries[index].subtable(index, L::THIS_LEVEL) {
             Ok(table_addr) => {
                 Ok(unsafe { &mut *(table_addr as *mut PageTable<A, L::NextLevel, E, N>) })

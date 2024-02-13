@@ -17,7 +17,14 @@ pub struct Rd {
 }
 
 impl Rd {
-    pub fn init(&mut self, id: usize, rtt_base: usize, ipa_bits: usize, s2_starting_level: isize, no_shared_region: bool) {
+    pub fn init(
+        &mut self,
+        id: usize,
+        rtt_base: usize,
+        ipa_bits: usize,
+        s2_starting_level: isize,
+        no_shared_region: bool,
+    ) {
         self.realm_id = id;
         self.state = State::New;
         self.rtt_base = rtt_base;

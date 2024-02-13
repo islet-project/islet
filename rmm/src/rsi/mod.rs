@@ -23,6 +23,9 @@ use crate::rmi::rtt::{is_protected_ipa, validate_ipa, RTT_PAGE_LEVEL};
 use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 use crate::Monitor;
 
+// [JB] for Cloak
+use crate::rmi::rec::handlers::walk_page_table;
+
 define_interface! {
     command {
         ABI_VERSION             = 0xc400_0190,
@@ -196,6 +199,9 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
+
+        // [JB] for cloak
+        let _ns_count = walk_page_table(realmid);
 
         crate::rsi::measurement::read(realmid, index, &mut measurement)?;
         set_reg(realmid, vcpuid, 0, SUCCESS)?;

@@ -39,6 +39,10 @@ impl<'a> HashContext<'a> {
         })
     }
 
+    // [JB][TODO]
+    // old_value is always 0, to only consider the current ns_count!
+    //pub fn replace_measurement(&self, buffer: &[u8], index: usize) -> Result<(), rsi::error::Error>;
+
     pub fn measure_data_granule(
         &self,
         data: &DataPage,

@@ -19,6 +19,9 @@ use crate::rmi::rec::RecState;
 use crate::rsi::do_host_call;
 use crate::{get_granule, get_granule_if};
 
+// [JB] For Cloak
+use crate::realm::registry::get_realm;
+
 extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
@@ -103,6 +106,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorRec);
         }
 
+        // [JB] page table walk test
+        let _w = walk_page_table(realm_id);
+
         match get_granule_if!(rec.owner()?, GranuleState::RD)?
             .content::<Rd>()
             .state() // Rd dropped
@@ -170,4 +176,18 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         copy_to_host_or_ret!(Run, &run, run_pa);
         Ok(())
     });
+}
+
+pub fn walk_page_table(id: usize) -> Result<usize, Error> {
+    info!("[WALK] before walk");
+
+    let ns_count = get_realm(id)
+        .ok_or(Error::RmiErrorRec)?
+        .lock()
+        .page_table
+        .lock()
+        .walk();
+
+    info!("[WALK] after walk");
+    Ok(ns_count)
 }

@@ -9,7 +9,7 @@ use crate::define_interface;
 use crate::event::RsiHandle;
 use crate::granule::{is_granule_aligned, GranuleState};
 use crate::listen;
-use crate::measurement::{HashContext, Measurement, MEASUREMENTS_SLOT_NR, MEASUREMENTS_SLOT_RIM};
+use crate::measurement::{HashContext, Measurement, MEASUREMENTS_SLOT_NR, MEASUREMENTS_SLOT_RIM, MEASUREMENTS_SLOT_NS_COUNT};
 use crate::realm::config::realm_config;
 use crate::realm::context::{get_reg, set_reg};
 use crate::realm::mm::address::GuestPhysAddr;
@@ -151,6 +151,25 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             .ipa_to_pa(GuestPhysAddr::from(attest_ipa), RTT_PAGE_LEVEL)
             .ok_or(Error::RmiErrorInput)?;
 
+        // [JB] for cloak
+        let mut rpv: [u8; 64] = [0; 64];
+        match walk_page_table(realmid) {
+            Ok(ns_count) => {
+                let rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+                let rd = rd.content::<Rd>();
+                let _ = HashContext::new(&rd)?.write_measurement(ns_count.to_ne_bytes().as_ref(), MEASUREMENTS_SLOT_NS_COUNT);
+                let no_shared_region: usize = match rd.no_shared_region() {
+                    true => 1,
+                    false => 0,
+                };
+                for (dst, src) in rpv.as_mut().iter_mut().zip(no_shared_region.to_ne_bytes().as_ref()) {
+                    *dst = *src;
+                }
+                info!("[WALK] ATTEST_TOKEN_CONTINUE: ns_count: {}", ns_count);
+            },
+            Err(_) => {},
+        }
+
         let measurements = crate::realm::registry::get_realm(realmid)
             .ok_or(Error::RmiErrorOthers(NotExistRealm))?
             .lock()
@@ -160,6 +179,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             pa.into(),
             rec.attest_challenge(),
             &measurements,
+            &rpv,
             hash_algo,
         );
 
@@ -199,9 +219,6 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
-
-        // [JB] for cloak
-        let _ns_count = walk_page_table(realmid);
 
         crate::rsi::measurement::read(realmid, index, &mut measurement)?;
         set_reg(realmid, vcpuid, 0, SUCCESS)?;

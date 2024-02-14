@@ -41,7 +41,13 @@ impl<'a> HashContext<'a> {
 
     // [JB][TODO]
     // old_value is always 0, to only consider the current ns_count!
-    //pub fn replace_measurement(&self, buffer: &[u8], index: usize) -> Result<(), rsi::error::Error>;
+    pub fn write_measurement(&self, buffer: &[u8], index: usize) -> Result<(), rsi::error::Error> {
+        let mut measurement = Measurement::empty();
+        for (dst, src) in measurement.as_mut().iter_mut().zip(buffer) {
+            *dst = *src;
+        }
+        crate::rsi::measurement::write(self.rd.id(), index, &measurement)
+    }
 
     pub fn measure_data_granule(
         &self,

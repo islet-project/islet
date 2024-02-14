@@ -14,6 +14,7 @@ use crate::{
 use self::claims::RealmClaims;
 use crate::rmm_el3::{plat_token, realm_attest_key};
 
+#[allow(dead_code)]
 const DUMMY_PERSONALIZATION_VALUE: [u8; 64] = [0; 64];
 
 const CCA_TOKEN_COLLECTION: u64 = 399;
@@ -53,11 +54,12 @@ impl Attestation {
         &self,
         challenge: &[u8],
         measurements: &[Measurement],
+        rpv: &[u8; 64],
         hash_algo: u8,
     ) -> Vec<u8> {
         let mut cca_token = Vec::new();
 
-        let realm_token = self.create_realm_token(challenge, measurements, hash_algo);
+        let realm_token = self.create_realm_token(challenge, measurements, rpv, hash_algo);
 
         let realm_token_entry = (
             Value::Integer(CCA_REALM_DELEGATED_TOKEN.into()),
@@ -86,6 +88,7 @@ impl Attestation {
         &self,
         challenge: &[u8],
         measurements: &[Measurement],
+        rpv: &[u8; 64],
         hash_algo: u8,
     ) -> Vec<u8> {
         let hash_algo_id = match hash_algo {
@@ -101,7 +104,7 @@ impl Attestation {
 
         let claims = RealmClaims::init(
             challenge,
-            &DUMMY_PERSONALIZATION_VALUE,
+            rpv,
             measurements,
             hash_algo_id,
             &public_key,
@@ -153,6 +156,7 @@ pub fn get_token(
     attest_pa: usize,
     challenge: &[u8],
     measurements: &[Measurement],
+    rpv: &[u8; 64],
     hash_algo: u8,
 ) -> usize {
     // TODO: consider storing attestation object somewhere,
@@ -160,6 +164,7 @@ pub fn get_token(
     let token = Attestation::new(&plat_token(), &realm_attest_key()).create_attestation_token(
         challenge,
         measurements,
+        rpv,
         hash_algo,
     );
 

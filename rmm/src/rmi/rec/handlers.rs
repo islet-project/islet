@@ -107,7 +107,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         // [JB] page table walk test
-        let _w = walk_page_table(realm_id);
+        //let _w = walk_page_table(realm_id);
 
         match get_granule_if!(rec.owner()?, GranuleState::RD)?
             .content::<Rd>()
@@ -188,6 +188,6 @@ pub fn walk_page_table(id: usize) -> Result<usize, Error> {
         .lock()
         .walk();
 
-    info!("[WALK] after walk");
+    info!("[WALK] after walk, ns_count: {}", ns_count);
     Ok(ns_count)
 }

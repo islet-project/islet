@@ -18,6 +18,7 @@ fi
 	--console serial \
 	--irqchip=gicv3 \
 	--realm-pv="no_shared_region" \
+	--expected-measurement="01aa0f3def" \
 	-m 256M \
 	-c 1 \
 	-k linux.realm \

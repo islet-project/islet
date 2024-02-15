@@ -14,6 +14,7 @@ pub struct Rd {
     s2_starting_level: isize,
     hash_algo: u8,
     no_shared_region: bool,
+    expected_measurement: [u8; 64],
 }
 
 impl Rd {
@@ -24,6 +25,7 @@ impl Rd {
         ipa_bits: usize,
         s2_starting_level: isize,
         no_shared_region: bool,
+        expected_measurement: &[u8; 64],
     ) {
         self.realm_id = id;
         self.state = State::New;
@@ -32,6 +34,7 @@ impl Rd {
         self.rec_index = 0;
         self.s2_starting_level = s2_starting_level;
         self.no_shared_region = no_shared_region;
+        self.expected_measurement.copy_from_slice(expected_measurement);
 
         info!("[JB] rd_init, no_shared_region: {}", self.no_shared_region);
     }

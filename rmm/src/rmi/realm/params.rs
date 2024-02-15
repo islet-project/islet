@@ -23,7 +23,7 @@ pub struct Params {
     pub rtt_base: u64,
     pub rtt_level_start: i64,
     pub rtt_num_start: u32,
-    padding4: [u8; PADDING[4]],
+    padding4: [u8; PADDING[4]],  // expected_measurement for mutual attestation, padding4[0..31] (32-bytes)
 }
 
 const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
@@ -67,6 +67,8 @@ impl Hashable for Params {
         hasher: &crate::measurement::Hasher,
         out: &mut [u8],
     ) -> Result<(), crate::measurement::MeasurementError> {
+        let zero_padding4: [u8; PADDING[4]] = [0; PADDING[4]];
+
         hasher.hash_fields_into(out, |alg| {
             alg.hash_u64(0); // features aren't used
             alg.hash(self.padding0);
@@ -79,7 +81,7 @@ impl Hashable for Params {
             alg.hash_u64(0); // rtt_base is not used
             alg.hash_u64(0); // rtt_level_start is not used
             alg.hash_u32(0); // rtt_num_start is not used
-            alg.hash(self.padding4);
+            alg.hash(zero_padding4);  // do not hash it as expected_measurement is in it.
         })
     }
 }
@@ -129,6 +131,14 @@ impl Params {
         } else {
             false
         }
+    }
+
+    pub fn expected_measurement(&self, out: &mut [u8; 64]) {
+        // padding4[0..64) --> expected_measurement
+        for (dst, src) in out.as_mut().iter_mut().zip(self.padding4.as_ref()) {
+            *dst = *src;
+        }
+        info!("[JB] expected_measurement: {:x?}", out);
     }
 }
 

@@ -60,7 +60,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if params.rtt_base as usize % GRANULE_SIZE != 0 {
             return Err(Error::RmiErrorInput);
         }
-        let _ = get_granule_if!(params.rtt_base as usize, GranuleState::Delegated)?;
+        let rtt_granule = get_granule_if!(params.rtt_base as usize, GranuleState::Delegated)?;
+        // This is required to prevent from the deadlock in the below epilog
+        // which acquires the same lock again
+        core::mem::drop(rtt_granule);
 
         // revisit rmi.create_realm() (is it necessary?)
         create_realm(params.vmid, params.rtt_base as usize).map(|id| {

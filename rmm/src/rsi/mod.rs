@@ -9,7 +9,7 @@ use crate::define_interface;
 use crate::event::RsiHandle;
 use crate::granule::{is_granule_aligned, GranuleState};
 use crate::listen;
-use crate::measurement::{HashContext, Measurement, MEASUREMENTS_SLOT_NR, MEASUREMENTS_SLOT_RIM, MEASUREMENTS_SLOT_NS_COUNT};
+use crate::measurement::{HashContext, Measurement, MEASUREMENTS_SLOT_NR, MEASUREMENTS_SLOT_RIM};
 use crate::realm::config::realm_config;
 use crate::realm::context::{get_reg, set_reg};
 use crate::realm::mm::address::GuestPhysAddr;
@@ -25,6 +25,7 @@ use crate::Monitor;
 
 // [JB] for Cloak
 use crate::rmi::rec::handlers::walk_page_table;
+use crate::realm::registry::get_realm;
 
 define_interface! {
     command {
@@ -37,6 +38,8 @@ define_interface! {
         IPA_STATE_SET           = 0xc400_0197,
         IPA_STATE_GET           = 0xc400_0198,
         HOST_CALL               = 0xc400_0199,
+        CHANNEL_CREATE          = 0xc400_0200, // for Cloak
+        CHANNEL_CONNECT         = 0xc400_0201, // for Cloak
     }
 }
 
@@ -48,6 +51,53 @@ pub const INCOMPLETE: usize = 3;
 pub const VERSION: usize = (1 << 16) | 0;
 
 extern crate alloc;
+
+use spin::mutex::Mutex;
+use alloc::collections::btree_map::BTreeMap;
+
+const CHANNEL_STATE_CREATED: usize = 0;
+const CHANNEL_STATE_CONNECTED: usize = 1;
+const CHANNEL_STATE_ESTABLISHED: usize = 2;
+
+// LocalChannel for Cloak
+#[allow(dead_code)]
+#[derive(Copy, Clone)]
+struct LocalChannel {
+    id: usize,
+    creator_registered: bool,
+    connector_registered: bool,
+    creator_realmid: usize,
+    connector_realmid: usize,
+    creator_ipa: usize,
+    connector_ipa: usize,
+    expected_creator_measurement: [u8; 64],
+    expected_connector_measurement: [u8; 64],
+    runtime_creator_measurement: [u8; 64],
+    runtime_connector_measurement: [u8; 64],
+    state: usize,
+}
+
+impl LocalChannel {
+    const fn create(id: usize, realmid: usize, ipa: usize, expected_measurement: &[u8; 64]) -> Self {
+        let channel = LocalChannel {
+            id: id,
+            creator_registered: true,
+            connector_registered: false,
+            creator_realmid: realmid,
+            connector_realmid: 0,
+            creator_ipa: ipa,
+            connector_ipa: 0,
+            expected_creator_measurement: [0; 64],
+            expected_connector_measurement: *expected_measurement,
+            runtime_creator_measurement: [0; 64],
+            runtime_connector_measurement: [0; 64],
+            state: CHANNEL_STATE_CREATED,
+        };
+        channel
+    }
+}
+
+static LOCAL_CHANNEL_TABLE: Mutex<BTreeMap<usize, LocalChannel>> = Mutex::new(BTreeMap::new());
 
 pub fn do_host_call(
     _arg: &[usize],
@@ -151,29 +201,32 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             .ipa_to_pa(GuestPhysAddr::from(attest_ipa), RTT_PAGE_LEVEL)
             .ok_or(Error::RmiErrorInput)?;
 
+        let mut measurements = crate::realm::registry::get_realm(realmid)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .measurements;
+
         // [JB] for cloak
         let mut rpv: [u8; 64] = [0; 64];
         match walk_page_table(realmid) {
             Ok(ns_count) => {
                 let rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
                 let rd = rd.content::<Rd>();
-                let _ = HashContext::new(&rd)?.write_measurement(ns_count.to_ne_bytes().as_ref(), MEASUREMENTS_SLOT_NS_COUNT);
                 let no_shared_region: usize = match rd.no_shared_region() {
                     true => 1,
                     false => 0,
                 };
+                let mut measurement: [u8; 64] = [0; 64];
+                let _ = HashContext::new(&rd)?.read_measurement_with_input(no_shared_region, ns_count, &mut measurement, MEASUREMENTS_SLOT_RIM);
+                measurements[MEASUREMENTS_SLOT_RIM].as_mut().copy_from_slice(&measurement);
+
                 for (dst, src) in rpv.as_mut().iter_mut().zip(no_shared_region.to_ne_bytes().as_ref()) {
                     *dst = *src;
                 }
-                info!("[WALK] ATTEST_TOKEN_CONTINUE: ns_count: {}", ns_count);
+                info!("[WALK] ATTEST_TOKEN_CONTINUE: no_shared_region: {}, ns_count: {}, measure: {:x?}", no_shared_region, ns_count, measurement);
             },
             Err(_) => {},
         }
-
-        let measurements = crate::realm::registry::get_realm(realmid)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .measurements;
 
         let attest_size = crate::rsi::attestation::get_token(
             pa.into(),
@@ -220,7 +273,24 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             return Ok(());
         }
 
-        crate::rsi::measurement::read(realmid, index, &mut measurement)?;
+        if index == MEASUREMENTS_SLOT_RIM {
+            match walk_page_table(realmid) {
+                Ok(ns_count) => {
+                    let rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+                    let rd = rd.content::<Rd>();
+                    let no_shared_region: usize = match rd.no_shared_region() {
+                        true => 1,
+                        false => 0,
+                    };
+                    let _ = HashContext::new(&rd)?.read_measurement_with_input(no_shared_region, ns_count, measurement.as_mut(), MEASUREMENTS_SLOT_RIM);
+                    info!("[WALK] MEASUREMENT_READ: no_shared_region: {}, ns_count: {}, measure: {:x?}", no_shared_region, ns_count, measurement);
+                },
+                Err(_) => {},
+            }
+        } else {
+            crate::rsi::measurement::read(realmid, index, &mut measurement)?;
+        }
+
         set_reg(realmid, vcpuid, 0, SUCCESS)?;
         for (ind, chunk) in measurement
             .as_slice()
@@ -378,11 +448,141 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         super::rmi::dummy();
         Ok(())
     });
+
+    listen!(rsi, CHANNEL_CREATE, |_arg, ret, _rmm, rec, _run| {
+        let rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd.content::<Rd>();
+        let realmid = rd.id();
+        let vcpuid = rec.vcpuid();
+        let channel_id = get_reg(realmid, vcpuid, 1)?;
+        let ipa = get_reg(realmid, vcpuid, 2)?;
+
+        let mut channel = LocalChannel::create(channel_id, realmid, ipa, rd.expected_measurement());
+        match walk_page_table(realmid) {
+            Ok(ns_count) => {
+                let no_shared_region: usize = match rd.no_shared_region() {
+                    true => 1,
+                    false => 0,
+                };
+                let mut measurement: [u8; 64] = [0; 64];
+                let _ = HashContext::new(&rd)?.read_measurement_with_input(no_shared_region, ns_count, &mut measurement, MEASUREMENTS_SLOT_RIM);
+                channel.runtime_creator_measurement.as_mut().copy_from_slice(&measurement);
+
+                info!("[WALK] CHANNEL_CREATE: no_shared_region: {}, ns_count: {}, measure: {:x?}", no_shared_region, ns_count, measurement);
+            },
+            Err(_) => {},
+        }
+        LOCAL_CHANNEL_TABLE.lock().insert(channel_id, channel);
+
+        info!("[JB] CHANNEL_CREATE success! realmid: {}, ipa: {:x}", realmid, ipa);
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
+    });
+
+    listen!(rsi, CHANNEL_CONNECT, |_arg, ret, _rmm, rec, _run| {
+        let rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd.content::<Rd>();
+        let realmid = rd.id();
+        let vcpuid = rec.vcpuid();
+        let channel_id = get_reg(realmid, vcpuid, 1)?;
+        let ipa = get_reg(realmid, vcpuid, 2)?;
+
+        match LOCAL_CHANNEL_TABLE.lock().get_mut(&channel_id) {
+            Some(channel) => {
+                // 0. validation check
+                // assert!(channel.connector_realmid != channel.creator_realmid)
+
+                // 1. set a channel
+                channel.connector_realmid = realmid;
+                channel.connector_ipa = ipa;
+                channel.creator_registered = true;
+                channel.expected_creator_measurement.copy_from_slice(rd.expected_measurement());
+                channel.state = CHANNEL_STATE_CONNECTED;
+
+                match walk_page_table(realmid) {
+                    Ok(ns_count) => {
+                        let no_shared_region: usize = match rd.no_shared_region() {
+                            true => 1,
+                            false => 0,
+                        };
+                        let mut measurement: [u8; 64] = [0; 64];
+                        let _ = HashContext::new(&rd)?.read_measurement_with_input(no_shared_region, ns_count, &mut measurement, MEASUREMENTS_SLOT_RIM);
+                        channel.runtime_connector_measurement.as_mut().copy_from_slice(&measurement);
+                    },
+                    Err(_) => {},
+                }
+
+                // 2. do mutual attestation
+                info!("[JB] do mutual attestation here!");
+                info!("[JB] expected_creator_measurement: {:x?}", channel.expected_creator_measurement);
+                info!("[JB] runtime_creator_measurement: {:x?}", channel.runtime_creator_measurement);
+                info!("[JB] expected_connector_measurement: {:x?}", channel.expected_connector_measurement);
+                info!("[JB] runtime_connector_measurement: {:x?}", channel.runtime_connector_measurement);
+
+                if channel.expected_creator_measurement == channel.runtime_creator_measurement &&
+                    channel.expected_connector_measurement == channel.runtime_connector_measurement {
+                    info!("[JB] mutual attestation success!");
+                } else {
+                    info!("[JB] mutual attestation fail!");
+                }
+            
+                // 3. create a shared memory mapping into connector_ipa and creator_ipa
+                match create_shared_mapping(&channel) {
+                    Ok(_) => info!("[JB] create_shared_mapping success"),
+                    Err(_) => info!("[JB] create_shared_mapping fail"),
+                }
+                channel.state = CHANNEL_STATE_ESTABLISHED;
+
+                info!("[JB] CHANNEL_CONNECT success! realmid: {}, ipa: {:x}", realmid, ipa);
+            },
+            None => {},
+        }
+        
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
+    });
+
 }
 
 fn is_ripas_valid(ripas: u8) -> bool {
     match ripas as u64 {
         invalid_ripas::EMPTY | invalid_ripas::RAM => true,
         _ => false,
+    }
+}
+
+fn create_shared_mapping(channel: &LocalChannel) -> Result<(), Error> {
+    // test:
+    //   3-1: get pte of connector_ipa (pa)
+    //   3-2: copy pte to creator's RTT
+    //   3-3: two new syscalls for test (write_to_channel, read_from_channel)
+    let res = get_realm(channel.connector_realmid)
+        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+        .lock()
+        .page_table
+        .lock()
+        .ipa_to_pte(GuestPhysAddr::from(channel.connector_ipa), RTT_PAGE_LEVEL);
+
+    let connector_pte = if let Some(p) = res {
+        p.0
+    } else {
+        info!("[JB] connector ipa_to_pte error");
+        return Err(Error::RmiErrorInput);
+    };
+    info!("[JB] connector pte: {}", connector_pte);
+
+    let res = get_realm(channel.creator_realmid)
+        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+        .lock()
+        .page_table
+        .lock()
+        .ipa_to_pte_set(GuestPhysAddr::from(channel.creator_ipa), RTT_PAGE_LEVEL, connector_pte);
+
+    match res {
+        Ok(_) => {
+            info!("[JB] creator ipa_to_pte_set success");
+            Ok(())
+        },
+        Err(e) => Err(e),
     }
 }

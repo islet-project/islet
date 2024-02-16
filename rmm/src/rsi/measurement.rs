@@ -43,7 +43,7 @@ pub fn write(
 pub fn extend(
     realmid: usize,
     index: usize,
-    f: impl Fn(&mut crate::measurement::Measurement) -> Result<(), MeasurementError>,
+    mut f: impl FnMut(&mut crate::measurement::Measurement) -> Result<(), MeasurementError>,
 ) -> Result<(), crate::rsi::error::Error> {
     let realm_lock = get_realm(realmid).ok_or(Error::RealmDoesNotExists)?;
 

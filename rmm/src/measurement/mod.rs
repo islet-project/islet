@@ -10,7 +10,6 @@ pub use hash::Hasher;
 pub const MEASUREMENTS_SLOT_MAX_SIZE: usize = 512 / 8;
 pub const MEASUREMENTS_SLOT_NR: usize = 5;
 pub const MEASUREMENTS_SLOT_RIM: usize = 0;
-pub const MEASUREMENTS_SLOT_NS_COUNT: usize = 1;
 
 pub const RMI_MEASURE_CONTENT: usize = 1;
 

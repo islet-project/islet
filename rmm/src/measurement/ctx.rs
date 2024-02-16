@@ -39,14 +39,21 @@ impl<'a> HashContext<'a> {
         })
     }
 
-    // [JB][TODO]
-    // old_value is always 0, to only consider the current ns_count!
-    pub fn write_measurement(&self, buffer: &[u8], index: usize) -> Result<(), rsi::error::Error> {
-        let mut measurement = Measurement::empty();
-        for (dst, src) in measurement.as_mut().iter_mut().zip(buffer) {
-            *dst = *src;
-        }
-        crate::rsi::measurement::write(self.rd.id(), index, &measurement)
+    // For Cloak
+    pub fn read_measurement_with_input(&self, in_data1: usize, in_data2: usize, out_buffer: &mut [u8], index: usize) -> Result<(), rsi::error::Error> {
+        crate::rsi::measurement::extend(self.rd.id(), index, |current| {
+            let old_value = current.clone();
+            let mut measurement = Measurement::empty();
+
+            self.hasher.hash_fields_into(&mut measurement, |h| {
+                h.hash(&old_value.as_ref()[0..self.hasher.output_size()]);
+                h.hash_usize(in_data1);
+                h.hash_usize(in_data2);
+            })?;
+
+            out_buffer.copy_from_slice(&measurement.as_mut_slice());
+            Ok(())
+        })
     }
 
     pub fn measure_data_granule(

@@ -91,6 +91,10 @@ impl Rd {
     pub fn set_hash_algo(&mut self, alg: u8) {
         self.hash_algo = alg;
     }
+
+    pub fn expected_measurement(&self) -> &[u8; 64] {
+        &self.expected_measurement
+    }
 }
 
 impl Content for Rd {

@@ -19,8 +19,8 @@
 	branch = 3rd-tf-a-tests
 [submodule "third-party/tf-rmm"]
 	path = third-party/tf-rmm
-	url = https://github.com/islet-project/assets
-	branch = eac5/3rd-tf-rmm
+	url = https://git.trustedfirmware.org/TF-RMM/tf-rmm.git
+	branch = rmm-spec-v1.0-eac5
 [submodule "third-party/android-kernel"]
 	path = third-party/android-kernel
 	url = https://github.com/islet-project/assets
@@ -35,16 +35,16 @@
 	branch = eac5/3rd-kvmtool
 [submodule "third-party/kvm-unit-tests"]
 	path = third-party/kvm-unit-tests
-	url = https://github.com/islet-project/assets
-	branch = eac5/3rd-kvm-unit-tests
+	url = https://git.gitlab.arm.com/linux-arm/kvm-unit-tests-cca.git
+	branch = cca/rmm-v1.0-eac5
 [submodule "third-party/cca-rmm-acs"]
 	path = third-party/cca-rmm-acs
 	url = https://github.com/islet-project/assets
 	branch = 3rd-cca-rmm-acs
 [submodule "third-party/mbedtls"]
 	path = third-party/mbedtls
-	url = https://github.com/islet-project/assets
-	branch = eac5/3rd-mbedtls
+	url = https://github.com/Mbed-TLS/mbedtls.git
+	branch = v3.4.1
 [submodule "third-party/kvmtool-rim-measurer"]
 	path = third-party/kvmtool-rim-measurer
 	url = https://github.com/islet-project/assets

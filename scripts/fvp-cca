@@ -392,7 +392,7 @@ def run_fvp_linux(debug, trace, no_telnet):
                 "-C", "TRACE.TarmacTrace.trace-file=%s/trace.log" % OUT]
     run(args, cwd=FVP_DIR)
 
-def run_fvp_linux_net(debug, host_ip, fvp_ip, fvp_tap_ip, realm_ip, route_ip, gateway, ifname):
+def run_fvp_linux_net(debug, host_ip, fvp_ip, fvp_tap_ip, realm_ip, route_ip, gateway, ifname, no_telnet):
     user_name = os.environ['USER']
     prepare_tap_network(host_ip, fvp_ip, route_ip, gateway, ifname)
     print("[!] Running fvp for linux with the tap network..", )
@@ -405,6 +405,11 @@ def run_fvp_linux_net(debug, host_ip, fvp_ip, fvp_tap_ip, realm_ip, route_ip, ga
             "-C", "bp.virtio_net.enabled=1",
             "-f", FVP_CONFIG,
             "-Q", "1000"]
+    if no_telnet:
+        args += ["-C", "bp.terminal_0.start_telnet=0",
+                "-C", "bp.terminal_1.start_telnet=0",
+                "-C", "bp.terminal_2.start_telnet=0",
+                "-C", "bp.terminal_3.start_telnet=0"]
     if debug:
         args += ["--cadi-server"]
     run(args, cwd=FVP_DIR)
@@ -449,6 +454,8 @@ def place_prebuilt_at_shared():
 
 def place_script_at_shared():
     run(["cp", LAUNCH_REALM, SHARED_PATH], cwd=ROOT)
+    run(["cp", os.path.join(SCRIPT, "fvp/launch-realm-cloak-app.sh"), SHARED_PATH], cwd=ROOT)
+    run(["cp", os.path.join(SCRIPT, "fvp/launch-realm-cloak-gateway.sh"), SHARED_PATH], cwd=ROOT)
     run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
     run(["cp", CONFIGURE_NET, SHARED_PATH], cwd=ROOT)
     run(["cp", SET_REALM_IP, SHARED_PATH], cwd=ROOT)
@@ -645,7 +652,7 @@ if __name__ == "__main__":
         run_fvp_linux(args.debug, args.trace, args.no_telnet)
 
     if not args.build_only and args.normal_world == "linux-net":
-        run_fvp_linux_net(args.debug, args.host_ip, args.fvp_ip, args.fvp_tap_ip, args.realm_ip, args.route_ip, args.gateway, args.ifname)
+        run_fvp_linux_net(args.debug, args.host_ip, args.fvp_ip, args.fvp_tap_ip, args.realm_ip, args.route_ip, args.gateway, args.ifname, args.no_telnet)
 
     if not args.build_only and args.normal_world == "aosp":
         run_fvp_aosp(args.debug)

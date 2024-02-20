@@ -17,7 +17,8 @@ fi
 	--disable-sve \
 	--console serial \
 	--irqchip=gicv3 \
-	--realm-pv="no_shared_region" \
+	--network virtio \
+	--9p /shared,FMR \
 	-m 256M \
 	-c 1 \
 	-k linux.realm \

@@ -144,7 +144,7 @@ static int device_release(struct inode *i, struct file *f)
 	return 0;
 }
 
-static int do_version(uint32_t *version)
+static int do_version(uint64_t *version)
 {
 	struct arm_smccc_1_2_regs input = {0}, output = {0};
 
@@ -159,6 +159,7 @@ static int do_version(uint32_t *version)
 		return -rsi_ret_to_errno(output.a0);
 
 	*version = output.a1;
+	//*higher = output.a2;
 
 	return 0;
 }
@@ -309,7 +310,7 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0, retry = 0;
 
-	uint32_t version = 0;
+	uint64_t version = 0;
 	struct rsi_measurement *measur = NULL;
 	struct rsi_attestation *attest = NULL;
 
@@ -321,7 +322,7 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 		if (ret != 0) {
 			printk(RSI_ALERT "ioctl: version failed: %d\n", ret);
 		}
-		ret = copy_to_user((uint32_t*)arg, &version, sizeof(uint32_t));
+		ret = copy_to_user((uint64_t*)arg, &version, sizeof(uint64_t));
 		if (ret != 0) {
 			printk(RSI_ALERT "ioctl: copy_to_user failed: %d\n", ret);
 			return ret;

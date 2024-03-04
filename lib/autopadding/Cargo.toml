@@ -1,0 +1,9 @@
+[package]
+name = "autopadding"
+version = "0.1.0"
+
+[dependencies]
+paste = "1.0.14"
+
+[features]
+checked = []

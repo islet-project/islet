@@ -5,24 +5,22 @@ use crate::measurement::Hashable;
 use crate::rmi::features;
 use crate::rmi::rtt::{RTT_PAGE_LEVEL, S2TTE_STRIDE};
 use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
+use autopadding::{pad_struct, pad_field};
 
 const PADDING: [usize; 5] = [248, 767, 960, 6, 2020];
 
-#[repr(C)]
+pad_struct!(
 pub struct Params {
-    pub features_0: u64,
-    padding0: [u8; PADDING[0]],
-    pub hash_algo: u8,
-    padding1: [u8; PADDING[1]],
-    pub rpv: [u8; 64],
-    padding2: [u8; PADDING[2]],
-    pub vmid: u16,
-    padding3: [u8; PADDING[3]],
-    pub rtt_base: u64,
-    pub rtt_level_start: i64,
-    pub rtt_num_start: u32,
-    padding4: [u8; PADDING[4]],
+    0x0    pub features_0: u64,
+    0x100  pub hash_algo: u8,
+    0x400  pub rpv: [u8; 64],
+    0x800  pub vmid: u16,
+    0x808  pub rtt_base: u64,
+    0x810  pub rtt_level_start: i64,
+    0x818  pub rtt_num_start: u32,
+    0x1000 => @END,
 }
+);
 
 const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
 
@@ -30,17 +28,19 @@ impl Default for Params {
     fn default() -> Self {
         Self {
             features_0: 0,
-            padding0: [0; PADDING[0]],
+            _padfeatures_0: [0; PADDING[0]],
             hash_algo: 0,
-            padding1: [0; PADDING[1]],
+            _padhash_algo: [0; PADDING[1]],
             rpv: [0; 64],
-            padding2: [0; PADDING[2]],
+            _padrpv: [0; PADDING[2]],
             vmid: 0,
-            padding3: [0; PADDING[3]],
+            _padvmid: [0; PADDING[3]],
             rtt_base: 0,
+            _padrtt_base: [0; 0],
             rtt_level_start: 0,
+            _padrtt_level_start: [0; 0],
             rtt_num_start: 0,
-            padding4: [0; PADDING[4]],
+            _padrtt_num_start: [0; PADDING[4]],
         }
     }
 }
@@ -67,17 +67,17 @@ impl Hashable for Params {
     ) -> Result<(), crate::measurement::MeasurementError> {
         hasher.hash_fields_into(out, |alg| {
             alg.hash_u64(0); // features aren't used
-            alg.hash(self.padding0);
+            alg.hash(self._padfeatures_0);
             alg.hash_u8(self.hash_algo);
-            alg.hash(self.padding1);
+            alg.hash(self._padhash_algo);
             alg.hash([0u8; 64]); // rpv is not used
-            alg.hash(self.padding2);
+            alg.hash(self._padrpv);
             alg.hash_u16(0); // vmid is not used
-            alg.hash(self.padding3);
+            alg.hash(self._padvmid);
             alg.hash_u64(0); // rtt_base is not used
             alg.hash_u64(0); // rtt_level_start is not used
             alg.hash_u32(0); // rtt_num_start is not used
-            alg.hash(self.padding4);
+            alg.hash(self._padrtt_num_start);
         })
     }
 }

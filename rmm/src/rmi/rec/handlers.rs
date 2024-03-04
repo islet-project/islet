@@ -25,8 +25,8 @@ extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_CREATE, |arg, ret, rmm| {
-        let rec = arg[0];
-        let rd = arg[1];
+        let rd = arg[0];
+        let rec = arg[1];
         let params_ptr = arg[2];
         let owner = rd;
 

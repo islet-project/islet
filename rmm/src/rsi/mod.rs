@@ -211,16 +211,17 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, FEATURES, |_arg, ret, _rmm, rec, _| {
         let vcpuid = rec.vcpuid();
-        let realmid = rec.realmid()?;
+        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
 
-        let _index = get_reg(realmid, vcpuid, 1);
+        let _index = get_reg(rd, vcpuid, 1);
 
-        set_reg(realmid, vcpuid, 0, SUCCESS)?;
+        set_reg(rd, vcpuid, 0, SUCCESS)?;
 
         // B5.3.3 In the current version of the interface, this commands returns
         // zero regardless of the index provided.
 
-        set_reg(realmid, vcpuid, 1, 0)?;
+        set_reg(rd, vcpuid, 1, 0)?;
 
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())

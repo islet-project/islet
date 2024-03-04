@@ -6,12 +6,26 @@ use crate::rmi::features;
 use crate::rmi::rtt::{RTT_PAGE_LEVEL, S2TTE_STRIDE};
 use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
 
+use armv9a::{define_bitfield, define_bits, define_mask};
 use autopadding::*;
+
+define_bits!(
+    RmiRealmFlags,
+    Lpa2[0 - 0],
+    Sve[1 - 1],
+    Pmu[2 - 2],
+    Reserved[63 - 3]
+);
 
 pad_struct_and_impl_default!(
 pub struct Params {
-    0x0    pub features_0: u64,
-    0x100  pub hash_algo: u8,
+    0x0    pub flags: u64,
+    0x8    pub s2sz: u8,
+    0x10   pub sve_v1: u8,
+    0x18   pub num_bps: u8,
+    0x20   pub num_wps: u8,
+    0x28   pub pmu_num_ctrs: u8,
+    0x30   pub hash_algo: u8,
     0x400  pub rpv: [u8; 64],
     0x800  pub vmid: u16,
     0x808  pub rtt_base: u64,
@@ -26,7 +40,20 @@ const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
 impl core::fmt::Debug for Params {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Params")
-            .field("features_0", &format_args!("{:#X}", &self.features_0))
+            .field(
+                "flags",
+                &format_args!(
+                    "lpa2: {:?} sve: {:?} pmu: {:?}",
+                    RmiRealmFlags::new(self.flags).get_masked_value(RmiRealmFlags::Lpa2),
+                    RmiRealmFlags::new(self.flags).get_masked_value(RmiRealmFlags::Sve),
+                    RmiRealmFlags::new(self.flags).get_masked_value(RmiRealmFlags::Pmu)
+                ),
+            )
+            .field("s2sz", &self.s2sz)
+            .field("sve_v1", &self.sve_v1)
+            .field("num_bps", &self.num_bps)
+            .field("num_wps", &self.num_wps)
+            .field("pmu_num_ctrs", &self.pmu_num_ctrs)
             .field("hash_algo", &self.hash_algo)
             .field("rpv", &self.rpv)
             .field("vmid", &self.vmid)
@@ -44,8 +71,18 @@ impl Hashable for Params {
         out: &mut [u8],
     ) -> Result<(), crate::measurement::MeasurementError> {
         hasher.hash_fields_into(out, |alg| {
-            alg.hash_u64(0); // features aren't used
-            alg.hash(self._padfeatures_0);
+            alg.hash_u64(0); // flags aren't used
+            alg.hash(self._padflags);
+            alg.hash_u8(self.s2sz);
+            alg.hash(self._pads2sz);
+            alg.hash_u8(self.sve_v1);
+            alg.hash(self._padsve_v1);
+            alg.hash_u8(self.num_bps);
+            alg.hash(self._padnum_bps);
+            alg.hash_u8(self.num_wps);
+            alg.hash(self._padnum_wps);
+            alg.hash_u8(self.pmu_num_ctrs);
+            alg.hash(self._padpmu_num_ctrs);
             alg.hash_u8(self.hash_algo);
             alg.hash(self._padhash_algo);
             alg.hash([0u8; 64]); // rpv is not used
@@ -53,7 +90,9 @@ impl Hashable for Params {
             alg.hash_u16(0); // vmid is not used
             alg.hash(self._padvmid);
             alg.hash_u64(0); // rtt_base is not used
+            alg.hash(self._padrtt_base);
             alg.hash_u64(0); // rtt_level_start is not used
+            alg.hash(self._padrtt_level_start);
             alg.hash_u32(0); // rtt_num_start is not used
             alg.hash(self._padrtt_num_start);
         })
@@ -62,10 +101,11 @@ impl Hashable for Params {
 
 impl Params {
     pub fn ipa_bits(&self) -> usize {
-        features::ipa_bits(self.features_0 as usize)
+        features::ipa_bits(self.s2sz as usize)
     }
 
     pub fn verify_compliance(&self, rd: usize) -> Result<(), Error> {
+        trace!("{:?}", self);
         if self.rtt_base as usize == rd {
             return Err(Error::RmiErrorInput);
         }
@@ -74,7 +114,7 @@ impl Params {
             return Err(Error::RmiErrorInput);
         }
 
-        if !features::validate(self.features_0 as usize) {
+        if !features::validate(self.s2sz as usize) {
             return Err(Error::RmiErrorInput);
         }
 
@@ -85,8 +125,32 @@ impl Params {
         let level = RTT_PAGE_LEVEL - rtt_slvl;
         let min_ipa_bits = level * S2TTE_STRIDE + GRANULE_SHIFT + 1;
         let max_ipa_bits = min_ipa_bits + (S2TTE_STRIDE - 1) + 4;
+        let sl_ipa_bits = (level * S2TTE_STRIDE) + GRANULE_SHIFT + S2TTE_STRIDE;
 
         if (ipa_bits < min_ipa_bits) || (ipa_bits > max_ipa_bits) {
+            return Err(Error::RmiErrorInput);
+        }
+
+        let s2_num_root_rtts = {
+            if sl_ipa_bits >= ipa_bits {
+                1
+            } else {
+                1 << (ipa_bits - sl_ipa_bits)
+            }
+        };
+        if s2_num_root_rtts != self.rtt_num_start {
+            return Err(Error::RmiErrorInput);
+        }
+
+        // TODO: We don't support pmu, sve, lpa2
+        let flags = RmiRealmFlags::new(self.flags);
+        if flags.get_masked_value(RmiRealmFlags::Lpa2) != 0 {
+            return Err(Error::RmiErrorInput);
+        }
+        if flags.get_masked_value(RmiRealmFlags::Sve) != 0 {
+            return Err(Error::RmiErrorInput);
+        }
+        if flags.get_masked_value(RmiRealmFlags::Pmu) != 0 {
             return Err(Error::RmiErrorInput);
         }
 
@@ -132,7 +196,12 @@ pub mod test {
         assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
 
         assert_eq!(offset_of!(Params, features_0), 0x0);
-        assert_eq!(offset_of!(Params, hash_algo), 0x100);
+        assert_eq!(offset_of!(Params, s2sz), 0x8);
+        assert_eq!(offset_of!(Params, sve_v1), 0x10);
+        assert_eq!(offset_of!(Params, num_bps), 0x18);
+        assert_eq!(offset_of!(Params, num_wps), 0x20);
+        assert_eq!(offset_of!(Params, pmu_num_ctrs), 0x28);
+        assert_eq!(offset_of!(Params, hash_algo), 0x30);
         assert_eq!(offset_of!(Params, rpv), 0x400);
         assert_eq!(offset_of!(Params, vmid), 0x800);
         assert_eq!(offset_of!(Params, rtt_base), 0x808);

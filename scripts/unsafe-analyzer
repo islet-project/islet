@@ -1,0 +1,108 @@
+#!/usr/bin/env python3
+
+import os
+import subprocess
+import sys
+
+ROOT = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
+
+ARMV9A = os.path.join(ROOT, "lib/armv9a")
+FVP = os.path.join(ROOT, "plat/fvp")
+RMM = os.path.join(ROOT, "rmm")
+UART = os.path.join(ROOT, "lib/uart")
+VMSA = os.path.join(ROOT, "lib/vmsa")
+OUT = os.path.join(ROOT, "out/unsafe-result.log")
+
+TARGET = [ARMV9A, FVP, RMM, UART, VMSA]
+
+def shell(cmd, cwd):
+    return subprocess.run(cmd, cwd=cwd,
+                       shell=True,
+                       stderr=subprocess.STDOUT,
+                       stdout=subprocess.PIPE,
+                       universal_newlines=True,
+                       check=False)
+
+def run_geiger(cwd):
+    print("[!] Running cargo geiger...")
+
+    cmd = "cargo geiger --output-format Ratio"
+    process = shell(cmd, cwd)
+
+    if not "Scanning done" in process.stdout:
+        print(f"[!] Failed to run: {cmd} @ {cwd}")
+        print(process.stdout)
+        sys.exit(1)
+
+    return process.stdout
+
+def report(out):
+    print("[!] Reporting...")
+    lines = [line for line in out.splitlines() if "_crate_" in line]
+
+    with open(OUT, 'w') as file:
+        for line in lines:
+            file.write(line + '\n')
+
+    stmt = 0
+    expr = 0
+    skipped = 0
+    deref_op = 0
+    unclassified = 0
+    for line in lines:
+        toks = [toks.strip() for toks in line.split('~')]
+
+        if len(toks) >= 3 and toks[2].isdigit() and toks[3].isdigit():
+            expr += int(toks[2]) - 1
+            stmt += int(toks[3]) - 1
+
+            if len(toks) >= 5 and toks[4] == "Dereference Operation":
+                deref_op += 1
+            else:
+                unclassified += 1
+        else:
+            skipped += 1
+
+    report = {
+        'Total': len(lines),
+        'Deref Operation': deref_op,
+        'Unclassified': unclassified,
+        'Skipped': skipped,
+        'Exprs' : expr,
+        'Stmts' : stmt,
+    }
+
+    for key, value in report.items():
+        print(f"{key:<15} | {value:<15}")
+
+def add_hint(cwd):
+    print(f"[!] Adding hint: {cwd}...")
+    name = os.path.basename(cwd)
+    hint = f"let _crate_{name}: u8;"
+
+    regex_in = f"s/unsafe {{/unsafe {{ {hint}/g"
+    regex_fn = f"s/\(unsafe fn.*\){{$/\\0 {hint}/g"
+
+    cmd_in = f"find ./ -type f -exec sed -i '{regex_in}' {{}} +"
+    cmd_fn = f"find ./ -type f -exec sed -i '{regex_fn}' {{}} +"
+
+    shell(cmd_in, cwd=cwd)
+    shell(cmd_fn, cwd=cwd)
+
+def del_hint(cwd):
+    print(f"[!] Deleting hint: {cwd}...")
+    cmd = f"git restore {cwd}/*"
+    shell(cmd, cwd=cwd)
+
+if __name__ == "__main__":
+    shell('cargo clean', cwd=ROOT)
+
+    for path in TARGET:
+        add_hint(cwd=path)
+
+    out = run_geiger(cwd=FVP)
+
+    for path in TARGET:
+        del_hint(cwd=path)
+
+    report(out)

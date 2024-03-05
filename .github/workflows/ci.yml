@@ -194,7 +194,7 @@ jobs:
       run: ./scripts/init-unsafe-analysis.sh
 
     - name: Run unsafe analyzer
-      run: ./scripts/analyze-unsafe.sh
+      run: ./scripts/unsafe-analyzer
 
     - uses: actions/upload-artifact@v3
       with:

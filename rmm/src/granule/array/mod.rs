@@ -69,19 +69,14 @@ impl GranuleState {
     }
 }
 
-pub fn create_granule_status_table() {
-    unsafe {
-        if GRANULE_STATUS_TABLE.is_none() {
-            GRANULE_STATUS_TABLE = Some(GranuleStatusTable::new());
-        }
-    }
-}
-
 pub fn set_granule(granule: &mut Granule, state: u8) -> Result<(), Error> {
     granule.set_state(state)
 }
 
-pub static mut GRANULE_STATUS_TABLE: Option<GranuleStatusTable> = None;
+lazy_static! {
+    pub static ref GRANULE_STATUS_TABLE: GranuleStatusTable = GranuleStatusTable::new();
+}
+
 const GRANULE_STATUS_TABLE_SIZE: usize = 0xfc000; // == RMM_MAX_GRANULES
 
 pub struct GranuleStatusTable {
@@ -108,13 +103,12 @@ macro_rules! get_granule {
             let idx = granule_addr_to_index($addr);
             if idx == usize::MAX {
                 Err(Error::RmiErrorInput)
-            } else if let Some(gst) = unsafe { &mut GRANULE_STATUS_TABLE } {
+            } else {
+                let gst = &GRANULE_STATUS_TABLE;
                 match gst.entries[idx].lock() {
                     Ok(guard) => Ok(guard),
                     Err(e) => Err(e),
                 }
-            } else {
-                Err(Error::RmiErrorInput)
             }
         }
     }};

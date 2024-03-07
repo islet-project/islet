@@ -48,12 +48,9 @@ impl Granule {
         let granule_offset = entry_size - granule_size;
         let granule_addr = self as *const Granule as usize;
         let entry_addr = granule_addr - granule_offset;
-        if let Some(gst) = unsafe { &mut GRANULE_STATUS_TABLE } {
-            let table_base = gst.entries.as_ptr() as usize;
-            (entry_addr - table_base) / core::mem::size_of::<Entry>()
-        } else {
-            unreachable!();
-        }
+        let gst = &GRANULE_STATUS_TABLE;
+        let table_base = gst.entries.as_ptr() as usize;
+        (entry_addr - table_base) / core::mem::size_of::<Entry>()
     }
 
     fn index_to_addr(&self) -> usize {

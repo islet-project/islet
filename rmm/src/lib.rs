@@ -47,6 +47,7 @@ extern crate lazy_static;
 extern crate log;
 
 use crate::exception::vectors;
+#[cfg(feature = "gst_page_table")]
 use crate::granule::create_granule_status_table as setup_gst;
 use crate::mm::translation::get_page_table;
 use crate::monitor::Monitor;
@@ -57,6 +58,7 @@ use armv9a::{bits_in_reg, regs::*};
 pub unsafe fn start(cpu_id: usize) {
     setup_mmu_cfg();
     setup_el2();
+    #[cfg(feature = "gst_page_table")]
     setup_gst();
     // TODO: call once or with every start?
     if cpu_id == 0 {

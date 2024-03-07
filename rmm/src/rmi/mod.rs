@@ -65,10 +65,8 @@ pub const SUCCESS_REC_ENTER: usize = 4;
 // RmiRttEntryState represents the state of an RTTE
 pub mod rtt_entry_state {
     pub const RMI_UNASSIGNED: usize = 0;
-    pub const RMI_DESTROYED: usize = 1;
-    pub const RMI_ASSIGNED: usize = 2;
-    pub const RMI_TABLE: usize = 3;
-    pub const RMI_VALID_NS: usize = 4;
+    pub const RMI_ASSIGNED: usize = 1;
+    pub const RMI_TABLE: usize = 2;
 }
 
 pub const MAX_REC_AUX_GRANULES: usize = 16;

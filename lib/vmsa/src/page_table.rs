@@ -250,10 +250,12 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
         if level > S::MAP_TABLE_LEVEL {
             return Err(Error::MmInvalidLevel);
         }
+        // TODO: remove the level param out of the entry() and don't check this
         if level != L::THIS_LEVEL {
             return Err(Error::MmInvalidLevel);
         }
 
+        // TODO: check if the index is within the total number of entries
         let index = E::index::<L>(guest.address().into());
 
         if no_valid_check {

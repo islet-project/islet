@@ -1,7 +1,7 @@
+use crate::realm;
 use crate::realm::rd::Rd;
 use crate::realm::vcpu::State as RecState;
 use crate::realm::vcpu::VCPU;
-use crate::realm;
 use crate::rmi::error::Error;
 use crate::rmi::error::InternalError::*;
 use crate::rmm_exit;

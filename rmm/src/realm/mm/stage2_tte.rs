@@ -21,6 +21,7 @@ pub mod invalid_hipas {
 pub mod invalid_ripas {
     pub const EMPTY: u64 = 0b0;
     pub const RAM: u64 = 0b1;
+    pub const DESTROYED: u64 = 0b10;
 }
 
 pub mod desc_type {
@@ -62,8 +63,8 @@ define_bits!(
     AF[10 - 10],
     SH[9 - 8],
     AP[7 - 6],
-    INVALID_RIPAS[6 - 6],
-    INVALID_HIPAS[5 - 2],
+    INVALID_RIPAS[6 - 5],
+    INVALID_HIPAS[4 - 2],
     MEMATTR[5 - 2],
     DESC_TYPE[1 - 0],
     PAGE_FLAGS[11 - 0]
@@ -134,6 +135,25 @@ impl S2TTE {
             && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::UNASSIGNED
     }
 
+    pub fn is_unassigned_empty(&self) -> bool {
+        self.is_unassigned()
+            && self.get_masked_value(S2TTE::NS) == 0
+            && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::EMPTY
+    }
+
+    pub fn is_unassigned_destroyed(&self) -> bool {
+        self.is_unassigned()
+            && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::DESTROYED
+    }
+
+    pub fn is_unassigned_ram(&self) -> bool {
+        self.is_unassigned() && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::RAM
+    }
+
+    pub fn is_unassigned_ns(&self) -> bool {
+        self.is_unassigned() && self.get_masked_value(S2TTE::NS) != 0
+    }
+
     pub fn is_destroyed(&self) -> bool {
         self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
             && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::DESTROYED
@@ -142,6 +162,41 @@ impl S2TTE {
     pub fn is_assigned(&self) -> bool {
         self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
             && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::ASSIGNED
+    }
+
+    pub fn is_assigned_empty(&self) -> bool {
+        self.is_assigned() && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::EMPTY
+    }
+
+    pub fn is_assigned_destroyed(&self) -> bool {
+        self.is_assigned()
+            && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::DESTROYED
+    }
+
+    pub fn is_assigned_ram(&self, level: usize) -> bool {
+        if self.get_masked_value(S2TTE::NS) != 0 {
+            return false;
+        }
+        let desc_type = self.get_masked_value(S2TTE::DESC_TYPE);
+        if (level == RTT_PAGE_LEVEL && desc_type == desc_type::L3_PAGE)
+            || (level == RTT_MIN_BLOCK_LEVEL && desc_type == desc_type::L012_BLOCK)
+        {
+            return true;
+        }
+        false
+    }
+
+    pub fn is_assigned_ns(&self, level: usize) -> bool {
+        if self.get_masked_value(S2TTE::NS) == 0 {
+            return false;
+        }
+        let desc_type = self.get_masked_value(S2TTE::DESC_TYPE);
+        if (level == RTT_PAGE_LEVEL && desc_type == desc_type::L3_PAGE)
+            || (level == RTT_MIN_BLOCK_LEVEL && desc_type == desc_type::L012_BLOCK)
+        {
+            return true;
+        }
+        false
     }
 
     // level should be the value returned in page table walking

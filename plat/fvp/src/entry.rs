@@ -2,6 +2,7 @@ use crate::allocator;
 use crate::log::LevelFilter;
 
 use armv9a::regs::*;
+use core::ptr::{addr_of, addr_of_mut};
 use islet_rmm::config::{NUM_OF_CPU, RMM_STACK_SIZE};
 use islet_rmm::io::stdout;
 use islet_rmm::logger;
@@ -76,12 +77,12 @@ unsafe fn init_mm() {
 unsafe fn setup() {
     static mut COLD_BOOT: bool = true;
 
-    if (&COLD_BOOT as *const bool).read_volatile() {
+    if (addr_of!(COLD_BOOT) as *const bool).read_volatile() {
         clear_bss();
         allocator::init();
         init_console();
         init_mm();
 
-        (&mut COLD_BOOT as *mut bool).write_volatile(false);
+        (addr_of_mut!(COLD_BOOT) as *mut bool).write_volatile(false);
     }
 }

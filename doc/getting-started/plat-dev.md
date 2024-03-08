@@ -17,7 +17,7 @@ The first step is to prepare to build our project.
 ## Running a linux realm
 ```bash
 // Start FVP on host
-$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=tf-rmm
+$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=islet
 
 // Run a linux realm on fvp
 $ ./launch-realm.sh
@@ -45,7 +45,7 @@ To get details about its network configuration, see [network.md](https://github.
 ## Testing the realm features
 ```bash
 // Start FVP on fvp
-$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=tf-rmm
+$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=islet
 
 // Test the realm features on fvp
 $ ./test-realm.sh [attest]
@@ -62,6 +62,9 @@ $ ./scripts/fvp-cca --normal-world=tf-a-tests --rmm=tf-rmm
 
 ## Testing RMMs with [ACS](https://github.com/ARM-software/cca-rmm-acs)
 ```
+# Islet RMM
+$ ./scripts/fvp-cca --normal-world=acs --rmm=islet
+
 # TF RMM
 $ ./scripts/fvp-cca --normal-world=acs --rmm=tf-rmm
 ```

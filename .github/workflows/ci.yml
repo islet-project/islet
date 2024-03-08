@@ -117,6 +117,7 @@ jobs:
       run: |
         ./scripts/deps/assets.sh
         ./scripts/deps/rust.sh
+        ./scripts/deps/pkgs.sh
 
     - name: Check bash scripts coding-style
       run: |
@@ -136,6 +137,9 @@ jobs:
 
     - name: Check clippy lints
       run: ./scripts/clippy.sh
+
+    - name: Check pylint
+      run: ./scripts/pylint.sh
 
     - uses: actions-rs/audit-check@v1
       with:

@@ -15,6 +15,7 @@ sudo apt install -y -qq --no-install-recommends \
 	bzip2 \
 	srecord \
 	git wget make vim bc pkg-config \
-	bridge-utils
+	bridge-utils \
+	pylint
 
 pip3 install toml

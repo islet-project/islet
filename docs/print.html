@@ -284,9 +284,9 @@ Simulated attestation operation on x86_64.
 Verify Realm Signature.
 == Signature Verification:
 Sign Algo	 = [ES384]
-Public Key	 = [&quot;0476f988091be585ed41801aecfab858548c63057e16b
-Data		 = [&quot;846a5369676e61747572653144a1013822405901b6a70
-Signature	 = [&quot;ec4f3b28a00feabd1f58f94acb27fdc7957545409f1c9
+Public Key	 = ["0476f988091be585ed41801aecfab858548c63057e16b
+Data		 = ["846a5369676e61747572653144a1013822405901b6a70
+Signature	 = ["ec4f3b28a00feabd1f58f94acb27fdc7957545409f1c9
 == End of Signature Verification
 
 ...
@@ -302,13 +302,13 @@ You can refer <a href="https://github.com/islet-project/islet/blob/main/sdk/exam
 </span>use islet_sdk::prelude::*;
 
 // Attestation
-let user_data = b&quot;User data&quot;;
+let user_data = b"User data";
 let report = attest(user_data)?;
 let claims = verify(&amp;report)?;
-println!(&quot;Debug: {:?}&quot;, claims);
+println!("Debug: {:?}", claims);
 
 // Sealing
-let plaintext = b&quot;Plaintext&quot;;
+let plaintext = b"Plaintext";
 let sealed = seal(plaintext)?;
 let unsealed = unseal(&amp;sealed)?;
 assert_eq!(plaintext, &amp;unsealed[..]);
@@ -325,7 +325,7 @@ powerful <a href="https://github.com/islet-project/islet/tree/main/third-party">
 </code></pre>
 <h2 id="running-a-linux-realm"><a class="header" href="#running-a-linux-realm">Running a linux realm</a></h2>
 <pre><code class="language-bash">// Start FVP on host
-$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=tf-rmm
+$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=islet
 
 // Run a linux realm on fvp
 $ ./launch-realm.sh
@@ -348,7 +348,7 @@ $ LD_LIBRARY_PATH=./ ./sdk-example-c
 To get details about its network configuration, see <a href="https://github.com/islet-project/islet/blob/main/doc/network.md">network.md</a></p>
 <h2 id="testing-the-realm-features"><a class="header" href="#testing-the-realm-features">Testing the realm features</a></h2>
 <pre><code class="language-bash">// Start FVP on fvp
-$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=tf-rmm
+$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=islet
 
 // Test the realm features on fvp
 $ ./test-realm.sh [attest]
@@ -361,7 +361,10 @@ $ ./scripts/fvp-cca --normal-world=tf-a-tests --rmm=islet
 $ ./scripts/fvp-cca --normal-world=tf-a-tests --rmm=tf-rmm
 </code></pre>
 <h2 id="testing-rmms-with-acs"><a class="header" href="#testing-rmms-with-acs">Testing RMMs with <a href="https://github.com/ARM-software/cca-rmm-acs">ACS</a></a></h2>
-<pre><code># TF RMM
+<pre><code># Islet RMM
+$ ./scripts/fvp-cca --normal-world=acs --rmm=islet
+
+# TF RMM
 $ ./scripts/fvp-cca --normal-world=acs --rmm=tf-rmm
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="network-configuration"><a class="header" href="#network-configuration">Network configuration</a></h1>
@@ -375,7 +378,7 @@ The three components involved are:</p>
 </ul>
 <p>In our network configuration, each of the three has different static IP address so that they can communicate with each other by specifying a proper destination IP address.
 Under this setting, any of the three can act as either server or client.</p>
-<p>And here is how to make &quot;<em>FVP Host</em> and <em>Realm</em>&quot; capable of communicating through to <em>PC Host</em>.
+<p>And here is how to make "<em>FVP Host</em> and <em>Realm</em>" capable of communicating through to <em>PC Host</em>.
 First of all, make sure you are in the root directory of Islet and go through the following instructions.
 In most cases, you would probably not have to customize network-related arguments and feed them into <code>fvp-cca</code>. Using a default configuration would be sufficient.</p>
 <pre><code># full command:
@@ -393,7 +396,7 @@ $ ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=tf-rmm
 </code></pre>
 <p>FVP is able to communicate through Host to external networks in a similar way to what most VMs do.
 To do so, it is required to assign a real IP address (wired or wireless) into the PC host while IP addresses for FVP Host and Realm do not have to be a real IP,
-since the PC Host takes the role of NAT in order to hide their IPs from external networks. </p>
+since the PC Host takes the role of NAT in order to hide their IPs from external networks.</p>
 <h2 id="a-closer-look-at-network-configuration"><a class="header" href="#a-closer-look-at-network-configuration">A closer look at network configuration</a></h2>
 <p>This is how the aforementioned three components interact with each other:</p>
 <pre><code>// A default configuration
@@ -450,9 +453,9 @@ $ ./islet verify --input=./report
 
 == Signature Verification:
 Sign Algo        = [ES384]
-Public Key       = [&quot;0476f988091be585ed41801aecfab858...]
-Data             = [&quot;846a5369676e61747572653144a10138...]
-Signature        = [&quot;ec4f3b28a00feabd1f58f94acb27fdc7...]
+Public Key       = ["0476f988091be585ed41801aecfab858...]
+Data             = ["846a5369676e61747572653144a10138...]
+Signature        = ["ec4f3b28a00feabd1f58f94acb27fdc7...]
 == End of Signature Verification
 
 == Realm Token cose:
@@ -464,8 +467,8 @@ Signature                      = [ec4f3b28a00feabd1f58f94acb27f
 == Realm Token:
 Realm challenge                (#10) = [abababababababababababa
 Realm personalization value    (#44235) = [00000000000000000000
-Realm hash algo id             (#44236) = &quot;sha-256&quot;
-Realm public key hash algo id  (#44240) = &quot;sha-256&quot;
+Realm hash algo id             (#44236) = "sha-256"
+Realm public key hash algo id  (#44240) = "sha-256"
 Realm signing public key       (#44237) = [0476f988091be585ed41
 Realm initial measurement      (#44238) = [6190eb90b293886c172e
 </code></pre>
@@ -495,7 +498,7 @@ to create headers for rust libraries which expose public C/C++ APIs.</p>
 </span><span class="boring">fn main() {
 </span>use islet_sdk::prelude::*;
 
-let user_data = b&quot;User data&quot;;
+let user_data = b"User data";
 let report = attest(user_data)?;
 let claims = verify(&amp;report)?;
 
@@ -504,19 +507,19 @@ print_claim(&amp;claims);
 if let Some(ClaimData::Bstr(data)) = parse(&amp;claims, config::STR_USER_DATA) {
     assert_eq!(user_data, &amp;data[..user_data.len()]);
 } else {
-    assert!(false, &quot;Wrong user data&quot;);
+    assert!(false, "Wrong user data");
 }
 
 if let Some(ClaimData::Text(data)) = parse(&amp;claims, config::STR_PLAT_PROFILE) {
-    assert_eq!(data, &quot;http://arm.com/CCA-SSD/1.0.0&quot;);
+    assert_eq!(data, "http://arm.com/CCA-SSD/1.0.0");
 } else {
-    assert!(false, &quot;Wrong platform profile&quot;);
+    assert!(false, "Wrong platform profile");
 }
 
 if let Some(ClaimData::Bstr(data)) = parse(&amp;claims, config::STR_REALM_INITIAL_MEASUREMENT) {
-    println!(&quot;Realm initial measurement: {:X?}&quot;, &amp;data);
+    println!("Realm initial measurement: {:X?}", &amp;data);
 } else {
-    assert!(false, &quot;Wrong RIM&quot;);
+    assert!(false, "Wrong RIM");
 }
 <span class="boring">}</span></code></pre></pre>
 <h4 id="c-code-snippet"><a class="header" href="#c-code-snippet">C++ code snippet</a></h4>
@@ -525,7 +528,7 @@ if let Some(ClaimData::Bstr(data)) = parse(&amp;claims, config::STR_REALM_INITIA
 byte report[2048], claims[1024], claim[1024];
 int report_len, claims_len, claim_len;
 
-std::string user_data(&quot;User Custom data&quot;);
+std::string user_data("User Custom data");
 if (!islet_attest((const byte*)user_data.c_str(), user_data.size(), report, &amp;report_len))
     return -1;
 
@@ -534,17 +537,17 @@ if (!islet_verify(report, report_len, claims, &amp;claims_len))
 
 islet_print_claims(claims, claims_len);
 
-const char CLAIM_USER_DATA[] = &quot;User data&quot;; // Claim title 
-if (!islet_parse(&quot;User data&quot;, claims_out.data(), claims_out_len, value_out.data(), &amp;value_out_len))
+const char CLAIM_USER_DATA[] = "User data"; // Claim title 
+if (!islet_parse("User data", claims_out.data(), claims_out_len, value_out.data(), &amp;value_out_len))
     return -1;
 
-printf(&quot;Claim[User data]: %s\n&quot;, (char*) value);
+printf("Claim[User data]: %s\n", (char*) value);
 </code></pre>
 <h3 id="sealing"><a class="header" href="#sealing">Sealing</a></h3>
 <h4 id="rust-code-snippet-1"><a class="header" href="#rust-code-snippet-1">Rust code snippet</a></h4>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>let plaintext = b&quot;Plaintext&quot;;
+</span>let plaintext = b"Plaintext";
 let sealed = seal(plaintext)?;
 let unsealed = unseal(&amp;sealed)?;
 assert_eq!(plaintext, &amp;unsealed[..]);   
@@ -557,14 +560,14 @@ memset(sealed, 0, sizeof(sealed));
 memset(unsealed, 0, sizeof(unsealed));
 int sealed_len = 0, unsealed_len = 0;
 
-std::string plaintext(&quot;Plaintext&quot;);
+std::string plaintext("Plaintext");
 if (islet_seal((const byte*)plaintext.c_str(), plaintext.size(), sealed, &amp;sealed_len))
     return -1;
 
 if (islet_unseal(sealed, sealed_len, unsealed, &amp;unsealed_len))
     return -1;
 
-printf(&quot;Success sealing round trip.\n&quot;);
+printf("Success sealing round trip.\n");
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sdk-software-design-document"><a class="header" href="#sdk-software-design-document">SDK Software Design Document</a></h1>
 <h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
@@ -615,7 +618,7 @@ The SDK encompasses the following key features:</p>
 <li><strong>Parser Module</strong>: Provides parsing specific claims of the attestation report.</li>
 <li><strong>Sealing Module</strong>: Implements encryption functions in compliance with the multi-part C.C. framework</li>
 <li><strong>C API Module</strong>: Provides C APIs for the multi-part C.C. Framework to achieve secure channel functionality.</li>
-<li><strong>RSI Dispatcher Module</strong>: Dispatches RSI commands to RMM and get results from RMM </li>
+<li><strong>RSI Dispatcher Module</strong>: Dispatches RSI commands to RMM and get results from RMM</li>
 </ul>
 <p>To support <code>secure channel</code>
 the C API module exposes <code>attester, verifier and sealing modules</code> to the multi-part C.C framework.
@@ -749,7 +752,7 @@ Unfortunately, at the beginning of ARM TrustZone which has been widely adopted b
 <p>You can quickly test and see what this report looks like through <a href="https://islet-project.github.io/islet/components/cli.html">our CLI tool</a>.</p>
 <h2 id="appraisal-policy"><a class="header" href="#appraisal-policy">Appraisal policy</a></h2>
 <p>According to RATS, there is a term named <em>Appraisal Policy (shortly, Policy)</em>, which is central to how to build a real-world service on top of RA. You can basically think of Policy as a set of rules that <em>verifier</em> wants to enforce.
-For example, what tokens in a report say is basically sort of measurements signed by secure cryptographic keys. So, to build a meaningful security service around it, you have to write down Policy like &quot;(1) Realm must have the measurement of X, (2) the measurement of CCA Platform software must be Y&quot;.</p>
+For example, what tokens in a report say is basically sort of measurements signed by secure cryptographic keys. So, to build a meaningful security service around it, you have to write down Policy like "(1) Realm must have the measurement of X, (2) the measurement of CCA Platform software must be Y".</p>
 <p>As you may notice, managing Policy is out of scope of CCA as this is inherently not dependent on CCA. Instead, there are several open-source projects that take on this capability, for example, <a href="https://github.com/veraison/">Veraison</a> and <a href="https://github.com/vmware-research/certifier-framework-for-confidential-computing/">Certifier Framework</a>. They all aim to implement a standardized way to express and enforce Policy. (note that they sometimes are treated as a unified verification service as they are able to work across various TEEs)</p>
 <p>Islet might be able to work with any verification service in theory, but currently bases the ability to handle Policy on Certifier Framework.
 You can see further details <a href="components/./certifier.html">here</a> on what Certifier Framework is and how Islet uses it.</p>
@@ -808,7 +811,7 @@ These accesses must be securely done as insecure implementations may open things
 <li>unmap host memory</li>
 </ol>
 <p>After it gets done, we can access <code>params</code> that reside in RMM memory, not host memory.
-So it's secure against concurrency-based attacks such as double-fetch attacks. </p>
+So it's secure against concurrency-based attacks such as double-fetch attacks.</p>
 <p>If some additional security checks on some field value are needed (e.g., <code>Params.hash_algo</code> should be either 0 or 1),
 you can do it via <code>validate()</code> in <code>Accessor</code> trait. The specified validation is called before RMM accesses host memory.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
@@ -891,7 +894,7 @@ By doing a comparison between two global models in a row, a malicious device can
 <h2 id="islet-for-federated-learning"><a class="header" href="#islet-for-federated-learning">Islet for federated learning</a></h2>
 <p>To stop the aforementioned attacks (<em>inversion attack</em>, <em>inference attack</em>, and <em>poisoning attack</em>), we can take the same approach as we did with traditional ML. The only difference would have to do with <em>runtime</em> as runtime servers would not do ML operations (training and inference) in federated learning. Instead, they do a so-called aggregation algorithm to build a new global model from local models that each device sends up.</p>
 <p>For the former two attacks (inversion and inference), the open-source based security argument could still work in the same way. This is because, to launch them, attackers have to run programs that contain codes to do those attacks, leading to a measurement that is different than the allowed ones.</p>
-<p>As for the last one (poisoning), it could not get protected in the same way as what actually breaks security comes from &quot;data&quot; not &quot;program&quot;. In other words, even if <em>device</em> is authentic, a model could be trained with fake data, considering an attacker who is capable of taking control of &quot;data&quot; fed into the model.
+<p>As for the last one (poisoning), it could not get protected in the same way as what actually breaks security comes from "data" not "program". In other words, even if <em>device</em> is authentic, a model could be trained with fake data, considering an attacker who is capable of taking control of "data" fed into the model.
 We see that this attack could be addressed to some extent by designing and implementing peripheral protections (e.g., building a secure channel from keyboard hardware all the way to a secure application) on top of CCA primitives.</p>
 <h2 id="time-to-play-around-with-real-examples"><a class="header" href="#time-to-play-around-with-real-examples">Time to play around with real examples</a></h2>
 <p>Anyone can try out what we've explained so far, that is to say, running traditional ML or federated learning on top of Islet with simple ML models.
@@ -940,7 +943,7 @@ specifying your own values for the following variables:
 $ make x86_64
 $ ./islet measurement-read --index 0
 Simulated attestation operation on x86_64.
-&quot;580bd77074f789f34841ea9920579ff29a59b9452b606f73811132b31c689da9&quot;
+"580bd77074f789f34841ea9920579ff29a59b9452b606f73811132b31c689da9"
 </code></pre>
 <p>You also can get the client measurement with cli on the realm:</p>
 <pre><code class="language-sh">$ $(islet)/scripts/fvp-cca -nw=linux -rm=linux --hes
@@ -952,7 +955,7 @@ $ ./launch-realm.sh
 [ 2533.544864] rsi: device rsi open
 [ 2533.664676] rsi: ioctl: measurement_read: 0
 [ 2533.831443] rsi: device rsi released
-&quot;8a1d5cd26a0ee477067d18e2ff051687d18e1450b513508ba98910fa262b1fa3&quot;
+"8a1d5cd26a0ee477067d18e2ff051687d18e1450b513508ba98910fa262b1fa3"
 </code></pre>
 <p>After getting measurments,
 edit the script <code>provisioning.sh</code>.</p>
@@ -1024,291 +1027,60 @@ $ ./run-client.sh
 <p>That's it!
 Now you may see the server and client
 successfully establish an end-to-end encrypted connection.</p>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="introduction-1"><a class="header" href="#introduction-1">Introduction</a></h1>
-<p>The process consists of several parts:</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="software-attestation"><a class="header" href="#software-attestation">Software attestation</a></h1>
+<h2 id="why-does-it-matter"><a class="header" href="#why-does-it-matter">Why does it matter?</a></h2>
+<p>Software attestation is the process of certifying that some program of interest possess certain properties. Typically, it boils down to checking whether the hashes of binaries match the values provided by the developers. Moreover, in the field of confidential computing it is useful to assert the trustworthiness of the environment our program is executing in. This is essential from a couple of perspectives:</p>
 <ul>
-<li>provisioning</li>
-<li>gathering measurements</li>
-<li>feeding measurements to veraison and realm verifier</li>
-<li>running realm for verification purposes</li>
-<li>running verification services (veraison/realm verifier)</li>
-<li>verification itself</li>
+<li>As a software engineering company you can ensure that the virtual machines that will be running the program aren't malicious and weren't modified by a third party.</li>
+<li>As a user you can be sure that the secrets used to authenticate and provide encryption layer in the application are stored securely.</li>
 </ul>
-<p>It is best and even sometimes required that all the required repos are placed in
-one directory. I'll call it <code>CCA</code> and it will be referred throughout this file.</p>
-<p>The following repos will be used:</p>
+<h2 id="how-does-it-work"><a class="header" href="#how-does-it-work">How does it work?</a></h2>
+<p>There are two ways of performing software attestation:</p>
 <ul>
-<li>
-<p>Islet: https://github.com/islet-project/islet that provides:</p>
+<li><code>Local attestation</code> where the root of trust is derived from hardware and the device is able to attest itself (this is yet to be implemented in islet).</li>
+<li><code>Remote attestation</code> where the root of trust is partly provided by a third party server called the <code>reliant party</code> that implements an attestation protocol (Veraison is such software).</li>
+</ul>
+<p>In detail the protocol implemented by islet is based on the <code>TLS</code> protocol which handles the handshake and the attestation is implemented by the custom certificate creation and validation procedures.
+In the simplest example, which is implemented by islet, the <code>reliant party</code> implements the <code>TLS</code> server with a self-signed root certificate and a custom certificate verifier.
+The client in this case is a application running inside a secure realm. It implements the <code>TLS</code> client with the custom certificate generator that creates a self-signed certificate with the attestation token embedded in the optional field.
+As a reminder, an attestation token is a set of claims provided by the execution environment that will be checked by the <code>reliant party</code>.
+Additionally, to prevent replay attacks the server will generate a random challenge that the client is expected to embed inside the token. When the <code>TLS</code> 3-way handshake has been finished successfully, the software is attested and the opened TCP connection can be used to transfer sensitive data or other software.</p>
+<h2 id="implementation-details"><a class="header" href="#implementation-details">Implementation details</a></h2>
+<p><img src="usecases/./diagram.svg" alt="diagram" /></p>
+<h4 id="legend"><a class="header" href="#legend">Legend</a></h4>
 <ul>
-<li>the whole SW/FW stack and scripts for running the emulated environment under the FVP</li>
-<li>Islet HES https://github.com/islet-project/islet/tree/main/hes</li>
-<li>kvmtool-rim-measurer from https://github.com/islet-project/islet/tree/main/third-party/</li>
+<li><code>Islet</code> (this project) is a Realm Management Monitor implemented in Rust it is used to manage realms and generate attestation tokens in the upcoming ARMv9 architecture.</li>
+<li><code>RaTlsClient</code> is the client of the modified <code>TLS</code> protocol which uses a custom cert generator that embeds the attestation token.</li>
+<li><code>RaTlsServer</code> is the server of the modified <code>TLS</code> protocol which implements custom cert verifier that uses <code>Veraison</code> and <code>Realm measurements</code> to attest the software running inside the realm.</li>
+<li><code>Verification service</code> it's the actual service in the <code>Veraison</code> project responsible for attesting software, currently it only checks the platform part of the token.</li>
+<li><code>Realm measurements</code> is a data store holding the trusted realm measurements, so that the <code>RaTlsServer</code> can check the realm part of the token (as mentioned <code>Veraison</code> only attests the platform part).</li>
+</ul>
+<h4 id="attestation-flow"><a class="header" href="#attestation-flow">Attestation flow</a></h4>
+<ul>
+<li>The attestation is initiated by the <code>RaTlsClient</code> creating a <code>TCP</code> connection to the <code>RaTlsServer</code> and starting the <code>TLS</code> 3-way handshake.</li>
+<li>The <code>RaTlsServer</code> send a challenge to the client (it's a 64bit number used to protect against replay attacks).</li>
+<li>The <code>RaTlsClient</code> provides <code>Islet</code> with the challenge and retrieves a signed attestation token containing:
+<ul>
+<li>platform measurements (bootloaders measurements, <code>Islet</code> measurements itself, etc...)</li>
+<li>signature signed by the <code>CPAK</code> or <code>Platform key</code></li>
+<li>realm measurements</li>
+<li>realm challenge which is the challenge we got from <code>RaTlsServer</code></li>
+<li>signature signed by <code>RAK</code> or <code>Realm attestation key</code></li>
 </ul>
 </li>
-<li>
-<p>Islet Remote Attestation: https://github.com/islet-project/remote-attestation that provides:</p>
-<ul>
-<li>rocli: https://github.com/islet-project/remote-attestation/tree/main/tools/rocli
-Tool for provisioning reference token and CPAK to the Veraison services.</li>
-<li>realm-verifier: https://github.com/islet-project/remote-attestation/tree/main/lib/realm-verifier
-A library for veryfing RIM and REMs with reference values.</li>
-<li>ratls: https://github.com/islet-project/remote-attestation/tree/main/lib/ratls
-A library implementing RaTLS protocol for attestation purposes.</li>
-<li>rust-rsi: https://github.com/islet-project/remote-attestation/tree/main/lib/rust-rsi
-A library implementing token and RSI related functionalities (fetching, parsing).</li>
+<li>The <code>RaTlsClient</code> creates a self-signed <code>SSL</code> certificate with the token embedded as a <code>X509</code> extension and provides it to the server.</li>
+<li>The <code>RaTlsServer</code> extracts the token from the certificate and validates the challenge.</li>
+<li>Next it uses <code>Verification service</code> to validate the platform part of the token.</li>
+<li>At last the <code>Realm measurements</code> are used to check the realm part.</li>
+<li>If all check finish successfully, the 3-way handshake concludes and an encrypted <code>TCP</code> connection between the <code>RaTlsClient</code> and <code>RaTlsServer</code> is opened and ready to transfer sensitive data.</li>
 </ul>
-</li>
-<li>
-<p>veraison: https://github.com/veraison/services</p>
-<ul>
-<li>Please use 5a48655b3a9c3960667ef14df7860186238b6bcd commit. Newer versions
-might not work at the moment.</li>
-</ul>
-</li>
-</ul>
-<h1 id="preparation"><a class="header" href="#preparation">Preparation</a></h1>
-<p>The 3 aforementioned repositories should be checked out on the same level so it
-should look like following:</p>
-<pre><code>CCA/islet
-CCA/remote-attestation
-CCA/services   (this is veraison repository)
-</code></pre>
-<p>Now run <code>make</code> inside the <code>CCA/islet/examples/veraison</code> directory. This compiles
-some tools that will be used for this demo and places them inside proper
-directories. It also copies the <code>root-ca.crt</code> used by <code>realm-application</code>.</p>
-<pre><code>CCA/islet/examples/veraison $ make
-</code></pre>
-<p>The files installed are:</p>
-<ul>
-<li><code>root-ca.crt</code> copied to <code>CCA/islet/out/shared</code></li>
-<li><code>rsictl</code> installed in <code>CCA/islet/out/shared/bin</code></li>
-<li><code>realm-application</code> installed in <code>CCA/islet/out/shared/bin</code></li>
-<li><code>rocli</code> installed in <code>CCA/islet/examples/veraison/bin</code></li>
-<li><code>reliant-party</code> installed in <code>CCA/islet/examples/veraison/bin</code></li>
-</ul>
-<h1 id="provisioning"><a class="header" href="#provisioning">Provisioning</a></h1>
-<p>This is emulated by generating CPAK public key using one of camellia-hes
-utilities:</p>
-<pre><code>CCA/islet/hes/cpak-generator $ cargo run
-</code></pre>
-<p>This will by default generate a CPAK using dummy GUK and dummy BL2 hash files
-from <code>CCA/islet/hes/res</code> directory and save both key binary and PEM format
-respectively as:</p>
-<pre><code>CCA/islet/hes/out/cpak_public.bin
-CCA/islet/hes/out/cpak_public.pem
-</code></pre>
-<h1 id="gathering-measurements"><a class="header" href="#gathering-measurements">Gathering measurements</a></h1>
-<p>There are 2 things we need to measure here. Platform and realm.</p>
-<h2 id="plaftorm-measurement"><a class="header" href="#plaftorm-measurement">Plaftorm measurement</a></h2>
-<p>The platform measurement is done by getting the whole CCA token. Platform
-measurements are saved there.</p>
-<p>This is performed by some specifically prepared realm (e.g. one provided by
-<code>CCA/islet/scripts/fvp-cca</code>). To do this do the following:</p>
-<pre><code>CCA/islet $ ./scripts/init.sh
-CCA/islet $ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=islet --hes --rmm-log-level info
-</code></pre>
-<p>The first command will initialize the scripts and download all required
-components. The second command will build the platform and the realm and run the
-FVP emulator and HES application.</p>
-<p>If run under X environment terminals should open with telnet 5000/5003. If not
-we can run those telnets manually on two separate terminals:</p>
-<pre><code>$ telnet localhost 5000
-$ telnet localhost 5003
-</code></pre>
-<p>Port 5000 is the main terminal with console. 5003 is RMM. We don't need the
-output of the second one, but the telnet itself is necessary for FVP to work
-properly (buffering reasons).</p>
-<p>When the FVP linux is booted we need to run the realm:</p>
-<pre><code>$ ./launch-realm.sh
-</code></pre>
-<p>This will take a lot of time (FVP is slow). Wait until you have a realm
-loaded. Then load RSI module and get the token:</p>
-<pre><code>Welcome to Buildroot
-buildroot login: root
-
-# cd /shared
-shared # insmod rsi.ko
-shared # ./bin/rsictl attest -o token.bin
-</code></pre>
-<p>For the token its challenge value will be randomized, but in here it doesn't
-matter. Now we can kill the FVP (ctrl-c on the FVP terminal). Eventually the
-following command may be required as FVP doesn't always close cleanly:</p>
-<pre><code>$ pkill -9 -i fvp
-</code></pre>
-<p>The generated token is saved as the following file:</p>
-<pre><code>CCA/islet/out/shared/token.bin
-</code></pre>
-<h2 id="realm-measurement"><a class="header" href="#realm-measurement">Realm measurement</a></h2>
-<p>Realm measurement is done by generating a json file containing realm information
-that will be fed to realm verifier.</p>
-<p>This is performed by a small helper program called <code>kvmtool-rim-measurer</code>. It basically
-runs a modified lkvm tool that calculates and displays the RIM
-value. The process looks as follows:</p>
-<ul>
-<li>generate/get the realm you want to use (for now generated by fvp-cca script,
-those files can be taken from <code>CCA/islet/out/shared</code>,
-<code>Image.realm initramfs-realm.cpio.gz realm.sh</code>)</li>
-<li>Build the kvmtool-rim-measurer tool according to the description https://github.com/islet-project/assets/blob/3rd-kvmtool-rim-measurer/BUILD-RIM-MEASURER</li>
-<li>Create a dedicated directory for realm files (e.g. <code>CCA/islet/out/rim-extractor</code>) and copy the realm files we want to measure to that folder</li>
-<li>copy the resulting <code>lkvm-rim-measurer</code> to the <code>CCA/islet/out/rim-extractor</code> folder</li>
-<li>substitute <code>lkvm</code> to <code>lkvm-rim-measurer</code> in the <code>CCA/islet/out/rim-extractor/realm.sh</code> script</li>
-<li>get into the <code>CCA/islet/out/rim-extractor</code> folder and run the <code>realm.sh</code> script</li>
-<li>The `lkvm-rim-measurer`` will display the resulting RIM (e.g. RIM: F58AF6D6A022F113627B1E0B1E0D9B9A1BFB460207AC29721E84BCEF4B4F5CE08351684444BC11CF329D1D4C807BB621807916C2DF4F56B7326E8D16692546A8)</li>
-</ul>
-<p>Create a <code>realm.json</code> file according to the below template and replace the <code>TO_BE_REPLACED</code> term with the extracted RIM value.</p>
-<pre><code class="language-json">{
-    &quot;version&quot;: &quot;0.1&quot;,
-    &quot;issuer&quot;: {
-        &quot;name&quot;: &quot;Samsung&quot;,
-        &quot;url&quot;: &quot;https://cca-realms.samsung.com/&quot;
-    },
-    &quot;realm&quot;: {
-        &quot;uuid&quot;: &quot;f7e3e8ef-e0cc-4098-98f8-3a12436da040&quot;,
-        &quot;name&quot;: &quot;Data Processing Service&quot;,
-        &quot;version&quot;: &quot;1.0.0&quot;,
-        &quot;release-timestamp&quot;: &quot;2024-11-27T05:21:31Z&quot;,
-        &quot;attestation-protocol&quot;: &quot;HTTPS/RA-TLSv1.0&quot;,
-        &quot;port&quot;: 8088,
-        &quot;reference-values&quot;: {
-            &quot;rim&quot;: &quot;TO_BE_REPLACED&quot;,
-            &quot;rems&quot;: [
-                [
-                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
-                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
-                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
-                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;
-                ],
-                [
-                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
-                    &quot;7d43aefe4c6a955cd0753bccee2e707232d2b44b84c4607ac925597419ac104d&quot;,
-                    &quot;0000000000000000000000000000000000000000000000000000000000000000&quot;,
-                    &quot;9e6f6535ee6cf18be0eae95d0a2fd6876ccdc216a172e8f15607fe1a814d0b6c&quot;
-                ]
-            ],
-            &quot;hash-algo&quot;: &quot;sha-256&quot;
-        }
-    }
-}
-</code></pre>
-<p>The resulting json should be saved as the following file:</p>
-<pre><code>CCA/islet/out/rim-extractor/realm.json
-</code></pre>
-<p>Caveat: only RIM is supported for now, the REMs are placeholders.</p>
-<h1 id="provisioningmeasurement-summary"><a class="header" href="#provisioningmeasurement-summary">Provisioning/Measurement summary</a></h1>
-<p>Those 2 processes should end with the following things</p>
-<ul>
-<li>Prepared realm that won't be modified anymore:
-<code>Image.realm initramfs-realm.cpio.gz realm.sh</code>
-For now we use the one generated by fvp-cca</li>
-<li>Public CPAK key: <code>cpak_public.bin cpak_public.pem</code></li>
-<li>Platform measurement: <code>token.bin</code></li>
-<li>Realm measurement: <code>realm.json</code></li>
-</ul>
-<p>Those token and measurement files should be <em>sent</em> to verification services
-using a <em>safe</em> communication channel.</p>
-<h1 id="running-realm-for-verification-purposes"><a class="header" href="#running-realm-for-verification-purposes">Running realm for verification purposes</a></h1>
-<p>This is done in almost the same way we run realm to get the token.</p>
-<p>Run the FVP with HES and network this time. Use the --run-only param from now on
-not to regenerate the realm anymore so our measurements won't get stale:</p>
-<pre><code>CCA/islet $ ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=islet --hes --rmm-log-level info --run-only
-</code></pre>
-<p>When FVP is booted run the realm:</p>
-<pre><code># ./launch-realm.sh net
-</code></pre>
-<p>Inside the realm you need to do the following:</p>
-<ul>
-<li>configure the network</li>
-<li>load the RSI module</li>
-<li>set the date for the certificates to work properly</li>
-</ul>
-<p>This is how it looks:</p>
-<pre><code>Welcome to Buildroot
-buildroot login: root
-
-# cd /shared
-shared # ./set-realm-ip.sh
-shared # insmod rsi.ko
-shared # date 120512002023
-</code></pre>
-<h1 id="running-and-provisioning-verification-services-veraison-realm-verifier"><a class="header" href="#running-and-provisioning-verification-services-veraison-realm-verifier">Running and provisioning verification services (Veraison, realm-verifier)</a></h1>
-<p>First of all, before deploying Veraison, apply a patch to Veraison code (https://github.com/veraison/services):</p>
-<pre><code>CCA/services $ cat ../islet/examples/veraison/veraison-patch | git apply
-</code></pre>
-<p>Then it's possible to deploy a Veraison Docker and source some useful
-commands from veraison env file:</p>
-<pre><code>CCA/services $ make docker-deploy
-CCA/services $ source deployments/docker/env.bash
-</code></pre>
-<p>Check if all 3 veraison services are running:</p>
-<pre><code>$ veraison status
-         vts: running
-provisioning: running
-verification: running
-</code></pre>
-<p>Now install go dependencies for rocli script:</p>
-<pre><code>$ go install github.com/veraison/corim/cocli@latest
-$ go install github.com/veraison/ear/arc@latest
-$ go install github.com/veraison/evcli@latest
-</code></pre>
-<p>And run provisioning of token and cpak in PEM format:</p>
-<pre><code>CCA/islet/examples/veraison/provisioning $ ./run.sh -t &lt;path/to/token.bin&gt; -c &lt;path/to/cpak_public.pem&gt;
-</code></pre>
-<p>This will provision a reference token and public CPAK to allow
-Veraison verification.</p>
-<p>It's possible to see current values stored in Veraison:</p>
-<pre><code>$ veraison stores
-</code></pre>
-<p>And if required, they also should be cleared before they can be
-provisioned again:</p>
-<pre><code>$ veraison clear-stores
-</code></pre>
-<p>Run reliant-party, which is provisioned with <code>realm.json</code> and
-acts as Reliant Party with communication to realm and Veraison
-services (this binary takes several parameters, most should not be of
-any concern apart from passing latest reference values in <code>realm.json</code>):</p>
-<pre><code>CCA/islet/examples/veraison $ ./bin/reliant-party -r &lt;path/to/realm.json&gt;
-</code></pre>
-<p>If needed, '-b' option can be used to pass different network interface binding
-(the default is 0.0.0.0:1337):</p>
-<pre><code>CCA/islet/examples/veraison $ ./bin/reliant-party -r &lt;path/to/realm.json&gt; -b &lt;LOCAL_IP:PORT&gt;
-</code></pre>
-<p>Reliant-party awaits on given IP:PORT for communication from Realm and
-utilizes our <code>ratls</code> Rust library and <code>realm-verifier</code> library (for <code>realm.json</code>
-reference values verification) to verify client CCA token.</p>
-<h1 id="verification-itself"><a class="header" href="#verification-itself">Verification itself</a></h1>
-<p>On the realm side (the one we already run) just trigger the verification
-process. This is done using <code>realm-application</code> (<code>CCA/islet/examples/veraison/realm-application</code>).
-It will initialize RATLS connection to verification service by performing the necessary steps:</p>
-<ul>
-<li>receive challenge value from verification service</li>
-<li>request the token from RMM/TF-A/HES using the challenge</li>
-<li>send the received token to verification service</li>
-<li>establish safe connection if verification services agrees to do so</li>
-</ul>
-<p>This is done with the following command on the realm:</p>
-<pre><code>shared # ./bin/realm-application -r root-ca.crt -u &lt;SERVER_IP:PORT&gt;
-</code></pre>
-<p>That command will take a very long time as Realm on FVP is slow and it does
-asymmetric cryptography (RSA key generation).</p>
-<h1 id="verification-success"><a class="header" href="#verification-success">Verification success</a></h1>
-<p>When verification succeeds, both <code>realm-application</code> and <code>realm-verifier</code> should not
-output any errors. For both binaries you can set RUST_LOG
-environmental variable to change log level (info, debug):</p>
-<p>Realm:</p>
-<pre><code>shared # RUST_LOG=info ./bin/realm-application -r root-ca.crt -u &lt;SERVER_IP:PORT&gt;
-</code></pre>
-<p>Reliant party:</p>
-<pre><code>CCA/islet/examples/veraison $ RUST_LOG=info ./bin/reliant-party -r &lt;path/to/realm.json&gt; -b &lt;LOCAL_IP:PORT&gt;
-</code></pre>
-<p>With that log level realm client should report successful socket write
-with 'GIT' message and verifying server should output that message.</p>
+<p>For more detailed instruction refer to <a href="usecases/./RUN.html">RUN</a>. It contains a step by step guide of running the attestation demo using <code>Islet</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="contents-4"><a class="header" href="#contents-4">Contents</a></h1>
 <ul>
 <li><a href="https://islet-project.github.io/islet/plat-doc/monitor/index.html">5.1. Realm Management Monitor</a></li>
 <li><a href="https://islet-project.github.io/islet/app-doc/islet_sdk/index.html">5.2. Confidential Application SDK</a></li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `islet_rmm` crate."><title>islet_rmm - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-47e7ab555ef2818a.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0-nightly (ec08a0337 2023-09-04)" data-channel="nightly" data-search-js="search-5d3eaacf19ebf04f.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-f194925aa375ae96.css" data-theme-dark-css="dark-1dd4d1ce031e15de.css" data-theme-ayu-css="ayu-49e58d069f567085.css" ><script src="../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-ef3a2de404864b0b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../static.files/light-f194925aa375ae96.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../static.files/dark-1dd4d1ce031e15de.css"><link rel="stylesheet" href="../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="plat-doc/islet_rmm/../islet_rmm/index.html"><img class="rust-logo" src="plat-doc/islet_rmm/../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 id=""><a class="header" href="#"></a></h2></nav><nav class="sidebar"><a class="logo-container" href="plat-doc/islet_rmm/../islet_rmm/index.html"><img class="rust-logo" src="plat-doc/islet_rmm/../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 id="crate-islet_rmm" class="location"><a class="header" href="#crate-islet_rmm"><a href="plat-doc/islet_rmm/index.html#">Crate islet_rmm</a></a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 0.0.1</li><li><a id="all-types" href="plat-doc/islet_rmm/all.html">All Items</a></li></ul><section><ul class="block"><li><a href="plat-doc/islet_rmm/index.html#modules">Modules</a></li><li><a href="plat-doc/islet_rmm/index.html#macros">Macros</a></li><li><a href="plat-doc/islet_rmm/index.html#functions">Functions</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="plat-doc/islet_rmm/../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="plat-doc/islet_rmm/../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="plat-doc/islet_rmm/../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 id="crate-islet_rmm-1"><a class="header" href="#crate-islet_rmm-1">Crate <a class="mod" href="plat-doc/islet_rmm/index.html#">islet_rmm</a><button id="copy-path" title="Copy item path to clipboard"><img src="plat-doc/islet_rmm/../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></a></h1><span class="out-of-band"><a class="src" href="plat-doc/islet_rmm/../src/islet_rmm/lib.rs.html#1-162">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><h2 id="modules" class="small-section-header"><a class="header" href="#modules"><a href="plat-doc/islet_rmm/index.html#modules">Modules</a></a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/allocator/index.html" title="mod islet_rmm::allocator">allocator</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/asm/index.html" title="mod islet_rmm::asm">asm</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/config/index.html" title="mod islet_rmm::config">config</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/cpu/index.html" title="mod islet_rmm::cpu">cpu</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/error/index.html" title="mod islet_rmm::error">error</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/event/index.html" title="mod islet_rmm::event">event</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/exception/index.html" title="mod islet_rmm::exception">exception</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/gic/index.html" title="mod islet_rmm::gic">gic</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/granule/index.html" title="mod islet_rmm::granule">granule</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/host/index.html" title="mod islet_rmm::host">host</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/io/index.html" title="mod islet_rmm::io">io</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/logger/index.html" title="mod islet_rmm::logger">logger</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/macro/index.html" title="mod islet_rmm::macro">macro</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/mm/index.html" title="mod islet_rmm::mm">mm</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/mmio/index.html" title="mod islet_rmm::mmio">mmio</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/panic/index.html" title="mod islet_rmm::panic">panic</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/realm/index.html" title="mod islet_rmm::realm">realm</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/rmi/index.html" title="mod islet_rmm::rmi">rmi</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/rsi/index.html" title="mod islet_rmm::rsi">rsi</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/rtt/index.html" title="mod islet_rmm::rtt">rtt</a></div></li></ul><h2 id="macros" class="small-section-header"><a class="header" href="#macros"><a href="plat-doc/islet_rmm/index.html#macros">Macros</a></a></h2><ul class="item-table"><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.const_assert.html" title="macro islet_rmm::const_assert">const_assert</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.const_assert_eq.html" title="macro islet_rmm::const_assert_eq">const_assert_eq</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.const_assert_size.html" title="macro islet_rmm::const_assert_size">const_assert_size</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.copy_from_host_or_ret.html" title="macro islet_rmm::copy_from_host_or_ret">copy_from_host_or_ret</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.copy_to_host_or_ret.html" title="macro islet_rmm::copy_to_host_or_ret">copy_to_host_or_ret</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.define_interface.html" title="macro islet_rmm::define_interface">define_interface</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.eprint.html" title="macro islet_rmm::eprint">eprint</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.eprintln.html" title="macro islet_rmm::eprintln">eprintln</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.get_granule.html" title="macro islet_rmm::get_granule">get_granule</a></div><div class="desc docblock-short">Safety / Usage: “granule transaction” a set of APIs that define how to access “granule” and contents inside it.</div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.get_granule_if.html" title="macro islet_rmm::get_granule_if">get_granule_if</a></div><div class="desc docblock-short">get_granule_if!(addr: a physical address, state: a granule state you expect it to be)</div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.listen.html" title="macro islet_rmm::listen">listen</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.offset_of.html" title="macro islet_rmm::offset_of">offset_of</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.print.html" title="macro islet_rmm::print">print</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.println.html" title="macro islet_rmm::println">println</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.set_state_and_get_granule.html" title="macro islet_rmm::set_state_and_get_granule">set_state_and_get_granule</a></div><div class="desc docblock-short">set_state_and_get_granule!(addr: a physical address, state: a granule state you want to set)</div></li></ul><h2 id="functions" class="small-section-header"><a class="header" href="#functions"><a href="plat-doc/islet_rmm/index.html#functions">Functions</a></a></h2><ul class="item-table"><li><div class="item-name"><a class="fn" href="plat-doc/islet_rmm/fn.rmm_exit.html" title="fn islet_rmm::rmm_exit">rmm_exit</a><sup title="unsafe function">⚠</sup></div><div class="desc docblock-short">Call <code>rmm_exit</code> within <code>exception/vectors.s</code> and jumps to EL1.</div></li><li><div class="item-name"><a class="fn" href="plat-doc/islet_rmm/fn.start.html" title="fn islet_rmm::start">start</a><sup title="unsafe function">⚠</sup></div></li></ul></section></div></main></body></html><div style="break-before: page; page-break-before: always;"></div><!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `islet_sdk` crate."><title>islet_sdk - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-47e7ab555ef2818a.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="islet_sdk" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0-nightly (ec08a0337 2023-09-04)" data-channel="nightly" data-search-js="search-5d3eaacf19ebf04f.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-f194925aa375ae96.css" data-theme-dark-css="dark-1dd4d1ce031e15de.css" data-theme-ayu-css="ayu-49e58d069f567085.css" ><script src="../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-ef3a2de404864b0b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../static.files/light-f194925aa375ae96.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../static.files/dark-1dd4d1ce031e15de.css"><link rel="stylesheet" href="../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="app-doc/islet_sdk/../islet_sdk/index.html"><img class="rust-logo" src="app-doc/islet_sdk/../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 id="-1"><a class="header" href="#-1"></a></h2></nav><nav class="sidebar"><a class="logo-container" href="app-doc/islet_sdk/../islet_sdk/index.html"><img class="rust-logo" src="app-doc/islet_sdk/../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 id="crate-islet_sdk" class="location"><a class="header" href="#crate-islet_sdk"><a href="app-doc/islet_sdk/index.html#">Crate islet_sdk</a></a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 0.1.0</li><li><a id="all-types" href="app-doc/islet_sdk/all.html">All Items</a></li></ul><section><ul class="block"><li><a href="app-doc/islet_sdk/index.html#modules">Modules</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="app-doc/islet_sdk/../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="app-doc/islet_sdk/../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="app-doc/islet_sdk/../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 id="crate-islet_sdk-1"><a class="header" href="#crate-islet_sdk-1">Crate <a class="mod" href="app-doc/islet_sdk/index.html#">islet_sdk</a><button id="copy-path" title="Copy item path to clipboard"><img src="app-doc/islet_sdk/../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></a></h1><span class="out-of-band"><a class="src" href="app-doc/islet_sdk/../src/islet_sdk/lib.rs.html#1-50">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><h2 id="modules" class="small-section-header"><a class="header" href="#modules"><a href="app-doc/islet_sdk/index.html#modules">Modules</a></a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/attester/index.html" title="mod islet_sdk::attester">attester</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/c_api/index.html" title="mod islet_sdk::c_api">c_api</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/config/index.html" title="mod islet_sdk::config">config</a></div><div class="desc docblock-short">cbindgen:ignore</div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/error/index.html" title="mod islet_sdk::error">error</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/prelude/index.html" title="mod islet_sdk::prelude">prelude</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/report/index.html" title="mod islet_sdk::report">report</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/sealing/index.html" title="mod islet_sdk::sealing">sealing</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/verifier/index.html" title="mod islet_sdk::verifier">verifier</a></div></li></ul></section></div></main></body></html>
+<div style="break-before: page; page-break-before: always;"></div><!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `islet_rmm` crate."><title>islet_rmm - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-47e7ab555ef2818a.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0-nightly (ec08a0337 2023-09-04)" data-channel="nightly" data-search-js="search-5d3eaacf19ebf04f.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-f194925aa375ae96.css" data-theme-dark-css="dark-1dd4d1ce031e15de.css" data-theme-ayu-css="ayu-49e58d069f567085.css" ><script src="../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-ef3a2de404864b0b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../static.files/light-f194925aa375ae96.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../static.files/dark-1dd4d1ce031e15de.css"><link rel="stylesheet" href="../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="plat-doc/islet_rmm/../islet_rmm/index.html"><img class="rust-logo" src="plat-doc/islet_rmm/../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 id=""><a class="header" href="#"></a></h2></nav><nav class="sidebar"><a class="logo-container" href="plat-doc/islet_rmm/../islet_rmm/index.html"><img class="rust-logo" src="plat-doc/islet_rmm/../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 id="crate-islet_rmm" class="location"><a class="header" href="#crate-islet_rmm"><a href="plat-doc/islet_rmm/index.html#">Crate islet_rmm</a></a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 0.0.1</li><li><a id="all-types" href="plat-doc/islet_rmm/all.html">All Items</a></li></ul><section><ul class="block"><li><a href="plat-doc/islet_rmm/index.html#modules">Modules</a></li><li><a href="plat-doc/islet_rmm/index.html#macros">Macros</a></li><li><a href="plat-doc/islet_rmm/index.html#functions">Functions</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="plat-doc/islet_rmm/../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="plat-doc/islet_rmm/../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="plat-doc/islet_rmm/../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 id="crate-islet_rmm-1"><a class="header" href="#crate-islet_rmm-1">Crate <a class="mod" href="plat-doc/islet_rmm/index.html#">islet_rmm</a><button id="copy-path" title="Copy item path to clipboard"><img src="plat-doc/islet_rmm/../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></a></h1><span class="out-of-band"><a class="src" href="plat-doc/islet_rmm/../src/islet_rmm/lib.rs.html#1-165">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><h2 id="modules" class="small-section-header"><a class="header" href="#modules"><a href="plat-doc/islet_rmm/index.html#modules">Modules</a></a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/allocator/index.html" title="mod islet_rmm::allocator">allocator</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/asm/index.html" title="mod islet_rmm::asm">asm</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/config/index.html" title="mod islet_rmm::config">config</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/cpu/index.html" title="mod islet_rmm::cpu">cpu</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/error/index.html" title="mod islet_rmm::error">error</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/event/index.html" title="mod islet_rmm::event">event</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/exception/index.html" title="mod islet_rmm::exception">exception</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/gic/index.html" title="mod islet_rmm::gic">gic</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/granule/index.html" title="mod islet_rmm::granule">granule</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/host/index.html" title="mod islet_rmm::host">host</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/io/index.html" title="mod islet_rmm::io">io</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/logger/index.html" title="mod islet_rmm::logger">logger</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/macro/index.html" title="mod islet_rmm::macro">macro</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/mm/index.html" title="mod islet_rmm::mm">mm</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/mmio/index.html" title="mod islet_rmm::mmio">mmio</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/panic/index.html" title="mod islet_rmm::panic">panic</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/realm/index.html" title="mod islet_rmm::realm">realm</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/rmi/index.html" title="mod islet_rmm::rmi">rmi</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/rsi/index.html" title="mod islet_rmm::rsi">rsi</a></div></li><li><div class="item-name"><a class="mod" href="plat-doc/islet_rmm/rtt/index.html" title="mod islet_rmm::rtt">rtt</a></div></li></ul><h2 id="macros" class="small-section-header"><a class="header" href="#macros"><a href="plat-doc/islet_rmm/index.html#macros">Macros</a></a></h2><ul class="item-table"><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.const_assert.html" title="macro islet_rmm::const_assert">const_assert</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.const_assert_eq.html" title="macro islet_rmm::const_assert_eq">const_assert_eq</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.const_assert_size.html" title="macro islet_rmm::const_assert_size">const_assert_size</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.copy_from_host_or_ret.html" title="macro islet_rmm::copy_from_host_or_ret">copy_from_host_or_ret</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.copy_to_host_or_ret.html" title="macro islet_rmm::copy_to_host_or_ret">copy_to_host_or_ret</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.define_interface.html" title="macro islet_rmm::define_interface">define_interface</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.eprint.html" title="macro islet_rmm::eprint">eprint</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.eprintln.html" title="macro islet_rmm::eprintln">eprintln</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.get_granule.html" title="macro islet_rmm::get_granule">get_granule</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.get_granule_if.html" title="macro islet_rmm::get_granule_if">get_granule_if</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.listen.html" title="macro islet_rmm::listen">listen</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.offset_of.html" title="macro islet_rmm::offset_of">offset_of</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.print.html" title="macro islet_rmm::print">print</a></div></li><li><div class="item-name"><a class="macro" href="plat-doc/islet_rmm/macro.println.html" title="macro islet_rmm::println">println</a></div></li></ul><h2 id="functions" class="small-section-header"><a class="header" href="#functions"><a href="plat-doc/islet_rmm/index.html#functions">Functions</a></a></h2><ul class="item-table"><li><div class="item-name"><a class="fn" href="plat-doc/islet_rmm/fn.rmm_exit.html" title="fn islet_rmm::rmm_exit">rmm_exit</a><sup title="unsafe function">⚠</sup></div><div class="desc docblock-short">Call <code>rmm_exit</code> within <code>exception/vectors.s</code> and jumps to EL1.</div></li><li><div class="item-name"><a class="fn" href="plat-doc/islet_rmm/fn.start.html" title="fn islet_rmm::start">start</a><sup title="unsafe function">⚠</sup></div></li></ul></section></div></main></body></html><div style="break-before: page; page-break-before: always;"></div><!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `islet_sdk` crate."><title>islet_sdk - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../static.files/rustdoc-47e7ab555ef2818a.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="islet_sdk" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0-nightly (ec08a0337 2023-09-04)" data-channel="nightly" data-search-js="search-5d3eaacf19ebf04f.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-f194925aa375ae96.css" data-theme-dark-css="dark-1dd4d1ce031e15de.css" data-theme-ayu-css="ayu-49e58d069f567085.css" ><script src="../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-ef3a2de404864b0b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../static.files/light-f194925aa375ae96.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../static.files/dark-1dd4d1ce031e15de.css"><link rel="stylesheet" href="../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="logo-container" href="app-doc/islet_sdk/../islet_sdk/index.html"><img class="rust-logo" src="app-doc/islet_sdk/../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 id="-1"><a class="header" href="#-1"></a></h2></nav><nav class="sidebar"><a class="logo-container" href="app-doc/islet_sdk/../islet_sdk/index.html"><img class="rust-logo" src="app-doc/islet_sdk/../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><h2 id="crate-islet_sdk" class="location"><a class="header" href="#crate-islet_sdk"><a href="app-doc/islet_sdk/index.html#">Crate islet_sdk</a></a></h2><div class="sidebar-elems"><ul class="block"><li class="version">Version 0.1.0</li><li><a id="all-types" href="app-doc/islet_sdk/all.html">All Items</a></li></ul><section><ul class="block"><li><a href="app-doc/islet_sdk/index.html#modules">Modules</a></li></ul></section></div></nav><main><div class="width-limiter"><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="app-doc/islet_sdk/../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="app-doc/islet_sdk/../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="app-doc/islet_sdk/../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="main-heading"><h1 id="crate-islet_sdk-1"><a class="header" href="#crate-islet_sdk-1">Crate <a class="mod" href="app-doc/islet_sdk/index.html#">islet_sdk</a><button id="copy-path" title="Copy item path to clipboard"><img src="app-doc/islet_sdk/../static.files/clipboard-7571035ce49a181d.svg" width="19" height="18" alt="Copy item path"></button></a></h1><span class="out-of-band"><a class="src" href="app-doc/islet_sdk/../src/islet_sdk/lib.rs.html#1-50">source</a> · <button id="toggle-all-docs" title="collapse all docs">[<span>&#x2212;</span>]</button></span></div><h2 id="modules" class="small-section-header"><a class="header" href="#modules"><a href="app-doc/islet_sdk/index.html#modules">Modules</a></a></h2><ul class="item-table"><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/attester/index.html" title="mod islet_sdk::attester">attester</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/c_api/index.html" title="mod islet_sdk::c_api">c_api</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/config/index.html" title="mod islet_sdk::config">config</a></div><div class="desc docblock-short">cbindgen:ignore</div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/error/index.html" title="mod islet_sdk::error">error</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/prelude/index.html" title="mod islet_sdk::prelude">prelude</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/report/index.html" title="mod islet_sdk::report">report</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/sealing/index.html" title="mod islet_sdk::sealing">sealing</a></div></li><li><div class="item-name"><a class="mod" href="app-doc/islet_sdk/verifier/index.html" title="mod islet_sdk::verifier">verifier</a></div></li></ul></section></div></main></body></html>
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">

@@ -233,7 +233,7 @@
 
 <span class="kw">fn </span>handle_data_abort(
     realm_exit_res: [usize; <span class="number">4</span>],
-    rec: <span class="kw-2">&amp;mut </span>Rec&lt;<span class="lifetime">&#39;_</span>&gt;,
+    rec: <span class="kw-2">&amp;</span>Rec&lt;<span class="lifetime">&#39;_</span>&gt;,
     run: <span class="kw-2">&amp;mut </span>Run,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
     <span class="kw">let </span>realm_id = rec.realmid()<span class="question-mark">?</span>;

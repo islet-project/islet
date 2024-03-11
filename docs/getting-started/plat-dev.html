@@ -185,7 +185,7 @@ powerful <a href="https://github.com/islet-project/islet/tree/main/third-party">
 </code></pre>
 <h2 id="running-a-linux-realm"><a class="header" href="#running-a-linux-realm">Running a linux realm</a></h2>
 <pre><code class="language-bash">// Start FVP on host
-$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=tf-rmm
+$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=islet
 
 // Run a linux realm on fvp
 $ ./launch-realm.sh
@@ -208,7 +208,7 @@ $ LD_LIBRARY_PATH=./ ./sdk-example-c
 To get details about its network configuration, see <a href="https://github.com/islet-project/islet/blob/main/doc/network.md">network.md</a></p>
 <h2 id="testing-the-realm-features"><a class="header" href="#testing-the-realm-features">Testing the realm features</a></h2>
 <pre><code class="language-bash">// Start FVP on fvp
-$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=tf-rmm
+$ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=islet
 
 // Test the realm features on fvp
 $ ./test-realm.sh [attest]
@@ -221,7 +221,10 @@ $ ./scripts/fvp-cca --normal-world=tf-a-tests --rmm=islet
 $ ./scripts/fvp-cca --normal-world=tf-a-tests --rmm=tf-rmm
 </code></pre>
 <h2 id="testing-rmms-with-acs"><a class="header" href="#testing-rmms-with-acs">Testing RMMs with <a href="https://github.com/ARM-software/cca-rmm-acs">ACS</a></a></h2>
-<pre><code># TF RMM
+<pre><code># Islet RMM
+$ ./scripts/fvp-cca --normal-world=acs --rmm=islet
+
+# TF RMM
 $ ./scripts/fvp-cca --normal-world=acs --rmm=tf-rmm
 </code></pre>
 

@@ -160,6 +160,9 @@
 <a href="#160" id="160">160</a>
 <a href="#161" id="161">161</a>
 <a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
 </pre></div><pre class="rust"><code><span class="attr">#![no_std]
 #![allow(incomplete_features)]
 #![feature(alloc_error_handler)]
@@ -209,17 +212,20 @@
 </span><span class="kw">extern crate </span>log;
 
 <span class="kw">use </span><span class="kw">crate</span>::exception::vectors;
-<span class="kw">use </span><span class="kw">crate</span>::granule::create_granule_status_table <span class="kw">as </span>setup_gst;
+<span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]
+</span><span class="kw">use </span><span class="kw">crate</span>::granule::create_granule_status_table <span class="kw">as </span>setup_gst;
 <span class="kw">use </span><span class="kw">crate</span>::mm::translation::get_page_table;
 <span class="kw">use </span><span class="kw">crate</span>::monitor::Monitor;
 <span class="kw">use </span><span class="kw">crate</span>::rmm_el3::setup_el3_ifc;
 
 <span class="kw">use </span>armv9a::{bits_in_reg, regs::<span class="kw-2">*</span>};
+<span class="kw">use </span>core::ptr::addr_of;
 
 <span class="kw">pub unsafe fn </span>start(cpu_id: usize) {
     setup_mmu_cfg();
     setup_el2();
-    setup_gst();
+    <span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]
+    </span>setup_gst();
     <span class="comment">// TODO: call once or with every start?
     </span><span class="kw">if </span>cpu_id == <span class="number">0 </span>{
         setup_el3_ifc();
@@ -248,7 +254,7 @@
             | HCR_EL2::FMO
             | HCR_EL2::VM,
     );
-    VBAR_EL2.set(<span class="kw-2">&amp;</span>vectors <span class="kw">as </span><span class="kw-2">*const </span>u64 <span class="kw">as </span>u64);
+    VBAR_EL2.set(<span class="macro">addr_of!</span>(vectors) <span class="kw">as </span>u64);
     SCTLR_EL2.set(SCTLR_EL2::C | SCTLR_EL2::I | SCTLR_EL2::M | SCTLR_EL2::EOS);
     CPTR_EL2.set(CPTR_EL2::TAM);
     ICC_SRE_EL2.set(ICC_SRE_EL2::ENABLE | ICC_SRE_EL2::DIB | ICC_SRE_EL2::DFB | ICC_SRE_EL2::SRE);

@@ -170,13 +170,11 @@
 <a href="#170" id="170">170</a>
 <a href="#171" id="171">171</a>
 <a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-<a href="#174" id="174">174</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::mem::size_of;
 <span class="kw">use </span>vmsa::address::PhysAddr;
 
 <span class="kw">use </span><span class="kw">super</span>::address::GuestPhysAddr;
-<span class="kw">use </span><span class="kw">crate</span>::granule::{GranuleState, GRANULE_SIZE};
+<span class="kw">use </span><span class="kw">crate</span>::granule::GRANULE_SIZE;
 <span class="kw">use </span><span class="kw">crate</span>::realm::mm::page_table::pte::{attribute, shareable};
 <span class="kw">use </span><span class="kw">crate</span>::realm::registry::get_realm;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::{Error, InternalError::NotExistRealm};
@@ -208,9 +206,7 @@
 #[derive(Copy, Clone)]
 </span><span class="kw">pub struct </span>RttPage([u64; GRANULE_SIZE / size_of::&lt;u64&gt;()]);
 
-<span class="kw">impl </span>Content <span class="kw">for </span>RttPage {
-    <span class="kw">const </span>FLAGS: u64 = GranuleState::RTT;
-}
+<span class="kw">impl </span>Content <span class="kw">for </span>RttPage {}
 
 <span class="kw">impl </span>RttPage {
     <span class="kw">pub fn </span>len(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
@@ -304,8 +300,8 @@
             <span class="kw">return </span><span class="bool-val">false</span>;
         }
 
-        <span class="kw">return </span><span class="bool-val">true</span>;
-    }
+        <span class="bool-val">true
+    </span>}
 
     <span class="kw">pub fn </span>is_unassigned(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID

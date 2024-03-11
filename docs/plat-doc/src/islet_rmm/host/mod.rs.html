@@ -63,15 +63,11 @@
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
-<a href="#66" id="66">66</a>
-<a href="#67" id="67">67</a>
-<a href="#68" id="68">68</a>
-<a href="#69" id="69">69</a>
 </pre></div><pre class="rust"><code><span class="attr">#[macro_use]
 </span><span class="kw">pub mod </span>pointer;
 
 <span class="kw">use </span><span class="kw">crate</span>::granule::validate_addr;
-<span class="kw">use </span><span class="kw">crate</span>::granule::{GranuleState, GRANULE_SIZE};
+<span class="kw">use </span><span class="kw">crate</span>::granule::GRANULE_SIZE;
 <span class="kw">use </span><span class="kw">crate</span>::mm::translation::PageTable;
 
 <span class="kw">use </span>vmsa::guard::Content;
@@ -111,7 +107,7 @@
 
 <span class="kw">impl </span>DataPage {
     <span class="kw">pub unsafe fn </span>as_ptr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*const </span>u8 {
-        <span class="self">self</span>.<span class="number">0</span>.as_ptr() <span class="kw">as </span><span class="kw-2">*const </span>u8
+        <span class="self">self</span>.<span class="number">0</span>.as_ptr()
     }
 
     <span class="kw">pub unsafe fn </span>as_mut_ptr(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">*mut </span>u8 {
@@ -125,15 +121,11 @@
 
 <span class="kw">impl </span>Default <span class="kw">for </span>DataPage {
     <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{
-            <span class="number">0</span>: [<span class="number">0</span>; GRANULE_SIZE],
-        }
+        <span class="self">Self</span>([<span class="number">0</span>; GRANULE_SIZE])
     }
 }
 
 <span class="kw">impl </span>Accessor <span class="kw">for </span>DataPage {}
 
-<span class="kw">impl </span>Content <span class="kw">for </span>DataPage {
-    <span class="kw">const </span>FLAGS: u64 = GranuleState::Data;
-}
+<span class="kw">impl </span>Content <span class="kw">for </span>DataPage {}
 </code></pre></div></section></main></body></html>

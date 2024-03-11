@@ -181,9 +181,6 @@
 <a href="#181" id="181">181</a>
 <a href="#182" id="182">182</a>
 <a href="#183" id="183">183</a>
-<a href="#184" id="184">184</a>
-<a href="#185" id="185">185</a>
-<a href="#186" id="186">186</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::timer;
 <span class="kw">use </span><span class="kw">crate</span>::cpu::get_cpu_id;
 <span class="kw">use </span><span class="kw">crate</span>::gic;
@@ -281,16 +278,13 @@
 
 <span class="kw">impl </span><span class="kw">crate</span>::realm::vcpu::Context <span class="kw">for </span>Context {
     <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span><span class="kw-2">mut </span>context: <span class="self">Self </span>= Default::default();
-
         <span class="comment">// Set appropriate sys registers
-        </span>context.spsr =
-            SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M &amp; <span class="number">0b0101</span>);
-
-        <span class="comment">// TODO: enable floating point
+        // TODO: enable floating point
         // CPTR_EL2, CPACR_EL1, update vectors.s, etc..
-
-        </span>context
+        </span><span class="self">Self </span>{
+            spsr: SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M &amp; <span class="number">0b0101</span>),
+            ..Default::default()
+        }
     }
 
     <span class="kw">unsafe fn </span>into_current(vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;<span class="self">Self</span>&gt;) {

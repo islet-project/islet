@@ -92,13 +92,13 @@
 <span class="kw">pub fn </span>save_state(vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;Context&gt;) {
     <span class="kw">let </span>timer = <span class="kw-2">&amp;mut </span>vcpu.context.timer;
 
-    <span class="kw-2">*&amp;mut </span>timer.cntvoff_el2 = <span class="kw">unsafe </span>{ CNTVOFF_EL2.get() };
-    <span class="kw-2">*&amp;mut </span>timer.cntv_cval_el0 = <span class="kw">unsafe </span>{ CNTV_CVAL_EL0.get() };
-    <span class="kw-2">*&amp;mut </span>timer.cntv_ctl_el0 = <span class="kw">unsafe </span>{ CNTV_CTL_EL0.get() };
-    <span class="kw-2">*&amp;mut </span>timer.cntpoff_el2 = <span class="kw">unsafe </span>{ S3_4_C14_C0_6.get() }; <span class="comment">// CNTPOFF_EL2
-    </span><span class="kw-2">*&amp;mut </span>timer.cntp_cval_el0 = <span class="kw">unsafe </span>{ CNTP_CVAL_EL0.get() };
-    <span class="kw-2">*&amp;mut </span>timer.cntp_ctl_el0 = <span class="kw">unsafe </span>{ CNTP_CTL_EL0.get() };
-    <span class="kw-2">*&amp;mut </span>timer.cnthctl_el2 = <span class="kw">unsafe </span>{ S3_4_C14_C1_0.get() };
+    timer.cntvoff_el2 = <span class="kw">unsafe </span>{ CNTVOFF_EL2.get() };
+    timer.cntv_cval_el0 = <span class="kw">unsafe </span>{ CNTV_CVAL_EL0.get() };
+    timer.cntv_ctl_el0 = <span class="kw">unsafe </span>{ CNTV_CTL_EL0.get() };
+    timer.cntpoff_el2 = <span class="kw">unsafe </span>{ S3_4_C14_C0_6.get() }; <span class="comment">// CNTPOFF_EL2
+    </span>timer.cntp_cval_el0 = <span class="kw">unsafe </span>{ CNTP_CVAL_EL0.get() };
+    timer.cntp_ctl_el0 = <span class="kw">unsafe </span>{ CNTP_CTL_EL0.get() };
+    timer.cnthctl_el2 = <span class="kw">unsafe </span>{ S3_4_C14_C1_0.get() };
 }
 
 <span class="kw">pub fn </span>send_state_to_host(id: usize, vcpu: usize, run: <span class="kw-2">&amp;mut </span>Run) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {

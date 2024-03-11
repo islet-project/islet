@@ -168,6 +168,7 @@
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::event::RsiHandle;
 <span class="kw">use </span><span class="kw">crate</span>::granule::GranuleState;
 <span class="kw">use </span><span class="kw">crate</span>::listen;
@@ -177,6 +178,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rec::run::Run;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rec::Rec;
 <span class="kw">use </span><span class="kw">crate</span>::Monitor;
+<span class="kw">use crate</span>::{get_granule, get_granule_if};
 
 <span class="kw">pub const </span>SMCCC_VERSION: usize = <span class="number">0x8000_0000</span>;
 <span class="kw">pub const </span>SMCCC_ARCH_FEATURES: usize = <span class="number">0x8000_0001</span>;

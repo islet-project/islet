@@ -225,7 +225,7 @@
     ///   (2) T::validate():  this function is used to validate each field in T. (e.g., a constraint on parameter value)
     /// It returns a guard object only if it passes the two steps.
     </span><span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>acquire&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;PointerGuard&lt;<span class="lifetime">&#39;a</span>, T&gt;&gt; {
+    </span><span class="kw">pub fn </span>acquire(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;PointerGuard&lt;<span class="lifetime">&#39;_</span>, T&gt;&gt; {
         <span class="kw">if </span>T::acquire(<span class="self">self</span>.ptr <span class="kw">as </span>usize) {
             <span class="kw">let </span>guard = PointerGuard { inner: <span class="self">self </span>};
             <span class="kw">if </span>!guard.validate() {
@@ -284,7 +284,7 @@
     }
 
     <span class="attr">#[inline]
-    </span><span class="kw">pub fn </span>acquire&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;PointerMutGuard&lt;<span class="lifetime">&#39;a</span>, T&gt;&gt; {
+    </span><span class="kw">pub fn </span>acquire(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Option</span>&lt;PointerMutGuard&lt;<span class="lifetime">&#39;_</span>, T&gt;&gt; {
         <span class="kw">if </span>T::acquire(<span class="self">self</span>.ptr <span class="kw">as </span>usize) {
             <span class="kw">let </span>guard = PointerMutGuard { inner: <span class="self">self </span>};
             <span class="kw">if </span>!guard.validate() {

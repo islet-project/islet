@@ -363,6 +363,9 @@
 <a href="#363" id="363">363</a>
 <a href="#364" id="364">364</a>
 <a href="#365" id="365">365</a>
+<a href="#366" id="366">366</a>
+<a href="#367" id="367">367</a>
+<a href="#368" id="368">368</a>
 </pre></div><pre class="rust"><code><span class="kw">pub mod </span>attestation;
 <span class="kw">pub mod </span>constraint;
 <span class="kw">pub mod </span>error;
@@ -387,6 +390,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rtt::{is_protected_ipa, validate_ipa, RTT_PAGE_LEVEL};
 <span class="kw">use </span><span class="kw">crate</span>::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 <span class="kw">use </span><span class="kw">crate</span>::Monitor;
+<span class="kw">use crate</span>::{get_granule, get_granule_if};
 
 <span class="macro">define_interface! </span>{
     command {
@@ -407,7 +411,9 @@
 <span class="kw">pub const </span>ERROR_STATE: usize = <span class="number">2</span>;
 <span class="kw">pub const </span>INCOMPLETE: usize = <span class="number">3</span>;
 
-<span class="kw">pub const </span>VERSION: usize = (<span class="number">1 </span>&lt;&lt; <span class="number">16</span>) | <span class="number">0</span>;
+<span class="kw">const </span>ABI_VERSION_MAJOR: usize = <span class="number">1</span>;
+<span class="kw">const </span>ABI_VERSION_MINOR: usize = <span class="number">0</span>;
+<span class="kw">pub const </span>VERSION: usize = (ABI_VERSION_MAJOR &lt;&lt; <span class="number">16</span>) | ABI_VERSION_MINOR;
 
 <span class="kw">extern crate </span>alloc;
 
@@ -602,7 +608,7 @@
 
         <span class="kw">let </span>rd = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
         <span class="kw">let </span>rd = rd.content::&lt;Rd&gt;();
-        HashContext::new(<span class="kw-2">&amp;</span>rd)<span class="question-mark">?</span>.extend_measurement(<span class="kw-2">&amp;</span>buffer[<span class="number">0</span>..size], index)<span class="question-mark">?</span>;
+        HashContext::new(rd)<span class="question-mark">?</span>.extend_measurement(<span class="kw-2">&amp;</span>buffer[<span class="number">0</span>..size], index)<span class="question-mark">?</span>;
 
         set_reg(realmid, vcpuid, <span class="number">0</span>, SUCCESS)<span class="question-mark">?</span>;
         ret[<span class="number">0</span>] = rmi::SUCCESS_REC_ENTER;

@@ -206,7 +206,7 @@ These accesses must be securely done as insecure implementations may open things
 <li>unmap host memory</li>
 </ol>
 <p>After it gets done, we can access <code>params</code> that reside in RMM memory, not host memory.
-So it's secure against concurrency-based attacks such as double-fetch attacks. </p>
+So it's secure against concurrency-based attacks such as double-fetch attacks.</p>
 <p>If some additional security checks on some field value are needed (e.g., <code>Params.hash_algo</code> should be either 0 or 1),
 you can do it via <code>validate()</code> in <code>Accessor</code> trait. The specified validation is called before RMM accesses host memory.</p>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]

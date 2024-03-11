@@ -28,6 +28,6 @@
 <span class="kw">pub static </span>RMS: Spinlock&lt;(usize, RealmMap)&gt; = Spinlock::new((<span class="number">0</span>, BTreeMap::new()));
 
 <span class="kw">pub fn </span>get_realm(id: usize) -&gt; <span class="prelude-ty">Option</span>&lt;RealmMutex&gt; {
-    RMS.lock().<span class="number">1</span>.get(<span class="kw-2">&amp;</span>id).map(|realm| Arc::clone(realm))
+    RMS.lock().<span class="number">1</span>.get(<span class="kw-2">&amp;</span>id).map(Arc::clone)
 }
 </code></pre></div></section></main></body></html>

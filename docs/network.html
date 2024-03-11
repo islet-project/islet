@@ -184,7 +184,7 @@ The three components involved are:</p>
 </ul>
 <p>In our network configuration, each of the three has different static IP address so that they can communicate with each other by specifying a proper destination IP address.
 Under this setting, any of the three can act as either server or client.</p>
-<p>And here is how to make &quot;<em>FVP Host</em> and <em>Realm</em>&quot; capable of communicating through to <em>PC Host</em>.
+<p>And here is how to make "<em>FVP Host</em> and <em>Realm</em>" capable of communicating through to <em>PC Host</em>.
 First of all, make sure you are in the root directory of Islet and go through the following instructions.
 In most cases, you would probably not have to customize network-related arguments and feed them into <code>fvp-cca</code>. Using a default configuration would be sufficient.</p>
 <pre><code># full command:
@@ -202,7 +202,7 @@ $ ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=tf-rmm
 </code></pre>
 <p>FVP is able to communicate through Host to external networks in a similar way to what most VMs do.
 To do so, it is required to assign a real IP address (wired or wireless) into the PC host while IP addresses for FVP Host and Realm do not have to be a real IP,
-since the PC Host takes the role of NAT in order to hide their IPs from external networks. </p>
+since the PC Host takes the role of NAT in order to hide their IPs from external networks.</p>
 <h2 id="a-closer-look-at-network-configuration"><a class="header" href="#a-closer-look-at-network-configuration">A closer look at network configuration</a></h2>
 <p>This is how the aforementioned three components interact with each other:</p>
 <pre><code>// A default configuration

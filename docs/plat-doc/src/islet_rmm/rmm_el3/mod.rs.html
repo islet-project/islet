@@ -38,9 +38,6 @@
 <a href="#38" id="38">38</a>
 <a href="#39" id="39">39</a>
 <a href="#40" id="40">40</a>
-<a href="#41" id="41">41</a>
-<a href="#42" id="42">42</a>
-<a href="#43" id="43">43</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>digest;
 <span class="kw">mod </span>iface;
 <span class="kw">mod </span>utils;
@@ -53,15 +50,12 @@
 </span><span class="kw">use </span><span class="kw">crate</span>::asm;
 <span class="kw">use </span><span class="kw">crate</span>::config;
 <span class="kw">use </span>alloc::vec::Vec;
+<span class="kw">use </span>config::RMM_SHARED_BUFFER_START;
 <span class="kw">use </span>spinning_top::Spinlock;
 
 <span class="comment">// TODO: move those consts to a more appropriate place
 </span><span class="kw">const </span>SHA256_DIGEST_SIZE: usize = <span class="number">32</span>;
 <span class="kw">const </span>ATTEST_KEY_CURVE_ECC_SECP384R1: usize = <span class="number">0</span>;
-
-<span class="comment">// TODO: Acquire this address properly.
-// This is PA address, but Islet seems to be mapped 1:1 so it also works as VA.
-</span><span class="kw">const </span>RMM_SHARED_BUFFER_START: usize = <span class="number">0xFFBFF000</span>;
 
 <span class="kw">static </span>RMM_SHARED_BUFFER_LOCK: Spinlock&lt;usize&gt; = Spinlock::new(RMM_SHARED_BUFFER_START);
 <span class="kw">static </span>REALM_ATTEST_KEY: Spinlock&lt;Vec&lt;u8&gt;&gt; = Spinlock::new(Vec::new());

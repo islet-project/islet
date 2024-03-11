@@ -199,7 +199,7 @@ to create headers for rust libraries which expose public C/C++ APIs.</p>
 </span><span class="boring">fn main() {
 </span>use islet_sdk::prelude::*;
 
-let user_data = b&quot;User data&quot;;
+let user_data = b"User data";
 let report = attest(user_data)?;
 let claims = verify(&amp;report)?;
 
@@ -208,19 +208,19 @@ print_claim(&amp;claims);
 if let Some(ClaimData::Bstr(data)) = parse(&amp;claims, config::STR_USER_DATA) {
     assert_eq!(user_data, &amp;data[..user_data.len()]);
 } else {
-    assert!(false, &quot;Wrong user data&quot;);
+    assert!(false, "Wrong user data");
 }
 
 if let Some(ClaimData::Text(data)) = parse(&amp;claims, config::STR_PLAT_PROFILE) {
-    assert_eq!(data, &quot;http://arm.com/CCA-SSD/1.0.0&quot;);
+    assert_eq!(data, "http://arm.com/CCA-SSD/1.0.0");
 } else {
-    assert!(false, &quot;Wrong platform profile&quot;);
+    assert!(false, "Wrong platform profile");
 }
 
 if let Some(ClaimData::Bstr(data)) = parse(&amp;claims, config::STR_REALM_INITIAL_MEASUREMENT) {
-    println!(&quot;Realm initial measurement: {:X?}&quot;, &amp;data);
+    println!("Realm initial measurement: {:X?}", &amp;data);
 } else {
-    assert!(false, &quot;Wrong RIM&quot;);
+    assert!(false, "Wrong RIM");
 }
 <span class="boring">}</span></code></pre></pre>
 <h4 id="c-code-snippet"><a class="header" href="#c-code-snippet">C++ code snippet</a></h4>
@@ -229,7 +229,7 @@ if let Some(ClaimData::Bstr(data)) = parse(&amp;claims, config::STR_REALM_INITIA
 byte report[2048], claims[1024], claim[1024];
 int report_len, claims_len, claim_len;
 
-std::string user_data(&quot;User Custom data&quot;);
+std::string user_data("User Custom data");
 if (!islet_attest((const byte*)user_data.c_str(), user_data.size(), report, &amp;report_len))
     return -1;
 
@@ -238,17 +238,17 @@ if (!islet_verify(report, report_len, claims, &amp;claims_len))
 
 islet_print_claims(claims, claims_len);
 
-const char CLAIM_USER_DATA[] = &quot;User data&quot;; // Claim title 
-if (!islet_parse(&quot;User data&quot;, claims_out.data(), claims_out_len, value_out.data(), &amp;value_out_len))
+const char CLAIM_USER_DATA[] = "User data"; // Claim title 
+if (!islet_parse("User data", claims_out.data(), claims_out_len, value_out.data(), &amp;value_out_len))
     return -1;
 
-printf(&quot;Claim[User data]: %s\n&quot;, (char*) value);
+printf("Claim[User data]: %s\n", (char*) value);
 </code></pre>
 <h3 id="sealing"><a class="header" href="#sealing">Sealing</a></h3>
 <h4 id="rust-code-snippet-1"><a class="header" href="#rust-code-snippet-1">Rust code snippet</a></h4>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>let plaintext = b&quot;Plaintext&quot;;
+</span>let plaintext = b"Plaintext";
 let sealed = seal(plaintext)?;
 let unsealed = unseal(&amp;sealed)?;
 assert_eq!(plaintext, &amp;unsealed[..]);   
@@ -261,14 +261,14 @@ memset(sealed, 0, sizeof(sealed));
 memset(unsealed, 0, sizeof(unsealed));
 int sealed_len = 0, unsealed_len = 0;
 
-std::string plaintext(&quot;Plaintext&quot;);
+std::string plaintext("Plaintext");
 if (islet_seal((const byte*)plaintext.c_str(), plaintext.size(), sealed, &amp;sealed_len))
     return -1;
 
 if (islet_unseal(sealed, sealed_len, unsealed, &amp;unsealed_len))
     return -1;
 
-printf(&quot;Success sealing round trip.\n&quot;);
+printf("Success sealing round trip.\n");
 </code></pre>
 
                     </main>

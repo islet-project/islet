@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["GRANULE_MASK","GRANULE_SHIFT","GRANULE_SIZE"],"fn":["granule_addr_to_index","is_granule_aligned","is_not_in_realm","set_granule","validate_addr"],"mod":["entry"],"struct":["GRANULE_STATUS_TABLE","GranuleState","GranuleStatusTable"]};

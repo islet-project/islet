@@ -168,11 +168,9 @@
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
 </pre></div><pre class="rust"><code><span class="kw">pub mod </span>claims;
 
-<span class="kw">use </span>alloc::{boxed::Box, string::String, vec::Vec};
+<span class="kw">use </span>alloc::{boxed::Box, string::String, vec, vec::Vec};
 <span class="kw">use </span>ciborium::{ser, Value};
 <span class="kw">use </span>coset::{CoseSign1Builder, HeaderBuilder, TaggedCborSerializable};
 <span class="kw">use </span>ecdsa::signature::Signer;
@@ -241,12 +239,10 @@
             Value::Bytes(<span class="self">self</span>.platform_token.to_vec()),
         );
 
-        <span class="kw">let </span><span class="kw-2">mut </span>token_map: Vec&lt;(Value, Value)&gt; = Vec::new();
-        token_map.push(platform_token_entry);
-        token_map.push(realm_token_entry);
+        <span class="kw">let </span>token_map: Vec&lt;(Value, Value)&gt; = <span class="macro">vec!</span>[platform_token_entry, realm_token_entry];
 
         ser::into_writer(
-            <span class="kw-2">&amp;</span>Value::Tag(CCA_TOKEN_COLLECTION.into(), Box::new(Value::Map(token_map))),
+            <span class="kw-2">&amp;</span>Value::Tag(CCA_TOKEN_COLLECTION, Box::new(Value::Map(token_map))),
             <span class="kw-2">&amp;mut </span>cca_token,
         )
         .expect(<span class="string">&quot;Failed to serialize CCA token&quot;</span>);
@@ -281,15 +277,15 @@
             </span>String::from(<span class="string">&quot;sha-256&quot;</span>),
         );
 
-        <span class="kw">let </span><span class="kw-2">mut </span>claims_map: Vec&lt;(Value, Value)&gt; = Vec::new();
-
-        claims_map.push(claims.challenge.into());
-        claims_map.push(claims.personalization_value.into());
-        claims_map.push(claims.rim.into());
-        claims_map.push(claims.rems.into());
-        claims_map.push(claims.measurement_hash_algo.into());
-        claims_map.push(claims.rak_pub.into());
-        claims_map.push(claims.rak_pub_hash_algo.into());
+        <span class="kw">let </span>claims_map: Vec&lt;(Value, Value)&gt; = <span class="macro">vec!</span>[
+            claims.challenge.into(),
+            claims.personalization_value.into(),
+            claims.rim.into(),
+            claims.rems.into(),
+            claims.measurement_hash_algo.into(),
+            claims.rak_pub.into(),
+            claims.rak_pub_hash_algo.into(),
+        ];
 
         <span class="kw">let </span><span class="kw-2">mut </span>realm_token = Vec::new();
         ser::into_writer(<span class="kw-2">&amp;</span>Value::Map(claims_map), <span class="kw-2">&amp;mut </span>realm_token)

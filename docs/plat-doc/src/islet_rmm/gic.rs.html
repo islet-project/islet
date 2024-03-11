@@ -266,7 +266,6 @@
 <a href="#266" id="266">266</a>
 <a href="#267" id="267">267</a>
 <a href="#268" id="268">268</a>
-<a href="#269" id="269">269</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::realm::context::Context;
 <span class="kw">use </span><span class="kw">crate</span>::realm::registry::get_realm;
 <span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::VCPU;
@@ -487,16 +486,16 @@
     <span class="kw">let </span>nr_aprs = GIC_FEATURES.nr_aprs;
 
     <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..=nr_lrs {
-        <span class="kw-2">*&amp;mut </span>gic_state.ich_lr_el2[i] = get_lr(i);
+        gic_state.ich_lr_el2[i] = get_lr(i);
     }
     <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..=nr_aprs {
-        <span class="kw-2">*&amp;mut </span>gic_state.ich_ap0r_el2[i] = get_ap0r(i);
-        <span class="kw-2">*&amp;mut </span>gic_state.ich_ap1r_el2[i] = get_ap1r(i);
+        gic_state.ich_ap0r_el2[i] = get_ap0r(i);
+        gic_state.ich_ap1r_el2[i] = get_ap1r(i);
     }
 
-    <span class="kw-2">*&amp;mut </span>gic_state.ich_vmcr_el2 = <span class="kw">unsafe </span>{ ICH_VMCR_EL2.get() };
-    <span class="kw-2">*&amp;mut </span>gic_state.ich_hcr_el2 = <span class="kw">unsafe </span>{ ICH_HCR_EL2.get() };
-    <span class="kw-2">*&amp;mut </span>gic_state.ich_misr_el2 = <span class="kw">unsafe </span>{ ICH_MISR_EL2.get() };
+    gic_state.ich_vmcr_el2 = <span class="kw">unsafe </span>{ ICH_VMCR_EL2.get() };
+    gic_state.ich_hcr_el2 = <span class="kw">unsafe </span>{ ICH_HCR_EL2.get() };
+    gic_state.ich_misr_el2 = <span class="kw">unsafe </span>{ ICH_MISR_EL2.get() };
 
     <span class="kw">unsafe </span>{ ICH_HCR_EL2.set(gic_state.ich_hcr_el2 &amp; !ICH_HCR_EL2_EN_BIT) };
 }
@@ -527,8 +526,7 @@
     <span class="kw">let </span>gic_state = <span class="kw-2">&amp;mut </span>vcpu.lock().context.gic_state;
     <span class="kw">let </span>nr_lrs = GIC_FEATURES.nr_lrs;
 
-    (<span class="kw-2">&amp;mut </span><span class="kw">unsafe </span>{ run.exit_gic_lrs_mut() }[..nr_lrs])
-        .copy_from_slice(<span class="kw-2">&amp;</span>gic_state.ich_lr_el2[..nr_lrs]);
+    (<span class="kw">unsafe </span>{ run.exit_gic_lrs_mut() }[..nr_lrs]).copy_from_slice(<span class="kw-2">&amp;</span>gic_state.ich_lr_el2[..nr_lrs]);
     <span class="kw">unsafe </span>{
         run.set_gic_misr(gic_state.ich_misr_el2);
         run.set_gic_vmcr(gic_state.ich_vmcr_el2);

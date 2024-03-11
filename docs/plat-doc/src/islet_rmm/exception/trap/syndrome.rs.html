@@ -174,7 +174,7 @@
             }
             <span class="number">0b10_0110 </span>=&gt; Syndrome::SPAlignmentFault,
             <span class="number">0b11_1100 </span>=&gt; Syndrome::Brk((origin &amp; ESR_EL2::ISS_BRK_CMT <span class="kw">as </span>u32) <span class="kw">as </span>u16),
-            ec =&gt; Syndrome::Other(ec <span class="kw">as </span>u32),
+            ec =&gt; Syndrome::Other(ec),
         }
     }
 }

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"constant":["DRAM_SIZE","L0_TABLE_ENTRY_SIZE_RANGE","L1_TABLE_ENTRY_SIZE_RANGE"],"enum":["GranuleSize"],"fn":["add_l1_table","addr_to_idx","get_l1_table_addr"],"static":["GRANULE_STATUS_TABLE"],"struct":["GranuleStatusTable"],"type":["L1PageTable"]};

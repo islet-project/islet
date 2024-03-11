@@ -171,13 +171,21 @@
 <a href="#171" id="171">171</a>
 <a href="#172" id="172">172</a>
 <a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::mpidr::MPIDR;
 <span class="kw">use </span><span class="kw">super</span>::params::Params;
 <span class="kw">use </span><span class="kw">super</span>::run::{Run, REC_ENTRY_FLAG_TRAP_WFE, REC_ENTRY_FLAG_TRAP_WFI};
 <span class="kw">use </span><span class="kw">super</span>::vtcr::{activate_stage2_mmu, prepare_vtcr};
 <span class="kw">use </span><span class="kw">super</span>::Rec;
 <span class="kw">use </span><span class="kw">crate</span>::event::Mainloop;
-<span class="kw">use </span><span class="kw">crate</span>::granule::{set_granule, set_granule_with_parent, GranuleState};
+<span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]
+</span><span class="kw">use </span><span class="kw">crate</span>::granule::{set_granule, set_granule_with_parent, GranuleState};
+<span class="attr">#[cfg(not(feature = <span class="string">&quot;gst_page_table&quot;</span>))]
+</span><span class="kw">use </span><span class="kw">crate</span>::granule::{set_granule, GranuleState};
 <span class="kw">use </span><span class="kw">crate</span>::host::pointer::Pointer <span class="kw">as </span>HostPointer;
 <span class="kw">use </span><span class="kw">crate</span>::host::pointer::PointerMut <span class="kw">as </span>HostPointerMut;
 <span class="kw">use </span><span class="kw">crate</span>::listen;
@@ -218,7 +226,6 @@
         <span class="kw">if </span>rec_index != rd.rec_index() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
         }
-
         <span class="comment">// set Rec_state and grab the lock for Rec granule
         </span><span class="kw">let </span><span class="kw-2">mut </span>rec_granule = <span class="macro">get_granule_if!</span>(rec, GranuleState::Delegated)<span class="question-mark">?</span>;
         rmm.page_table.map(rec, <span class="bool-val">true</span>);
@@ -243,9 +250,12 @@
         rec.set_vtcr(prepare_vtcr(rd)<span class="question-mark">?</span>);
 
         rd.inc_rec_index();
-        HashContext::new(<span class="kw-2">&amp;</span>rd)<span class="question-mark">?</span>.measure_rec_params(<span class="kw-2">&amp;</span>params)<span class="question-mark">?</span>;
+        HashContext::new(rd)<span class="question-mark">?</span>.measure_rec_params(<span class="kw-2">&amp;</span>params)<span class="question-mark">?</span>;
 
-        set_granule_with_parent(rd_granule.clone(), <span class="kw-2">&amp;mut </span>rec_granule, GranuleState::Rec)
+        <span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]
+        </span><span class="kw">return </span>set_granule_with_parent(rd_granule.clone(), <span class="kw-2">&amp;mut </span>rec_granule, GranuleState::Rec);
+        <span class="attr">#[cfg(not(feature = <span class="string">&quot;gst_page_table&quot;</span>))]
+        </span><span class="kw">return </span>set_granule(<span class="kw-2">&amp;mut </span>rec_granule, GranuleState::Rec);
     });
 
     <span class="macro">listen!</span>(mainloop, rmi::REC_DESTROY, |arg, _ret, rmm| {
@@ -264,7 +274,7 @@
 
         <span class="comment">// grab the lock for Rec
         </span><span class="kw">let </span><span class="kw-2">mut </span>rec_granule = <span class="macro">get_granule_if!</span>(arg[<span class="number">0</span>], GranuleState::Rec)<span class="question-mark">?</span>;
-        <span class="kw">let </span><span class="kw-2">mut </span>rec = rec_granule.content_mut::&lt;Rec&lt;<span class="lifetime">&#39;_</span>&gt;&gt;();
+        <span class="kw">let </span>rec = rec_granule.content_mut::&lt;Rec&lt;<span class="lifetime">&#39;_</span>&gt;&gt;();
         <span class="kw">let </span>realm_id = rec.realmid()<span class="question-mark">?</span>;
 
         <span class="kw">if </span>!rec.runnable() {
@@ -297,7 +307,7 @@
         <span class="macro">trace!</span>(<span class="string">&quot;{:?}&quot;</span>, run);
 
         <span class="kw">if </span>rec.host_call_pending() {
-            do_host_call(<span class="kw-2">&amp;</span>arg, ret, rmm, rec, <span class="kw-2">&amp;mut </span>run)<span class="question-mark">?</span>;
+            do_host_call(arg, ret, rmm, rec, <span class="kw-2">&amp;mut </span>run)<span class="question-mark">?</span>;
         }
 
         <span class="kw">crate</span>::gic::receive_state_from_host(realm_id, rec.vcpuid(), <span class="kw-2">&amp;</span>run)<span class="question-mark">?</span>;
@@ -326,13 +336,13 @@
             rec.set_state(RecState::Running);
             <span class="kw">match </span><span class="kw">crate</span>::rmi::rec::run(realm_id, rec.vcpuid(), <span class="number">0</span>) {
                 <span class="prelude-val">Ok</span>(realm_exit_res) =&gt; {
-                    (ret_ns, ret[<span class="number">0</span>]) = handle_realm_exit(realm_exit_res, rmm, <span class="kw-2">&amp;mut </span>rec, <span class="kw-2">&amp;mut </span>run)<span class="question-mark">?
+                    (ret_ns, ret[<span class="number">0</span>]) = handle_realm_exit(realm_exit_res, rmm, rec, <span class="kw-2">&amp;mut </span>run)<span class="question-mark">?
                 </span>}
                 <span class="prelude-val">Err</span>(<span class="kw">_</span>) =&gt; ret[<span class="number">0</span>] = rmi::ERROR_REC,
             }
             rec.set_state(RecState::Ready);
 
-            <span class="kw">if </span>ret_ns == <span class="bool-val">true </span>{
+            <span class="kw">if </span>ret_ns {
                 <span class="kw">break</span>;
             }
         }

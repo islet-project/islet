@@ -136,6 +136,9 @@
 <a href="#136" id="136">136</a>
 <a href="#137" id="137">137</a>
 <a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
 </pre></div><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>params;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>rd;
 
@@ -195,10 +198,13 @@
         <span class="kw">if </span>params.rtt_base <span class="kw">as </span>usize == rd {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
         }
-        <span class="kw">if </span>!(params.rtt_base <span class="kw">as </span>usize % GRANULE_SIZE == <span class="number">0</span>) {
+        <span class="kw">if </span>params.rtt_base <span class="kw">as </span>usize % GRANULE_SIZE != <span class="number">0 </span>{
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
         }
-        <span class="kw">let _ </span>= <span class="macro">get_granule_if!</span>(params.rtt_base <span class="kw">as </span>usize, GranuleState::Delegated)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rtt_granule = <span class="macro">get_granule_if!</span>(params.rtt_base <span class="kw">as </span>usize, GranuleState::Delegated)<span class="question-mark">?</span>;
+        <span class="comment">// This is required to prevent from the deadlock in the below epilog
+        // which acquires the same lock again
+        </span>core::mem::drop(rtt_granule);
 
         <span class="comment">// revisit rmi.create_realm() (is it necessary?)
         </span>create_realm(params.vmid, params.rtt_base <span class="kw">as </span>usize).map(|id| {
@@ -257,7 +263,7 @@
 <span class="kw">fn </span>create_realm(vmid: u16, rtt_base: usize) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>rms = RMS.lock();
 
-    <span class="kw">for </span>(<span class="kw">_</span>, realm) <span class="kw">in </span><span class="kw-2">&amp;</span>rms.<span class="number">1 </span>{
+    <span class="kw">for </span>realm <span class="kw">in </span>rms.<span class="number">1</span>.values() {
         <span class="kw">if </span>vmid == realm.lock().vmid {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
         }

@@ -1,0 +1,3 @@
+(function() {var implementors = {
+"islet_rmm":[["impl&lt;'a&gt; MemAlloc for <a class=\"struct\" href=\"islet_rmm/realm/mm/stage2_translation/struct.Stage2Translation.html\" title=\"struct islet_rmm::realm::mm::stage2_translation::Stage2Translation\">Stage2Translation</a>&lt;'a&gt;"]]
+};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

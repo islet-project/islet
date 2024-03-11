@@ -462,7 +462,7 @@
     }
 
     <span class="kw">pub unsafe fn </span>set_cntv_ctl(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: u64) {
-        <span class="kw-2">*</span>(<span class="kw-2">&amp;mut </span>(<span class="kw-2">*</span>(<span class="kw-2">*</span><span class="self">self</span>.exit.inner).cnt.inner).v_ctl) = val;
+        (<span class="kw-2">*</span>(<span class="kw-2">*</span><span class="self">self</span>.exit.inner).cnt.inner).v_ctl = val;
     }
 
     <span class="kw">pub unsafe fn </span>set_cntv_cval(<span class="kw-2">&amp;mut </span><span class="self">self</span>, val: u64) {
@@ -745,7 +745,7 @@
                 }
             }
         }
-        <span class="kw">return </span><span class="bool-val">true</span>;
-    }
+        <span class="bool-val">true
+    </span>}
 }
 </code></pre></div></section></main></body></html>

@@ -157,7 +157,7 @@
     <span class="kw">pub fn </span>new(realm: Arc&lt;Mutex&lt;Realm&lt;T&gt;&gt;&gt;) -&gt; Arc&lt;Mutex&lt;<span class="self">Self</span>&gt;&gt; {
         Arc::&lt;Mutex&lt;<span class="self">Self</span>&gt;&gt;::new_cyclic(|me| {
             Mutex::new(<span class="self">Self </span>{
-                realm: realm,
+                realm,
                 me: me.clone(),
                 state: State::Ready,
                 context: T::new(),

@@ -319,6 +319,15 @@
 <a href="#319" id="319">319</a>
 <a href="#320" id="320">320</a>
 <a href="#321" id="321">321</a>
+<a href="#322" id="322">322</a>
+<a href="#323" id="323">323</a>
+<a href="#324" id="324">324</a>
+<a href="#325" id="325">325</a>
+<a href="#326" id="326">326</a>
+<a href="#327" id="327">327</a>
+<a href="#328" id="328">328</a>
+<a href="#329" id="329">329</a>
+<a href="#330" id="330">330</a>
 </pre></div><pre class="rust"><code><span class="kw">extern crate </span>alloc;
 
 <span class="kw">use </span><span class="kw">super</span>::realm::{rd::State, Rd};
@@ -334,7 +343,10 @@
 <span class="kw">use </span><span class="kw">crate</span>::realm::mm::stage2_tte::S2TTE;
 <span class="kw">use </span><span class="kw">crate</span>::rmi;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
-<span class="kw">use crate</span>::{get_granule, get_granule_if, set_state_and_get_granule};
+<span class="attr">#[cfg(not(feature = <span class="string">&quot;gst_page_table&quot;</span>))]
+</span><span class="kw">use crate</span>::{get_granule, get_granule_if};
+<span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]
+</span><span class="kw">use crate</span>::{get_granule, get_granule_if, set_state_and_get_granule};
 
 <span class="kw">pub const </span>RTT_MIN_BLOCK_LEVEL: usize = <span class="number">2</span>;
 <span class="kw">pub const </span>RTT_PAGE_LEVEL: usize = <span class="number">3</span>;
@@ -368,8 +380,8 @@
     <span class="kw">if </span>ipa &amp; mask <span class="kw">as </span>usize != ipa {
         <span class="kw">return </span><span class="bool-val">false</span>;
     }
-    <span class="kw">return </span><span class="bool-val">true</span>;
-}
+    <span class="bool-val">true
+</span>}
 
 <span class="kw">pub fn </span>set_event_handler(mainloop: <span class="kw-2">&amp;mut </span>Mainloop) {
     <span class="macro">listen!</span>(mainloop, rmi::RTT_CREATE, |arg, _ret, _rmm| {
@@ -417,7 +429,7 @@
         }
         <span class="kw">crate</span>::rtt::init_ripas(rd.id(), ipa, level)<span class="question-mark">?</span>;
 
-        HashContext::new(<span class="kw-2">&amp;</span>rd)<span class="question-mark">?</span>.measure_ripas_granule(ipa, level <span class="kw">as </span>u8)<span class="question-mark">?</span>;
+        HashContext::new(rd)<span class="question-mark">?</span>.measure_ripas_granule(ipa, level <span class="kw">as </span>u8)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
     });
@@ -518,7 +530,7 @@
         <span class="comment">// read src page
         </span><span class="kw">let </span>src_page = <span class="macro">copy_from_host_or_ret!</span>(DataPage, src_pa);
 
-        HashContext::new(<span class="kw-2">&amp;</span>rd)<span class="question-mark">?</span>.measure_data_granule(<span class="kw-2">&amp;</span>src_page, ipa, flags)<span class="question-mark">?</span>;
+        HashContext::new(rd)<span class="question-mark">?</span>.measure_data_granule(<span class="kw-2">&amp;</span>src_page, ipa, flags)<span class="question-mark">?</span>;
 
         <span class="comment">// 3. copy src to _data
         </span><span class="kw-2">*</span>target_page = src_page;
@@ -569,7 +581,13 @@
         <span class="kw">let </span>pa = <span class="kw">crate</span>::rtt::data_destroy(realm_id, ipa)<span class="question-mark">?</span>;
 
         <span class="comment">// data granule lock and change state
+        </span><span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]
         </span><span class="macro">set_state_and_get_granule!</span>(pa, GranuleState::Delegated)<span class="question-mark">?</span>;
+        <span class="attr">#[cfg(not(feature = <span class="string">&quot;gst_page_table&quot;</span>))]
+        </span>{
+            <span class="kw">let </span><span class="kw-2">mut </span>granule = <span class="macro">get_granule!</span>(pa)<span class="question-mark">?</span>;
+            set_granule(<span class="kw-2">&amp;mut </span>granule, GranuleState::Delegated)<span class="question-mark">?</span>;
+        }
         <span class="prelude-val">Ok</span>(())
     });
 

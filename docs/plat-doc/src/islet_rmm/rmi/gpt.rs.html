@@ -55,15 +55,26 @@
 <a href="#55" id="55">55</a>
 <a href="#56" id="56">56</a>
 <a href="#57" id="57">57</a>
+<a href="#58" id="58">58</a>
+<a href="#59" id="59">59</a>
+<a href="#60" id="60">60</a>
+<a href="#61" id="61">61</a>
+<a href="#62" id="62">62</a>
+<a href="#63" id="63">63</a>
+<a href="#64" id="64">64</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::asm::{smc, SMC_SUCCESS};
 <span class="kw">use </span><span class="kw">crate</span>::event::Mainloop;
 <span class="kw">use </span><span class="kw">crate</span>::granule::{set_granule, GranuleState};
 <span class="kw">use </span><span class="kw">crate</span>::listen;
 <span class="kw">use </span><span class="kw">crate</span>::rmi;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
-<span class="kw">use crate</span>::{get_granule, get_granule_if, set_state_and_get_granule};
+<span class="attr">#[cfg(not(feature = <span class="string">&quot;gst_page_table&quot;</span>))]
+</span><span class="kw">use crate</span>::{get_granule, get_granule_if};
+<span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]
+</span><span class="kw">use crate</span>::{get_granule, get_granule_if, set_state_and_get_granule};
 
-<span class="kw">use </span>vmsa::error::Error <span class="kw">as </span>MmError;
+<span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]
+</span><span class="kw">use </span>vmsa::error::Error <span class="kw">as </span>MmError;
 
 <span class="kw">extern crate </span>alloc;
 
@@ -74,10 +85,13 @@
 <span class="kw">pub fn </span>set_event_handler(mainloop: <span class="kw-2">&amp;mut </span>Mainloop) {
     <span class="macro">listen!</span>(mainloop, rmi::GRANULE_DELEGATE, |arg, <span class="kw">_</span>, rmm| {
         <span class="kw">let </span>addr = arg[<span class="number">0</span>];
-        <span class="kw">let </span><span class="kw-2">mut </span>granule = <span class="kw">match </span><span class="macro">get_granule_if!</span>(addr, GranuleState::Undelegated) {
+        <span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]
+        </span><span class="kw">let </span><span class="kw-2">mut </span>granule = <span class="kw">match </span><span class="macro">get_granule_if!</span>(addr, GranuleState::Undelegated) {
             <span class="prelude-val">Err</span>(MmError::MmNoEntry) =&gt; <span class="macro">set_state_and_get_granule!</span>(addr, GranuleState::Undelegated),
             other =&gt; other,
         }<span class="question-mark">?</span>;
+        <span class="attr">#[cfg(not(feature = <span class="string">&quot;gst_page_table&quot;</span>))]
+        </span><span class="kw">let </span><span class="kw-2">mut </span>granule = <span class="macro">get_granule_if!</span>(addr, GranuleState::Undelegated)<span class="question-mark">?</span>;
 
         <span class="kw">if </span>smc(MARK_REALM, <span class="kw-2">&amp;</span>[addr])[<span class="number">0</span>] != SMC_SUCCESS {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);

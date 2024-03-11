@@ -93,7 +93,7 @@
     <span class="comment">// Safety: union type should be initialized
     // Check UB
     </span><span class="kw">pub fn </span>imm(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
-        <span class="kw">unsafe </span>{ <span class="self">self</span>.inner.val.imm <span class="kw">as </span>u16 }
+        <span class="kw">unsafe </span>{ <span class="self">self</span>.inner.val.imm }
     }
 }
 

@@ -191,9 +191,16 @@
 <a href="#191" id="191">191</a>
 <a href="#192" id="192">192</a>
 <a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::page_table::entry::Entry;
 <span class="kw">use </span><span class="kw">super</span>::page_table::{attr, L1Table};
-<span class="kw">use </span><span class="kw">crate</span>::config::PAGE_SIZE;
+<span class="kw">use </span><span class="kw">crate</span>::config::{PAGE_SIZE, RMM_SHARED_BUFFER_START};
 <span class="kw">use </span><span class="kw">crate</span>::mm::page::BasePageSize;
 <span class="kw">use </span><span class="kw">crate</span>::mm::page_table::entry::PTDesc;
 
@@ -273,7 +280,7 @@
     }
 
     <span class="kw">fn </span>fill(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">if </span><span class="self">self</span>.dirty == <span class="bool-val">true </span>{
+        <span class="kw">if </span><span class="self">self</span>.dirty {
             <span class="kw">return</span>;
         }
 
@@ -287,7 +294,8 @@
             <span class="kw">let </span>rw_start = <span class="kw-2">&amp;</span>__RW_START__ <span class="kw">as </span><span class="kw-2">*const </span>u64 <span class="kw">as </span>u64;
             <span class="kw">let </span>ro_size = rw_start - base_address;
             <span class="kw">let </span>rw_size = <span class="kw-2">&amp;</span>__RW_END__ <span class="kw">as </span><span class="kw-2">*const </span>u64 <span class="kw">as </span>u64 - rw_start;
-            <span class="kw">let </span>uart_phys = <span class="number">0x1c0c0000 </span><span class="kw">as </span>u64;
+            <span class="kw">let </span>uart_phys: u64 = <span class="number">0x1c0c_0000</span>;
+            <span class="kw">let </span>shared_start = RMM_SHARED_BUFFER_START;
             <span class="self">self</span>.set_pages(
                 VirtAddr::from(base_address),
                 PhysAddr::from(base_address),
@@ -306,6 +314,12 @@
                 PhysAddr::from(uart_phys),
                 <span class="number">1</span>,
                 rw_flags | device_flags,
+            );
+            <span class="self">self</span>.set_pages(
+                VirtAddr::from(shared_start),
+                PhysAddr::from(shared_start),
+                PAGE_SIZE,
+                rw_flags | rmm_flags,
             );
         }
         <span class="comment">//TODO Set dirty only if pages are updated, not added

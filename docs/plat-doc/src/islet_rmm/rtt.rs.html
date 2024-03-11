@@ -452,6 +452,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rtt::RTT_PAGE_LEVEL;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rtt::S2TTE_STRIDE;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rtt_entry_state;
+<span class="kw">use crate</span>::{get_granule, get_granule_if};
 <span class="kw">use </span>armv9a::bits_in_reg;
 
 <span class="kw">pub fn </span>create(id: usize, rtt_addr: usize, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
@@ -499,8 +500,8 @@
         </span><span class="kw">let </span>map_size = <span class="kw">match </span>level {
             <span class="number">3 </span>=&gt; GRANULE_SIZE, <span class="comment">// 4096
             </span><span class="number">2 </span>=&gt; GRANULE_SIZE &lt;&lt; S2TTE_STRIDE,
-            <span class="number">1 </span>=&gt; GRANULE_SIZE &lt;&lt; S2TTE_STRIDE * <span class="number">2</span>,
-            <span class="number">0 </span>=&gt; GRANULE_SIZE &lt;&lt; S2TTE_STRIDE * <span class="number">3</span>,
+            <span class="number">1 </span>=&gt; GRANULE_SIZE &lt;&lt; (S2TTE_STRIDE * <span class="number">2</span>),
+            <span class="number">0 </span>=&gt; GRANULE_SIZE &lt;&lt; (S2TTE_STRIDE * <span class="number">3</span>),
             <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
         };
         <span class="kw">let </span><span class="kw-2">mut </span>flags = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
@@ -562,12 +563,11 @@
 
     <span class="kw">let </span><span class="kw-2">mut </span>g_rtt = <span class="macro">get_granule_if!</span>(rtt_addr, GranuleState::RTT)<span class="question-mark">?</span>;
 
-    <span class="kw">let </span>parent_s2tte;
-    <span class="kw">if </span>rd.addr_in_par(ipa) {
-        parent_s2tte = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::DESTROYED);
+    <span class="kw">let </span>parent_s2tte = <span class="kw">if </span>rd.addr_in_par(ipa) {
+        bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::DESTROYED)
     } <span class="kw">else </span>{
-        parent_s2tte = INVALID_UNPROTECTED;
-    }
+        INVALID_UNPROTECTED
+    };
 
     get_realm(id)
         .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
@@ -859,7 +859,7 @@
         .ok_or(Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?
         </span>.into(); <span class="comment">//XXX: check this again
 
-    </span><span class="kw">let </span><span class="kw-2">mut </span>flags = <span class="number">0 </span><span class="kw">as </span>u64;
+    </span><span class="kw">let </span><span class="kw-2">mut </span>flags = <span class="number">0</span>;
     <span class="kw">if </span>valid {
         flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::DESTROYED);
     } <span class="kw">else </span>{

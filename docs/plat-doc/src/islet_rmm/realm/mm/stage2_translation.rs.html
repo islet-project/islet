@@ -213,6 +213,31 @@
 <a href="#213" id="213">213</a>
 <a href="#214" id="214">214</a>
 <a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
+<a href="#220" id="220">220</a>
+<a href="#221" id="221">221</a>
+<a href="#222" id="222">222</a>
+<a href="#223" id="223">223</a>
+<a href="#224" id="224">224</a>
+<a href="#225" id="225">225</a>
+<a href="#226" id="226">226</a>
+<a href="#227" id="227">227</a>
+<a href="#228" id="228">228</a>
+<a href="#229" id="229">229</a>
+<a href="#230" id="230">230</a>
+<a href="#231" id="231">231</a>
+<a href="#232" id="232">232</a>
+<a href="#233" id="233">233</a>
+<a href="#234" id="234">234</a>
+<a href="#235" id="235">235</a>
+<a href="#236" id="236">236</a>
+<a href="#237" id="237">237</a>
+<a href="#238" id="238">238</a>
+<a href="#239" id="239">239</a>
+<a href="#240" id="240">240</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::page::BasePageSize;
 <span class="attr">#[cfg(not(feature = <span class="string">&quot;realm_linux&quot;</span>))]
 </span><span class="kw">use </span><span class="kw">super</span>::page_table::{entry, L0Table};
@@ -227,10 +252,11 @@
 <span class="kw">use </span><span class="kw">crate</span>::realm::mm::translation_granule_4k::RawPTE;
 <span class="kw">use </span><span class="kw">crate</span>::realm::mm::IPATranslation;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
+<span class="kw">use </span>alloc::alloc::Layout;
 <span class="kw">use </span>vmsa::address::PhysAddr;
 <span class="kw">use </span>vmsa::page::{Page, PageIter, PageSize};
 <span class="kw">use </span>vmsa::page_table::Entry;
-<span class="kw">use </span>vmsa::page_table::{Level, PageTable, PageTableMethods};
+<span class="kw">use </span>vmsa::page_table::{Level, MemAlloc, PageTable, PageTableMethods};
 
 <span class="kw">use </span>armv9a::{bits_in_reg, define_bitfield, define_bits, define_mask};
 
@@ -329,6 +355,30 @@
     }
 }
 
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; MemAlloc <span class="kw">for </span>Stage2Translation&lt;<span class="lifetime">&#39;a</span>&gt; {
+    <span class="kw">unsafe fn </span>alloc(layout: Layout) -&gt; <span class="kw-2">*mut </span>u8 {
+        <span class="macro">error!</span>(<span class="string">&quot;alloc for Stage2Translation is not allowed. {:?}&quot;</span>, layout);
+        <span class="comment">// Safety: the caller must do proper error handling with this null pointer.
+        </span>core::ptr::null_mut()
+    }
+
+    <span class="kw">unsafe fn </span>alloc_zeroed(layout: Layout) -&gt; <span class="kw-2">*mut </span>u8 {
+        <span class="macro">error!</span>(
+            <span class="string">&quot;alloc_zeroed for Stage2Translation is not allowed. {:?}&quot;</span>,
+            layout
+        );
+        <span class="comment">// Safety: the caller must do proper error handling with this null pointer.
+        </span>core::ptr::null_mut()
+    }
+
+    <span class="kw">unsafe fn </span>dealloc(ptr: <span class="kw-2">*mut </span>u8, layout: Layout) {
+        <span class="macro">error!</span>(
+            <span class="string">&quot;dealloc for Stage2Translation is not allowed. {:?}, {:?}&quot;</span>,
+            ptr, layout
+        );
+    }
+}
+
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; IPATranslation <span class="kw">for </span>Stage2Translation&lt;<span class="lifetime">&#39;a</span>&gt; {
     <span class="kw">fn </span>get_base_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*const </span>c_void {
         <span class="self">self</span>.root_pgtlb <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">_ as </span><span class="kw-2">*const </span>c_void
@@ -378,10 +428,10 @@
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
         });
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(x) = res {
-            <span class="kw">return </span><span class="prelude-val">Some</span>((pte, x.<span class="number">1</span>));
+            <span class="prelude-val">Some</span>((pte, x.<span class="number">1</span>))
         } <span class="kw">else </span>{
-            <span class="kw">return </span><span class="prelude-val">None</span>;
-        }
+            <span class="prelude-val">None
+        </span>}
     }
 
     <span class="kw">fn </span>ipa_to_pte_set(
@@ -397,9 +447,9 @@
             <span class="prelude-val">Ok</span>(<span class="prelude-val">None</span>)
         });
         <span class="kw">if let </span><span class="prelude-val">Ok</span>(_x) = res {
-            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
+            <span class="prelude-val">Ok</span>(())
         } <span class="kw">else </span>{
-            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
+            <span class="prelude-val">Err</span>(Error::RmiErrorInput)
         }
     }
 

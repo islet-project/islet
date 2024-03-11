@@ -83,11 +83,7 @@
 <a href="#83" id="83">83</a>
 <a href="#84" id="84">84</a>
 <a href="#85" id="85">85</a>
-<a href="#86" id="86">86</a>
-<a href="#87" id="87">87</a>
-<a href="#88" id="88">88</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::granule::GranuleState;
-<span class="kw">use </span><span class="kw">crate</span>::rmi::rtt::realm_par_size;
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::rmi::rtt::realm_par_size;
 
 <span class="kw">use </span>vmsa::guard::Content;
 
@@ -163,9 +159,7 @@
     }
 }
 
-<span class="kw">impl </span>Content <span class="kw">for </span>Rd {
-    <span class="kw">const </span>FLAGS: u64 = GranuleState::RD;
-}
+<span class="kw">impl </span>Content <span class="kw">for </span>Rd {}
 
 <span class="attr">#[derive(Debug, Clone, Copy, PartialEq)]
 </span><span class="kw">pub enum </span>State {

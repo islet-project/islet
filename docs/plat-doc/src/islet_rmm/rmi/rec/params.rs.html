@@ -192,7 +192,7 @@
                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
             }
 
-            <span class="macro">get_granule_if!</span>(addr, GranuleState::Delegated)<span class="question-mark">?</span>;
+            <span class="kw">let </span>_aux_granule = <span class="macro">get_granule_if!</span>(addr, GranuleState::Delegated)<span class="question-mark">?</span>;
         }
 
         <span class="prelude-val">Ok</span>(())
@@ -223,8 +223,8 @@
             <span class="kw">return </span><span class="bool-val">false</span>;
         }
 
-        <span class="kw">return </span><span class="bool-val">true</span>;
-    }
+        <span class="bool-val">true
+    </span>}
 }
 
 <span class="kw">impl </span>Hashable <span class="kw">for </span>Params {

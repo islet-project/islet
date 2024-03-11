@@ -197,9 +197,9 @@ Simulated attestation operation on x86_64.
 Verify Realm Signature.
 == Signature Verification:
 Sign Algo	 = [ES384]
-Public Key	 = [&quot;0476f988091be585ed41801aecfab858548c63057e16b
-Data		 = [&quot;846a5369676e61747572653144a1013822405901b6a70
-Signature	 = [&quot;ec4f3b28a00feabd1f58f94acb27fdc7957545409f1c9
+Public Key	 = ["0476f988091be585ed41801aecfab858548c63057e16b
+Data		 = ["846a5369676e61747572653144a1013822405901b6a70
+Signature	 = ["ec4f3b28a00feabd1f58f94acb27fdc7957545409f1c9
 == End of Signature Verification
 
 ...
@@ -215,13 +215,13 @@ You can refer <a href="https://github.com/islet-project/islet/blob/main/sdk/exam
 </span>use islet_sdk::prelude::*;
 
 // Attestation
-let user_data = b&quot;User data&quot;;
+let user_data = b"User data";
 let report = attest(user_data)?;
 let claims = verify(&amp;report)?;
-println!(&quot;Debug: {:?}&quot;, claims);
+println!("Debug: {:?}", claims);
 
 // Sealing
-let plaintext = b&quot;Plaintext&quot;;
+let plaintext = b"Plaintext";
 let sealed = seal(plaintext)?;
 let unsealed = unseal(&amp;sealed)?;
 assert_eq!(plaintext, &amp;unsealed[..]);

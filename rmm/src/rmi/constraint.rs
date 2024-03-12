@@ -39,7 +39,7 @@ fn pick(cmd: Command) -> Option<Constraint> {
         rmi::REC_DESTROY => Constraint::new(rmi::REC_DESTROY, 4, 1),
         rmi::REC_ENTER => Constraint::new(rmi::REC_ENTER, 3, 1),
         rmi::RTT_MAP_UNPROTECTED => Constraint::new(rmi::RTT_MAP_UNPROTECTED, 5, 1),
-        rmi::RTT_UNMAP_UNPROTECTED => Constraint::new(rmi::RTT_UNMAP_UNPROTECTED, 4, 1),
+        rmi::RTT_UNMAP_UNPROTECTED => Constraint::new(rmi::RTT_UNMAP_UNPROTECTED, 4, 2),
         rmi::RTT_READ_ENTRY => Constraint::new(rmi::RTT_READ_ENTRY, 4, 5),
         rmi::FEATURES => Constraint::new(rmi::FEATURES, 2, 2),
         rmi::REC_AUX_COUNT => Constraint::new(rmi::REC_AUX_COUNT, 2, 2),

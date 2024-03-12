@@ -222,4 +222,10 @@ impl S2TTE {
     pub fn get_ripas(&self) -> u64 {
         self.get_masked_value(S2TTE::INVALID_RIPAS)
     }
+
+    pub fn is_live(&self, _level: usize) -> bool {
+        self.get_masked_value(S2TTE::DESC_TYPE) != desc_type::LX_INVALID
+            || self.is_assigned_empty()
+            || self.is_assigned_destroyed()
+    }
 }

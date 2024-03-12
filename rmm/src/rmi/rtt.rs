@@ -81,7 +81,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::RTT_DESTROY, |arg, _ret, _rmm| {
+    listen!(mainloop, rmi::RTT_DESTROY, |arg, ret, _rmm| {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let ipa = arg[1];
@@ -95,7 +95,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         {
             return Err(Error::RmiErrorInput);
         }
-        crate::rtt::destroy(rd, ipa, level)?;
+        let (ipa, walk_top) = crate::rtt::destroy(rd, ipa, level)?;
+        ret[1] = ipa;
+        ret[2] = walk_top;
         Ok(())
     });
 

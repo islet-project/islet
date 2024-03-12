@@ -65,3 +65,57 @@ pub fn attestation_token(challenge: &[u8; CHALLENGE_LEN as usize]) -> nix::Resul
     kernel::attestation_token(fd.get(), &mut attest)?;
     Ok(attest[0].token[..(attest[0].token_len as usize)].to_vec())
 }
+
+pub fn cloak_create(id: usize) -> nix::Result<()> {
+    let mut cloak = [kernel::RsiCloak::new()];
+    let fd = Fd::wrap(nix::fcntl::open(DEV, FLAGS, MODE)?);
+
+    cloak[0].id = id;
+    kernel::cloak_create(fd.get(), &mut cloak)
+}
+
+pub fn cloak_connect(id: usize) -> nix::Result<()> {
+    let mut cloak = [kernel::RsiCloak::new()];
+    let fd = Fd::wrap(nix::fcntl::open(DEV, FLAGS, MODE)?);
+
+    cloak[0].id = id;
+    kernel::cloak_connect(fd.get(), &mut cloak)
+}
+
+pub fn cloak_gen_report(id: usize, challenge: &[u8; CHALLENGE_LEN as usize]) -> nix::Result<Vec<u8>> {
+    let mut cloak = [kernel::RsiCloak::new()];
+    let fd = Fd::wrap(nix::fcntl::open(DEV, FLAGS, MODE)?);
+
+    cloak[0].id = id;
+    cloak[0].challenge.copy_from_slice(challenge);
+    kernel::cloak_gen_report(fd.get(), &mut cloak)?;
+    Ok(cloak[0].token[..(cloak[0].token_len as usize)].to_vec())
+}
+
+pub fn cloak_result(id: usize, result: usize) -> nix::Result<()> {
+    let mut cloak = [kernel::RsiCloak::new()];
+    let fd = Fd::wrap(nix::fcntl::open(DEV, FLAGS, MODE)?);
+
+    cloak[0].id = id;
+    cloak[0].result = result;
+    kernel::cloak_result(fd.get(), &mut cloak)
+}
+
+pub fn cloak_write(id: usize, data: &[u8; MAX_TOKEN_LEN as usize]) -> nix::Result<()> {
+    let mut cloak = [kernel::RsiCloak::new()];
+    let fd = Fd::wrap(nix::fcntl::open(DEV, FLAGS, MODE)?);
+
+    cloak[0].id = id;
+    cloak[0].token.copy_from_slice(data);
+    kernel::cloak_write(fd.get(), &mut cloak)
+}
+
+pub fn cloak_read(id: usize, data: &mut [u8; MAX_TOKEN_LEN as usize]) -> nix::Result<()> {
+    let mut cloak = [kernel::RsiCloak::new()];
+    let fd = Fd::wrap(nix::fcntl::open(DEV, FLAGS, MODE)?);
+
+    cloak[0].id = id;
+    kernel::cloak_read(fd.get(), &mut cloak)?;
+    data.copy_from_slice(&cloak[0].token);
+    Ok(())
+}

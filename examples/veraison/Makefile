@@ -8,7 +8,7 @@ TARGET_ARM = aarch64-unknown-linux-gnu
 
 export PATH := ${ROOT}/assets/toolchain/aarch64-none-linux-gnu/bin:${PATH}
 
-all: ${OUT} bin/rocli ${OUT}/bin/rsictl bin/reliant-party ${OUT}/bin/realm-application ${OUT}/root-ca.crt
+all: ${OUT} bin/rocli ${OUT}/bin/rsictl bin/reliant-party ${OUT}/bin/realm-gateway ${OUT}/bin/realm-app ${OUT}/root-ca.crt
 
 ${OUT}:
 	mkdir -p "${OUT}"
@@ -24,6 +24,12 @@ bin/reliant-party: reliant-party reliant-party/src
 
 ${OUT}/bin/realm-application: realm-application realm-application/src
 	cargo install --profile release --path realm-application --root "${OUT}" --target ${TARGET_ARM}
+
+${OUT}/bin/realm-gateway: realm-gateway realm-gateway/src
+	cargo install --profile release --path realm-gateway --root "${OUT}" --target ${TARGET_ARM}
+
+${OUT}/bin/realm-app: realm-app realm-app/src
+	cargo install --profile release --path realm-app --root "${OUT}" --target ${TARGET_ARM}
 
 ${OUT}/root-ca.crt:
 	cp realm-application/root-ca.crt ${OUT}

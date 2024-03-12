@@ -21,14 +21,6 @@ lazy_static! {
             Constraint::new(rsi::IPA_STATE_GET, 2, 1),
         );
         m.insert(
-            rsi::CHANNEL_CREATE,
-            Constraint::new(rsi::CHANNEL_CREATE, 3, 1),
-        );
-        m.insert(
-            rsi::CHANNEL_CONNECT,
-            Constraint::new(rsi::CHANNEL_CONNECT, 3, 1),
-        );
-        m.insert(
             psci::PSCI_VERSION,
             Constraint::new(psci::PSCI_VERSION, 2, 1),
         );

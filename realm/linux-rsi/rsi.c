@@ -9,6 +9,7 @@
 #include <linux/device.h>
 
 #include <asm/rsi.h>
+#include <asm/rsi_cmds.h>
 #include <asm/uaccess.h>
 #include <linux/cc_platform.h>
 
@@ -224,6 +225,55 @@ unlock:
 	return ret;
 }
 
+static int do_cloak_create(struct rsi_cloak *cloak)
+{
+	phys_addr_t page = virt_to_phys(rsi_page_creator);
+	return (int)rsi_cloak_channel_create(cloak->id, page);
+}
+
+static int do_cloak_connect(struct rsi_cloak *cloak)
+{
+	phys_addr_t page = virt_to_phys(rsi_page_connector);
+	return (int)rsi_cloak_channel_connect(cloak->id, page);
+}
+
+static int do_cloak_gen_report(struct rsi_cloak *cloak)
+{
+	int ret;
+	struct arm_smccc_1_2_regs input = {0}, output = {0};
+	phys_addr_t page = virt_to_phys(rsi_page_buf);
+
+	mutex_lock(&attestation_call);
+
+	input.a0 = SMC_RSI_CHANNEL_GEN_REPORT;
+	input.a1 = cloak->id;
+
+	// Copy challenge to registers (a2-a9)
+	memcpy((uint8_t*)&input.a2, cloak->challenge, sizeof(cloak->challenge));
+	input.a10 = page;  // a target IPA
+
+	// do attest_init & attest_continue at once
+	arm_smccc_1_2_smc(&input, &output);
+
+	if (output.a0 == RSI_SUCCESS) {
+		cloak->token_len = output.a1;
+		ret = 0;
+	} else {
+		ret = -rsi_ret_to_errno(output.a0);
+	}
+
+	mutex_unlock(&attestation_call);
+	if (ret == 0)
+		memcpy(cloak->token, rsi_page_buf, cloak->token_len);
+
+	return ret;
+}
+
+static int do_cloak_result(struct rsi_cloak *cloak)
+{
+	return (int)rsi_cloak_channel_result(cloak->id, cloak->result);
+}
+
 static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0;
@@ -231,6 +281,7 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	uint32_t version = 0;
 	struct rsi_measurement *measur = NULL;
 	struct rsi_attestation *attest = NULL;
+	struct rsi_cloak cloak;
 
 	switch (cmd) {
 	case RSIIO_ABI_VERSION:
@@ -322,6 +373,82 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 		}
 
 		break;
+	case RSIIO_CHANNEL_CREATE:
+		ret = copy_from_user(&cloak, (struct rsi_cloak*)arg, sizeof(struct rsi_cloak));
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: copy_from_user failed: %d\n", ret);
+			goto end;
+		}
+
+		ret = do_cloak_create(&cloak);
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: do_cloak_create failed: %d\n", ret);
+			goto end;
+		}
+
+		ret = copy_to_user((struct rsi_cloak*)arg, &cloak, sizeof(struct rsi_cloak));
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: copy_to_user failed: %d\n", ret);
+			goto end;
+		}
+		break;
+	case RSIIO_CHANNEL_CONNECT:
+		ret = copy_from_user(&cloak, (struct rsi_cloak*)arg, sizeof(struct rsi_cloak));
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: copy_from_user failed: %d\n", ret);
+			goto end;
+		}
+
+		ret = do_cloak_connect(&cloak);
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: do_cloak_connect failed: %d\n", ret);
+			goto end;
+		}
+
+		ret = copy_to_user((struct rsi_cloak*)arg, &cloak, sizeof(struct rsi_cloak));
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: copy_to_user failed: %d\n", ret);
+			goto end;
+		}
+		break;
+	case RSIIO_CHANNEL_GEN_REPORT:
+		ret = copy_from_user(&cloak, (struct rsi_cloak*)arg, sizeof(struct rsi_cloak));
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: copy_from_user failed: %d\n", ret);
+			goto end;
+		}
+
+		ret = do_cloak_gen_report(&cloak);
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: do_cloak_gen_report failed: %d\n", ret);
+			goto end;
+		}
+
+		ret = copy_to_user((struct rsi_cloak*)arg, &cloak, sizeof(struct rsi_cloak));
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: copy_to_user failed: %d\n", ret);
+			goto end;
+		}
+		break;
+	case RSIIO_CHANNEL_RESULT:
+		ret = copy_from_user(&cloak, (struct rsi_cloak*)arg, sizeof(struct rsi_cloak));
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: copy_from_user failed: %d\n", ret);
+			goto end;
+		}
+
+		ret = do_cloak_result(&cloak);
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: do_cloak_result failed: %d\n", ret);
+			goto end;
+		}
+
+		ret = copy_to_user((struct rsi_cloak*)arg, &cloak, sizeof(struct rsi_cloak));
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: copy_to_user failed: %d\n", ret);
+			goto end;
+		}
+		break;
 	default:
 		printk(RSI_ALERT "ioctl: unknown ioctl cmd\n");
 		return -EINVAL;
@@ -330,8 +457,10 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	ret = 0;
 
 end:
-	kfree(attest);
-	kfree(measur);
+	if (attest)
+		kfree(attest);
+	if (measur)
+		kfree(measur);
 
 	return ret;
 }

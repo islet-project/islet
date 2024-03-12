@@ -40,6 +40,8 @@ define_interface! {
         HOST_CALL               = 0xc400_0199,
         CHANNEL_CREATE          = 0xc400_0200, // for Cloak
         CHANNEL_CONNECT         = 0xc400_0201, // for Cloak
+        CHANNEL_GEN_REPORT      = 0xc400_0202, // for Cloak
+        CHANNEL_RESULT          = 0xc400_0203, // for Cloak
     }
 }
 
@@ -72,15 +74,12 @@ struct LocalChannel {
     connector_realmid: usize,
     creator_ipa: usize,
     connector_ipa: usize,
-    expected_creator_measurement: [u8; 64],
-    expected_connector_measurement: [u8; 64],
-    runtime_creator_measurement: [u8; 64],
-    runtime_connector_measurement: [u8; 64],
+    connector_token: [u8; 0x1000],
     state: usize,
 }
 
 impl LocalChannel {
-    const fn create(id: usize, realmid: usize, ipa: usize, expected_measurement: &[u8; 64]) -> Self {
+    const fn create(id: usize, realmid: usize, ipa: usize) -> Self {
         let channel = LocalChannel {
             id: id,
             creator_registered: true,
@@ -89,10 +88,7 @@ impl LocalChannel {
             connector_realmid: 0,
             creator_ipa: ipa,
             connector_ipa: 0,
-            expected_creator_measurement: [0; 64],
-            expected_connector_measurement: *expected_measurement,
-            runtime_creator_measurement: [0; 64],
-            runtime_connector_measurement: [0; 64],
+            connector_token: [0; 0x1000],
             state: CHANNEL_STATE_CREATED,
         };
         channel
@@ -144,11 +140,146 @@ pub fn do_host_call(
     Ok(())
 }
 
+fn do_attest_token_init(realmid: usize, vcpuid: usize, rec: &mut Rec<'_>) -> core::result::Result<(), Error> {
+    let mut challenge: [u8; 64] = [0; 64];
+
+    for i in 0..8 {
+        let challenge_part = get_reg(realmid, vcpuid, i + 2)?;
+        let start_idx = i * 8;
+        let end_idx = start_idx + 8;
+        challenge[start_idx..end_idx].copy_from_slice(&challenge_part.to_le_bytes());
+    }
+
+    rec.set_attest_challenge(&challenge);
+    rec.set_attest_state(RmmRecAttestState::AttestInProgress);
+
+    set_reg(realmid, vcpuid, 0, SUCCESS)?;
+
+    // TODO: Calculate real token size
+    set_reg(realmid, vcpuid, 1, 4096)?;
+    Ok(())
+}
+
+fn write_token_to_ipa(realmid: usize, ipa_bits: usize, vcpuid: usize, attest_ipa: usize, token: &[u8; 4096]) -> core::result::Result<(), Error> {
+    if validate_ipa(attest_ipa, ipa_bits).is_err() {
+        warn!("Wrong ipa passed {}", attest_ipa);
+        set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+        return Ok(());
+    }
+
+    let pa = crate::realm::registry::get_realm(realmid)
+        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+        .lock()
+        .page_table
+        .lock()
+        .ipa_to_pa(GuestPhysAddr::from(attest_ipa), RTT_PAGE_LEVEL)
+        .ok_or(Error::RmiErrorInput)?;
+    let attest_pa: usize = pa.into();
+
+    unsafe {
+        let pa_ptr = attest_pa as *mut u8;
+        core::ptr::copy(token.as_ptr(), pa_ptr, token.len());
+    }
+    Ok(())
+}
+
+fn do_attest_token_continue(realmid: usize, ipa_bits: usize, hash_algo: u8, vcpuid: usize, attest_ipa: usize, rec: &mut Rec<'_>) -> core::result::Result<(), Error> {
+    if validate_ipa(attest_ipa, ipa_bits).is_err() {
+        warn!("Wrong ipa passed {}", attest_ipa);
+        set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+        return Ok(());
+    }
+
+    let pa = crate::realm::registry::get_realm(realmid)
+        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+        .lock()
+        .page_table
+        .lock()
+        .ipa_to_pa(GuestPhysAddr::from(attest_ipa), RTT_PAGE_LEVEL)
+        .ok_or(Error::RmiErrorInput)?;
+
+    let mut measurements = crate::realm::registry::get_realm(realmid)
+        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+        .lock()
+        .measurements;
+
+    // [JB] for cloak
+    let mut rpv: [u8; 64] = [0; 64];
+    match walk_page_table(realmid) {
+        Ok(ns_count) => {
+            let rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+            let rd = rd.content::<Rd>();
+            let no_shared_region: usize = match rd.no_shared_region() {
+                true => 1,
+                false => 0,
+            };
+            let mut measurement: [u8; 64] = [0; 64];
+            let _ = HashContext::new(&rd)?.read_measurement_with_input(no_shared_region, ns_count, &mut measurement, MEASUREMENTS_SLOT_RIM);
+            measurements[MEASUREMENTS_SLOT_RIM].as_mut().copy_from_slice(&measurement);
+
+            for (dst, src) in rpv.as_mut().iter_mut().zip(no_shared_region.to_ne_bytes().as_ref()) {
+                *dst = *src;
+            }
+            info!("[WALK] ATTEST_TOKEN_CONTINUE: no_shared_region: {}, ns_count: {}, measure: {:x?}", no_shared_region, ns_count, measurement);
+        },
+        Err(_) => {},
+    }
+
+    let attest_size = crate::rsi::attestation::get_token(
+        pa.into(),
+        rec.attest_challenge(),
+        &measurements,
+        &rpv,
+        hash_algo,
+    );
+
+    set_reg(realmid, vcpuid, 0, SUCCESS)?;
+    set_reg(realmid, vcpuid, 1, attest_size)?;
+    Ok(())
+}
+
+fn do_attest_token_init_channel(realmid: usize, vcpuid: usize, rec: &mut Rec<'_>) -> core::result::Result<(), Error> {
+    let challenge: [u8; 64] = [0; 64];
+
+    rec.set_attest_challenge(&challenge);
+    rec.set_attest_state(RmmRecAttestState::AttestInProgress);
+
+    set_reg(realmid, vcpuid, 0, SUCCESS)?;
+
+    // TODO: Calculate real token size
+    set_reg(realmid, vcpuid, 1, 4096)?;
+    Ok(())
+}
+
+fn do_attest_token_continue_channel(realmid: usize, _ipa_bits: usize, hash_algo: u8, vcpuid: usize, out_token: &mut [u8; 0x1000], rec: &mut Rec<'_>) -> core::result::Result<(), Error> {
+    let measurements = crate::realm::registry::get_realm(realmid)
+        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+        .lock()
+        .measurements;
+
+    let rpv: [u8; 64] = [0; 64];
+    let attest_size = crate::rsi::attestation::get_token_channel(
+        out_token,
+        rec.attest_challenge(),
+        &measurements,
+        &rpv,
+        hash_algo,
+    );
+
+    set_reg(realmid, vcpuid, 0, SUCCESS)?;
+    set_reg(realmid, vcpuid, 1, attest_size)?;
+    Ok(())
+}
+
 pub fn set_event_handler(rsi: &mut RsiHandle) {
     listen!(rsi, ATTEST_TOKEN_INIT, |_arg, ret, _rmm, rec, _| {
         let realmid = rec.realmid()?;
         let vcpuid = rec.vcpuid();
 
+        do_attest_token_init(realmid, vcpuid, rec)?;
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
+        /*
         let mut challenge: [u8; 64] = [0; 64];
 
         for i in 0..8 {
@@ -167,7 +298,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         set_reg(realmid, vcpuid, 1, 4096)?;
 
         ret[0] = rmi::SUCCESS_REC_ENTER;
-        Ok(())
+        Ok(()) */
     });
 
     listen!(rsi, ATTEST_TOKEN_CONTINUE, |_arg, ret, _rmm, rec, _| {
@@ -188,6 +319,12 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         }
 
         let attest_ipa = get_reg(realmid, vcpuid, 1)?;
+        do_attest_token_continue(realmid, ipa_bits, hash_algo, vcpuid, attest_ipa, rec)?;
+
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
+
+        /*
         if validate_ipa(attest_ipa, ipa_bits).is_err() {
             warn!("Wrong ipa passed {}", attest_ipa);
             set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
@@ -242,7 +379,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         set_reg(realmid, vcpuid, 1, attest_size)?;
 
         ret[0] = rmi::SUCCESS_REC_ENTER;
-        Ok(())
+        Ok(()) */
     });
 
     listen!(rsi, HOST_CALL, do_host_call);
@@ -459,24 +596,11 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let channel_id = get_reg(realmid, vcpuid, 1)?;
         let ipa = get_reg(realmid, vcpuid, 2)?;
 
-        let mut channel = LocalChannel::create(channel_id, realmid, ipa, rd.expected_measurement());
-        match walk_page_table(realmid) {
-            Ok(ns_count) => {
-                let no_shared_region: usize = match rd.no_shared_region() {
-                    true => 1,
-                    false => 0,
-                };
-                let mut measurement: [u8; 64] = [0; 64];
-                let _ = HashContext::new(&rd)?.read_measurement_with_input(no_shared_region, ns_count, &mut measurement, MEASUREMENTS_SLOT_RIM);
-                channel.runtime_creator_measurement.as_mut().copy_from_slice(&measurement);
-
-                info!("[WALK] CHANNEL_CREATE: no_shared_region: {}, ns_count: {}, measure: {:x?}", no_shared_region, ns_count, measurement);
-            },
-            Err(_) => {},
-        }
+        let channel = LocalChannel::create(channel_id, realmid, ipa);
         LOCAL_CHANNEL_TABLE.lock().insert(channel_id, channel);
 
         info!("[JB] CHANNEL_CREATE success! realmid: {}, ipa: {:x}", realmid, ipa);
+        set_reg(realmid, vcpuid, 0, SUCCESS)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
     });
@@ -488,19 +612,30 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let vcpuid = rec.vcpuid();
         let channel_id = get_reg(realmid, vcpuid, 1)?;
         let ipa = get_reg(realmid, vcpuid, 2)?;
+        let ipa_bits = rec.ipa_bits()?;
+        let hash_algo = rd.hash_algo();
 
+        info!("CHANNEL_CONNECT start!");
         match LOCAL_CHANNEL_TABLE.lock().get_mut(&channel_id) {
             Some(channel) => {
                 // 0. validation check
                 // assert!(channel.connector_realmid != channel.creator_realmid)
 
-                // 1. set a channel
+                // 1. get a token, with nonce of zero
+                info!("before do_attestation");
+                do_attest_token_init_channel(realmid, vcpuid, rec)?;
+                do_attest_token_continue_channel(realmid, ipa_bits, hash_algo, vcpuid, &mut channel.connector_token, rec)?;
+                info!("after do_attestation");
+
+                // 2. set a channel
                 channel.connector_realmid = realmid;
                 channel.connector_ipa = ipa;
                 channel.creator_registered = true;
-                channel.expected_creator_measurement.copy_from_slice(rd.expected_measurement());
                 channel.state = CHANNEL_STATE_CONNECTED;
 
+                info!("[JB] CHANNEL_CONNECT success! realmid: {}, ipa: {:x}", realmid, ipa);
+
+                /*
                 match walk_page_table(realmid) {
                     Ok(ns_count) => {
                         let no_shared_region: usize = match rd.no_shared_region() {
@@ -533,13 +668,76 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
                     Ok(_) => info!("[JB] create_shared_mapping success"),
                     Err(_) => info!("[JB] create_shared_mapping fail"),
                 }
-                channel.state = CHANNEL_STATE_ESTABLISHED;
-
-                info!("[JB] CHANNEL_CONNECT success! realmid: {}, ipa: {:x}", realmid, ipa);
+                channel.state = CHANNEL_STATE_ESTABLISHED; */
             },
             None => {},
         }
         
+        set_reg(realmid, vcpuid, 0, SUCCESS)?;
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
+    });
+
+    listen!(rsi, CHANNEL_GEN_REPORT, |_arg, ret, _rmm, rec, _run| {
+        let realmid = rec.realmid()?;
+        let vcpuid = rec.vcpuid();
+        let ipa_bits = rec.ipa_bits()?;
+        let channel_id = get_reg(realmid, vcpuid, 1)?;
+        let ipa = get_reg(realmid, vcpuid, 2)?;
+
+        // input_r1: channel id
+        // input_r2: ipa address that report is going to be written onto. 
+        match LOCAL_CHANNEL_TABLE.lock().get_mut(&channel_id) {
+            Some(channel) => {
+                if channel.state != CHANNEL_STATE_CONNECTED {
+                    info!("channel not yet connected");
+                    set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+                    return Ok(());
+                }
+
+                match write_token_to_ipa(realmid, ipa_bits, vcpuid, ipa, &channel.connector_token) {
+                    Ok(_) => {},
+                    Err(_) => {
+                        info!("write_token_to_ipa error");
+                        set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+                        return Ok(());
+                    },
+                }
+            },
+            None => {},
+        }
+
+        set_reg(realmid, vcpuid, 0, SUCCESS)?;
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
+    });
+
+    listen!(rsi, CHANNEL_RESULT, |_arg, ret, _rmm, rec, _run| {
+        // input_r1: result (0: fail, 1: success)
+        // TODO: signed_RC_Cert
+        let realmid = rec.realmid()?;
+        let vcpuid = rec.vcpuid();
+        let channel_id = get_reg(realmid, vcpuid, 1)?;
+        let channel_result = get_reg(realmid, vcpuid, 2)?;
+
+        match LOCAL_CHANNEL_TABLE.lock().get_mut(&channel_id) {
+            Some(channel) => {
+                if channel_result == 1 {
+                    match create_shared_mapping(&channel) {
+                        Ok(_) => info!("[JB] create_shared_mapping success"),
+                        Err(_) => info!("[JB] create_shared_mapping fail"),
+                    }
+
+                    channel.state = CHANNEL_STATE_ESTABLISHED;
+                    info!("[JB] CHANNEL_STATE_ESTABLISHED! creator_realmid: {}, creator_ipa: {:x}, connector_realmid: {}, connector_ipa: {:x}", channel.creator_realmid, channel.creator_ipa, channel.connector_realmid, channel.connector_ipa);
+                }
+            },
+            None => {
+                return Err(Error::RmiErrorInput);
+            },
+        }
+
+        set_reg(realmid, vcpuid, 0, SUCCESS)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
     });

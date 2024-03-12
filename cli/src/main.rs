@@ -40,6 +40,16 @@ cfg_if::cfg_if! {
             Verify(subcmds::VerifyArgs),
             /// Verifies and prints the token from a file
             Test(subcmds::TestArgs),
+            /// Cloak test all
+            CloakAll,
+            /// Cloak channel create
+            CloakCreate,
+            /// Cloak channel connect
+            CloakConnect,
+            /// Cloak channel gen_report
+            CloakGenReport,
+            /// Cloak channel result
+            CloakResult,
         }
     } else if #[cfg(target_arch="x86_64")] {
         #[derive(Subcommand, Debug)]
@@ -70,6 +80,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>>
                 Commands::Attest(args) => subcmds::attest(args)?,
                 Commands::Verify(args) => subcmds::verify(args)?,
                 Commands::Test(args) => subcmds::test(args)?,
+                Commands::CloakAll => subcmds::cloak_all()?,
+                Commands::CloakCreate => subcmds::cloak_create()?,
+                Commands::CloakConnect => subcmds::cloak_connect()?,
+                Commands::CloakGenReport => subcmds::cloak_gen_report()?,
+                Commands::CloakResult => subcmds::cloak_result()?,
             };
         } else if #[cfg(target_arch="x86_64")] {
             match &cli.command {

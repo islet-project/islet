@@ -38,5 +38,5 @@ sudo ip link set ARM${user} master armbr0
 sudo ip route add ${route_ip}/24 via ${fvp_ip}
 
 # 5. add NAT functionality to properly interact with remote hosts
-echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
-sudo iptables -t nat -A POSTROUTING -j MASQUERADE
+#echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
+#sudo iptables -t nat -A POSTROUTING -j MASQUERADE

@@ -2,6 +2,9 @@ use crate::{tools, GenericResult};
 use clap::Args;
 use colored::Colorize;
 
+const CHALLENGE_LEN: u16 = 0x40;
+const MAX_TOKEN_LEN: u16 = 0x1000;
+
 pub(crate) fn version() -> GenericResult
 {
     let version = rsi_el0::abi_version()?;
@@ -137,5 +140,60 @@ pub(crate) fn test(args: &TestArgs) -> GenericResult
         }
     }
 
+    Ok(())
+}
+
+pub(crate) fn cloak_all() -> GenericResult
+{
+    let channel_id: usize = 0;
+    let challenge: [u8; CHALLENGE_LEN as usize] = [0; CHALLENGE_LEN as usize];
+    let write_data: [u8; MAX_TOKEN_LEN as usize] = [2; MAX_TOKEN_LEN as usize];
+    let mut read_data: [u8; MAX_TOKEN_LEN as usize] = [0; MAX_TOKEN_LEN as usize];
+
+    rsi_el0::cloak_create(channel_id)?;
+    rsi_el0::cloak_connect(channel_id)?;
+
+    let _data = rsi_el0::cloak_gen_report(channel_id, &challenge);
+    //println!("report: {:X?}", hex::encode(data));
+    rsi_el0::cloak_result(channel_id, 1)?;
+    println!("cloak_all test - after cloak_result");
+
+    rsi_el0::cloak_read(channel_id, &mut read_data)?;
+    println!("first_read: {:x}", read_data[0]);
+
+    rsi_el0::cloak_write(channel_id, &write_data)?;
+    rsi_el0::cloak_read(channel_id, &mut read_data)?;
+    println!("second_read: {:x}", read_data[0]);
+
+    Ok(())
+}
+
+pub(crate) fn cloak_create() -> GenericResult
+{
+    let channel_id: usize = 0;
+    rsi_el0::cloak_create(channel_id)?;
+    Ok(())
+}
+
+pub(crate) fn cloak_connect() -> GenericResult
+{
+    let channel_id: usize = 0;
+    rsi_el0::cloak_connect(channel_id)?;
+    Ok(())
+}
+
+pub(crate) fn cloak_gen_report() -> GenericResult
+{
+    let channel_id: usize = 0;
+    let challenge: [u8; CHALLENGE_LEN as usize] = [0; CHALLENGE_LEN as usize];
+
+    let _data = rsi_el0::cloak_gen_report(channel_id, &challenge);
+    Ok(())
+}
+
+pub(crate) fn cloak_result() -> GenericResult
+{
+    let channel_id: usize = 0;
+    rsi_el0::cloak_result(channel_id, 1)?;
     Ok(())
 }

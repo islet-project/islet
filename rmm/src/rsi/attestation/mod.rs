@@ -173,3 +173,26 @@ pub fn get_token(
 
     token.len()
 }
+
+pub fn get_token_channel(
+    out_token: &mut [u8; 0x1000],
+    challenge: &[u8],
+    measurements: &[Measurement],
+    rpv: &[u8; 64],
+    hash_algo: u8,
+) -> usize {
+    // TODO: consider storing attestation object somewhere,
+    // as RAK and token do not change during rmm lifetime.
+    let token = Attestation::new(&plat_token(), &realm_attest_key()).create_attestation_token(
+        challenge,
+        measurements,
+        rpv,
+        hash_algo,
+    );
+
+    for (dst, src) in out_token.iter_mut().zip(&token) {
+        *dst = *src;
+    }
+
+    token.len()
+}

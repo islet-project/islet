@@ -139,6 +139,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         server_privatekey_path: args.server_privkey,
     })?;
 
+    info!("after RaTlsServer::new()");
+
     let mut conn_iter = server.connections(args.server_bind_address)?;
     loop {
         info!("Awaiting connection");

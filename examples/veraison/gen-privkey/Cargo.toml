@@ -1,0 +1,20 @@
+[workspace]
+
+[package]
+name = "gen-privkey"
+version = "0.1.0"
+edition = "2021"
+authors = [ "Islet Contributors" ]
+description = "generate a RsaPrivatekey for RA-TLS of realm-application"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rsa = { version = "*", features = ["nightly", "pkcs5", "serde"] }
+rand = "*"
+serde = "*"
+serde_json = "*"
+
+[profile.release]
+strip = true
+opt-level = 3

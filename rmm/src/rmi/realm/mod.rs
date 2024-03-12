@@ -63,8 +63,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let _ = get_granule_if!(params.rtt_base as usize, GranuleState::Delegated)?;
 
         // revisit rmi.create_realm() (is it necessary?)
-        let mut expected_measurement: [u8; 64] = [0; 64];
-        params.expected_measurement(&mut expected_measurement);
+
+        //let mut expected_measurement: [u8; 64] = [0; 64];
+        //params.expected_measurement(&mut expected_measurement);
         create_realm(params.vmid, params.rtt_base as usize).map(|id| {
             rd_obj.init(
                 id,

@@ -1,11 +1,56 @@
 #![no_std]
 pub extern crate paste;
 
+// Unfortunately, [$t: ty; $size: expr] does not matches with array type...
+// instead, matches all integer primitves here.
 #[macro_export]
-macro_rules! pad_field {
+macro_rules! type_check_and_init {
+    (u8) => {
+        0
+    };
+    (i8) => {
+        0
+    };
+    (u16) => {
+        0
+    };
+    (i16) => {
+        0
+    };
+    (u32) => {
+        0
+    };
+    (i32) => {
+        0
+    };
+    (u64) => {
+        0
+    };
+    (i64) => {
+        0
+    };
+    (u128) => {
+        0
+    };
+    (i128) => {
+        0
+    };
+    (usize) => {
+        0
+    };
+    (isize) => {
+        0
+    };
+    ($t:ty) => {
+        [0; core::mem::size_of::<$t>()]
+    };
+}
+
+#[macro_export]
+macro_rules! pad_field_and_impl_default {
     // entry point.
     (@root $(#[$attr_struct:meta])* $vis:vis $name:ident { $($input:tt)* } ) => {
-        pad_field!(
+        pad_field_and_impl_default!(
             @munch (
                 $($input)*
             ) -> {
@@ -22,6 +67,15 @@ macro_rules! pad_field {
             $(#[$attr])* $vis struct $name { $($vis_field $id: $ty, [<_pad $id>]: [u8;$amount]),* }
         }
 
+        $crate::paste::paste!{
+            impl Default for $name {
+                fn default() -> Self {
+                    Self {
+                        $($id: type_check_and_init!($ty), [<_pad $id>]: [0;$amount]),*
+                    }
+                }
+            }
+        }
     };
 
     // Print the struct once all fields have been munched.
@@ -34,7 +88,7 @@ macro_rules! pad_field {
         )
         -> {$($output:tt)*}
     ) => {
-        pad_field!(
+        pad_field_and_impl_default!(
             @guard (
                 0
             ) -> {
@@ -55,7 +109,7 @@ macro_rules! pad_field {
         )
         -> {$($output:tt)*}
     ) => {
-        pad_field!(
+        pad_field_and_impl_default!(
             @munch (
                 $(#[$attr_next])*
                 $offset_end $vis_next $field_next: $ty_next,
@@ -69,10 +123,10 @@ macro_rules! pad_field {
 }
 
 #[macro_export]
-macro_rules! pad_struct {
+macro_rules! pad_struct_and_impl_default {
     (
         $(#[$attr:meta])* $vis:vis struct $name:ident {$($fields:tt)*}
     ) => {
-        $crate::pad_field!(@root $(#[$attr])* $vis $name { $($fields)* } );
+        $crate::pad_field_and_impl_default!(@root $(#[$attr])* $vis $name { $($fields)* } );
     };
 }

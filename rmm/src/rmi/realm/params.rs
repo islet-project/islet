@@ -5,11 +5,9 @@ use crate::measurement::Hashable;
 use crate::rmi::features;
 use crate::rmi::rtt::{RTT_PAGE_LEVEL, S2TTE_STRIDE};
 use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
-use autopadding::{pad_struct, pad_field};
+use autopadding::*;
 
-const PADDING: [usize; 5] = [248, 767, 960, 6, 2020];
-
-pad_struct!(
+pad_struct_and_impl_default!(
 pub struct Params {
     0x0    pub features_0: u64,
     0x100  pub hash_algo: u8,
@@ -23,27 +21,6 @@ pub struct Params {
 );
 
 const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
-
-impl Default for Params {
-    fn default() -> Self {
-        Self {
-            features_0: 0,
-            _padfeatures_0: [0; PADDING[0]],
-            hash_algo: 0,
-            _padhash_algo: [0; PADDING[1]],
-            rpv: [0; 64],
-            _padrpv: [0; PADDING[2]],
-            vmid: 0,
-            _padvmid: [0; PADDING[3]],
-            rtt_base: 0,
-            _padrtt_base: [0; 0],
-            rtt_level_start: 0,
-            _padrtt_level_start: [0; 0],
-            rtt_num_start: 0,
-            _padrtt_num_start: [0; PADDING[4]],
-        }
-    }
-}
 
 impl core::fmt::Debug for Params {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {

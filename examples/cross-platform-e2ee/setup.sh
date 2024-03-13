@@ -14,6 +14,7 @@ sudo apt install autoconf automake libtool curl make g++ unzip
 
 sudo apt install uuid-dev wget
 sudo apt install openssl libssl-dev
+sudo apt install g++-aarch64-linux-gnu
 
 # Setup utilities
 cd $HERE && git clone https://github.com/protocolbuffers/protobuf.git

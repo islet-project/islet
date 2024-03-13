@@ -3,10 +3,12 @@
 macro_rules! define_interface {
     (command {$($variant:ident = $val:expr),*,}) => {
         $(pub const $variant: usize = $val;)*
-        pub fn to_str(code: usize) -> &'static str {
+        pub fn to_str(code: usize) ->  alloc::string::String {
+            use alloc::string::ToString;
+            use alloc::format;
             match code {
-                $($variant => stringify!($variant)),*,
-                _ => "Undefined",
+                $($variant => stringify!($variant).to_string()),*,
+                _ =>  format!("Undefined {}", code)
             }
         }
     };

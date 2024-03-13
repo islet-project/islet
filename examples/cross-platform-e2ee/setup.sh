@@ -6,7 +6,7 @@ ROOT=$(git rev-parse --show-toplevel)
 HERE=$ROOT/examples/cross-platform-e2ee
 
 CERTIFIER=$ROOT/third-party/certifier
-OPENSSL=$ROOT/assets/openssl/lib
+OPENSSL=$ROOT/assets/openssl/lib-arm64
 THIRD_PARTY_ARM=$HERE/third-party-arm
 
 sudo apt install libgtest-dev libgflags-dev

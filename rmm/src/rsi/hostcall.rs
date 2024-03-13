@@ -1,10 +1,21 @@
-//extern crate alloc;
+use crate::const_assert_eq;
+use crate::granule::GRANULE_SIZE;
 use crate::rmi::error::Error;
+
+pub const HOST_CALL_NR_GPRS: usize = 7;
+const PADDING: [usize; 2] = [6, 4032];
 
 #[repr(C)]
 pub struct HostCall {
-    inner: Inner,
+    imm: u16,
+    padding0: [u8; PADDING[0]],
+    gprs: [u64; HOST_CALL_NR_GPRS],
+    padding1: [u8; PADDING[1]],
 }
+
+// The width of the RsiHostCall structure is 4096 (0x1000) bytes in RMM Spec bet0.
+// The width is changed to 256 (0x100) bytes at RMM Spec eac5.
+const_assert_eq!(core::mem::size_of::<HostCall>(), GRANULE_SIZE);
 
 impl HostCall {
     pub unsafe fn parse<'a>(addr: usize) -> &'a Self {
@@ -15,52 +26,25 @@ impl HostCall {
         &mut *(addr as *mut Self)
     }
 
-    pub unsafe fn set_gpr(&mut self, idx: usize, val: u64) -> Result<(), Error> {
+    pub fn set_gpr(&mut self, idx: usize, val: u64) -> Result<(), Error> {
         if idx >= HOST_CALL_NR_GPRS {
             error!("out of index: {}", idx);
             return Err(Error::RmiErrorInput);
         }
-        (*self.inner.val).gprs[idx] = val;
+        self.gprs[idx] = val;
         Ok(())
     }
 
-    // Safety: union type should be initialized
-    // Check UB
     pub fn imm(&self) -> u16 {
-        unsafe { self.inner.val.imm }
-    }
-}
-
-impl Drop for HostCall {
-    fn drop(&mut self) {
-        unsafe {
-            core::mem::ManuallyDrop::drop(&mut self.inner.val);
-        }
+        self.imm
     }
 }
 
 impl core::fmt::Debug for HostCall {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        // Safety: union type should be initialized
-        unsafe {
-            f.debug_struct("rsi::HostCall")
-                .field("imm", &format_args!("{:#X}", &self.inner.val.imm))
-                .field("gprs", &self.inner.val.gprs)
-                .finish()
-        }
+        f.debug_struct("rsi::HostCall")
+            .field("imm", &format_args!("{:#X}", &self.imm))
+            .field("gprs", &self.gprs)
+            .finish()
     }
-}
-
-pub const HOST_CALL_NR_GPRS: usize = 7;
-
-#[repr(C)]
-struct _Inner {
-    imm: u16,
-    gprs: [u64; HOST_CALL_NR_GPRS],
-}
-
-#[repr(C)]
-union Inner {
-    val: core::mem::ManuallyDrop<_Inner>,
-    reserved: [u8; 0x100],
 }

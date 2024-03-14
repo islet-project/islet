@@ -1,7 +1,6 @@
 use crate::event::Command;
 use crate::rmi::constraint::Constraint; // TODO: we might need rsi's own constraint struct in the future
 use crate::rsi;
-use crate::rsi::psci;
 
 fn pick(cmd: Command) -> Option<Constraint> {
     let constraint = match cmd {
@@ -10,18 +9,15 @@ fn pick(cmd: Command) -> Option<Constraint> {
         rsi::ABI_VERSION => Constraint::new(rsi::ABI_VERSION, 2, 1),
         rsi::REALM_CONFIG => Constraint::new(rsi::REALM_CONFIG, 2, 1),
         rsi::IPA_STATE_GET => Constraint::new(rsi::IPA_STATE_GET, 2, 1),
-        psci::PSCI_VERSION => Constraint::new(psci::PSCI_VERSION, 2, 1),
-        psci::SMC32::CPU_SUSPEND => Constraint::new(psci::SMC32::CPU_SUSPEND, 2, 1),
-        psci::SMC64::CPU_SUSPEND => Constraint::new(psci::SMC64::CPU_SUSPEND, 2, 1),
-        psci::SMC32::CPU_OFF => Constraint::new(psci::SMC32::CPU_OFF, 2, 1),
-        psci::SMC32::CPU_ON => Constraint::new(psci::SMC32::CPU_ON, 2, 1),
-        psci::SMC64::CPU_ON => Constraint::new(psci::SMC64::CPU_ON, 2, 1),
-        psci::SMC32::AFFINITY_INFO => Constraint::new(psci::SMC32::AFFINITY_INFO, 2, 1),
-        psci::SMC64::AFFINITY_INFO => Constraint::new(psci::SMC64::AFFINITY_INFO, 2, 1),
-        psci::SMC32::SYSTEM_OFF => Constraint::new(psci::SMC32::SYSTEM_OFF, 2, 1),
-        psci::SMC32::SYSTEM_RESET => Constraint::new(psci::SMC32::SYSTEM_RESET, 2, 1),
-        psci::SMC32::FEATURES => Constraint::new(psci::SMC32::FEATURES, 2, 1),
-        psci::SMCCC_VERSION => Constraint::new(psci::SMCCC_VERSION, 2, 1),
+        rsi::PSCI_VERSION => Constraint::new(rsi::PSCI_VERSION, 2, 1),
+        rsi::PSCI_CPU_SUSPEND => Constraint::new(rsi::PSCI_CPU_SUSPEND, 2, 1),
+        rsi::PSCI_CPU_OFF => Constraint::new(rsi::PSCI_CPU_OFF, 2, 1),
+        rsi::PSCI_CPU_ON => Constraint::new(rsi::PSCI_CPU_ON, 2, 1),
+        rsi::PSCI_AFFINITY_INFO => Constraint::new(rsi::PSCI_AFFINITY_INFO, 2, 1),
+        rsi::PSCI_SYSTEM_OFF => Constraint::new(rsi::PSCI_SYSTEM_OFF, 2, 1),
+        rsi::PSCI_SYSTEM_RESET => Constraint::new(rsi::PSCI_SYSTEM_RESET, 2, 1),
+        rsi::PSCI_FEATURES => Constraint::new(rsi::PSCI_FEATURES, 2, 1),
+        rsi::SMCCC_VERSION => Constraint::new(rsi::SMCCC_VERSION, 2, 1),
         _ => return None,
     };
     Some(constraint)

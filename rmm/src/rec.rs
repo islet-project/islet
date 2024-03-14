@@ -38,6 +38,7 @@ pub struct Rec<'a> {
     owner: OnceCell<&'a Rd>,
     vcpuid: usize,
     runnable: bool,
+    psci_pending: bool,
     state: RecState,
     ripas: Ripas,
     vtcr: u64,
@@ -104,6 +105,10 @@ impl Rec<'_> {
         self.host_call_pending
     }
 
+    pub fn psci_pending(&self) -> bool {
+        self.psci_pending
+    }
+
     pub fn set_attest_state(&mut self, state: RmmRecAttestState) {
         self.attest_state = state;
     }
@@ -120,6 +125,10 @@ impl Rec<'_> {
         self.host_call_pending = val;
     }
 
+    pub fn set_psci_pending(&mut self, val: bool) {
+        self.psci_pending = val;
+    }
+
     pub fn set_ripas(&mut self, start: u64, end: u64, addr: u64, state: u8) {
         self.ripas.start = start;
         self.ripas.end = end;
@@ -131,7 +140,8 @@ impl Rec<'_> {
         self.vtcr = vtcr;
     }
 
-    fn set_runnable(&mut self, flags: u64) {
+    //TODO: change interface. A Rec state can be set by other Recs in the same Rd.
+    pub fn set_runnable(&mut self, flags: u64) {
         const RUNNABLE_OFFSET: u64 = 1;
         self.runnable = match flags & RUNNABLE_OFFSET {
             0 => false,

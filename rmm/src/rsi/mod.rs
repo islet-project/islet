@@ -41,6 +41,16 @@ define_interface! {
         IPA_STATE_SET           = 0xc400_0197,
         IPA_STATE_GET           = 0xc400_0198,
         HOST_CALL               = 0xc400_0199,
+        // PSCI smcs
+        SMCCC_VERSION           = 0x8000_0000,
+        PSCI_VERSION            = 0x8400_0000,
+        PSCI_CPU_SUSPEND        = 0xC400_0001,
+        PSCI_CPU_OFF            = 0x8400_0002,
+        PSCI_CPU_ON             = 0xC400_0003,
+        PSCI_AFFINITY_INFO      = 0xC400_0004,
+        PSCI_SYSTEM_OFF         = 0x8400_0008,
+        PSCI_SYSTEM_RESET       = 0x8400_0009,
+        PSCI_FEATURES           = 0x8400_000A,
     }
 }
 

@@ -48,12 +48,23 @@ const ICH_HCR_EL2_EOI_COUNT_WIDTH: usize = 5;
 pub const ICH_HCR_EL2_EOI_COUNT_MASK: u64 =
     ((!0u64) >> (64 - ICH_HCR_EL2_EOI_COUNT_WIDTH)) << ICH_HCR_EL2_EOI_COUNT_SHIFT;
 
+const MAX_SPI_ID: u64 = 1019;
+
+const MIN_EPPI_ID: u64 = 1056;
+const MAX_EPPI_ID: u64 = 1119;
+
+const MIN_ESPI_ID: u64 = 4096;
+const MAX_ESPI_ID: u64 = 5119;
+
+const MIN_LPI_ID: u64 = 8192;
+
 #[allow(dead_code)]
 pub struct GicFeatures {
     pub nr_lrs: usize,
     pub nr_aprs: usize,
     pub pri_res0_mask: u64,
     pub max_vintid: u64,
+    pub ext_range: bool,
 }
 
 lazy_static! {
@@ -74,11 +85,14 @@ lazy_static! {
         let pri = unsafe { ICH_VTR_EL2.get_masked_value(ICH_VTR_EL2::PRI) } + 1;
         let pri_res0_mask = (1u64 << (ICH_LR_PRIORITY_WIDTH - pri)) - 1;
         trace!("pri {} pri_res0_mask {}", pri, pri_res0_mask);
+        let ext_range = unsafe { ICC_CTLR_EL1.get_masked_value(ICC_CTLR_EL1::EXT_RANGE) != 0 };
+        trace!("icc_ctlr ext_range {}", ext_range);
         GicFeatures {
             nr_lrs,
             nr_aprs,
             pri_res0_mask,
             max_vintid,
+            ext_range,
         }
     };
 }
@@ -258,4 +272,76 @@ pub fn send_state_to_host(rd: &mut Rd, vcpu: usize, run: &mut Run) -> Result<(),
     run.set_gic_vmcr(gic_state.ich_vmcr_el2);
     run.set_gic_hcr(gic_state.ich_hcr_el2 & (ICH_HCR_EL2_EOI_COUNT_MASK | ICH_HCR_EL2_NS_MASK));
     Ok(())
+}
+
+fn valid_vintid(intid: u64) -> bool {
+    /* Check for INTID [0..1019] and [8192..] */
+    if intid <= MAX_SPI_ID || (intid >= MIN_LPI_ID && intid <= GIC_FEATURES.max_vintid) {
+        return true;
+    }
+
+    /*
+     * If extended INTID range sopported, check for
+     * Extended PPI [1056..1119] and Extended SPI [4096..5119]
+     */
+    if GIC_FEATURES.ext_range {
+        return (intid >= MIN_EPPI_ID && intid <= MAX_EPPI_ID)
+            || (intid >= MIN_ESPI_ID && intid <= MAX_ESPI_ID);
+    }
+
+    false
+}
+
+pub fn validate_state(run: &Run) -> bool {
+    let hcr = unsafe { run.entry_gic_hcr() };
+
+    /* Validate rec_entry.gicv3_hcr MBZ bits */
+    if (hcr & !ICH_HCR_EL2_NS_MASK) != 0 {
+        return false;
+    }
+
+    for i in 0..GIC_FEATURES.nr_lrs {
+        let lrs = unsafe { run.entry_gic_lrs() };
+        let lr = ICH_LR::new(lrs[i]);
+        let vintid = lr.get_masked_value(ICH_LR::VINTID);
+
+        if lr.get_masked_value(ICH_LR::STATE) == ich_lr_state::INVALID {
+            continue;
+        }
+
+        /* The RMM Specification imposes the constraint that HW == '0' */
+        let pri = lr.get_masked_value(ICH_LR::PRIORITY);
+        let pri_res0_mask = (1u64 << (ICH_LR_PRIORITY_WIDTH - pri)) - 1;
+        if lr.get_masked(ICH_LR::HW) != 0
+            /* Check RES0 bits in the Priority field */
+            || pri_res0_mask != 0
+            /* Only the EOI bit in the pINTID is allowed to be set */
+            || lr.get_masked(ICH_LR::PINTID & !ICH_LR::EOI) != 0
+            /* Check if vINTID is in the valid range */
+            || !valid_vintid(vintid)
+        {
+            return false;
+        }
+
+        /*
+         * Behavior is UNPREDICTABLE if two or more List Registers
+         * specify the same vINTID.
+         */
+        for j in i + 1..=GIC_FEATURES.nr_lrs {
+            let lrs = unsafe { run.entry_gic_lrs() };
+            let lr = ICH_LR::new(lrs[j]);
+
+            let vintid_2 = lr.get_masked_value(ICH_LR::VINTID);
+
+            if lr.get_masked_value(ICH_LR::STATE) == ich_lr_state::INVALID {
+                continue;
+            }
+
+            if vintid == vintid_2 {
+                return false;
+            }
+        }
+    }
+
+    true
 }

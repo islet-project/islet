@@ -141,6 +141,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         run.verify_compliance()?;
         trace!("{:?}", run);
 
+        if !crate::gic::validate_state(&run) {
+            return Err(Error::RmiErrorRec);
+        }
+
         if rec.host_call_pending() {
             // The below should be called without holding rd's lock
             do_host_call(arg, ret, rmm, rec, &mut run)?;

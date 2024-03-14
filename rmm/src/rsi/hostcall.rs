@@ -1,6 +1,6 @@
-use crate::const_assert_eq;
-use crate::granule::GRANULE_SIZE;
+use crate::granule::{GranuleState, GRANULE_SIZE};
 use crate::rmi::error::Error;
+use crate::{const_assert_eq, get_granule, get_granule_if};
 
 pub const HOST_CALL_NR_GPRS: usize = 7;
 const PADDING: [usize; 2] = [6, 4032];
@@ -18,10 +18,6 @@ pub struct HostCall {
 const_assert_eq!(core::mem::size_of::<HostCall>(), GRANULE_SIZE);
 
 impl HostCall {
-    pub unsafe fn parse<'a>(addr: usize) -> &'a Self {
-        &*(addr as *const Self)
-    }
-
     pub unsafe fn parse_mut<'a>(addr: usize) -> &'a mut Self {
         &mut *(addr as *mut Self)
     }
@@ -46,5 +42,12 @@ impl core::fmt::Debug for HostCall {
             .field("imm", &format_args!("{:#X}", &self.imm))
             .field("gprs", &self.gprs)
             .finish()
+    }
+}
+
+impl safe_abstraction::RawPtr for HostCall {
+    fn is_within_range(&self) -> bool {
+        let align_down = self.addr() & !(GRANULE_SIZE - 1);
+        get_granule_if!(align_down, GranuleState::Data).is_ok()
     }
 }

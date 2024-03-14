@@ -24,6 +24,8 @@ use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 use crate::Monitor;
 use crate::{get_granule, get_granule_if};
 
+use safe_abstraction::RawPtr;
+
 define_interface! {
     command {
         ABI_VERSION             = 0xc400_0190,
@@ -73,7 +75,7 @@ pub fn do_host_call(
         .ok_or(Error::RmiErrorInput)?;
 
     unsafe {
-        let host_call = HostCall::parse_mut(pa.into());
+        let host_call: &mut HostCall = HostCall::as_mut(pa.into()).ok_or(Error::RmiErrorInput)?;
         if rec.host_call_pending() {
             for i in 0..HOST_CALL_NR_GPRS {
                 let val = run.entry_gpr(i)?;

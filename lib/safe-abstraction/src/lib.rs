@@ -33,13 +33,15 @@ pub trait RawPtr {
 
     fn is_valid<T: RawPtr>(addr: usize) -> bool {
         let ptr = addr as *const T;
-        // Safety: This cast from a raw pointer to a reference is considered safe because it is used solely for the purpose of verifying alignment and range, without actually dereferencing the pointer.
+        // Safety: This cast from a raw pointer to a reference is considered safe
+        //         because it is used solely for the purpose of verifying alignment and range,
+        //         without actually dereferencing the pointer.
         let ref_ = unsafe { &*(ptr) };
         !ptr.is_null() && ref_.is_aligned() && ref_.is_within_range()
     }
 
     fn addr(&self) -> usize {
-        let ptr = core::ptr::addr_of!(self);
+        let ptr: *const Self = self;
         ptr as usize
     }
 

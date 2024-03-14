@@ -28,6 +28,7 @@ define_interface! {
          RTT_MAP_UNPROTECTED    = 0xc400_015f,
          RTT_UNMAP_UNPROTECTED  = 0xc400_0162,
          RTT_READ_ENTRY         = 0xc400_0161,
+         PSCI_COMPLETE          = 0xc400_0164,
          FEATURES               = 0xc400_0165,
          REC_AUX_COUNT          = 0xc400_0167,
          RTT_INIT_RIPAS         = 0xc400_0168,

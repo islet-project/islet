@@ -1,0 +1,19 @@
+[workspace]
+
+[package]
+name = "common"
+version = "0.1.0"
+edition = "2021"
+authors = [ "Islet Contributors" ]
+description = "common part of verifier"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+prusti-contracts = "0.2.0"
+prusti-std = "0.2.0"
+ioctl-gen = "0.1.0"
+#rust-rsi = { path = "../../../../remote-attestation/lib/rust-rsi" }
+
+[profile.release]
+strip = true

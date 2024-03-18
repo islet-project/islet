@@ -1,4 +1,5 @@
 use prusti_contracts::*;
+use common::ioctl::{cloak_connect, cloak_read};
 
 pub struct LocalChannelApp<S, M> where
     S: LocalChannelState,
@@ -44,6 +45,15 @@ impl SharedMemory<ReadOnly> {
             state: ReadWrite,
         }
     }
+
+    #[requires(self.state.is_read_only())]
+    #[ensures(self.state.is_read_only())]
+    pub fn read_only(&self, id: usize, data: &mut [u8; 4096]) -> bool {
+        match cloak_read(id, data) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
 }
 
 impl<S: LocalChannelState, M: SharedMemoryState> LocalChannelApp<S, M> {
@@ -57,17 +67,31 @@ impl<S: LocalChannelState, M: SharedMemoryState> LocalChannelApp<S, M> {
     }
 }
 
+#[pure]
+fn ensures_connect(res: &Option<LocalChannelApp<Connected, ReadOnly>>) -> bool {
+    match res {
+        Some(app) => {
+            app.state.is_connected() && app.shared_memory.state.is_read_only()
+        },
+        None => true,
+    }
+}
+
 impl LocalChannelApp<Created, Unmapped> {
     #[requires( ((&self).state.is_created()) && ((&self).shared_memory.state.is_unmapped()) )]
-    #[ensures( ((&result).state.is_connected()) && ((&result).shared_memory.state.is_read_only()) )]
-    pub fn connect(self) -> LocalChannelApp<Connected, ReadOnly> {
-        // do something here!
-
-        LocalChannelApp {
-            id: self.id,
-            shared_memory: self.shared_memory.into_read_only(),
-            state: Connected,
-        }
+    #[ensures(ensures_connect(&result))]
+    //#[ensures( ((&result).state.is_connected()) && ((&result).shared_memory.state.is_read_only()) )]
+    pub fn connect(self) -> Option<LocalChannelApp<Connected, ReadOnly>> {
+        match cloak_connect(self.id) {
+            Ok(_) => {
+                Some(LocalChannelApp {
+                    id: self.id,
+                    shared_memory: self.shared_memory.into_read_only(),
+                    state: Connected,
+                })
+            },
+            Err(_) => None,
+        }    
     }
 }
 
@@ -75,7 +99,7 @@ impl LocalChannelApp<Connected, ReadOnly> {
     #[requires( ((&self).state.is_connected()) && ((&self).shared_memory.state.is_read_only()) )]
     #[ensures( ((&result).state.is_received()) && ((&result).shared_memory.state.is_read_only()) )]
     pub fn wait_for_signed_cert(self) -> LocalChannelApp<Received, ReadOnly> {
-        // do something here!
+        // something
         
         LocalChannelApp {
             id: self.id,
@@ -85,17 +109,34 @@ impl LocalChannelApp<Connected, ReadOnly> {
     }
 }
 
+#[pure]
+fn ensures_establish(res: &Option<LocalChannelApp<Established, ReadWrite>>) -> bool {
+    match res {
+        Some(app) => {
+            app.state.is_established() && app.shared_memory.state.is_read_write()
+        },
+        None => true,
+    }
+}
+
 impl LocalChannelApp<Received, ReadOnly> {
     #[requires( ((&self).state.is_received()) && ((&self).shared_memory.state.is_read_only()) )]
     #[ensures( ((&result).state.is_established()) && ((&result).shared_memory.state.is_read_write()) )]
-    pub fn check_signed_cert(self) -> LocalChannelApp<Established, ReadWrite> {
-        // do something here!
+    pub fn establish(self) -> Option<LocalChannelApp<Established, ReadWrite>> {
+        let mut data: [u8; 4096] = [0; 4096];
+        let read_res = self.shared_memory.read_only(self.id, &mut data);
+        if read_res == false {
+            return None;
+        }
+        if data[0] != 0x01 { // TODO: check a signed cert!
+            return None;
+        }
         
-        LocalChannelApp {
+        Some(LocalChannelApp {
             id: self.id,
             shared_memory: self.shared_memory.into_read_write(),
             state: Established,
-        }
+        })
     }
 }
 
@@ -200,16 +241,4 @@ impl SharedMemoryState for ReadWrite {
     #[pure]
     #[ensures(result == true)]
     fn is_read_write(&self) -> bool { true }
-}
-
-fn test_static_state_transition() {
-    let channel = LocalChannelApp::<Start, Unmapped>::new();
-    let channel = channel.connect();
-    let channel = channel.wait_for_signed_cert();
-    let channel = channel.check_signed_cert();
-    channel.perform();
-}
-
-fn main() {
-    test_static_state_transition();
 }

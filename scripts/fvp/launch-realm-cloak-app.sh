@@ -2,14 +2,6 @@
 
 cd /shared
 
-if [ $# -gt 0 ]; then
-	case "$1" in
-		net)
-			./configure-net.sh &
-			;;
-	esac
-fi
-
 ./lkvm run \
 	--debug \
 	--realm \

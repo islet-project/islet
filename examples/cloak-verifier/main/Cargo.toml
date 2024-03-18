@@ -1,0 +1,19 @@
+[workspace]
+
+[package]
+name = "cloak-verifier"
+version = "0.1.0"
+edition = "2021"
+authors = [ "Islet Contributors" ]
+description = "verifier for Cloak"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+local-channel-app = { path = "../local_channel_app" }
+gateway = { path = "../gateway" }
+prusti-contracts = "0.2.0"
+prusti-std = "0.2.0"
+
+[profile.release]
+strip = true

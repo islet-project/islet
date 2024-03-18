@@ -1,0 +1,35 @@
+[workspace]
+
+[package]
+name = "gateway"
+version = "0.1.0"
+edition = "2021"
+authors = [ "Islet Contributors" ]
+description = "verifier for Gateway"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+prusti-contracts = "0.2.0"
+prusti-std = "0.2.0"
+common = { path = "../common" }
+
+sha2 = "*"
+serde ="*"
+serde_json = "*"
+simple_asn1 = "*"
+x509-certificate = "*"
+rustls = { version = "*", features = ["dangerous_configuration"] }
+rustls-pemfile = "1.*"
+pkcs8 = { version = "*", features = ["alloc"] }
+rand = "*"
+rcgen = "*"
+base64 = { version = "*", features = ["alloc"] }
+lazy_static = "*"
+rsa = { version = "*", features = ["nightly", "pkcs5", "serde"] }
+
+#ioctl-gen = "0.1.0"
+#rust-rsi = { path = "../../../../remote-attestation/lib/rust-rsi" }
+
+[profile.release]
+strip = true

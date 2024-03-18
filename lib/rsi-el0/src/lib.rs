@@ -50,6 +50,11 @@ pub fn measurement_read(index: u32) -> nix::Result<Vec<u8>> {
     let mut measure = [kernel::RsiMeasurement::new_empty(index)];
     let fd = Fd::wrap(nix::fcntl::open(DEV, FLAGS, MODE)?);
     kernel::measurement_read(fd.get(), &mut measure)?;
+    // TODO: remove the below condition after linux-rsi module returns
+    //       the correct measurement length
+    if measure[0].data[32..] == [0; 32] {
+        measure[0].data_len = 32;
+    }
     Ok(measure[0].data[..(measure[0].data_len as usize)].to_vec())
 }
 

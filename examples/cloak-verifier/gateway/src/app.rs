@@ -1,9 +1,12 @@
 use prusti_contracts::*;
 use common::ioctl::{cloak_create, cloak_gen_report, cloak_write, cloak_read};
 use sha2::{Sha512, Digest};
+
+/*
+use std::sync::Arc;
 use crate::ttp;
 use std::io::Write;
-use std::sync::Arc;
+*/
 
 pub struct Gateway<S, M> where
     S: LocalChannelState,

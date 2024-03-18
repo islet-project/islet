@@ -121,7 +121,8 @@ fn ensures_establish(res: &Option<LocalChannelApp<Established, ReadWrite>>) -> b
 
 impl LocalChannelApp<Received, ReadOnly> {
     #[requires( ((&self).state.is_received()) && ((&self).shared_memory.state.is_read_only()) )]
-    #[ensures( ((&result).state.is_established()) && ((&result).shared_memory.state.is_read_write()) )]
+    #[ensures(ensures_establish(&result))]
+    //#[ensures( ((&result).state.is_established()) && ((&result).shared_memory.state.is_read_write()) )]
     pub fn establish(self) -> Option<LocalChannelApp<Established, ReadWrite>> {
         let mut data: [u8; 4096] = [0; 4096];
         let read_res = self.shared_memory.read_only(self.id, &mut data);

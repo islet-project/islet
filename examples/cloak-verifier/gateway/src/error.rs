@@ -9,6 +9,7 @@ use rustls;
 use x509_certificate::X509CertificateError;
 use rsa;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub enum RaTlsError {
     IOError(),

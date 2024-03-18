@@ -18,11 +18,11 @@ use pkcs8::{EncodePublicKey, EncodePrivateKey};
 use crate::error::RaTlsError;
 use base64::{Engine, engine::general_purpose::STANDARD as b64};
 use sha2::{Sha512, Digest};
-use lazy_static::lazy_static;
-use simple_asn1::{OID, oid};
+use simple_asn1::oid;
 
 const CHALLENGE_LEN: u16 = 0x40;
 
+#[allow(dead_code)]
 #[trusted]
 fn load_certificates_from_pem(path: &str) -> std::io::Result<Vec<Certificate>> {
     let file = File::open(path)?;
@@ -32,6 +32,7 @@ fn load_certificates_from_pem(path: &str) -> std::io::Result<Vec<Certificate>> {
     Ok(certs.into_iter().map(Certificate).collect())
 }
 
+#[allow(dead_code)]
 #[trusted]
 fn load_root_cert_store(path: impl AsRef<str>) -> Result<RootCertStore, RaTlsError> {
     let root_ca = load_certificates_from_pem(path.as_ref())?;
@@ -51,22 +52,26 @@ fn hash_realm_challenge(challenge: &[u8], der_public_key: &[u8]) -> Vec<u8> {
     hasher.finalize()[..].to_vec()
 }
 
+#[allow(dead_code)]
 pub struct RaTlsConnection<C> {
     sock: TcpStream,
     conn: C,
 }
 
 impl<C: DerefMut + Deref<Target = ConnectionCommon<S>>, S: SideData> RaTlsConnection<C> {
+    #[allow(dead_code)]
     pub fn new(sock: TcpStream, conn: C) -> Self {
         Self { sock, conn }
     }
 
+    #[allow(dead_code)]
     #[trusted]
     pub fn stream<'a>(&'a mut self) -> Stream<'a, C, TcpStream> {
         Stream::new(&mut self.conn, &mut self.sock)
     }
 }
 
+#[allow(dead_code)]
 pub enum ClientMode {
     AttestedClient {
         rem: Vec<u8>,
@@ -74,15 +79,18 @@ pub enum ClientMode {
     }
 }
 
+#[allow(dead_code)]
 pub struct RaTlsClient {
     mode: ClientMode
 }
 
 impl RaTlsClient {
+    #[allow(dead_code)]
     pub fn new(mode: ClientMode) -> Result<Self, RaTlsError> {
         Ok(Self { mode })
     }
 
+    #[allow(dead_code)]
     #[trusted]
     fn make_client_config(&self) -> Result<(ClientConfig, Option<String>), RaTlsError> {
         match &self.mode {
@@ -102,6 +110,7 @@ impl RaTlsClient {
         }
     }
 
+    #[allow(dead_code)]
     #[trusted]
     pub fn connect(&self, server_url: String, server_name: String) -> Result<RaTlsConnection<ClientConnection>, RaTlsError> {
         println!("connect start");
@@ -123,6 +132,7 @@ impl RaTlsClient {
         Ok(tlsconn)
     }
 
+    #[allow(dead_code)]
     #[trusted]
     fn handshake(&self, conn: &mut RaTlsConnection<ClientConnection>) -> Result<(), RaTlsError> {
         println!("handshake start");

@@ -1,11 +1,10 @@
 use prusti_contracts::*;
 use ioctl_gen::*;
 
-use std::fs::{self, File};
+use std::fs::File;
 use std::io;
-use std::os::raw::{c_void, c_int, c_ulong};
-use std::os::fd::{AsRawFd, RawFd};
-use std::ptr;
+use std::os::raw::{c_int, c_ulong};
+use std::os::fd::AsRawFd;
 use std::mem::size_of;
 
 const MAX_MEASUR_LEN: u16 = 0x40;
@@ -81,7 +80,7 @@ impl RsiCloak {
     #[allow(dead_code)]
     pub fn new(id: usize) -> Self {
         Self {
-            id: 0,
+            id: id,
             result: 0,
             challenge: [0; CHALLENGE_LEN as usize],
             token_len: 0,
@@ -126,7 +125,7 @@ pub fn cloak_connect(id: usize) -> io::Result<()> {
 
 pub fn cloak_gen_report(id: usize) -> io::Result<Vec<u8>> {
     let fd = File::open(DEV)?;
-    let mut cloak = RsiCloak::new(id);
+    let cloak = RsiCloak::new(id);
     let cloak_addr = convert_to_usize(&cloak);
 
     match ioctl_wrapper(&fd, CHANNEL_GEN_REPORT as usize, cloak_addr) {
@@ -174,7 +173,7 @@ pub fn measurement_extend(data: &[u8]) -> io::Result<()> {
 
 pub fn attestation_token(challenge: &[u8; CHALLENGE_LEN as usize]) -> io::Result<Vec<u8>> {
     let fd = File::open(DEV)?;
-    let mut att = RsiAttestation::new(challenge);
+    let att = RsiAttestation::new(challenge);
     let att_addr = convert_to_usize(&att);
 
     match ioctl_wrapper(&fd, ATTESTATION_TOKEN as usize, att_addr) {

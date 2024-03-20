@@ -60,7 +60,7 @@ jobs:
         run: ./scripts/init_min_tf_a_rss.sh
 
       - name: Build HES
-        run: ./scripts/fvp-cca -nw=tf-a-tests -rmm=tf-rmm --hes --build-only 
+        run: ./scripts/fvp-cca -nw=tf-a-tests -rmm=tf-rmm --hes --build-only
 
   tf-a-tests:
     runs-on: ubuntu-22.04
@@ -126,9 +126,10 @@ jobs:
 
     - name: Check local packages and all of its dependencies for errors
       run: >
-        cargo check --workspace 
+        cargo check --workspace
         --exclude islet_sdk --exclude rsi_el0
         --exclude cose --exclude cca_token
+        --exclude ciborium
 
     - name: Check rust coding-style
       run: |

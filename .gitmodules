@@ -63,3 +63,11 @@
 [submodule "third-party/cargo-geiger"]
 	path = third-party/cargo-geiger
 	url = https://github.com/bitboom/cargo-geiger
+[submodule "third-party/ciborium"]
+	path = third-party/ciborium
+	url = https://github.com/islet-project/ciborium.git
+	branch = 3rd-ciborium
+[submodule "third-party/coset"]
+	path = third-party/coset
+	url = https://github.com/islet-project/coset.git
+	branch = 3rd-coset

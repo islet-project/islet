@@ -1,6 +1,8 @@
 [package]
 name = "autopadding"
 version = "0.1.0"
+authors = ["Islet Contributors"]
+edition = "2021"
 
 [dependencies]
 paste = "1.0.14"

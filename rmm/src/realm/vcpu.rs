@@ -4,6 +4,7 @@ use crate::realm::rd::Rd;
 use crate::realm::registry::VMID_SET;
 use crate::realm::timer;
 use crate::rmi::error::Error;
+
 use alloc::sync::{Arc, Weak};
 use armv9a::bits_in_reg;
 use armv9a::regs::*;
@@ -78,13 +79,14 @@ pub unsafe fn current() -> Option<&'static mut VCPU> {
     }
 }
 
-pub fn create_vcpu(rd: &mut Rd) -> Result<usize, Error> {
+pub fn create_vcpu(rd: &mut Rd, mpidr: u64) -> Result<usize, Error> {
     let page_table = rd.s2_table().lock().get_base_address();
     let vttbr = bits_in_reg(VTTBR_EL2::VMID, rd.id() as u64)
         | bits_in_reg(VTTBR_EL2::BADDR, page_table as u64);
 
     let vcpu = VCPU::new();
     vcpu.lock().context.sys_regs.vttbr = vttbr;
+    vcpu.lock().context.sys_regs.vmpidr = mpidr | MPIDR_EL1::RES1;
     timer::init_timer(&mut vcpu.lock());
     gic::init_gic(&mut vcpu.lock());
 

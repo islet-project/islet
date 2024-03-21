@@ -111,6 +111,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REALM_DESTROY, |arg, _ret, rmm| {
         // get the lock for Rd
         let mut rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        #[cfg(feature = "gst_page_table")]
         if rd_granule.has_children() {
             return Err(Error::RmiErrorRealm(0));
         }
@@ -118,6 +119,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let vmid = rd.id();
 
         let mut rtt_granule = get_granule_if!(rd.rtt_base(), GranuleState::RTT)?;
+        #[cfg(feature = "gst_page_table")]
         if rtt_granule.has_children() {
             return Err(Error::RmiErrorRealm(0));
         }

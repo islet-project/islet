@@ -1,7 +1,8 @@
 use crate::bits_in_reg;
 
 define_sys_register!(
-    MPIDR_EL1,     // ref. D7.2.74
+    MPIDR_EL1, // ref. D7.2.74
+    RES1[31 - 31],
     AFF2[23 - 16], // Affinity level 2
     AFF1[15 - 8]   // Affinity level 1
 );

@@ -89,7 +89,7 @@ restore_all_from_vcpu_and_run:
 	msr actlr_el1, x3
 
 	ldp x2, x3, [x28], #16
-	//msr vmpidr_el2, x2
+	msr vmpidr_el2, x2
 	msr csselr_el1, x3
 
 	ldp x2, x3, [x28], #16
@@ -243,11 +243,10 @@ rmm_enter:
 
 	mrs x2, tpidrro_el0
 	mrs x3, actlr_el1
-	stp x2, x3, [x28], #16
+	stp x2, x3, [x28], #24
 
-	mrs x2, vmpidr_el2
 	mrs x3, csselr_el1
-	stp x2, x3, [x28], #16
+	str x3, [x28], #8
 
 	mrs x2, cpacr_el1
 	mrs x3, afsr0_el1

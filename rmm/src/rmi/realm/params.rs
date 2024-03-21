@@ -44,17 +44,12 @@ impl Hashable for Params {
     ) -> Result<(), crate::measurement::MeasurementError> {
         hasher.hash_fields_into(out, |alg| {
             alg.hash_u64(0); // features aren't used
-            alg.hash(self._padfeatures_0);
             alg.hash_u8(self.hash_algo);
-            alg.hash(self._padhash_algo);
             alg.hash([0u8; 64]); // rpv is not used
-            alg.hash(self._padrpv);
             alg.hash_u16(0); // vmid is not used
-            alg.hash(self._padvmid);
             alg.hash_u64(0); // rtt_base is not used
             alg.hash_u64(0); // rtt_level_start is not used
             alg.hash_u32(0); // rtt_num_start is not used
-            alg.hash(self._padrtt_num_start);
         })
     }
 }

@@ -456,6 +456,7 @@ def place_script_at_shared():
     run(["cp", LAUNCH_REALM, SHARED_PATH], cwd=ROOT)
     run(["cp", os.path.join(SCRIPT, "fvp/launch-realm-cloak-app.sh"), SHARED_PATH], cwd=ROOT)
     run(["cp", os.path.join(SCRIPT, "fvp/launch-realm-cloak-gateway.sh"), SHARED_PATH], cwd=ROOT)
+    run(["cp", os.path.join(SCRIPT, "fvp/set-cloak.sh"), SHARED_PATH], cwd=ROOT)
     run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
     run(["cp", CONFIGURE_NET, SHARED_PATH], cwd=ROOT)
     run(["cp", SET_REALM_IP, SHARED_PATH], cwd=ROOT)

@@ -1,5 +1,5 @@
 use prusti_contracts::*;
-use common::ioctl::{cloak_connect, cloak_read};
+use common::ioctl::{cloak_connect, cloak_read, cloak_write};
 
 pub struct LocalChannelApp<S, M> where
     S: LocalChannelState,
@@ -11,7 +11,7 @@ pub struct LocalChannelApp<S, M> where
 }
 
 #[derive(Clone, Copy)]
-pub struct SharedMemory<M> where
+struct SharedMemory<M> where
     M: SharedMemoryState
 {
     ipa: usize,
@@ -19,7 +19,7 @@ pub struct SharedMemory<M> where
 }
 impl SharedMemory<Unmapped> {
     #[ensures((&result).state.is_unmapped())]
-    pub const fn new(ipa: usize) -> SharedMemory<Unmapped> {
+    const fn new(ipa: usize) -> SharedMemory<Unmapped> {
         Self {
             ipa: ipa,
             state: Unmapped,
@@ -29,7 +29,7 @@ impl SharedMemory<Unmapped> {
 impl SharedMemory<Unmapped> {
     #[requires(self.state.is_unmapped())]
     #[ensures((&result).state.is_read_only() && old(self).ipa == (&result).ipa)]
-    pub fn into_read_only(self) -> SharedMemory<ReadOnly> {
+    fn into_read_only(self) -> SharedMemory<ReadOnly> {
         SharedMemory {
             ipa: self.ipa,
             state: ReadOnly,
@@ -39,7 +39,7 @@ impl SharedMemory<Unmapped> {
 impl SharedMemory<ReadOnly> {
     #[requires(self.state.is_read_only())]
     #[ensures((&result).state.is_read_write() && old(self).ipa == (&result).ipa)]
-    pub fn into_read_write(self) -> SharedMemory<ReadWrite> {
+    fn into_read_write(self) -> SharedMemory<ReadWrite> {
         SharedMemory {
             ipa: self.ipa,
             state: ReadWrite,
@@ -48,8 +48,27 @@ impl SharedMemory<ReadOnly> {
 
     #[requires(self.state.is_read_only())]
     #[ensures(self.state.is_read_only())]
-    pub fn read_only(&self, id: usize, data: &mut [u8; 4096]) -> bool {
+    fn read_only(&self, id: usize, data: &mut [u8; 4096]) -> bool {
         match cloak_read(id, data) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+}
+impl SharedMemory<ReadWrite> {
+    #[requires(self.state.is_read_write())]
+    #[ensures(self.state.is_read_write())]
+    pub fn read(&self, id: usize, data: &mut [u8; 4096]) -> bool {
+        match cloak_read(id, data) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
+    #[requires(self.state.is_read_write())]
+    #[ensures(self.state.is_read_write())]
+    pub fn write(&self, id: usize, data: &[u8; 4096]) -> bool {
+        match cloak_write(id, data) {
             Ok(_) => true,
             Err(_) => false,
         }
@@ -145,6 +164,18 @@ impl LocalChannelApp<Established, ReadWrite> {
     #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) )]
     pub fn perform(&self) {
         //println!("perform! {}", self.id);
+    }
+
+    #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) )]
+    //#[ensures( ((&result).state.is_established()) && ((&result).shared_memory.state.is_read_write()) )]
+    pub fn read(&self, data: &mut [u8; 4096]) -> bool {
+        self.shared_memory.read(self.id, data)
+    }
+
+    #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) )]
+    //#[ensures( ((&result).state.is_established()) && ((&result).shared_memory.state.is_read_write()) )]
+    pub fn write(&self, data: &[u8; 4096]) -> bool {
+        self.shared_memory.write(self.id, data)
     }
 }
 

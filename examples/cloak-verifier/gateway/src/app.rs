@@ -2,25 +2,27 @@ use prusti_contracts::*;
 use common::ioctl::{cloak_create, cloak_gen_report, cloak_write, cloak_read};
 use sha2::{Sha512, Digest};
 
-/*
 use std::sync::Arc;
 use crate::ttp;
-use std::io::Write;
-*/
+use std::io::{Read, Write};
+use std::net::{TcpStream, ToSocketAddrs};
 
-pub struct Gateway<S, M> where
+pub struct Gateway<S, M, R> where
     S: LocalChannelState,
     M: SharedMemoryState,
+    R: RemoteChannelState,
+    //RR: RemoteChannelRxState,
     //T: ChannelTTPState
 {
     id: usize,
     shared_memory: SharedMemory<M>,
     //channel_ttp: ChannelTTP<T>,  // (0) Initialized --> (1) Established --> (2) Verified --> (3) Destroyed
     state: S,  // (0) Initialized --> (1) Created --> (2) Connected --> (3) Established
+    rc_state: R,
 }
 
 /*
-struct ChannelTTP<T> wheref
+struct ChannelTTP<T> where
     T: ChannelTTPState
 {
     state: T,
@@ -60,6 +62,24 @@ impl ChannelTTP<Verified> {
         }
     }
 } */
+
+pub struct RemoteChannel
+{
+    stream: TcpStream,
+}
+impl RemoteChannel {
+    fn connect() -> Option<RemoteChannel> {
+        if let Ok(stream) = TcpStream::connect("193.168.10.15:1999") {
+            Some(RemoteChannel {
+                stream: stream
+            })
+        }
+        else {
+            None
+        }
+    }
+}
+
 
 #[derive(Clone, Copy)]
 struct SharedMemory<M> where
@@ -106,54 +126,115 @@ impl SharedMemory<WriteOnly> {
         }
     }
 }
+
+#[pure]
+fn ensures_shared_memory_read(res: &Option<Data<UnencryptedLocalData>>) -> bool {
+    match res {
+        Some(d) => d.state.is_unencrypted_local_data(),
+        None => true,
+    }
+}
+
 impl SharedMemory<ReadWrite> {
-    #[requires(self.state.is_read_write())]
+    #[requires(self.state.is_read_write() && data.state.is_unencrypted_remote_data())]
     #[ensures(self.state.is_read_write())]
-    pub fn write(&self, id: usize, data: &[u8; 4096]) -> bool {
-        match cloak_write(id, data) {
+    fn write(&self, id: usize, data: &Data<UnencryptedRemoteData>) -> bool {
+        match cloak_write(id, &data.data) {
             Ok(_) => true,
             Err(_) => false,
         }
     }
 
     #[requires(self.state.is_read_write())]
-    #[ensures(self.state.is_read_write())]
-    pub fn read(&self, id: usize, data: &mut [u8; 4096]) -> bool {
+    #[ensures(ensures_shared_memory_read(&result))]
+    fn read(&self, id: usize) -> Option<Data<UnencryptedLocalData>> {
         // MIRAI: data should be tagged as "secret" for taint-analysis
         //        "secret" can be untagged by encryption.
-        match cloak_read(id, data) {
-            Ok(_) => true,
-            Err(_) => false,
+        let mut data: [u8; 4096] = [0; 4096];
+
+        match cloak_read(id, &mut data) {
+            Ok(_) => {
+                Some(Data::<Uninitialized>::new_from_local(data))
+            },
+            Err(_) => None,
         }
     }
 }
 
-impl<S: LocalChannelState, M: SharedMemoryState> Gateway<S, M> {
-    #[ensures( ((&result).state.is_initialized()) && ((&result).shared_memory.state.is_unmapped()) )]
-    pub const fn new() -> Gateway<Initialized, Unmapped> {
+pub struct Data<S> where
+    S: DataState
+{
+    data: [u8; 4096],
+    state: S,
+}
+
+impl Data<Uninitialized> {
+    #[ensures((&result).state.is_unencrypted_local_data())]
+    const fn new_from_local(data: [u8; 4096]) -> Data<UnencryptedLocalData> {
+        Data {
+            data: data,
+            state: UnencryptedLocalData,
+        }
+    }
+
+    #[ensures((&result).state.is_encrypted_remote_data())]
+    const fn new_from_remote(data: [u8; 4096]) -> Data<EncryptedRemoteData> {
+        Data {
+            data: data,
+            state: EncryptedRemoteData,
+        }
+    }
+}
+
+impl Data<UnencryptedLocalData> {
+    #[requires(self.state.is_unencrypted_local_data())]
+    #[ensures((&result).state.is_encrypted_local_data())]
+    fn encrypt(self) -> Data<EncryptedLocalData> {
+        Data {
+            data: self.data,
+            state: EncryptedLocalData,
+        }
+    }
+}
+
+impl Data<EncryptedRemoteData> {
+    #[requires(self.state.is_encrypted_remote_data())]
+    #[ensures((&result).state.is_unencrypted_remote_data())]
+    fn decrypt(self) -> Data<UnencryptedRemoteData> {
+        Data {
+            data: self.data,
+            state: UnencryptedRemoteData,
+        }
+    }
+}
+
+impl<S: LocalChannelState, M: SharedMemoryState, R: RemoteChannelState> Gateway<S, M, R> {
+    #[ensures( ((&result).state.is_initialized()) && ((&result).shared_memory.state.is_unmapped()) && ((&result).rc_state.is_rc_initialized()) )]
+    pub const fn new() -> Gateway<Initialized, Unmapped, Initialized> {
         Gateway {
             id: 0,
             shared_memory: SharedMemory::<Unmapped>::new(0),
             state: Initialized,
+            rc_state: Initialized,
         }
     }
 }
 
 #[pure]
-fn ensures_create(res: &Option<Gateway<Created, Unmapped>>) -> bool {
+fn ensures_create(res: &Option<Gateway<Created, Unmapped, Initialized>>) -> bool {
     match res {
         Some(gw) => {
-            gw.state.is_created() && gw.shared_memory.state.is_unmapped()
+            gw.state.is_created() && gw.shared_memory.state.is_unmapped() && gw.rc_state.is_rc_initialized()
         },
         None => true,
     }
 }
 
-impl Gateway<Initialized, Unmapped> {
-    #[requires( ((&self).state.is_initialized()) && ((&self).shared_memory.state.is_unmapped()) )]
+impl Gateway<Initialized, Unmapped, Initialized> {
+    #[requires( ((&self).state.is_initialized()) && ((&self).shared_memory.state.is_unmapped()) && ((&self).rc_state.is_rc_initialized()) )]
     #[ensures(ensures_create(&result))]
     //#[ensures( ((&result).state.is_created()) && ((&result).shared_memory.state.is_unmapped()) )]
-    pub fn create(self) -> Option<Gateway<Created, Unmapped>> {
+    pub fn create(self) -> Option<Gateway<Created, Unmapped, Initialized>> {
         // do something here! create()
 
         match cloak_create(self.id) {
@@ -162,6 +243,7 @@ impl Gateway<Initialized, Unmapped> {
                     id: self.id,
                     shared_memory: self.shared_memory,
                     state: Created,
+                    rc_state: Initialized,
                 })
             },
             Err(_) => {
@@ -171,10 +253,10 @@ impl Gateway<Initialized, Unmapped> {
     }
 }
 
-impl Gateway<Created, Unmapped> {
-    #[requires( ((&self).state.is_created()) && ((&self).shared_memory.state.is_unmapped()) )]
-    #[ensures( ((&result).state.is_connected()) && ((&result).shared_memory.state.is_write_only()) )]
-    pub fn wait_for_app(self) -> Gateway<Connected, WriteOnly> {
+impl Gateway<Created, Unmapped, Initialized> {
+    #[requires( ((&self).state.is_created()) && ((&self).shared_memory.state.is_unmapped()) && ((&self).rc_state.is_rc_initialized()) )]
+    #[ensures( ((&result).state.is_connected()) && ((&result).shared_memory.state.is_write_only()) && ((&result).rc_state.is_rc_initialized()))]
+    pub fn wait_for_app(self) -> Gateway<Connected, WriteOnly, Initialized> {
         // do something here!
         // -- (1) polling until status() == connected
         
@@ -182,25 +264,26 @@ impl Gateway<Created, Unmapped> {
             id: self.id,
             shared_memory: self.shared_memory.into_write_only(),
             state: Connected,
+            rc_state: Initialized,
         }
     }
 }
 
 #[pure]
-fn ensures_establish(res: &Option<Gateway<Established, ReadWrite>>) -> bool {
+fn ensures_establish(res: &Option< (Gateway<Established, ReadWrite, Established>, RemoteChannel) >) -> bool {
     match res {
         Some(gw) => {
-            gw.state.is_established() && gw.shared_memory.state.is_read_write()
+            gw.0.state.is_established() && gw.0.shared_memory.state.is_read_write() && gw.0.rc_state.is_rc_established()
         },
         None => true,
     }
 }
 
-impl Gateway<Connected, WriteOnly> {
-    #[requires( ((&self).state.is_connected()) && ((&self).shared_memory.state.is_write_only()) )]
+impl Gateway<Connected, WriteOnly, Initialized> {
+    #[requires( ((&self).state.is_connected()) && ((&self).shared_memory.state.is_write_only()) && ((&self).rc_state.is_rc_initialized()) )]
     #[ensures(ensures_establish(&result))]
     //#[ensures( ((&result).state.is_established()) && ((&result).shared_memory.state.is_read_write()) )]
-    pub fn establish(self) -> Option<Gateway<Established, ReadWrite>> {
+    pub fn establish(self) -> Option< (Gateway<Established, ReadWrite, Established>, RemoteChannel) > {
         // do something here!
         // -- (1) communicate with TTP
         // -- (2) receive a signed cert
@@ -224,12 +307,10 @@ impl Gateway<Connected, WriteOnly> {
         }
         let mut hasher = Sha512::new();
         hasher.update(&counterpart_token);
-        let _counterpart_hash = hasher.finalize()[..].to_vec();
+        let counterpart_hash = hasher.finalize()[..].to_vec();
 
         // 2. interact with TTP
         // Gateway(RIM) + App(REM)
-        // TODO: debugging network connection-:
-        /*
         let root_ca = "root-ca.crt";
         let server_url = "193.168.10.15:1337";
         let server_name = "localhost";
@@ -245,7 +326,7 @@ impl Gateway<Connected, WriteOnly> {
         println!("ttp::RaTlsClient::new success");
 
         let client = client.unwrap();
-        let mut connection = client.connect(server_url.to_string(), server_name.to_string());
+        let connection = client.connect(server_url.to_string(), server_name.to_string());
         if connection.is_err() {
             println!("client.connect error");
             return None;
@@ -258,7 +339,7 @@ impl Gateway<Connected, WriteOnly> {
             println!("connection.write error");
             return None;
         }
-        println!("connection.write success"); */
+        println!("connection.write success");
 
         // 3. write result to "shared memory"
         let data: [u8; 4096] = [1; 4096];
@@ -266,68 +347,123 @@ impl Gateway<Connected, WriteOnly> {
         if write_res == false {
             return None;
         }
-        
-        Some(Gateway {
-            id: self.id,
-            shared_memory: self.shared_memory.into_read_write(),
-            state: Established,
-        })
+
+        // 4. generate a remote channel stream
+        // [TODO] a wrapper struct that offers security to "TcpStream"
+        // in order to ensure that the created TcpStream will not change after this flow..
+        // --> how to guarantee this? --> prusti check! (possible?)
+        match RemoteChannel::connect() {
+            Some(rc) => {
+                Some((
+                    Gateway {
+                        id: self.id,
+                        shared_memory: self.shared_memory.into_read_write(),
+                        state: Established,
+                        rc_state: Established,
+                    },
+                    rc,
+                ))
+            },
+            None => None,
+        }
     }
 }
 
-impl Gateway<Established, ReadWrite> {
-    #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) )]
+#[pure]
+fn ensures_read_from_remote(res: &Option<Data<EncryptedRemoteData>>) -> bool {
+    match res {
+        Some(d) => {
+            d.state.is_encrypted_remote_data()
+        },
+        None => true,
+    }
+}
+#[pure]
+fn ensures_read_from_local(res: &Option<Data<UnencryptedLocalData>>) -> bool {
+    match res {
+        Some(d) => {
+            d.state.is_unencrypted_local_data()
+        },
+        None => true,
+    }
+}
+
+impl Gateway<Established, ReadWrite, Established> {
+    #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) && ((&self).rc_state.is_rc_established()) )]
     pub fn perform(&self) {
         //println!("perform! {}", self.id);
     }
+
+    #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) && ((&self).rc_state.is_rc_established()) )]
+    #[ensures(ensures_read_from_local(&result))]
+    pub fn read_from_local(&self) -> Option<Data<UnencryptedLocalData>> {
+        self.shared_memory.read(self.id)
+    }
+
+    #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) && ((&self).rc_state.is_rc_established()) )]
+    #[ensures(ensures_read_from_remote(&result))]
+    pub fn read_from_remote(&self, rc: &mut RemoteChannel) -> Option<Data<EncryptedRemoteData>> {
+        let mut data: [u8; 4096] = [0; 4096];
+        match rc.stream.read_exact(&mut data) {
+            Ok(_) => {
+                Some(Data::<Uninitialized>::new_from_remote(data))
+            },
+            Err(_) => {
+                None
+            },
+        }
+    }
+
+    #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) && ((&self).rc_state.is_rc_established()) && (data.state.is_unencrypted_remote_data()) )]
+    pub fn write_to_local(&self, data: &Data<UnencryptedRemoteData>) -> bool {
+        self.shared_memory.write(self.id, data)
+    }
+
+    #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) && ((&self).rc_state.is_rc_established()) && (data.state.is_unencrypted_remote_data()) )]
+    pub fn write_to_remote(&self, rc: &mut RemoteChannel, data: Data<EncryptedLocalData>) -> bool {
+        // [TODO] security: wipe out data after write- how? (zeroize trait?)
+        match rc.stream.write(&data.data) {
+            Ok(_) => true,
+            Err(_) => false,
+        }
+    }
+
+    #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) && ((&self).rc_state.is_rc_established()) && (data.state.is_unencrypted_local_data()) )]
+    #[ensures((&result).state.is_encrypted_local_data())]
+    pub fn encrypt_data(&self, data: Data<UnencryptedLocalData>) -> Data<EncryptedLocalData> {
+        data.encrypt()
+    }
+
+    #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) && ((&self).rc_state.is_rc_established()) && (data.state.is_encrypted_remote_data()) )]
+    #[ensures((&result).state.is_unencrypted_remote_data())]
+    pub fn decrypt_data(&self, data: Data<EncryptedRemoteData>) -> Data<UnencryptedRemoteData> {
+        data.decrypt()
+    }
 }
 
-// Typestate definitions for ChannelTTPState
-/*
-pub struct Verified;
-pub struct Destroyed;
-
-pub trait ChannelTTPState {
+// Typestate definitions for RemoteChannelState
+// Initialized --> Established
+pub trait RemoteChannelState {
     #[pure]
-    fn is_initialized(&self) -> bool { false }
+    fn is_rc_initialized(&self) -> bool { false }
 
     #[pure]
-    fn is_established(&self) -> bool { false }
-
-    #[pure]
-    fn is_verified(&self) -> bool { false }
-
-    #[pure]
-    fn is_destroyed(&self) -> bool { false }
-} 
-
-#[refine_trait_spec]
-impl ChannelTTPState for Initialized {
-    #[pure]
-    #[ensures(result == true)]
-    fn is_initialized(&self) -> bool { true }
+    fn is_rc_established(&self) -> bool { false }
 }
 
 #[refine_trait_spec]
-impl ChannelTTPState for Established {
+impl RemoteChannelState for Initialized {
     #[pure]
     #[ensures(result == true)]
-    fn is_established(&self) -> bool { true }
+    fn is_rc_initialized(&self) -> bool { true }
 }
 
 #[refine_trait_spec]
-impl ChannelTTPState for Verified {
+impl RemoteChannelState for Established {
     #[pure]
     #[ensures(result == true)]
-    fn is_verified(&self) -> bool { true }
+    fn is_rc_established(&self) -> bool { true }
 }
-
-#[refine_trait_spec]
-impl ChannelTTPState for Destroyed {
-    #[pure]
-    #[ensures(result == true)]
-    fn is_destroyed(&self) -> bool { true }
-} */
 
 // Typestate definitions for LocalChannelState
 pub struct Initialized;
@@ -412,4 +548,63 @@ impl SharedMemoryState for ReadWrite {
     #[pure]
     #[ensures(result == true)]
     fn is_read_write(&self) -> bool { true }
+}
+
+// Typestate definitions for DataState
+pub struct Uninitialized;
+pub struct UnencryptedLocalData;
+pub struct EncryptedLocalData;
+pub struct EncryptedRemoteData;
+pub struct UnencryptedRemoteData;
+
+pub trait DataState {
+    #[pure]
+    fn is_uninitialized(&self) -> bool { false }
+
+    #[pure]
+    fn is_unencrypted_local_data(&self) -> bool { false }
+
+    #[pure]
+    fn is_encrypted_local_data(&self) -> bool { false }
+
+    #[pure]
+    fn is_unencrypted_remote_data(&self) -> bool { false }
+
+    #[pure]
+    fn is_encrypted_remote_data(&self) -> bool { false }
+}
+
+#[refine_trait_spec]
+impl DataState for Uninitialized {
+    #[pure]
+    #[ensures(result == true)]
+    fn is_uninitialized(&self) -> bool { true }
+}
+
+#[refine_trait_spec]
+impl DataState for UnencryptedLocalData {
+    #[pure]
+    #[ensures(result == true)]
+    fn is_unencrypted_local_data(&self) -> bool { true }
+}
+
+#[refine_trait_spec]
+impl DataState for EncryptedLocalData {
+    #[pure]
+    #[ensures(result == true)]
+    fn is_encrypted_local_data(&self) -> bool { true }
+}
+
+#[refine_trait_spec]
+impl DataState for EncryptedRemoteData {
+    #[pure]
+    #[ensures(result == true)]
+    fn is_encrypted_remote_data(&self) -> bool { true }
+}
+
+#[refine_trait_spec]
+impl DataState for UnencryptedRemoteData {
+    #[pure]
+    #[ensures(result == true)]
+    fn is_unencrypted_remote_data(&self) -> bool { true }
 }

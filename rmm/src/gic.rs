@@ -293,7 +293,7 @@ fn valid_vintid(intid: u64) -> bool {
 }
 
 pub fn validate_state(run: &Run) -> bool {
-    let hcr = unsafe { run.entry_gic_hcr() };
+    let hcr = run.entry_gic_hcr();
 
     /* Validate rec_entry.gicv3_hcr MBZ bits */
     if (hcr & !ICH_HCR_EL2_NS_MASK) != 0 {
@@ -301,7 +301,7 @@ pub fn validate_state(run: &Run) -> bool {
     }
 
     for i in 0..GIC_FEATURES.nr_lrs {
-        let lrs = unsafe { run.entry_gic_lrs() };
+        let lrs = run.entry_gic_lrs();
         let lr = ICH_LR::new(lrs[i]);
         let vintid = lr.get_masked_value(ICH_LR::VINTID);
 
@@ -328,7 +328,7 @@ pub fn validate_state(run: &Run) -> bool {
          * specify the same vINTID.
          */
         for j in i + 1..=GIC_FEATURES.nr_lrs {
-            let lrs = unsafe { run.entry_gic_lrs() };
+            let lrs = run.entry_gic_lrs();
             let lr = ICH_LR::new(lrs[j]);
 
             let vintid_2 = lr.get_masked_value(ICH_LR::VINTID);

@@ -55,7 +55,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rmm.page_table.map(rec, true);
         let rec = rec_granule.content_mut::<Rec<'_>>();
 
-        match create_vcpu(rd) {
+        match create_vcpu(rd, params.mpidr) {
             Ok(vcpuid) => {
                 ret[1] = vcpuid;
                 rec.init(owner, vcpuid, params.flags)?;

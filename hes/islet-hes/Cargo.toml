@@ -14,5 +14,5 @@ p256 = { version = "*", default-features = false, features = ["alloc", "ecdsa"] 
 p384 = { version = "*", default-features = false, features = ["alloc", "ecdsa"] }
 ecdsa = "*"
 hkdf = "*"
-ciborium = { version = "*", default-features = false }
-coset = "*"
+ciborium = { version = "*", default-features = false, path = "../../third-party/ciborium/ciborium" }
+coset = { version = "*", path = "../../third-party/coset" }

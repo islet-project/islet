@@ -177,6 +177,13 @@ impl Inner {
         }
     }
 
+    pub fn has_children(&self) -> bool {
+        if Rc::strong_count(&self.granule) > 1 {
+            return true;
+        }
+        false
+    }
+
     fn set_state_for_table(&mut self, index: usize) -> Result<(), Error> {
         match add_l1_table(index) {
             Ok(addr) => {

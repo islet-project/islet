@@ -5,8 +5,8 @@ authors = ["Islet Contributors"]
 edition = "2021"
 
 [dependencies]
-ciborium = "*"
-coset = "*"
+ciborium = { version = "*", path = "../../third-party/ciborium/ciborium" }
+coset = { version = "*", path = "../../third-party/coset" }
 hex = "*"
 p256 = "*"
 p384 = "*"

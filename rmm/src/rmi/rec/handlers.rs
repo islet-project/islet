@@ -106,14 +106,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
         let rec = rec_granule.content_mut::<Rec<'_>>();
 
-        if !rec.runnable() {
-            return Err(Error::RmiErrorRec);
-        }
-
-        if let RecState::Running = rec.get_state() {
-            error!("Rec is already running: {:?}", rec);
-            return Err(Error::RmiErrorRec);
-        }
+        // read Run
+        let mut run = host::copy_from::<Run>(run_pa).ok_or(Error::RmiErrorInput)?;
+        run.verify_compliance()?;
+        trace!("{:?}", run);
 
         let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
@@ -132,14 +128,19 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // XXX: we explicitly release Rd's lock here to avoid a deadlock
         core::mem::drop(rd_granule);
 
-        if rec.psci_pending() {
+        // runnable oder is lower
+        if !rec.runnable() {
             return Err(Error::RmiErrorRec);
         }
 
-        // read Run
-        let mut run = host::copy_from::<Run>(run_pa).ok_or(Error::RmiErrorInput)?;
-        run.verify_compliance()?;
-        trace!("{:?}", run);
+        if let RecState::Running = rec.get_state() {
+            error!("Rec is already running: {:?}", rec);
+            return Err(Error::RmiErrorRec);
+        }
+
+        if rec.psci_pending() {
+            return Err(Error::RmiErrorRec);
+        }
 
         if !crate::gic::validate_state(&run) {
             return Err(Error::RmiErrorRec);

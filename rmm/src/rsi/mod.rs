@@ -24,8 +24,6 @@ use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 use crate::Monitor;
 use crate::{get_granule, get_granule_if};
 
-use safe_abstraction::RawPtr;
-
 define_interface! {
     command {
         ABI_VERSION             = 0xc400_0190,
@@ -74,21 +72,26 @@ pub fn do_host_call(
         )
         .ok_or(Error::RmiErrorInput)?;
 
+    use safe_abstraction::raw_ptr::assume;
+    let safety_assumed = assume::<HostCall>(pa.into()).ok_or(Error::RmiErrorInput)?;
+    let imm = safety_assumed.with(|host_call: &HostCall| host_call.imm());
+
     unsafe {
-        let host_call: &mut HostCall = HostCall::as_mut(pa.into()).ok_or(Error::RmiErrorInput)?;
         if rec.host_call_pending() {
             for i in 0..HOST_CALL_NR_GPRS {
                 let val = run.entry_gpr(i)?;
-                host_call.set_gpr(i, val)?
+                safety_assumed.mut_with(|host_call: &mut HostCall| host_call.set_gpr(i, val))?
             }
             rec.set_host_call_pending(false);
         } else {
-            run.set_imm(host_call.imm());
+            run.set_imm(imm);
             run.set_exit_reason(rmi::EXIT_HOST_CALL);
             rec.set_host_call_pending(true);
         }
-        trace!("HOST_CALL param: {:#X?}", host_call)
     }
+    safety_assumed.with(|host_call: &HostCall| {
+        trace!("HOST_CALL param: {:#X?}", host_call);
+    });
 
     ret[0] = rmi::SUCCESS;
     Ok(())

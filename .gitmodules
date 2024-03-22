@@ -70,3 +70,6 @@
 	path = third-party/coset
 	url = https://github.com/islet-project/coset.git
 	branch = 3rd-coset
+[submodule "third-party/eventfd_manager"]
+	path = third-party/eventfd_manager
+	url = https://github.com/nook1208/eventfd_manager

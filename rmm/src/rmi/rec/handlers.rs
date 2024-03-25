@@ -10,7 +10,7 @@ use crate::granule::{set_granule, GranuleState};
 use crate::host;
 use crate::listen;
 use crate::measurement::HashContext;
-use crate::realm::context::set_reg;
+use crate::realm::context::{set_reg, RegOffset};
 use crate::realm::rd::{Rd, State};
 use crate::realm::vcpu::create_vcpu;
 use crate::realm::vcpu::State as RecState;
@@ -68,7 +68,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 return Err(Error::RmiErrorInput);
             }
         }
-        if set_reg(rd, rec.vcpuid(), 31, params.pc as usize).is_err() {
+        if set_reg(rd, rec.vcpuid(), RegOffset::PC, params.pc as usize).is_err() {
             return Err(Error::RmiErrorInput);
         }
         rec.set_vtcr(prepare_vtcr(rd)?);

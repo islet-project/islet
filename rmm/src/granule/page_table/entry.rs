@@ -177,11 +177,8 @@ impl Inner {
         }
     }
 
-    pub fn has_children(&self) -> bool {
-        if Rc::strong_count(&self.granule) > 1 {
-            return true;
-        }
-        false
+    pub fn num_children(&self) -> usize {
+        Rc::strong_count(&self.granule) - 1
     }
 
     fn set_state_for_table(&mut self, index: usize) -> Result<(), Error> {

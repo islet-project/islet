@@ -20,6 +20,13 @@ pub struct Context {
     pub fp_regs: [u128; 32],
 }
 
+pub struct RegOffset;
+impl RegOffset {
+    pub const PC: usize = 31;
+    pub const PSTATE: usize = 32;
+    pub const SCTLR: usize = 40;
+}
+
 pub fn set_reg(rd: &Rd, vcpu: usize, register: usize, value: usize) -> Result<(), Error> {
     match register {
         0..=30 => {
@@ -31,7 +38,7 @@ pub fn set_reg(rd: &Rd, vcpu: usize, register: usize, value: usize) -> Result<()
                 .gp_regs[register] = value as u64;
             Ok(())
         }
-        31 => {
+        RegOffset::PC => {
             rd.vcpus
                 .get(vcpu)
                 .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
@@ -40,7 +47,7 @@ pub fn set_reg(rd: &Rd, vcpu: usize, register: usize, value: usize) -> Result<()
                 .elr = value as u64;
             Ok(())
         }
-        32 => {
+        RegOffset::PSTATE => {
             rd.vcpus
                 .get(vcpu)
                 .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
@@ -66,7 +73,7 @@ pub fn get_reg(rd: &Rd, vcpu: usize, register: usize) -> Result<usize, Error> {
                 .gp_regs[register];
             Ok(value as usize)
         }
-        31 => {
+        RegOffset::PC => {
             let value = rd
                 .vcpus
                 .get(vcpu)
@@ -78,6 +85,24 @@ pub fn get_reg(rd: &Rd, vcpu: usize, register: usize) -> Result<usize, Error> {
         }
         _ => Err(Error::RmiErrorInput),
     }
+}
+
+pub fn reset_vcpu(rd: &Rd, vcpu: usize) -> Result<(), Error> {
+    rd.vcpus
+        .get(vcpu)
+        .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
+        .lock()
+        .context
+        .spsr = SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M & 0b0101);
+
+    rd.vcpus
+        .get(vcpu)
+        .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
+        .lock()
+        .context
+        .sys_regs
+        .sctlr = 0;
+    Ok(())
 }
 
 impl Context {

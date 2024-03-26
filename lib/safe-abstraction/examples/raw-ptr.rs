@@ -1,7 +1,4 @@
-use safe_abstraction::{
-    raw_ptr::{assume, SafetyAssured, SafetyChecked},
-    RawPtr,
-};
+use safe_abstraction::raw_ptr::{assume_safe, RawPtr, SafetyAssured, SafetyChecked};
 
 struct MyStruct {
     data: i32,
@@ -85,7 +82,7 @@ fn with_safe_abstraction() {
     // to prohibit the use of unsafe code.
     let addr = mock_get_addr_of_instance_from_external();
 
-    let safety_assumed = assume::<MyStruct>(addr).expect("Memory Safety Violation!");
+    let safety_assumed = assume_safe::<MyStruct>(addr).expect("Memory Safety Violation!");
     safety_assumed.mut_with(|my_struct: &mut MyStruct| {
         my_struct.set(0xDEF);
         my_struct.print();

@@ -24,6 +24,8 @@ use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 use crate::Monitor;
 use crate::{get_granule, get_granule_if};
 
+use safe_abstraction::raw_ptr::assume_safe;
+
 define_interface! {
     command {
         ABI_VERSION             = 0xc400_0190,
@@ -72,8 +74,7 @@ pub fn do_host_call(
         )
         .ok_or(Error::RmiErrorInput)?;
 
-    use safe_abstraction::raw_ptr::assume;
-    let safety_assumed = assume::<HostCall>(pa.into()).ok_or(Error::RmiErrorInput)?;
+    let safety_assumed = assume_safe::<HostCall>(pa.into()).ok_or(Error::RmiErrorInput)?;
     let imm = safety_assumed.with(|host_call: &HostCall| host_call.imm());
 
     unsafe {

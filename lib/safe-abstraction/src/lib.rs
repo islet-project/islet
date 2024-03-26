@@ -16,44 +16,111 @@
 //!
 //! ## Features
 //!
-//! - **Encapsulation of Unsafe Code**: Offers a way to safely abstract `unsafe` operations, allowing for lower-level operations like memory access to be performed more safely.
+//! - **Encapsulation of Unsafe Code**: Offers a way to safely abstract `unsafe` operations,
+//! allowing for lower-level operations like memory access to be performed more safely.
 //!
-//! - **Runtime Safety Checks**: Provides methods to perform crucial safety checks at runtime, such as verifying if a pointer is null and checking whether a pointer is properly aligned. These checks happen when the methods are called during the execution of a program.
+//! - **Runtime Safety Checks**: Provides methods to perform crucial safety checks at runtime,
+//! such as verifying if a pointer is null and checking whether a pointer is properly aligned.
+//! These checks happen when the methods are called during the execution of a program.
 //!
-//! - **Compile-Time Type Safety Checks**: Enforces certain safety guarantees at compile time. For example, the use of Rust's type system can ensure that only pointers to types with known sizes are used, leveraging the `Sized` trait bound.
+//! - **Compile-Time Type Safety Checks**: Enforces certain safety guarantees at compile time.
+//! For example, the use of Rust's type system can ensure that only pointers
+//! to types with known sizes are used, leveraging the `Sized` trait bound.
 //!
-//! - **Developer-Driven Safety Verification**: Introduces traits that allow developers to explicitly mark parts of `unsafe` code that still require manual safety guarantees, making it clear which parts of the code need careful review.
-
-pub trait RawPtr: Sized {
-    /// # Safety
-    ///
-    /// When calling this method, you have to ensure that all of the following is true:
-    ///
-    /// * The pointer must point to an initialized instance of `T`.
-    ///
-    /// * You must enforce Rust's aliasing rules
-    unsafe fn as_ref<'a, T: RawPtr>(addr: usize) -> &'a T {
-        &*(addr as *const T)
-    }
-
-    /// # Safety
-    ///
-    /// When calling this method, you have to ensure that all of the following is true:
-    ///
-    /// * The pointer must point to an initialized instance of `T`.
-    ///
-    /// * You must enforce Rust's aliasing rules
-    unsafe fn as_mut<'a, T: RawPtr>(addr: usize) -> &'a mut T {
-        &mut *(addr as *mut T)
-    }
-
-    fn addr(&self) -> usize {
-        let ptr: *const Self = self;
-        ptr as usize
-    }
-}
+//! - **Developer-Driven Safety Verification**: Introduces traits that allow developers
+//! to explicitly mark parts of `unsafe` code that still require manual safety guarantees,
+//! making it clear which parts of the code need careful review.
 
 pub mod raw_ptr {
+    //! # Raw Pointer Safety Abstraction Module
+    //!
+    //! This module provides a set of traits designed
+    //! to facilitate safe abstraction over raw pointers.
+    //!
+    //! Raw pointers (`*const T` and `*mut T`) offer great power
+    //! but come with great responsibility: they are unsafe by nature
+    //! and require careful handling to ensure safety.
+    //!
+    //! The `raw_ptr` module introduces traits
+    //! that enforce checks on raw pointers
+    //! to ensure that their usage adheres
+    //! to Rust’s safety guarantees.
+    //!
+    //! ## Traits Overview
+    //! - `RawPtr`: Ensures that the size of the structure
+    //! pointed to by the raw pointer is determined at compile time,
+    //! enabling safe memory operations.
+    //!
+    //! - `SafetyChecked`: Implements checks to ensure that the raw pointer is not null,
+    //! properly aligned, and has the appropriate permissions for the intended memory operation.
+    //!
+    //! - `SafetyAssured`: Provides guarantees that the instance
+    //! pointed to by the raw pointer is properly initialized,
+    //! adheres to Rust's lifetime rules, and respects Rust's ownership rules.
+    //!
+    //! ## Safety Rules Checked
+    //! 1. **Compile-time Size Determination**:
+    //! The size of the structure the raw pointer points
+    //! to must be determined at compile time,
+    //! ensuring that memory operations are safe and predictable.
+    //!
+    //! 2. **Non-null**: The raw pointer must not be null,
+    //! preventing dereference of null pointers
+    //!
+    //! 3. **Proper Alignment**: The address contained in the raw pointer must be properly aligned,
+    //! ensuring that the memory access respects the hardware's alignment requirements.
+    //!
+    //! 4. **Appropriate Permissions**: The raw pointer must have the appropriate permissions
+    //! for the operation, such as read, write, or execute permissions.
+    //!
+    //! 5. **Initialization**: The instance pointed to by the raw pointer must be guaranteed
+    //! to be properly initialized, avoiding undefined behavior due to uninitialized memory access.
+    //!
+    //! 6. **Lifetime Rules Compliance**: The instance pointed to by the raw pointer
+    //! must comply with Rust's lifetime rules, ensuring that it does not outlive its scope.
+    //!
+    //! 7. **Ownership Rules Compliance**: The instance pointed to by the raw pointer
+    //! must comply with Rust's ownership rules, preventing data races and ensuring safe memory access.
+    //!
+    //! By adhering to these safety rules
+    //! through the implementation of the `RawPtr`, `SafetyChecked`, and `SafetyAssured` traits,
+    //! developers can leverage the power of raw pointers in Rust
+    //! while ensuring safety and adhering to the language's strict safety guarantees.
+    //!
+    //! Once these traits have been implemented, access to the target instance can be made through
+    //! the `SafetyAssumed` structure, allowing interaction with the instance using only safe code.
+    //! It emphasizes that by adhering to the safety rules and
+    //! utilizing the `SafetyAssumed` structure, developers can maintain safety guarantees
+    //! while interacting with potentially unsafe sources or operations.
+    pub trait RawPtr: Sized {
+        /// # Safety
+        ///
+        /// When calling this method, you have to ensure that all of the following is true:
+        ///
+        /// * The pointer must point to an initialized instance of `T`.
+        ///
+        /// * You must enforce Rust's aliasing rules
+        unsafe fn as_ref<'a, T: RawPtr>(addr: usize) -> &'a T {
+            &*(addr as *const T)
+        }
+
+        /// # Safety
+        ///
+        /// When calling this method, you have to ensure that all of the following is true:
+        ///
+        /// * The pointer must point to an initialized instance of `T`.
+        ///
+        /// * You must enforce Rust's aliasing rules
+        unsafe fn as_mut<'a, T: RawPtr>(addr: usize) -> &'a mut T {
+            &mut *(addr as *mut T)
+        }
+
+        fn addr(&self) -> usize {
+            let ptr: *const Self = self;
+            ptr as usize
+        }
+    }
+
     /// `SafetyChecked` Trait
     ///
     /// This trait signifies that certain safety checks
@@ -69,7 +136,7 @@ pub mod raw_ptr {
     /// Types implementing `SafetyChecked` should ensure
     /// that all potential safety risks are either inherently
     /// mitigated by the implementation or are automatically checkable at compile or run time.
-    pub trait SafetyChecked: super::RawPtr {
+    pub trait SafetyChecked: RawPtr {
         fn is_not_null(&self) -> bool {
             let ptr: *const Self = self;
             !ptr.is_null()
@@ -147,7 +214,7 @@ pub mod raw_ptr {
     ///
     /// Returns `Some(SafetyAssumed)` if all safety checks are satisfied,
     /// or `None` if any of the checks fail, indicating that it is not safe to proceed.
-    pub fn assume<T: SafetyChecked + SafetyAssured>(addr: usize) -> Option<SafetyAssumed> {
+    pub fn assume_safe<T: SafetyChecked + SafetyAssured>(addr: usize) -> Option<SafetyAssumed> {
         let ptr = addr as *const T;
         // Safety: This cast from a raw pointer to a reference is considered safe
         //         because it is used solely for the purpose of verifying alignment and range,

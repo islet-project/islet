@@ -22,6 +22,7 @@ struct Ripas {
     end: u64,
     addr: u64,
     state: u8,
+    flags: u64,
 }
 
 #[derive(Debug)]
@@ -129,11 +130,12 @@ impl Rec<'_> {
         self.psci_pending = val;
     }
 
-    pub fn set_ripas(&mut self, start: u64, end: u64, addr: u64, state: u8) {
+    pub fn set_ripas(&mut self, start: u64, end: u64, state: u8, flags: u64) {
         self.ripas.start = start;
         self.ripas.end = end;
-        self.ripas.addr = addr;
         self.ripas.state = state;
+        self.ripas.flags = flags;
+        self.ripas.addr = start; // reset addr to the start
     }
 
     pub fn set_vtcr(&mut self, vtcr: u64) {
@@ -157,20 +159,28 @@ impl Rec<'_> {
         self.state
     }
 
-    pub fn inc_ripas_addr(&mut self, size: u64) {
-        self.ripas.addr += size;
+    pub fn set_ripas_addr(&mut self, addr: u64) {
+        self.ripas.addr = addr;
     }
 
-    pub fn ripas_addr(&mut self) -> u64 {
+    pub fn ripas_addr(&self) -> u64 {
         self.ripas.addr
+    }
+
+    pub fn ripas_start(&self) -> u64 {
+        self.ripas.start
+    }
+
+    pub fn ripas_end(&self) -> u64 {
+        self.ripas.end
     }
 
     pub fn ripas_state(&self) -> u8 {
         self.ripas.state
     }
 
-    pub fn ripas_end(&self) -> u64 {
-        self.ripas.end
+    pub fn ripas_flags(&self) -> u64 {
+        self.ripas.flags
     }
 
     pub fn vtcr(&self) -> u64 {

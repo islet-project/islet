@@ -4,26 +4,27 @@ pub mod error;
 pub mod hostcall;
 pub mod measurement;
 pub mod psci;
+pub mod ripas;
 pub mod version;
 
 use alloc::vec::Vec;
 
 use crate::define_interface;
 use crate::event::RsiHandle;
-use crate::granule::{is_granule_aligned, GranuleState, GRANULE_SIZE};
+use crate::granule::{GranuleState, GRANULE_SIZE};
 use crate::listen;
 use crate::measurement::{HashContext, Measurement, MEASUREMENTS_SLOT_NR, MEASUREMENTS_SLOT_RIM};
 use crate::realm::config::realm_config;
 use crate::realm::context::{get_reg, set_reg};
 use crate::realm::mm::address::GuestPhysAddr;
-use crate::realm::mm::stage2_tte::invalid_ripas;
 use crate::realm::rd::Rd;
 use crate::rec::{Rec, RmmRecAttestState};
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmi::rec::run::Run;
-use crate::rmi::rtt::{is_protected_ipa, validate_ipa, RTT_PAGE_LEVEL};
+use crate::rmi::rtt::{validate_ipa, RTT_PAGE_LEVEL};
 use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
+use crate::rsi::ripas::{get_ripas_state, set_ripas_state};
 use crate::Monitor;
 use crate::{get_granule, get_granule_if};
 
@@ -362,100 +363,6 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         Ok(())
     });
 
-    listen!(rsi, IPA_STATE_GET, |_arg, ret, _rmm, rec, _| {
-        let vcpuid = rec.vcpuid();
-        let ipa_bits = rec.ipa_bits()?;
-        let realmid = rec.realmid()?;
-        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
-
-        let ipa_page = get_reg(rd, vcpuid, 1)?;
-        if validate_ipa(ipa_page, ipa_bits).is_err() {
-            if set_reg(rd, vcpuid, 0, ERROR_INPUT).is_err() {
-                warn!(
-                    "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
-                    realmid, vcpuid
-                );
-            }
-            ret[0] = rmi::SUCCESS_REC_ENTER;
-            return Ok(());
-        }
-
-        let ripas = crate::rtt::get_ripas(rd, ipa_page, RTT_PAGE_LEVEL)? as usize;
-
-        debug!(
-            "RSI_IPA_STATE_GET: ipa_page: {:X} ripas: {:X}",
-            ipa_page, ripas
-        );
-
-        if set_reg(rd, vcpuid, 0, SUCCESS).is_err() {
-            warn!(
-                "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
-                realmid, vcpuid
-            );
-        }
-
-        if set_reg(rd, vcpuid, 1, ripas).is_err() {
-            warn!(
-                "Unable to set register 1. realmid: {:?} vcpuid: {:?}",
-                realmid, vcpuid
-            );
-        }
-
-        ret[0] = rmi::SUCCESS_REC_ENTER;
-        Ok(())
-    });
-
-    listen!(rsi, IPA_STATE_SET, |_arg, ret, _rmm, rec, run| {
-        let vcpuid = rec.vcpuid();
-        let ipa_bits = rec.ipa_bits()?;
-        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
-
-        let ipa_start = get_reg(rd, vcpuid, 1)?;
-        let ipa_size = get_reg(rd, vcpuid, 2)?;
-        let ipa_state = get_reg(rd, vcpuid, 3)? as u8;
-        let ipa_end = ipa_start + ipa_size;
-
-        if ipa_end <= ipa_start {
-            return Err(Error::RmiErrorInput); // integer overflows or size is zero
-        }
-
-        if !is_granule_aligned(ipa_start)
-            || !is_granule_aligned(ipa_size)
-            || !is_ripas_valid(ipa_state)
-            || !is_protected_ipa(ipa_start, ipa_bits)
-            || !is_protected_ipa(ipa_end - 1, ipa_bits)
-        {
-            set_reg(rd, vcpuid, 0, ERROR_INPUT)?;
-            ret[0] = rmi::SUCCESS_REC_ENTER;
-            return Ok(());
-        }
-
-        // TODO: check ipa_state value, ipa address granularity
-        run.set_exit_reason(rmi::EXIT_RIPAS_CHANGE);
-        run.set_ripas(ipa_start as u64, ipa_size as u64, ipa_state);
-        rec.set_ripas(
-            ipa_start as u64,
-            ipa_end as u64,
-            ipa_start as u64,
-            ipa_state,
-        );
-        ret[0] = rmi::SUCCESS;
-        debug!(
-            "RSI_IPA_STATE_SET: {:X} ~ {:X} {:X}",
-            ipa_start,
-            ipa_start + ipa_size,
-            ipa_state
-        );
-        super::rmi::dummy();
-        Ok(())
-    });
-}
-
-fn is_ripas_valid(ripas: u8) -> bool {
-    match ripas as u64 {
-        invalid_ripas::EMPTY | invalid_ripas::RAM => true,
-        _ => false,
-    }
+    listen!(rsi, IPA_STATE_GET, get_ripas_state);
+    listen!(rsi, IPA_STATE_SET, set_ripas_state);
 }

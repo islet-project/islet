@@ -27,6 +27,14 @@ impl HostCall {
         Ok(())
     }
 
+    pub fn gpr(&self, idx: usize) -> Result<u64, Error> {
+        if idx >= HOST_CALL_NR_GPRS {
+            error!("out of index: {}", idx);
+            return Err(Error::RmiErrorInput);
+        }
+        Ok(self.gprs[idx])
+    }
+
     pub fn imm(&self) -> u16 {
         self.imm
     }

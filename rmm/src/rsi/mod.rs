@@ -9,6 +9,7 @@ pub mod version;
 
 use alloc::vec::Vec;
 
+use crate::Monitor;
 use crate::define_interface;
 use crate::event::RsiHandle;
 use crate::granule::{GranuleState, GRANULE_SIZE};
@@ -19,13 +20,12 @@ use crate::realm::context::{get_reg, set_reg};
 use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::rd::Rd;
 use crate::rec::{Rec, RmmRecAttestState};
-use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmi::rec::run::Run;
-use crate::rmi::rtt::{validate_ipa, RTT_PAGE_LEVEL};
+use crate::rmi::rtt::{is_protected_ipa, validate_ipa, RTT_PAGE_LEVEL};
+use crate::rmi;
 use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 use crate::rsi::ripas::{get_ripas_state, set_ripas_state};
-use crate::Monitor;
 use crate::{get_granule, get_granule_if};
 
 use safe_abstraction::raw_ptr::assume_safe;
@@ -77,6 +77,17 @@ pub fn do_host_call(
     let rd = rd_granule.content::<Rd>();
 
     let ipa = get_reg(rd, vcpuid, 1).unwrap_or(0x0);
+    let ipa_bits = rec.ipa_bits()?;
+
+    let struct_size = core::mem::size_of::<HostCall>();
+    if ipa % struct_size != 0
+        || ipa / GRANULE_SIZE != (ipa + struct_size - 1) / GRANULE_SIZE
+        || !is_protected_ipa(ipa, ipa_bits)
+    {
+        set_reg(rd, vcpuid, 0, ERROR_INPUT)?;
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        return Ok(());
+    }
 
     let pa = rd
         .s2_table()
@@ -95,8 +106,13 @@ pub fn do_host_call(
             let val = run.entry_gpr(i)?;
             host_call.set_gpr(i, val)?
         }
+        set_reg(rd, vcpuid, 0, SUCCESS)?;
         rec.set_host_call_pending(false);
     } else {
+        for i in 0..HOST_CALL_NR_GPRS {
+            let val = host_call.gpr(i)?;
+            run.set_gpr(i, val)?
+        }
         run.set_imm(imm);
         run.set_exit_reason(rmi::EXIT_HOST_CALL);
         rec.set_host_call_pending(true);

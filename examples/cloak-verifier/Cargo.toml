@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "common",
+    "gateway",
+    "local_channel_app",
+    "main",
+    "test_server",
+    "mirai_example/hello_cargo",
+]

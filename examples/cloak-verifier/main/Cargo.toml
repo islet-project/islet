@@ -14,6 +14,5 @@ local-channel-app = { path = "../local_channel_app" }
 gateway = { path = "../gateway" }
 prusti-contracts = "0.2.0"
 prusti-std = "0.2.0"
+mirai-annotations = "*"
 
-[profile.release]
-strip = true

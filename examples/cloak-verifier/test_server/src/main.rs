@@ -8,13 +8,14 @@ use core::panic;
 fn handle_client(mut stream: TcpStream) {
     // read 20 bytes at a time from stream echoing back to stream
     loop {
-        let mut read = [0; 4096];
+        let mut read: [u8; 4096] = [0; 4096];
+        let write: [u8; 4096] = [1; 4096];
         match stream.read_exact(&mut read) {
             Ok(_) => {
-                if stream.write(&read).is_err() {
+                if stream.write(&write).is_err() {
                     println!("failed to stream.write()")
                 }
-                println!("read: {:x}, echo success", read[0]);
+                println!("read: {:x}, echo success", read[0]);  // GIT?
             }
             Err(err) => {
                 panic!("{}", err);

@@ -7,35 +7,6 @@ use crate::ttp;
 use std::io::{Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 
-// MIRAI
-#[cfg_attr(mirai, allow(incomplete_features), feature(generic_const_exprs))]
-
-#[cfg(mirai)]
-use mirai_annotations::{TagPropagation, TagPropagationSet};
-
-#[cfg(mirai)]
-struct TaintedKind<const MASK: TagPropagationSet> {}
-
-#[cfg(mirai)]
-const TAINTED_MASK: TagPropagationSet = tag_propagation_set!(TagPropagation::SubComponent);
-
-#[cfg(mirai)]
-type Tainted = TaintedKind<TAINTED_MASK>;  // Attach "Tainted" for secret
-#[cfg(not(mirai))]
-type Tainted = ();
-
-#[cfg(mirai)]
-struct SanitizedKind<const MASK: TagPropagationSet> {}
-
-#[cfg(mirai)]
-const SANITIZED_MASK: TagPropagationSet = tag_propagation_set!(TagPropagation::SubComponent);
-
-#[cfg(mirai)]
-type Sanitized = SanitizedKind<SANITIZED_MASK>;
-#[cfg(not(mirai))]
-type Sanitized = ();  // Attach "Sanitized" when secret is encrypted
-
-
 pub struct Gateway<S, M, R> where
     S: LocalChannelState,
     M: SharedMemoryState,
@@ -373,24 +344,11 @@ impl Gateway<Connected, WriteOnly, Initialized> {
         println!("connection.write success");
 
         // 2-3. read a signed_cert
-        //
-        // taint analysis PoC with RA-TLS:
-        // -- (1) tag read_signed_cert as UnencryptedSecret --> MIRAI!
-        // -- (2) use 'mirai_test' as an undesirable destination for tagged data and see if MIRAI can detect this!
-        // -- MIRAI issue: https://github.com/facebookexperimental/MIRAI/issues/508
-        let mut read_signed_cert: [u8; 4096] = [0; 4096];
-        let read_res = connection.stream().read(&mut read_signed_cert);
-        if read_res.is_err() {
-            println!("connection.read error");
-            return None;
-        }
-
         // 2-4. verify the signed cert
-        // TODO: verify
 
         // 3. write the signed cert to "shared memory"
-        //let data: [u8; 4096] = [1; 4096];
-        let write_res = self.shared_memory.write_only(self.id, &read_signed_cert);
+        let data: [u8; 4096] = [1; 4096];
+        let write_res = self.shared_memory.write_only(self.id, &data);
         if write_res == false {
             return None;
         }
@@ -413,17 +371,6 @@ impl Gateway<Connected, WriteOnly, Initialized> {
             },
             None => None,
         }
-    }
-
-    pub fn test_mirai_taint(self) -> Data<UnencryptedRemoteData> {
-        let read_signed_cert: [u8; 4096] = [0; 4096];
-        let signed_cert_data = Data {
-            data: read_signed_cert,
-            state: UnencryptedRemoteData,
-        };
-        //add_tag!(&signed_cert_data, Sanitized);
-        add_tag!(&signed_cert_data, Tainted);
-        signed_cert_data
     }
 }
 
@@ -665,21 +612,4 @@ impl DataState for UnencryptedRemoteData {
     #[pure]
     #[ensures(result == true)]
     fn is_unencrypted_remote_data(&self) -> bool { true }
-}
-
-// test function for MIRAI
-pub fn remote_channel_sink_test<S: DataState>(data: Data<S>) {
-    precondition!(does_not_have_tag!(&data, Tainted) || has_tag!(&data, Sanitized));
-    println!("hi");
-}
-
-pub fn test_mirai_taint() -> Data<UnencryptedRemoteData> {
-    let read_signed_cert: [u8; 4096] = [1; 4096];
-    let signed_cert_data = Data {
-        data: read_signed_cert,
-        state: UnencryptedRemoteData,
-    };
-    //add_tag!(&signed_cert_data, Sanitized);
-    add_tag!(&signed_cert_data, Tainted);
-    signed_cert_data
 }

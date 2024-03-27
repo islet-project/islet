@@ -5,7 +5,7 @@ use realm_verifier::{
     MeasurementValue, RealmMeasurements, RealmVerifier,
 };
 use rust_rsi::CLAIM_COUNT_REALM_EXTENSIBLE_MEASUREMENTS;
-use std::{error::Error, fs::File, io::Read, sync::Arc};
+use std::{error::Error, fs::File, io::Read, io::Write, sync::Arc};
 use tinyvec::ArrayVec;
 
 use ratls::{ChainVerifier, RaTlsServer};
@@ -159,6 +159,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                         "Message from client: {:?}",
                         String::from_utf8(buf[0..len].to_vec())?
                     );
+
+                    // [JB]
+                    let write_data: [u8; 4096] = [1; 4096];
+                    match conn.stream().write(&write_data) {
+                        Ok(_) => info!("write 1 success!"),
+                        Err(_) => info!("write 1 fail!"),
+                    }
                 }
 
                 info!("Connection closed");

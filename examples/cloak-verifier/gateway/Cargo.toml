@@ -20,6 +20,7 @@ serde_json = "*"
 simple_asn1 = "*"
 x509-certificate = "*"
 rustls = { version = "*", features = ["dangerous_configuration"] }
+#rustls = { path = "../../../../remote-attestation/lib/rustls/rustls", version = "0.21.10", features = ["dangerous_configuration"] }
 rustls-pemfile = "1.*"
 pkcs8 = { version = "*", features = ["alloc"] }
 rand = "*"
@@ -27,9 +28,8 @@ rcgen = "*"
 base64 = { version = "*", features = ["alloc"] }
 lazy_static = "*"
 rsa = { version = "*", features = ["nightly", "pkcs5", "serde"] }
+mirai-annotations = "*"
 
 #ioctl-gen = "0.1.0"
 #rust-rsi = { path = "../../../../remote-attestation/lib/rust-rsi" }
 
-[profile.release]
-strip = true

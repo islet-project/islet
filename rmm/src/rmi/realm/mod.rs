@@ -103,7 +103,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         })
     });
 
-    listen!(mainloop, rmi::REC_AUX_COUNT, |_, ret, _| {
+    listen!(mainloop, rmi::REC_AUX_COUNT, |arg, ret, _| {
+        let _ = get_granule_if!(arg[0], GranuleState::RD)?;
         ret[1] = rmi::MAX_REC_AUX_GRANULES;
         Ok(())
     });

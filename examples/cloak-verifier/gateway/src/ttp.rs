@@ -185,7 +185,7 @@ impl RaTlsCertResolver {
                     let dec_data = private_key.decrypt(Pkcs1v15Encrypt, &enc_data).expect("failed to decrypt");
                     assert_eq!(&data[..], &dec_data[..]);
 
-                    //info!("private_key read!");
+                    println!("private_key read!");
                     return Ok(Self {
                         rem,
                         private_key,
@@ -206,9 +206,11 @@ impl RaTlsCertResolver {
 
     #[trusted]
     fn resolve(&self, challenge: &[u8]) -> Result<Vec<u8>, RaTlsError> {
+        println!("resolve start!");
         if challenge.len() != CHALLENGE_LEN as usize {
             return Err(RaTlsError::GenericTokenResolverError());
         }
+        println!("after challenge check!");
 
         match measurement_extend(&self.rem)
         {
@@ -217,6 +219,7 @@ impl RaTlsCertResolver {
             },
             Ok(_) => {},
         }
+        println!("after measurement_extend check!");
 
         match attestation_token(&challenge.try_into().unwrap())
         {
@@ -227,7 +230,7 @@ impl RaTlsCertResolver {
 
     #[trusted]
     fn create_cert(&self, challenge: String) -> Result<Arc<CertifiedKey>, RaTlsError> {
-        //info!("Received challenge {}", challenge);
+        println!("Received challenge {}", challenge);
         let realm_challenge = hash_realm_challenge(
             b64.decode(challenge)?.as_slice(),
             self.private_key
@@ -236,7 +239,7 @@ impl RaTlsCertResolver {
                 .as_bytes()
         );
 
-        //info!("create_cert start");
+        println!("create_cert start");
 
         let token = self.resolve(&realm_challenge)?;
         let pkcs8_privkey = self.private_key.to_pkcs8_der()?;
@@ -258,7 +261,7 @@ impl RaTlsCertResolver {
         let cert = Certificate(der);
         let key = RsaSigningKey::new(&privkey)?;
 
-        //info!("create_cert end");
+        println!("create_cert end");
 
         Ok(Arc::new(CertifiedKey {
             cert: vec![cert],

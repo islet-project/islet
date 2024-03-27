@@ -151,29 +151,29 @@ fn main() {
     //test_all();
     
     // test
-    //println!("test_simple start");
+    println!("test_simple start");
 
     // 1. GW: create
     let channel_gw = Gateway::<Initialized, UnmappedGateway, Initialized>::new();
     let channel_gw = channel_gw.create();
     if channel_gw.is_none() {
-        //println!("channel_gw.create error");
+        println!("channel_gw.create error");
         return;
     }
-    //println!("channel_gw.create success");
+    println!("channel_gw.create success");
 
     // 2. APP: connect
     let channel_app = LocalChannelApp::<Start, UnmappedApp>::new();
     let channel_app = channel_app.connect();
     if channel_app.is_none() {
-        //println!("channel_app.connect error");
+        println!("channel_app.connect error");
         return;
     }
-    //println!("channel_app.connect success");
+    println!("channel_app.connect success");
 
     // 3. GW: wait_for_app
     let channel_gw = channel_gw.unwrap().wait_for_app();
-    //println!("channel_gw.wait_for_app success");
+    println!("channel_gw.wait_for_app success");
 
     // test for MIRAI
     //let signed_data = channel_gw.test_mirai_taint();

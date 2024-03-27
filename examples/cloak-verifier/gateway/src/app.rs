@@ -392,6 +392,7 @@ impl Gateway<Connected, WriteOnly, Initialized> {
         //let data: [u8; 4096] = [1; 4096];
         let write_res = self.shared_memory.write_only(self.id, &read_signed_cert);
         if write_res == false {
+            println!("shared_memory.write_only error");
             return None;
         }
 
@@ -411,7 +412,10 @@ impl Gateway<Connected, WriteOnly, Initialized> {
                     rc,
                 ))
             },
-            None => None,
+            None => {
+                println!("RemoteChannel::connect() error");
+                None
+            },
         }
     }
 

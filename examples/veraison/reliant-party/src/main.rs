@@ -139,11 +139,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         server_privatekey_path: args.server_privkey,
     })?;
 
-    info!("after RaTlsServer::new()");
+    info!("after RaTlsServer::new()!!");
 
     let mut conn_iter = server.connections(args.server_bind_address)?;
     loop {
-        info!("Awaiting connection");
+        info!("Awaiting connection!!");
         let conn_iter_next = conn_iter.next();
         if conn_iter_next.is_none() {
             break;
@@ -156,18 +156,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                 while let Ok(len) = conn.stream().read(&mut buf) {
                     info!(
-                        "Message from client: {:?}",
+                        "Message from client!!!!: {:?}",
                         String::from_utf8(buf[0..len].to_vec())?
                     );
 
                     // [JB]
+                    info!("write attempt!");
                     let write_data: [u8; 4096] = [1; 4096];
-                    match conn.stream().write(&write_data) {
-                        Ok(_) => info!("write 1 success!"),
-                        Err(_) => info!("write 1 fail!"),
+                    if let Ok(len) = conn.stream().write(&write_data) {
+                        info!("write 1 success!");
+                    } else {
+                        info!("write 1 fail!");
                     }
                 }
-
                 info!("Connection closed");
             }
             Err(e) => {

@@ -23,20 +23,6 @@ pub const RTT_PAGE_LEVEL: usize = 3;
 pub const S2TTE_STRIDE: usize = GRANULE_SHIFT - 3;
 //pub const S2TTES_PER_S2TT: usize = 1 << S2TTE_STRIDE;
 
-const RIPAS_EMPTY: u64 = 0;
-const RIPAS_RAM: u64 = 1;
-
-fn level_to_size(level: usize) -> u64 {
-    // TODO: get the translation granule from src/armv9
-    match level {
-        0 => 512 << 30, // 512GB
-        1 => 1 << 30,   // 1GB
-        2 => 2 << 20,   // 2MB
-        3 => 1 << 12,   // 4KB
-        _ => 0,
-    }
-}
-
 fn is_valid_rtt_cmd(ipa: usize, level: usize, ipa_bits: usize) -> bool {
     if level > RTT_PAGE_LEVEL {
         return false;
@@ -122,8 +108,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         {
             return Err(Error::RmiErrorInput);
         }
-        let res = crate::rtt::init_ripas(rd, base, top)?;
-        ret[1] = res; //This is walk_top
+
+        let out_top = crate::rtt::init_ripas(rd, base, top)?;
+        ret[1] = out_top; //This is walk_top
 
         //TODO: Update the function according to the changes from eac5
         #[cfg(not(kani))]
@@ -132,47 +119,38 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::RTT_SET_RIPAS, |arg, _ret, _rmm| {
-        let ipa = arg[2];
-        let level = arg[3];
-        let ripas = arg[4];
+    listen!(mainloop, rmi::RTT_SET_RIPAS, |arg, ret, _rmm| {
+        let base = arg[2];
+        let top = arg[3];
 
+        if arg[0] == arg[1] {
+            warn!("Granules of RD and REC shouldn't be identical");
+            return Err(Error::RmiErrorInput);
+        }
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let mut rec_granule = get_granule_if!(arg[1], GranuleState::Rec)?;
         let rec = rec_granule.content_mut::<Rec<'_>>();
-
-        let mut prot = rmi::MapProt::new(0);
-        match ripas as u64 {
-            RIPAS_EMPTY => prot.set_bit(rmi::MapProt::NS_PAS),
-            RIPAS_RAM => { /* do nothing: ripas ram by default */ }
-            _ => {
-                warn!("Unknown RIPAS:{}", ripas);
-                return Err(Error::RmiErrorInput); //XXX: check this again
-            }
+        if rec.realmid()? != rd.id() {
+            warn!("RD:{:X} doesn't own REC:{:X}", arg[0], arg[1]);
+            return Err(Error::RmiErrorRec);
         }
 
-        if rec.ripas_state() != ripas as u8 {
+        if rec.ripas_start() != base as u64 || rec.ripas_end() < top as u64 {
             return Err(Error::RmiErrorInput);
         }
 
-        if rec.ripas_addr() != ipa as u64 {
+        if !is_granule_aligned(base)
+            || !is_granule_aligned(top)
+            || !is_protected_ipa(base, rd.ipa_bits())
+            || !is_protected_ipa(top - GRANULE_SIZE, rd.ipa_bits())
+        {
             return Err(Error::RmiErrorInput);
         }
 
-        let map_size = level_to_size(level);
-        if ipa as u64 + map_size > rec.ripas_end() {
-            return Err(Error::RmiErrorInput);
-        }
-
-        if ripas as u64 == RIPAS_EMPTY {
-            crate::rtt::make_shared(rd, ipa, level)?;
-        } else if ripas as u64 == RIPAS_RAM {
-            crate::rtt::make_exclusive(rd, ipa, level)?;
-        } else {
-            unreachable!();
-        }
-        rec.inc_ripas_addr(map_size);
+        let out_top = crate::rtt::set_ripas(rd, base, top, rec.ripas_state(), rec.ripas_flags())?;
+        ret[1] = out_top;
+        rec.set_ripas_addr(out_top as u64);
         Ok(())
     });
 

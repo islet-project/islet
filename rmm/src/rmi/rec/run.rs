@@ -159,6 +159,7 @@ impl core::fmt::Debug for Run {
             .field("exit::cntp_cval", &self.exit.cntp_cval)
             .field("exit::cntv_ctl", &self.exit.cntv_ctl)
             .field("exit::cntv_cval", &self.exit.cntv_cval)
+            .field("exit::gpr0", &self.exit.gprs[0])
             .finish()
     }
 }
@@ -182,6 +183,11 @@ pub const REC_ENTRY_FLAG_TRAP_WFI: u64 = 1 << 2;
 ///  val 1: Trap is enabled.
 #[allow(dead_code)]
 pub const REC_ENTRY_FLAG_TRAP_WFE: u64 = 1 << 3;
+/// Host response to RIPAS change request
+///  val 0: ACCEPT
+///  val 1: REJECT
+#[allow(dead_code)]
+pub const REC_ENTRY_FLAG_RIPAS_RESPONSE: u64 = 1 << 4;
 pub const NR_GPRS: usize = 31;
 const NR_GIC_LRS: usize = 16;
 

@@ -14,6 +14,8 @@ use crate::rmi::rtt_entry_state;
 use crate::{get_granule, get_granule_if};
 use armv9a::bits_in_reg;
 
+const CHANGE_DESTROYED: u64 = 0x1;
+
 fn level_map_size(level: usize) -> usize {
     // TODO: get the translation granule from src/armv9
     match level {
@@ -216,10 +218,10 @@ pub fn get_ripas(rd: &Rd, ipa: usize, level: usize) -> Result<u64, Error> {
         return Err(Error::RmiErrorRtt(last_level));
     }
 
-    if s2tte.is_destroyed() {
-        error!("The s2tte is destroyed: {:x}", s2tte.get());
-        return Err(Error::RmiErrorRtt(last_level));
+    if s2tte.is_assigned_ram(level) {
+        return Ok(invalid_ripas::RAM);
     }
+
     Ok(s2tte.get_ripas())
 }
 
@@ -284,6 +286,7 @@ pub fn map_unprotected(rd: &Rd, ipa: usize, level: usize, host_s2tte: usize) -> 
         return Err(Error::RmiErrorInput);
     }
 
+    // TODO: should return actual last level, not level 0
     let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 
     if level != last_level {
@@ -350,62 +353,112 @@ pub fn unmap_unprotected(rd: &Rd, ipa: usize, level: usize) -> Result<usize, Err
     Ok(top_ipa)
 }
 
-pub fn make_shared(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error> {
-    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
+pub fn set_ripas(rd: &Rd, base: usize, top: usize, ripas: u8, flags: u64) -> Result<usize, Error> {
+    // TODO: get it from s2table with the start address
+    let level = RTT_PAGE_LEVEL;
+    let map_size = level_map_size(level);
 
-    if level != last_level {
-        return Err(Error::RmiErrorRtt(last_level)); //XXX: check this again
+    let mut addr = base & !(map_size - 1);
+    if addr != base {
+        return Err(Error::RmiErrorRtt(level));
+    }
+    if top & !(map_size - 1) != top {
+        return Err(Error::RmiErrorRtt(level));
+    }
+    let parent_map_size = level_map_size(level - 1);
+    let table_top = (addr & !(parent_map_size - 1)) + parent_map_size;
+    if table_top < top {
+        warn!(
+            "table can address upto 0x{:X}, top {:X} overlimits the range",
+            table_top, top
+        );
+        // TODO: return actual last level
+        return Err(Error::RmiErrorRtt(level - 1));
     }
 
-    // Reference (tf-rmm)      : smc_rtt_set_ripas() in runtime/rmi/rtt.c
-    //           (realm-linux) : __set_memory_encrypted() in arch/arm64/mm/pageattr.c
-    //           (nw-linux)    : set_ipa_state() and kvm_realm_unmap_range() in arch/arm64/kvm/rme.c
-    //           (rmm-spec)    : Figure D2.1 Realm shared memory protocol flow
-    if s2tte.is_valid(level, false) {
-        // the case for ipa's range 0x8840_0000 - in realm-linux booting
-        let pa: usize = s2tte.address(level).ok_or(Error::RmiErrorRtt(0))?.into(); //XXX: check this again
-        let mut flags = 0;
-        flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
-        flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
-        let new_s2tte = pa as u64 | flags;
+    while addr < table_top && addr < top {
+        let (s2tte, last_level) = S2TTE::get_s2tte(rd, addr, level, Error::RmiErrorRtt(level))?;
+        let mut new_s2tte = 0;
+        let mut add_pa = false;
 
+        let pa: usize = s2tte
+            .address(last_level)
+            .ok_or(Error::RmiErrorRtt(0))?
+            .into(); //XXX: check this again
+        if ripas as u64 == invalid_ripas::EMPTY {
+            new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
+
+            if s2tte.is_unassigned_empty() {
+                new_s2tte |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
+            } else if s2tte.is_unassigned_destroyed() {
+                if flags & CHANGE_DESTROYED != 0 {
+                    new_s2tte |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
+                } else {
+                    break;
+                }
+            } else if s2tte.is_assigned_ram(level) {
+                new_s2tte |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
+                add_pa = true;
+            } else if s2tte.is_assigned_destroyed() {
+                if flags & CHANGE_DESTROYED != 0 {
+                    new_s2tte |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
+                    add_pa = true;
+                } else {
+                    break;
+                }
+            }
+        } else if ripas as u64 == invalid_ripas::RAM {
+            new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::RAM);
+
+            if s2tte.is_unassigned_empty() {
+                new_s2tte |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
+            } else if s2tte.is_unassigned_destroyed() {
+                if flags & CHANGE_DESTROYED != 0 {
+                    new_s2tte |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
+                } else {
+                    break;
+                }
+            } else if s2tte.is_assigned_empty() {
+                //assigned ram
+                new_s2tte |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
+                if last_level == RTT_PAGE_LEVEL {
+                    new_s2tte |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
+                } else {
+                    new_s2tte |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_BLOCK);
+                }
+                add_pa = true;
+            } else if s2tte.is_assigned_destroyed() {
+                if flags & CHANGE_DESTROYED != 0 {
+                    //assigned ram
+                    if last_level == RTT_PAGE_LEVEL {
+                        new_s2tte |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
+                    } else {
+                        new_s2tte |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_BLOCK);
+                    }
+                    add_pa = true;
+                } else {
+                    break;
+                }
+            } else {
+                continue; // do nothing
+            }
+        } else {
+            unreachable!();
+        }
+        if add_pa {
+            new_s2tte |= pa as u64;
+        }
         rd.s2_table()
             .lock()
-            .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
-    } else if s2tte.is_unassigned() || s2tte.is_assigned() {
-        let pa: usize = s2tte.address(level).ok_or(Error::RmiErrorRtt(0))?.into(); //XXX: check this again
-        let flags = bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
-        let new_s2tte = pa as u64 | flags;
+            .ipa_to_pte_set(GuestPhysAddr::from(addr), last_level, new_s2tte)?;
 
-        rd.s2_table()
-            .lock()
-            .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
+        addr += map_size;
     }
-
-    Ok(())
-}
-
-pub fn make_exclusive(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error> {
-    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
-
-    if level != last_level {
-        return Err(Error::RmiErrorRtt(last_level)); //XXX: check this again
-    }
-
-    if s2tte.is_valid(level, false) {
-        // This condition is added with no-op for handling the `else` case
-    } else if s2tte.is_unassigned() || s2tte.is_assigned() {
-        let flags = bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::RAM);
-        let new_s2tte = s2tte.get() | flags;
-
-        rd.s2_table()
-            .lock()
-            .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
+    if addr > base {
+        Ok(addr)
     } else {
-        return Err(Error::RmiErrorRtt(level)); //XXX: check this again
+        Err(Error::RmiErrorRtt(level))
     }
-
-    Ok(())
 }
 
 pub fn data_create(rd: &Rd, ipa: usize, target_pa: usize, unknown: bool) -> Result<(), Error> {

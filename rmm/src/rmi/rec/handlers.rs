@@ -156,14 +156,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         crate::gic::receive_state_from_host(rd, rec.vcpuid(), &run)?;
         crate::mmio::emulate_mmio(rd, rec.vcpuid(), &run)?;
 
-        let ripas = rec.ripas_addr() as usize;
-        if ripas > 0 {
-            set_reg(rd, rec.vcpuid(), 0, 0)?;
-            set_reg(rd, rec.vcpuid(), 1, ripas)?;
-            rec.set_ripas(0, 0, 0, 0);
-        }
         // XXX: we explicitly release Rd's lock here to avoid a deadlock
         core::mem::drop(rd_granule);
+
+        crate::rsi::ripas::complete_ripas(rec, &run)?;
 
         let wfx_flag = run.entry_flags();
         if wfx_flag & (REC_ENTRY_FLAG_TRAP_WFI | REC_ENTRY_FLAG_TRAP_WFE) != 0 {

@@ -105,6 +105,8 @@ impl MapProt {
     pub const NS_PAS: u64 = 1;
 }
 
+/*
 pub(crate) fn dummy() {
     trace!("Dummy implementation.");
 }
+*/

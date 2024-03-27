@@ -302,7 +302,7 @@ def prepare_nw_aosp(no_prebuilt_initrd):
         print("[!] Place AOSP ramdisk image with name 'initrd-aosp.img' to %s" % OUT)
         sys.exit(1)
 
-    print("[!] compsing boot image...")
+    print("[!] Composing boot image...")
     args = [
         "-j%d" % multiprocessing.cpu_count(), "-f",
         "fvp-android.mk",
@@ -346,20 +346,48 @@ def prepare_tap_network(host_ip, fvp_ip, route_ip, gateway, ifname):
     print("[!] Configuring a tap network for fvp...")
     run(["./scripts/configure_tap.sh", host_ip, fvp_ip, route_ip, gateway, ifname], cwd=ROOT)
 
+def prepare_trace():
+    return ["--plugin", "%s" % TRACE_PATH,
+           "-C", "TRACE.TarmacTrace.trace_events=1",
+           "-C", "TRACE.TarmacTrace.trace_instructions=1",
+           "-C", "TRACE.TarmacTrace.start-instruction-count=100000000",
+           "-C", "TRACE.TarmacTrace.trace_core_registers=1",
+           "-C", "TRACE.TarmacTrace.trace_vfp=1",
+           "-C", "TRACE.TarmacTrace.trace_mmu=0",
+           "-C", "TRACE.TarmacTrace.trace_loads_stores=1",
+           "-C", "TRACE.TarmacTrace.trace_cache=0",
+           "-C", "TRACE.TarmacTrace.updated-registers=1",
+           "-C", "TRACE.TarmacTrace.trace-file=%s/trace.log" % OUT]
+
+def prepare_arguments(debug, trace, no_telnet):
+    args = []
+    if debug:
+        print("[!] Enabling debug...")
+        args += ["--cadi-server"]
+    if trace:
+        print("[!] Enabling trace...")
+        args += prepare_trace()
+    if no_telnet:
+        print("[!] Disabling telnet...")
+        args += ["-C", "bp.terminal_0.start_telnet=0",
+                "-C", "bp.terminal_1.start_telnet=0",
+                "-C", "bp.terminal_2.start_telnet=0",
+                "-C", "bp.terminal_3.start_telnet=0"]
+    return args
+
 def run_islet_hes():
     print("[!] Running islet-hes...")
     kill_pid_file(HES_PID)
     run(["cargo", "run", "--", "-d"], cwd=HES_APP)
 
-def run_fvp_tf_a_tests(debug):
+def run_fvp_tf_a_tests(debug, trace, no_telnet):
     print("[!] Running fvp for tf-a-tests...")
     args = ["./FVP_Base_RevC-2xAEMvA",
             "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
             "-f", FVP_CONFIG,
             "-Q", "1000"]
-    if debug:
-        args += ["--cadi-server"]
+    args += prepare_arguments(debug, trace, no_telnet)
     run(args, cwd=FVP_DIR)
 
 def run_fvp_linux(debug, trace, no_telnet):
@@ -371,28 +399,10 @@ def run_fvp_linux(debug, trace, no_telnet):
             "-C", "bp.virtiop9device.root_path=%s" % SHARED_PATH,
             "-f", FVP_CONFIG,
             "-Q", "1000"]
-    if no_telnet:
-        args += ["-C", "bp.terminal_0.start_telnet=0",
-                "-C", "bp.terminal_1.start_telnet=0",
-                "-C", "bp.terminal_2.start_telnet=0",
-                "-C", "bp.terminal_3.start_telnet=0"]
-    if debug:
-        args += ["--cadi-server"]
-    if trace:
-        args += ["--plugin", "%s" % TRACE_PATH,
-                "-C", "TRACE.TarmacTrace.trace_events=1",
-                "-C", "TRACE.TarmacTrace.trace_instructions=1",
-                "-C", "TRACE.TarmacTrace.start-instruction-count=1600000000",
-                "-C", "TRACE.TarmacTrace.trace_core_registers=1",
-                "-C", "TRACE.TarmacTrace.trace_vfp=1",
-                "-C", "TRACE.TarmacTrace.trace_mmu=0",
-                "-C", "TRACE.TarmacTrace.trace_loads_stores=1",
-                "-C", "TRACE.TarmacTrace.trace_cache=0",
-                "-C", "TRACE.TarmacTrace.updated-registers=1",
-                "-C", "TRACE.TarmacTrace.trace-file=%s/trace.log" % OUT]
+    args += prepare_arguments(debug, trace, no_telnet)
     run(args, cwd=FVP_DIR)
 
-def run_fvp_linux_net(debug, host_ip, fvp_ip, fvp_tap_ip, realm_ip, route_ip, gateway, ifname):
+def run_fvp_linux_net(debug, trace, no_telnet, host_ip, fvp_ip, fvp_tap_ip, realm_ip, route_ip, gateway, ifname):
     user_name = os.environ['USER']
     prepare_tap_network(host_ip, fvp_ip, route_ip, gateway, ifname)
     print("[!] Running fvp for linux with the tap network..", )
@@ -405,11 +415,10 @@ def run_fvp_linux_net(debug, host_ip, fvp_ip, fvp_tap_ip, realm_ip, route_ip, ga
             "-C", "bp.virtio_net.enabled=1",
             "-f", FVP_CONFIG,
             "-Q", "1000"]
-    if debug:
-        args += ["--cadi-server"]
+    args += prepare_arguments(debug, trace, no_telnet)
     run(args, cwd=FVP_DIR)
 
-def run_fvp_aosp(debug):
+def run_fvp_aosp(debug, trace, no_telnet):
     os.makedirs(AOSP_SHARED_PATH, exist_ok=True)
     new_env = environ.copy()
     new_env["LD_PRELOAD"] = PREBUILT_AOSP_ADB
@@ -425,11 +434,10 @@ def run_fvp_aosp(debug):
             "-C",  "bp.virtio_net.enabled=1",
             "-f", FVP_CONFIG_AOSP,
             "-Q", "1000"]
-    if debug:
-        args += ["--cadi-server"]
+    args += prepare_arguments(debug, trace, no_telnet)
     run(args, cwd=FVP_DIR, new_env=new_env)
 
-def run_fvp_acs(no_telnet):
+def run_fvp_acs(debug, trace, no_telnet):
     print("[!] Running fvp for acs...")
 
     args = [ACS_RUN,
@@ -437,7 +445,14 @@ def run_fvp_acs(no_telnet):
             "--bl1",  "%s/bl1.bin" % OUT,
             "--fip",  "%s/fip.bin" % OUT,
             "--acs_build_dir", ACS_BUILD]
+    if debug:
+        print("[!] Enabling debug...")
+        args += ["--debug"]
+    if trace:
+        print("[!] Enabling trace...")
+        args += ["--trace"]
     if no_telnet:
+        print("[!] Disabling telnet...")
         args += ["--no_telnet"]
     run(args, cwd=ROOT)
 
@@ -601,9 +616,9 @@ if __name__ == "__main__":
             prepare_nw_aosp(args.no_prebuilt_initrd)
             prepare_bootloaders(args.rmm, PREBUILT_EDK2, args.hes)
         elif args.normal_world == "acs":
-            # When a target has changed either with `--selected-tests` or 
-            # `--excluded-tests`, it is recommended for users to execute 
-            # `./scripts/fvp-cca --clean acs` first, so that the current 
+            # When a target has changed either with `--selected-tests` or
+            # `--excluded-tests`, it is recommended for users to execute
+            # `./scripts/fvp-cca --clean acs` first, so that the current
             # target is not confused by the previous target in the build.
             if args.selected_tests == "":
                 prepare_acs("", "", args.excluded_tests)
@@ -639,16 +654,16 @@ if __name__ == "__main__":
         run_islet_hes()
 
     if not args.build_only and args.normal_world == "tf-a-tests":
-        run_fvp_tf_a_tests(args.debug)
+        run_fvp_tf_a_tests(args.debug, args.trace, args.no_telnet)
 
     if not args.build_only and args.normal_world == "linux":
         run_fvp_linux(args.debug, args.trace, args.no_telnet)
 
     if not args.build_only and args.normal_world == "linux-net":
-        run_fvp_linux_net(args.debug, args.host_ip, args.fvp_ip, args.fvp_tap_ip, args.realm_ip, args.route_ip, args.gateway, args.ifname)
+        run_fvp_linux_net(args.debug, args.trace, args.no_telnet, args.host_ip, args.fvp_ip, args.fvp_tap_ip, args.realm_ip, args.route_ip, args.gateway, args.ifname)
 
     if not args.build_only and args.normal_world == "aosp":
-        run_fvp_aosp(args.debug)
+        run_fvp_aosp(args.debug, args.trace, args.no_telnet)
 
     if not args.build_only and args.normal_world == "acs":
-        run_fvp_acs(args.no_telnet)
+        run_fvp_acs(args.debug, args.trace, args.no_telnet)

@@ -1,21 +1,19 @@
 use crate::const_assert_eq;
-use crate::granule::GRANULE_SIZE;
 use crate::rmi::error::Error;
 
-pub const HOST_CALL_NR_GPRS: usize = 7;
-const PADDING: [usize; 2] = [6, 4032];
+use autopadding::*;
 
-#[repr(C)]
+pub const HOST_CALL_NR_GPRS: usize = 31;
+
+pad_struct_and_impl_default!(
 pub struct HostCall {
-    imm: u16,
-    padding0: [u8; PADDING[0]],
-    gprs: [u64; HOST_CALL_NR_GPRS],
-    padding1: [u8; PADDING[1]],
+    0x0 imm: u16,
+    0x8 gprs: [u64; HOST_CALL_NR_GPRS],
+    0x100 => @END,
 }
+);
 
-// The width of the RsiHostCall structure is 4096 (0x1000) bytes in RMM Spec bet0.
-// The width is changed to 256 (0x100) bytes at RMM Spec eac5.
-const_assert_eq!(core::mem::size_of::<HostCall>(), GRANULE_SIZE);
+const_assert_eq!(core::mem::size_of::<HostCall>(), 0x100);
 
 impl HostCall {
     pub fn set_gpr(&mut self, idx: usize, val: u64) -> Result<(), Error> {

@@ -42,7 +42,7 @@ macro_rules! type_check_and_init {
         0
     };
     ($t:ty) => {
-        [0; core::mem::size_of::<$t>()]
+        [0; <$t>::LEN]
     };
 }
 
@@ -129,4 +129,12 @@ macro_rules! pad_struct_and_impl_default {
     ) => {
         $crate::pad_field_and_impl_default!(@root $(#[$attr])* $vis $name { $($fields)* } );
     };
+}
+
+pub trait ArrayLength {
+    const LEN: usize;
+}
+
+impl<T, const LENGTH: usize> ArrayLength for [T; LENGTH] {
+    const LEN: usize = LENGTH;
 }

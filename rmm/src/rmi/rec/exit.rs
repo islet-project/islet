@@ -63,7 +63,6 @@ pub fn handle_realm_exit(
             run.set_exit_reason(rmi::EXIT_SYNC);
             run.set_esr(realm_exit_res[1] as u64);
             run.set_hpfar(realm_exit_res[2] as u64);
-            run.set_far(realm_exit_res[3] as u64);
             rmi::SUCCESS
         }
         _ => rmi::SUCCESS,

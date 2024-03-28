@@ -11,6 +11,8 @@ fn check_sysreg_id_access(esr: u64) -> bool {
 pub fn handle(vcpu: &mut VCPU, esr: u64) -> u64 {
     if check_sysreg_id_access(esr) {
         handle_sysreg_id(vcpu, esr);
+    } else {
+        warn!("Unhandled MSR/MRS instruction");
     }
     trap::RET_TO_REC
 }

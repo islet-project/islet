@@ -310,11 +310,9 @@ pub fn validate_state(run: &Run) -> bool {
         }
 
         /* The RMM Specification imposes the constraint that HW == '0' */
-        let pri = lr.get_masked_value(ICH_LR::PRIORITY);
-        let pri_res0_mask = (1u64 << (ICH_LR_PRIORITY_WIDTH - pri)) - 1;
         if lr.get_masked(ICH_LR::HW) != 0
             /* Check RES0 bits in the Priority field */
-            || pri_res0_mask != 0
+            || lr.get_masked_value(ICH_LR::PRIORITY) & GIC_FEATURES.pri_res0_mask != 0
             /* Only the EOI bit in the pINTID is allowed to be set */
             || lr.get_masked(ICH_LR::PINTID & !ICH_LR::EOI) != 0
             /* Check if vINTID is in the valid range */

@@ -4,6 +4,7 @@ members = [
     "lib/armv9a",
     "lib/cca-token",
     "lib/cose",
+    "lib/safe-abstraction",
     "lib/vmsa",
     "lib/rsi-el0",
     "lib/uart",

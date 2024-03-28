@@ -3,7 +3,7 @@
 set -e
 
 ROOT=$(git rev-parse --show-toplevel)
-CROSS_COMPILE=$ROOT/assets/toolchain/aarch64-none-elf/bin/aarch64-none-elf-
+CROSS_COMPILE=$ROOT/assets/toolchain/aarch64-none-elf-13-2/bin/aarch64-none-elf-
 
 cd $ROOT/third-party/cca-rmm-acs
 mkdir -p build && cd build

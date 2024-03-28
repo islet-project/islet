@@ -9,6 +9,8 @@
 extern crate log;
 
 mod entry;
+#[cfg(kani)]
+mod mc;
 
 use islet_rmm::allocator;
 use islet_rmm::cpu;

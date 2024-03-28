@@ -50,6 +50,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
         // set Rec_state and grab the lock for Rec granule
         let mut rec_granule = get_granule_if!(rec, GranuleState::Delegated)?;
+        #[cfg(not(kani))]
         rmm.page_table.map(rec, true);
         let rec = rec_granule.content_mut::<Rec<'_>>();
 
@@ -72,6 +73,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rec.set_vtcr(prepare_vtcr(rd)?);
 
         rd.inc_rec_index();
+        #[cfg(not(kani))]
         HashContext::new(rd)?.measure_rec_params(&params)?;
 
         #[cfg(feature = "gst_page_table")]
@@ -84,9 +86,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
 
         set_granule(&mut rec_granule, GranuleState::Delegated).map_err(|e| {
+            #[cfg(not(kani))]
             rmm.page_table.unmap(arg[0]);
             e
         })?;
+        #[cfg(not(kani))]
         rmm.page_table.unmap(arg[0]);
         Ok(())
     });

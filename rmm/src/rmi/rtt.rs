@@ -99,6 +99,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
         crate::rtt::init_ripas(rd.id(), ipa, level)?;
 
+        #[cfg(not(kani))]
         HashContext::new(rd)?.measure_ripas_granule(ipa, level as u8)?;
 
         Ok(())
@@ -195,11 +196,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // data granule lock for the target page
         let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
         let target_page = target_page_granule.content_mut::<DataPage>();
+        #[cfg(not(kani))]
         rmm.page_table.map(target_pa, true);
 
         // read src page
         let src_page = copy_from_host_or_ret!(DataPage, src_pa);
 
+        #[cfg(not(kani))]
         HashContext::new(rd)?.measure_data_granule(&src_page, ipa, flags)?;
 
         // 3. copy src to _data
@@ -230,6 +233,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // 0. Make sure granule state can make a transition to DATA
         // data granule lock for the target page
         let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
+        #[cfg(not(kani))]
         rmm.page_table.map(target_pa, true);
 
         // 1. map ipa to target_pa in S2 table

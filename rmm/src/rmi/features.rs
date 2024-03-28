@@ -45,6 +45,8 @@ fn mask(shift: usize, width: usize) -> usize {
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::FEATURES, |arg, ret, _| {
         if arg[0] != FEATURE_REGISTER_0_INDEX {
+            #[cfg(kani)]
+            kani::cover!();
             return Err(Error::RmiErrorInput);
         }
 
@@ -58,6 +60,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         ret[1] = feat_reg0;
         debug!("rmi::FEATURES ret:{:X}", feat_reg0);
+        #[cfg(kani)]
+        kani::cover!();
         Ok(())
     });
 }

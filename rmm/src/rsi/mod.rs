@@ -156,6 +156,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             .lock()
             .measurements;
 
+        #[cfg(not(kani))]
         let attest_size = crate::rsi::attestation::get_token(
             pa.into(),
             rec.attest_challenge(),
@@ -164,6 +165,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         );
 
         set_reg(realmid, vcpuid, 0, SUCCESS)?;
+        #[cfg(not(kani))]
         set_reg(realmid, vcpuid, 1, attest_size)?;
 
         ret[0] = rmi::SUCCESS_REC_ENTER;
@@ -200,6 +202,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             return Ok(());
         }
 
+        #[cfg(not(kani))]
         crate::rsi::measurement::read(realmid, index, &mut measurement)?;
         set_reg(realmid, vcpuid, 0, SUCCESS)?;
         for (ind, chunk) in measurement
@@ -240,6 +243,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
         let rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
         let rd = rd.content::<Rd>();
+        #[cfg(not(kani))]
         HashContext::new(rd)?.extend_measurement(&buffer[0..size], index)?;
 
         set_reg(realmid, vcpuid, 0, SUCCESS)?;

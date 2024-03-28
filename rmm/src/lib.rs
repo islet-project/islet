@@ -5,7 +5,7 @@
 #![feature(const_mut_refs)]
 #![feature(specialization)]
 #![warn(rust_2018_idioms)]
-#![deny(warnings)]
+//#![deny(warnings)]
 
 #[cfg(not(test))]
 pub mod allocator;
@@ -35,6 +35,9 @@ pub mod stat;
 #[macro_use]
 pub mod r#macro;
 mod measurement;
+#[cfg(kani)]
+pub mod monitor;
+#[cfg(not(kani))]
 mod monitor;
 mod rmm_el3;
 

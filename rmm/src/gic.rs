@@ -242,9 +242,9 @@ pub fn receive_state_from_host(id: usize, vcpu: usize, run: &Run) -> Result<(), 
     let gic_state = &mut vcpu.lock().context.gic_state;
     let nr_lrs = GIC_FEATURES.nr_lrs;
 
-    gic_state.ich_lr_el2[..nr_lrs].copy_from_slice(&unsafe { run.entry_gic_lrs() }[..nr_lrs]);
+    gic_state.ich_lr_el2[..nr_lrs].copy_from_slice(&run.entry_gic_lrs()[..nr_lrs]);
     gic_state.ich_hcr_el2 &= !ICH_HCR_EL2_NS_MASK;
-    gic_state.ich_hcr_el2 |= (unsafe { run.entry_gic_hcr() } & ICH_HCR_EL2_NS_MASK);
+    gic_state.ich_hcr_el2 |= run.entry_gic_hcr() & ICH_HCR_EL2_NS_MASK;
     Ok(())
 }
 
@@ -258,11 +258,9 @@ pub fn send_state_to_host(id: usize, vcpu: usize, run: &mut Run) -> Result<(), E
     let gic_state = &mut vcpu.lock().context.gic_state;
     let nr_lrs = GIC_FEATURES.nr_lrs;
 
-    (unsafe { run.exit_gic_lrs_mut() }[..nr_lrs]).copy_from_slice(&gic_state.ich_lr_el2[..nr_lrs]);
-    unsafe {
-        run.set_gic_misr(gic_state.ich_misr_el2);
-        run.set_gic_vmcr(gic_state.ich_vmcr_el2);
-        run.set_gic_hcr(gic_state.ich_hcr_el2 & (ICH_HCR_EL2_EOI_COUNT_MASK | ICH_HCR_EL2_NS_MASK));
-    }
+    run.exit_gic_lrs_mut()[..nr_lrs].copy_from_slice(&gic_state.ich_lr_el2[..nr_lrs]);
+    run.set_gic_misr(gic_state.ich_misr_el2);
+    run.set_gic_vmcr(gic_state.ich_vmcr_el2);
+    run.set_gic_hcr(gic_state.ich_hcr_el2 & (ICH_HCR_EL2_EOI_COUNT_MASK | ICH_HCR_EL2_NS_MASK));
     Ok(())
 }

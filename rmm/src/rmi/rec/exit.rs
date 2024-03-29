@@ -45,21 +45,21 @@ pub fn handle_realm_exit(
         RecExitReason::Sync(ExitSyncType::DataAbort) => {
             handle_data_abort(realm_exit_res, rec, run)?
         }
-        RecExitReason::IRQ => unsafe {
+        RecExitReason::IRQ => {
             run.set_exit_reason(rmi::EXIT_IRQ);
             run.set_esr(realm_exit_res[1] as u64);
             run.set_hpfar(realm_exit_res[2] as u64);
             run.set_far(realm_exit_res[3] as u64);
             rmi::SUCCESS
-        },
+        }
         RecExitReason::Sync(ExitSyncType::InstAbort)
-        | RecExitReason::Sync(ExitSyncType::Undefined) => unsafe {
+        | RecExitReason::Sync(ExitSyncType::Undefined) => {
             run.set_exit_reason(rmi::EXIT_SYNC);
             run.set_esr(realm_exit_res[1] as u64);
             run.set_hpfar(realm_exit_res[2] as u64);
             run.set_far(realm_exit_res[3] as u64);
             rmi::SUCCESS
-        },
+        }
         _ => rmi::SUCCESS,
     };
 
@@ -105,10 +105,8 @@ fn handle_data_abort(
     let hpfar_el2 = realm_exit_res[2] as u64;
     let far_el2 = realm_exit_res[3] as u64;
 
-    unsafe {
-        run.set_exit_reason(rmi::EXIT_SYNC);
-        run.set_hpfar(hpfar_el2);
-    }
+    run.set_exit_reason(rmi::EXIT_SYNC);
+    run.set_hpfar(hpfar_el2);
 
     let fault_ipa = ((HPFAR_EL2::FIPA & hpfar_el2) << 8) as usize;
 
@@ -118,9 +116,7 @@ fn handle_data_abort(
             false => {
                 if esr_el2 & EsrEl2::WNR != 0 {
                     let write_val = get_write_val(realm_id, rec.vcpuid(), esr_el2)?;
-                    unsafe {
-                        run.set_gpr(0, write_val)?;
-                    }
+                    run.set_gpr(0, write_val)?;
                 }
                 (
                     esr_el2 & EMULATABLE_ABORT_MASK,
@@ -129,10 +125,8 @@ fn handle_data_abort(
             }
         };
 
-    unsafe {
-        run.set_esr(exit_esr);
-        run.set_far(exit_far);
-    }
+    run.set_esr(exit_esr);
+    run.set_far(exit_far);
 
     Ok(rmi::SUCCESS)
 }

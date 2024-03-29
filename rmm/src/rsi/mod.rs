@@ -338,17 +338,15 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         }
 
         // TODO: check ipa_state value, ipa address granularity
-        unsafe {
-            run.set_exit_reason(rmi::EXIT_RIPAS_CHANGE);
-            run.set_ripas(ipa_start as u64, ipa_size as u64, ipa_state);
-            rec.set_ripas(
-                ipa_start as u64,
-                ipa_end as u64,
-                ipa_start as u64,
-                ipa_state,
-            );
-            ret[0] = rmi::SUCCESS;
-        };
+        run.set_exit_reason(rmi::EXIT_RIPAS_CHANGE);
+        run.set_ripas(ipa_start as u64, ipa_size as u64, ipa_state);
+        rec.set_ripas(
+            ipa_start as u64,
+            ipa_end as u64,
+            ipa_start as u64,
+            ipa_state,
+        );
+        ret[0] = rmi::SUCCESS;
         debug!(
             "RSI_IPA_STATE_SET: {:X} ~ {:X} {:X}",
             ipa_start,

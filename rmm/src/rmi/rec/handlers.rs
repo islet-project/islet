@@ -142,7 +142,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             rec.set_ripas(0, 0, 0, 0);
         }
 
-        let wfx_flag = unsafe { run.entry_flags() };
+        let wfx_flag = run.entry_flags();
         if wfx_flag & (REC_ENTRY_FLAG_TRAP_WFI | REC_ENTRY_FLAG_TRAP_WFE) != 0 {
             warn!("Islet does not support re-configuring the WFI(E) trap");
             warn!("TWI(E) in HCR_EL2 is currently fixed to 'no trap'");
@@ -153,7 +153,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mut ret_ns;
         loop {
             ret_ns = true;
-            unsafe { run.set_imm(0) };
+            run.set_imm(0);
 
             rec.set_state(RecState::Running);
             match crate::rmi::rec::run(realm_id, rec.vcpuid(), 0) {

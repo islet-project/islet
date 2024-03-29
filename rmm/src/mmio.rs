@@ -13,7 +13,7 @@ pub fn emulate_mmio(id: usize, vcpu: usize, run: &Run) -> Result<(), Error> {
         .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
     let context = &mut vcpu.lock().context;
 
-    let flags = unsafe { run.entry_flags() };
+    let flags = run.entry_flags();
 
     // Host has not completed emulation for an Emulatable Abort.
     if (flags & REC_ENTRY_FLAG_EMUL_MMIO) == 0 {
@@ -34,7 +34,7 @@ pub fn emulate_mmio(id: usize, vcpu: usize, run: &Run) -> Result<(), Error> {
     // MMIO read case
     if wnr == 0 && rt != 31 {
         let mask = esr.get_access_size_mask();
-        let val = unsafe { run.entry_gpr(0)? } & mask;
+        let val = run.entry_gpr(0)? & mask;
         let sign_extended = esr.get_masked_value(EsrEl2::SSE);
         if sign_extended != 0 {
             // TODO

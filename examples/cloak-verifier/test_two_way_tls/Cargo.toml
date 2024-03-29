@@ -1,0 +1,32 @@
+[workspace]
+
+[package]
+name = "cloak-two-way-tls"
+version = "0.1.0"
+edition = "2021"
+authors = [ "Islet Contributors" ]
+description = "test-server for testing Cloak's remote channels"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+sha2 = "*"
+serde ="*"
+serde_json = "*"
+simple_asn1 = "*"
+x509-certificate = "*"
+rustls = { version = "*", features = ["dangerous_configuration"] }
+rustls-pemfile = "*"
+rustls-webpki = "*"
+pkcs8 = { version = "*", features = ["alloc"] }
+rand = "*"
+rcgen = "*"
+base64 = { version = "*", features = ["alloc"] }
+lazy_static = "*"
+rsa = { version = "*", features = ["nightly", "pkcs5", "serde"] }
+tokio = { version = "1", features = ["full"] }
+openssl = "0.10"
+tokio-openssl = "0.6"
+tokio-rustls = "*" 
+argh = "*"
+

@@ -10,6 +10,8 @@ description = "test-server for testing Cloak's remote channels"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+prusti-contracts = "0.2.0"
+prusti-std = "0.2.0"
 sha2 = "*"
 serde ="*"
 serde_json = "*"
@@ -20,13 +22,13 @@ rustls-pemfile = "*"
 rustls-webpki = "*"
 pkcs8 = { version = "*", features = ["alloc"] }
 rand = "*"
-rcgen = "*"
+rcgen = { version = "0.12.0" }
 base64 = { version = "*", features = ["alloc"] }
 lazy_static = "*"
 rsa = { version = "*", features = ["nightly", "pkcs5", "serde"] }
-tokio = { version = "1", features = ["full"] }
+#tokio = { version = "1", features = ["full"] }
 openssl = "0.10"
-tokio-openssl = "0.6"
-tokio-rustls = "*" 
+#tokio-openssl = "0.6"
+#tokio-rustls = "*"
 argh = "*"
 

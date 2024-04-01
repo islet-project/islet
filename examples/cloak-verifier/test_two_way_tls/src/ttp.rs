@@ -9,6 +9,7 @@ use rsa::{Pkcs1v15Encrypt, RsaPrivateKey};
 use std::fs::File;
 use std::time;
 use std::io::{Read, BufReader, Write};
+use std::process::Command;
 
 //use log::{debug, info};
 use rcgen::{CertificateParams, KeyPair, CustomExtension, Certificate as RcgenCert, date_time_ymd, DistinguishedName as RcgenDistinguishedName};
@@ -107,10 +108,11 @@ struct CVMServerVerifier
     nonce: [u8; 64],
     root_subjects: Vec<DistinguishedName>,
     roots: RootCertStore,
+    root_crt: Certificate,
 }
 
 impl CVMServerVerifier {
-    fn new(roots: RootCertStore) -> Self {
+    fn new(roots: RootCertStore, root_crt: Certificate) -> Self {
         let mut buf = [0u8; 64];
         rand::thread_rng().fill_bytes(&mut buf);
         let root_subjects = vec![
@@ -121,6 +123,7 @@ impl CVMServerVerifier {
             nonce: buf,
             root_subjects: root_subjects,
             roots: roots,
+            root_crt: root_crt,
         }
     }
 }
@@ -138,7 +141,8 @@ impl CVMServer {
         let certs = load_certificates_from_pem("cvm1.crt")?;
         let key = load_private_key_from_file("cvm1.key")?;
         let root_cert_store = load_root_cert_store("root.crt")?;
-        let verifier = CVMServerVerifier::new(root_cert_store);
+        let mut root_certs = load_certificates_from_pem("root.crt")?;
+        let verifier = CVMServerVerifier::new(root_cert_store, root_certs.remove(0));
 
         let config = ServerConfig::builder()
             .with_safe_defaults()
@@ -198,18 +202,55 @@ impl ClientCertVerifier for CVMServerVerifier {
         println!("CVMServerVerifier: verify_client_cert!");
 
         // print cert info
-        let cert = X509Certificate::from_der(end_entity.0.clone()).expect("x509_cert");
-        println!("CVMServerVerifier: {:x?}", cert.serial_number_asn1().as_slice());
+        let end_cert = X509Certificate::from_der(end_entity.0.clone()).expect("x509_cert");
+        let root_cert = X509Certificate::from_der((&self.root_crt).0.clone()).expect("x509_cert");
+        println!("CVMServerVerifier: {:x?}", end_cert.serial_number_asn1().as_slice());
 
-        Ok(ClientCertVerified::assertion())
-        //Err(rustls::Error::UnsupportedNameType)
+        // verification
+        // (1) make a chain: end_entity + root.crt
+        // (2) verify the chain
+        let end_cert_pem = end_cert.encode_pem().expect("encode_pem");
+        let root_cert_pem = root_cert.encode_pem().expect("encode_pem");
+
+        let mut file = File::create("tmp_server_end_cert.pem").expect("file create");
+        file.write_all(end_cert_pem.as_bytes()).expect("file write");
+
+        let mut file = File::create("tmp_server_full_chain.pem").expect("file create");
+        file.write_all(end_cert_pem.as_bytes()).expect("file write");
+        file.write_all(root_cert_pem.as_bytes()).expect("file write");
+
+        let output = Command::new("openssl")
+            .arg("verify")
+            .arg("-CAfile")
+            .arg("tmp_server_full_chain.pem")
+            .arg("tmp_server_end_cert.pem")
+            .output()
+            .expect("failed to execute process");
+
+        let stdout_res = String::from_utf8_lossy(&output.stdout);
+        let verification_res = stdout_res.find("OK");
+        match verification_res {
+            Some(_) => {
+                println!("CVMServerVerifier: client_cert verification success!");
+                Ok(ClientCertVerified::assertion())
+            }
+            None => {
+                println!("CVMServerVerifier: client_cert verification fail!");
+                Err(rustls::Error::UnsupportedNameType)
+            },
+        }
     }
 }
 
-pub struct CVMClientVerifier;
+pub struct CVMClientVerifier {
+    root_crt: Certificate
+}
+
 impl CVMClientVerifier {
-    pub fn new() -> Self {
-        Self
+    pub fn new(root_crt: Certificate) -> Self {
+        Self {
+            root_crt: root_crt,
+        }
     }
 }
 
@@ -226,10 +267,45 @@ impl ServerCertVerifier for CVMClientVerifier {
         println!("CVMClientVerifier: verify_server_cert()");
 
         // print cert info
-        let cert = X509Certificate::from_der(end_entity.0.clone()).expect("x509_cert");
-        println!("CVMClientVerifier: {:x?}", cert.serial_number_asn1().as_slice());
+        let end_cert = X509Certificate::from_der(end_entity.0.clone()).expect("x509_cert");
+        let root_cert = X509Certificate::from_der((&self.root_crt).0.clone()).expect("x509_cert");
+        println!("CVMClientVerifier: {:x?}", end_cert.serial_number_asn1().as_slice());
 
-        Ok(ServerCertVerified::assertion())
+        // verification
+        // (1) make a chain: end_entity + root.crt
+        // (2) verify the chain
+        let end_cert_pem = end_cert.encode_pem().expect("encode_pem");
+        let root_cert_pem = root_cert.encode_pem().expect("encode_pem");
+
+        let mut file = File::create("tmp_client_end_cert.pem").expect("file create");
+        file.write_all(end_cert_pem.as_bytes()).expect("file write");
+
+        let mut file = File::create("tmp_client_full_chain.pem").expect("file create");
+        file.write_all(end_cert_pem.as_bytes()).expect("file write");
+        file.write_all(root_cert_pem.as_bytes()).expect("file write");
+
+        let output = Command::new("openssl")
+            .arg("verify")
+            .arg("-CAfile")
+            .arg("tmp_client_full_chain.pem")
+            .arg("tmp_client_end_cert.pem")
+            .output()
+            .expect("failed to execute process");
+
+        let stdout_res = String::from_utf8_lossy(&output.stdout);
+        let verification_res = stdout_res.find("OK");
+        match verification_res {
+            Some(_) => {
+                println!("CVMClientVerifier: server_cert verification success!");
+                Ok(ServerCertVerified::assertion())
+            }
+            None => {
+                println!("CVMClientVerifier: server_cert verification fail!");
+                Err(rustls::Error::UnsupportedNameType)
+            },
+        }
+
+        //Ok(ServerCertVerified::assertion())
     }
 }
 
@@ -262,7 +338,8 @@ impl TlsClient {
                 ))
             },
             ClientMode::CVMClient => {
-                let verifier = CVMClientVerifier::new();
+                let mut root_certs = load_certificates_from_pem("root.crt").expect("load root crt");
+                let verifier = CVMClientVerifier::new(root_certs.remove(0));
 
                 Ok((ClientConfig::builder()
                         .with_safe_defaults()

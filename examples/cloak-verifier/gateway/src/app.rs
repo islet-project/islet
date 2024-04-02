@@ -365,9 +365,15 @@ impl Gateway<Connected, WriteOnly, Initialized> {
 
         // 2-2. send an attestation report
         let mut connection = connection.unwrap();
-        let write_res = write!(connection.stream(), "GIT");
+        let write_data: [u8; 4096] = [0; 4096];
+        let write_res = connection.stream().write_all(&write_data);
         if write_res.is_err() {
             println!("connection.write error");
+            return None;
+        }
+        let write_res = connection.stream().flush();
+        if write_res.is_err() {
+            println!("connection.flush error");
             return None;
         }
         println!("connection.write success");
@@ -379,10 +385,15 @@ impl Gateway<Connected, WriteOnly, Initialized> {
         // -- (2) use 'mirai_test' as an undesirable destination for tagged data and see if MIRAI can detect this!
         // -- MIRAI issue: https://github.com/facebookexperimental/MIRAI/issues/508
         let mut read_signed_cert: [u8; 4096] = [0; 4096];
-        let read_res = connection.stream().read(&mut read_signed_cert);
-        if read_res.is_err() {
-            println!("connection.read error");
-            return None;
+        let read_res = connection.stream().read_exact(&mut read_signed_cert);
+        match read_res {
+            Err(e) => {
+                println!("connection.read error: {}", e);
+                return None;
+            },
+            Ok(_) => {
+                println!("connection.read success");
+            },
         }
 
         // 2-4. verify the signed cert

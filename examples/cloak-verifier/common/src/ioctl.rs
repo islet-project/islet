@@ -101,6 +101,7 @@ fn ioctl_wrapper(fd: &File, request: usize, arg: usize) -> i32 {
     }
 }
 
+#[cfg(target_arch = "aarch64")]
 pub fn cloak_create(id: usize) -> io::Result<()> {
     let fd = File::open(DEV)?;
     let cloak = RsiCloak::new(id);
@@ -111,7 +112,12 @@ pub fn cloak_create(id: usize) -> io::Result<()> {
         _ => Err(io::Error::from_raw_os_error(22)),
     }
 }
+#[cfg(target_arch = "x86_64")]
+pub fn cloak_create(id: usize) -> io::Result<()> {
+    Ok(())
+}
 
+#[cfg(target_arch = "aarch64")]
 pub fn cloak_connect(id: usize) -> io::Result<()> {
     let fd = File::open(DEV)?;
     let cloak = RsiCloak::new(id);
@@ -122,7 +128,12 @@ pub fn cloak_connect(id: usize) -> io::Result<()> {
         _ => Err(io::Error::from_raw_os_error(22)),
     }
 }
+#[cfg(target_arch = "x86_64")]
+pub fn cloak_connect(id: usize) -> io::Result<()> {
+    Ok(())
+}
 
+#[cfg(target_arch = "aarch64")]
 pub fn cloak_gen_report(id: usize) -> io::Result<Vec<u8>> {
     let fd = File::open(DEV)?;
     let cloak = RsiCloak::new(id);
@@ -133,7 +144,13 @@ pub fn cloak_gen_report(id: usize) -> io::Result<Vec<u8>> {
         _ => Err(io::Error::from_raw_os_error(22)),
     }
 }
+#[cfg(target_arch = "x86_64")]
+pub fn cloak_gen_report(id: usize) -> io::Result<Vec<u8>> {
+    let buf: [u8; 1024] = [0; 1024];
+    Ok(buf.to_vec())
+}
 
+#[cfg(target_arch = "aarch64")]
 pub fn cloak_write(id: usize, data: &[u8; 4096]) -> io::Result<()> {
     let fd = File::open(DEV)?;
     let mut cloak = RsiCloak::new(id);
@@ -145,7 +162,12 @@ pub fn cloak_write(id: usize, data: &[u8; 4096]) -> io::Result<()> {
         _ => Err(io::Error::from_raw_os_error(22)),
     }
 }
+#[cfg(target_arch = "x86_64")]
+pub fn cloak_write(id: usize, _data: &[u8; 4096]) -> io::Result<()> {
+    Ok(())
+}
 
+#[cfg(target_arch = "aarch64")]
 pub fn cloak_read(id: usize, data: &mut [u8; 4096]) -> io::Result<()> {
     let fd = File::open(DEV)?;
     let cloak = RsiCloak::new(id);
@@ -159,7 +181,14 @@ pub fn cloak_read(id: usize, data: &mut [u8; 4096]) -> io::Result<()> {
         _ => Err(io::Error::from_raw_os_error(22)),
     }
 }
+#[cfg(target_arch = "x86_64")]
+pub fn cloak_read(id: usize, data: &mut [u8; 4096]) -> io::Result<()> {
+    let one: [u8; 4096] = [1; 4096];
+    data.copy_from_slice(&one);
+    Ok(())
+}
 
+#[cfg(target_arch = "aarch64")]
 pub fn measurement_extend(data: &[u8]) -> io::Result<()> {
     let fd = File::open(DEV)?;
     let measure = RsiMeasurement::new_from_data(1, data);
@@ -170,7 +199,12 @@ pub fn measurement_extend(data: &[u8]) -> io::Result<()> {
         _ => Err(io::Error::from_raw_os_error(22)),
     }
 }
+#[cfg(target_arch = "x86_64")]
+pub fn measurement_extend(data: &[u8]) -> io::Result<()> {
+    Ok(())
+}
 
+#[cfg(target_arch = "aarch64")]
 pub fn attestation_token(challenge: &[u8; CHALLENGE_LEN as usize]) -> io::Result<Vec<u8>> {
     let fd = File::open(DEV)?;
     let att = RsiAttestation::new(challenge);
@@ -180,4 +214,9 @@ pub fn attestation_token(challenge: &[u8; CHALLENGE_LEN as usize]) -> io::Result
         0 => Ok(att.token.to_vec()),
         _ => Err(io::Error::from_raw_os_error(22)),
     }
+}
+#[cfg(target_arch = "x86_64")]
+pub fn attestation_token(_challenge: &[u8; CHALLENGE_LEN as usize]) -> io::Result<Vec<u8>> {
+    let buf: [u8; 1024] = [0; 1024];
+    Ok(buf.to_vec())
 }

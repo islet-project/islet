@@ -14,7 +14,7 @@ use common::ioctl::{measurement_extend, attestation_token};
 use rcgen::{CertificateParams, KeyPair, CustomExtension, Certificate as RcgenCert, date_time_ymd, DistinguishedName};
 use rustls::{client::ResolvesClientCert, server::ResolvesServerCert, sign::{CertifiedKey, RsaSigningKey}, Certificate, PrivateKey, RootCertStore};
 use rand::rngs::OsRng;
-use pkcs8::{EncodePublicKey, EncodePrivateKey};
+use pkcs8::{EncodePublicKey, EncodePrivateKey, DecodePrivateKey};
 use crate::error::RaTlsError;
 use base64::{Engine, engine::general_purpose::STANDARD as b64};
 use sha2::{Sha512, Digest};
@@ -175,15 +175,17 @@ impl RaTlsCertResolver {
         let private_key = RsaPrivateKey::new(&mut OsRng, key_size)?;
         info!("Finished generating RSA key."); */
 
+        /*
         if let Ok(mut file) = File::open("priv_key.serde.arm64") {
             let mut buf = vec![];
             if file.read_to_end(&mut buf).is_ok() {
                 if let Ok(private_key) = serde_json::from_slice::<RsaPrivateKey>(&buf[..]) {
                     let pub_key = private_key.to_public_key();
                     let data = b"hello world";
-                    let enc_data = pub_key.encrypt(&mut OsRng, Pkcs1v15Encrypt, &data[..]).expect("failed to encrypt");
-                    let dec_data = private_key.decrypt(Pkcs1v15Encrypt, &enc_data).expect("failed to decrypt");
-                    assert_eq!(&data[..], &dec_data[..]);
+
+                    //let enc_data = pub_key.encrypt(&mut OsRng, Pkcs1v15Encrypt, &data[..]).expect("failed to encrypt");
+                    //let dec_data = private_key.decrypt(Pkcs1v15Encrypt, &enc_data).expect("failed to decrypt");
+                    //assert_eq!(&data[..], &dec_data[..]);
 
                     println!("private_key read!");
                     return Ok(Self {
@@ -196,12 +198,22 @@ impl RaTlsCertResolver {
 
         let key_size = 2048;
         let private_key = RsaPrivateKey::new(&mut OsRng, key_size)?;
-        //info!("Finished generating RSA key.");
+        //info!("Finished generating RSA key."); */
 
-        Ok(Self {
-            rem,
-            private_key
-        })
+        let private_key = RsaPrivateKey::read_pkcs8_pem_file("ra_tls.key");
+        match private_key {
+            Ok(pk) => {
+                println!("private_key from_pkcs8_pem!");
+                Ok(Self {
+                    rem,
+                    private_key: pk
+                })
+            },
+            Err(_) => {
+                println!("private_key error!");
+                Err(RaTlsError::GenericTokenResolverError())
+            },
+        }        
     }
 
     #[trusted]

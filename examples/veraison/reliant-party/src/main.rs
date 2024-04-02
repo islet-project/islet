@@ -12,6 +12,7 @@ use ratls::{ChainVerifier, RaTlsServer};
 use veraison_verifier::VeraisonTokenVerifer;
 
 use log::{debug, error, info};
+use std::{thread, time};
 
 /// Creates a path to a resource file
 macro_rules! resource_file {
@@ -151,24 +152,36 @@ fn main() -> Result<(), Box<dyn Error>> {
         match conn_iter_next.unwrap() {
             Ok(mut conn) => {
                 info!("New connection accepted");
-                let mut buf = Vec::new();
-                buf.resize(0x100, 0u8);
+                let mut buf: [u8; 4096] = [0; 4096];
+                
+                while let Ok(len) = conn.stream().read_exact(&mut buf) {
+                    // 1. read CVM's public key
+                    info!("Message from client!! len");
 
-                while let Ok(len) = conn.stream().read(&mut buf) {
-                    info!(
-                        "Message from client!!!!: {:?}",
-                        String::from_utf8(buf[0..len].to_vec())?
-                    );
+                    // [JB]
+                    // 2. deserialize it and generate a cert signed with root-ca's prv_key
+                    //    this certificate serves the same role as "admission cert" in the certifier framework
+                    /*
+                    if let Ok(pub_key) = serde_json::from_slice::<RsaPublicKey>(&buf[..]) {
+                        // 2-1. get root-ca's priv key to sign
+                        if let Ok(server_prv_key) = read_server_private_key(args.server_privkey) {
+
+                        } else {
+                            println!("read_server_private_key error");
+                        }
+                    } */
 
                     // [JB]
                     info!("write attempt!");
                     let write_data: [u8; 4096] = [1; 4096];
-                    if let Ok(len) = conn.stream().write(&write_data) {
+                    if let Ok(_) = conn.stream().write_all(&write_data) {
                         info!("write 1 success!");
+                        conn.stream().flush();
                     } else {
                         info!("write 1 fail!");
                     }
                 }
+
                 info!("Connection closed");
             }
             Err(e) => {

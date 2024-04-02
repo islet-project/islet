@@ -3,9 +3,10 @@ use common::ioctl::{cloak_create, cloak_gen_report, cloak_write, cloak_read};
 use sha2::{Sha512, Digest};
 
 use std::sync::Arc;
-use crate::ttp;
+use crate::ttp::{self, TlsConnection};
 use std::io::{Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
+use rustls::ClientConnection;
 
 // MIRAI
 #[cfg_attr(mirai, allow(incomplete_features), feature(generic_const_exprs))]
@@ -94,18 +95,28 @@ impl ChannelTTP<Verified> {
 
 pub struct RemoteChannel
 {
-    stream: TcpStream,
+    conn: TlsConnection<ClientConnection>,
 }
 impl RemoteChannel {
     fn connect() -> Option<RemoteChannel> {
-        if let Ok(stream) = TcpStream::connect("193.168.10.15:1999") {
-            Some(RemoteChannel {
-                stream: stream
-            })
+        let client = ttp::TlsClient::new(ttp::ClientMode::CVMClient {});
+        if client.is_err() {
+            println!("CVMClient::new error");
+            return None;
         }
-        else {
-            None
+        println!("CVMClient::new success");
+
+        let client = client.unwrap();
+        let connection = client.connect("193.168.10.15:1999".to_string(), "localhost".to_string());
+        if connection.is_err() {
+            println!("CVMClient.connect error");
+            return None;
         }
+        println!("CVMClient.connect success");
+
+        Some(RemoteChannel {
+            conn: connection.unwrap()
+        })
     }
 }
 
@@ -345,15 +356,15 @@ impl Gateway<Connected, WriteOnly, Initialized> {
         let server_name = "localhost";
 
         // 2-1. connect to TTP via RA-TLS
-        let client = ttp::RaTlsClient::new(ttp::ClientMode::AttestedClient {
+        let client = ttp::TlsClient::new(ttp::ClientMode::TTPClient {
             rem: counterpart_hash,
             root_ca_path: root_ca.to_string()
         });
         if client.is_err() {
-            println!("ttp::RaTlsClient::new error");
+            println!("ttp::TlsClient::new error");
             return None;
         }
-        println!("ttp::RaTlsClient::new success");
+        println!("ttp::TlsClient::new success");
 
         let client = client.unwrap();
         let connection = client.connect(server_url.to_string(), server_name.to_string());
@@ -477,7 +488,7 @@ impl Gateway<Established, ReadWrite, Established> {
     #[ensures(ensures_read_from_remote(&result))]
     pub fn read_from_remote(&self, rc: &mut RemoteChannel) -> Option<Data<EncryptedRemoteData>> {
         let mut data: [u8; 4096] = [0; 4096];
-        match rc.stream.read_exact(&mut data) {
+        match rc.conn.stream().read_exact(&mut data) {
             Ok(_) => {
                 Some(Data::<Uninitialized>::new_from_remote(data))
             },
@@ -495,7 +506,7 @@ impl Gateway<Established, ReadWrite, Established> {
     #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) && ((&self).rc_state.is_rc_established()) && (data.state.is_unencrypted_remote_data()) )]
     pub fn write_to_remote(&self, rc: &mut RemoteChannel, data: Data<EncryptedLocalData>) -> bool {
         // [TODO] security: wipe out data after write- how? (zeroize trait?)
-        match rc.stream.write(&data.data) {
+        match rc.conn.stream().write(&data.data) {
             Ok(_) => true,
             Err(_) => false,
         }

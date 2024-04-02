@@ -11,7 +11,6 @@ use std::time;
 use std::io::{Read, BufReader, Write};
 use std::process::Command;
 
-//use log::{debug, info};
 use rcgen::{CertificateParams, KeyPair, CustomExtension, Certificate as RcgenCert, date_time_ymd, DistinguishedName as RcgenDistinguishedName};
 use rustls::{client::ResolvesClientCert, server::ClientCertVerified, server::ResolvesServerCert, sign::{CertifiedKey, RsaSigningKey}, Certificate, PrivateKey, RootCertStore};
 use rustls::{ServerConnection, ServerConfig, server::ClientCertVerifier, DistinguishedName};
@@ -95,7 +94,7 @@ impl<C: DerefMut + Deref<Target = ConnectionCommon<S>>, S: SideData> TlsConnecti
 
 #[allow(dead_code)]
 pub enum ClientMode {
-    TTPClient {
+    TlsClient {
         rem: Vec<u8>,
         root_ca_path: String
     },
@@ -150,7 +149,7 @@ impl CVMServer {
             .with_single_cert(certs, key)?;
 
         let conn = ServerConnection::new(Arc::new(config))?;
-        let listener = TcpListener::bind("0.0.0.0:1888")?;
+        let listener = TcpListener::bind("193.168.10.15:1999")?;
         let sock = listener.accept()?.0;
         let mut tlsconn = TlsConnection::new(sock, conn);
 
@@ -264,8 +263,10 @@ impl ServerCertVerifier for CVMClientVerifier {
         _ocsp_response: &[u8],
         _now: time::SystemTime,
     ) -> Result<ServerCertVerified, rustls::Error> {
+        // To do certificate_verification in realm, we need a cross-compiled openssl binary..
         println!("CVMClientVerifier: verify_server_cert()");
 
+        /*
         // print cert info
         let end_cert = X509Certificate::from_der(end_entity.0.clone()).expect("x509_cert");
         let root_cert = X509Certificate::from_der((&self.root_crt).0.clone()).expect("x509_cert");
@@ -303,9 +304,9 @@ impl ServerCertVerifier for CVMClientVerifier {
                 println!("CVMClientVerifier: server_cert verification fail!");
                 Err(rustls::Error::UnsupportedNameType)
             },
-        }
+        } */
 
-        //Ok(ServerCertVerified::assertion())
+        Ok(ServerCertVerified::assertion())
     }
 }
 
@@ -324,7 +325,7 @@ impl TlsClient {
     #[trusted]
     fn make_client_config(&self) -> Result<(ClientConfig, Option<String>), TlsError> {
         match &self.mode {
-            ClientMode::TTPClient { rem, root_ca_path } => {
+            ClientMode::TlsClient { rem, root_ca_path } => {
                 let mut rem_arr: [u8; 64] = [0; 64];
                 for (dst, src) in rem_arr.iter_mut().zip(rem) {
                     *dst = *src;
@@ -365,7 +366,7 @@ impl TlsClient {
         println!("make_client_config start");
 
         let conn = match &self.mode {
-            ClientMode::TTPClient { rem, root_ca_path }=> {
+            ClientMode::TlsClient { rem, root_ca_path }=> {
                 ClientConnection::new(
                     Arc::new(config),
                     rustls::ServerName::DnsName(DnsName::try_from(challenge.unwrap_or(server_name))?)
@@ -461,9 +462,10 @@ impl TlsCertResolver {
         })
     }
 
-    #[cfg(target_arch = "aarch64")]
     #[trusted]
     fn resolve(&self, challenge: &[u8]) -> Result<Vec<u8>, TlsError> {
+        Err(TlsError::GenericTokenResolverError())
+        /*
         println!("resolve start!");
         if challenge.len() != CHALLENGE_LEN as usize {
             return Err(TlsError::GenericTokenResolverError());
@@ -483,14 +485,7 @@ impl TlsCertResolver {
         {
             Err(_) => Err(TlsError::GenericTokenResolverError()),
             Ok(v) => Ok(v),
-        }
-    }
-
-    #[cfg(any(target_arch = "x86_64", target_arch = "emul"))]
-    #[trusted]
-    fn resolve(&self, challenge: &[u8]) -> Result<Vec<u8>, TlsError> {
-        let d: [u8; 1024] = [0; 1024];
-        Ok(d.to_vec())
+        } */
     }
 
     #[trusted]

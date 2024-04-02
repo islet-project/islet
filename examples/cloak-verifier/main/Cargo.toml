@@ -16,3 +16,5 @@ prusti-contracts = "0.2.0"
 prusti-std = "0.2.0"
 mirai-annotations = "*"
 
+[features]
+emul = []

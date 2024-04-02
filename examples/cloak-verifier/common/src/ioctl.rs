@@ -113,6 +113,7 @@ pub fn cloak_create(id: usize) -> io::Result<()> {
     }
 }
 #[cfg(target_arch = "x86_64")]
+#[cfg(target_arch = "emul")]
 pub fn cloak_create(id: usize) -> io::Result<()> {
     Ok(())
 }
@@ -129,6 +130,7 @@ pub fn cloak_connect(id: usize) -> io::Result<()> {
     }
 }
 #[cfg(target_arch = "x86_64")]
+#[cfg(target_arch = "emul")]
 pub fn cloak_connect(id: usize) -> io::Result<()> {
     Ok(())
 }
@@ -145,6 +147,7 @@ pub fn cloak_gen_report(id: usize) -> io::Result<Vec<u8>> {
     }
 }
 #[cfg(target_arch = "x86_64")]
+#[cfg(target_arch = "emul")]
 pub fn cloak_gen_report(id: usize) -> io::Result<Vec<u8>> {
     let buf: [u8; 1024] = [0; 1024];
     Ok(buf.to_vec())
@@ -163,6 +166,7 @@ pub fn cloak_write(id: usize, data: &[u8; 4096]) -> io::Result<()> {
     }
 }
 #[cfg(target_arch = "x86_64")]
+#[cfg(target_arch = "emul")]
 pub fn cloak_write(id: usize, _data: &[u8; 4096]) -> io::Result<()> {
     Ok(())
 }
@@ -182,6 +186,7 @@ pub fn cloak_read(id: usize, data: &mut [u8; 4096]) -> io::Result<()> {
     }
 }
 #[cfg(target_arch = "x86_64")]
+#[cfg(target_arch = "emul")]
 pub fn cloak_read(id: usize, data: &mut [u8; 4096]) -> io::Result<()> {
     let one: [u8; 4096] = [1; 4096];
     data.copy_from_slice(&one);
@@ -200,6 +205,7 @@ pub fn measurement_extend(data: &[u8]) -> io::Result<()> {
     }
 }
 #[cfg(target_arch = "x86_64")]
+#[cfg(target_arch = "emul")]
 pub fn measurement_extend(data: &[u8]) -> io::Result<()> {
     Ok(())
 }
@@ -216,6 +222,7 @@ pub fn attestation_token(challenge: &[u8; CHALLENGE_LEN as usize]) -> io::Result
     }
 }
 #[cfg(target_arch = "x86_64")]
+#[cfg(target_arch = "emul")]
 pub fn attestation_token(_challenge: &[u8; CHALLENGE_LEN as usize]) -> io::Result<Vec<u8>> {
     let buf: [u8; 1024] = [0; 1024];
     Ok(buf.to_vec())

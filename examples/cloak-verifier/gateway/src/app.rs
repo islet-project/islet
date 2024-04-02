@@ -340,7 +340,7 @@ impl Gateway<Connected, WriteOnly, Initialized> {
 
         // 2. interact with TTP
         // Gateway(RIM) + App(REM)
-        let root_ca = "root-ca.crt";
+        let root_ca = "root.crt";
         let server_url = "193.168.10.15:1337";
         let server_name = "localhost";
 

@@ -21,8 +21,7 @@ impl MyStruct {
 /*
  *  To apply Safe Abstraction, three traits must be implemented.
  *
- *  These traits serve to either veify or proof that
- *  the seven safety rules are checked.
+ *  These traits serve to either veify or proof that the safety rules are checked.
  */
 
 const ASSUMED_SAFE_BY_DEVELOPER: bool = true;
@@ -37,15 +36,11 @@ impl SafetyChecked for MyStruct {
 
 // Assume that the developer has assured it.
 impl SafetyAssured for MyStruct {
-    fn initialized(&self) -> bool {
+    fn is_initialized(&self) -> bool {
         ASSUMED_SAFE_BY_DEVELOPER
     }
 
-    fn lifetime(&self) -> bool {
-        ASSUMED_SAFE_BY_DEVELOPER
-    }
-
-    fn ownership(&self) -> bool {
+    fn verify_ownership(&self) -> bool {
         ASSUMED_SAFE_BY_DEVELOPER
     }
 }

@@ -124,7 +124,7 @@ while maintaining compatibility with MIR analysis tools.
 
 ## Safety Rules for Raw Pointers
 
-The following seven safety rules are critical
+The following safety rules are critical
 for ensuring the safe use of raw pointers within this crate:
 
 1. **Compile-time Size Determination**:
@@ -149,13 +149,20 @@ Assures that the instance pointed
 to by the raw pointer is properly initialized,
 preventing undefined behavior from uninitialized memory access.
 
-6. **Lifetime Rules Compliance**:
-Assures compliance with Rust's lifetime rules,
-ensuring that instances do not outlive their defined scope.
-
-7. **Ownership Rules Compliance**:
+6. **Ownership Rules Compliance**:
 Assures adherence to Rust's ownership rules,
 safeguarding against data races and unsafe memory access.
+
+By adhering to these safety rules
+through the implementation of the `RawPtr`, `SafetyChecked`, and `SafetyAssured` traits,
+developers can leverage the power of raw pointers in Rust
+while ensuring safety and adhering to the language's strict safety guarantees.
+
+Once these traits have been implemented, access to the target instance can be made through
+the `SafetyAssumed` structure, allowing interaction with the instance using only safe code.
+It emphasizes that by adhering to the safety rules and
+utilizing the `SafetyAssumed` structure, developers can maintain safety guarantees
+while interacting with potentially unsafe sources or operations.
 
 ## Examples
 ### Without Safe Abstraction

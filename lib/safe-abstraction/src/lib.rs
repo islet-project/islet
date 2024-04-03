@@ -56,42 +56,8 @@ pub mod raw_ptr {
     //!
     //! - `SafetyAssured`: Provides guarantees that the instance
     //! pointed to by the raw pointer is properly initialized,
-    //! adheres to Rust's lifetime rules, and respects Rust's ownership rules.
-    //!
-    //! ## Safety Rules Checked
-    //! 1. **Compile-time Size Determination**:
-    //! The size of the structure the raw pointer points
-    //! to must be determined at compile time,
-    //! ensuring that memory operations are safe and predictable.
-    //!
-    //! 2. **Non-null**: The raw pointer must not be null,
-    //! preventing dereference of null pointers
-    //!
-    //! 3. **Proper Alignment**: The address contained in the raw pointer must be properly aligned,
-    //! ensuring that the memory access respects the hardware's alignment requirements.
-    //!
-    //! 4. **Appropriate Permissions**: The raw pointer must have the appropriate permissions
-    //! for the operation, such as read, write, or execute permissions.
-    //!
-    //! 5. **Initialization**: The instance pointed to by the raw pointer must be guaranteed
-    //! to be properly initialized, avoiding undefined behavior due to uninitialized memory access.
-    //!
-    //! 6. **Lifetime Rules Compliance**: The instance pointed to by the raw pointer
-    //! must comply with Rust's lifetime rules, ensuring that it does not outlive its scope.
-    //!
-    //! 7. **Ownership Rules Compliance**: The instance pointed to by the raw pointer
-    //! must comply with Rust's ownership rules, preventing data races and ensuring safe memory access.
-    //!
-    //! By adhering to these safety rules
-    //! through the implementation of the `RawPtr`, `SafetyChecked`, and `SafetyAssured` traits,
-    //! developers can leverage the power of raw pointers in Rust
-    //! while ensuring safety and adhering to the language's strict safety guarantees.
-    //!
-    //! Once these traits have been implemented, access to the target instance can be made through
-    //! the `SafetyAssumed` structure, allowing interaction with the instance using only safe code.
-    //! It emphasizes that by adhering to the safety rules and
-    //! utilizing the `SafetyAssumed` structure, developers can maintain safety guarantees
-    //! while interacting with potentially unsafe sources or operations.
+    //! adheres to Rust's ownership rules.
+
     pub trait RawPtr: Sized {
         /// # Safety
         ///
@@ -146,6 +112,21 @@ pub mod raw_ptr {
             self.addr() % core::mem::align_of::<usize>() == 0
         }
 
+        /// Evaluates whether the necessary permissions are upheld for this instance.
+        ///
+        /// The instance pointer must have the appropriate permissions
+        /// for the operation, such as read, write, or execute permissions.
+        ///
+        /// For structures defined within the RMM Spec, strict adherence to granule rules is
+        /// essential. These rules dictate the alignment and granularity with which data can be
+        /// accessed or modified, serving as a foundational aspect of memory safety within the RMM.
+        ///
+        /// A return value of `true` signifies that the instance fully complies with all
+        /// required permissions, including granule rules. Conversely, `false` must be returned
+        /// in the following circumstances:
+        /// - The instance violates the granule rules specified in the RMM Spec.
+        /// - Any other detected permission violations that could potentially lead to unsafe
+        ///   memory access patterns or data integrity issues.
         fn has_permission(&self) -> bool;
     }
 
@@ -173,29 +154,29 @@ pub mod raw_ptr {
         /// and if they are filled with appropriate values,
         /// or if all fields of a struct have been initialized to their expected default values.
         /// Proper initialization is crucial to prevent issues such as use of uninitialized memory.
-        fn initialized(&self) -> bool;
+        fn is_initialized(&self) -> bool;
 
-        /// Validates the lifetime of the instance to ensure it is still valid.
+        /// Checks whether ownership rules are upheld for this instance,
+        /// with a particular focus on instances that originate from raw pointers.
         ///
-        /// This method should confirm that the instance's lifetime
-        /// is still active and it hasn't been dropped or invalidated.
-        /// It's used to guard against dangling references or accessing freed memory,
-        /// which can lead to undefined behavior.
-        /// Ensuring a valid lifetime helps in maintaining memory safety across the application.
-        fn lifetime(&self) -> bool;
-
-        /// Verifies adherence to ownership rules for the instance.
+        /// This method evaluates the adherence to Rust's ownership model,
+        /// ensuring safe resource management while preventing issues
+        /// like use-after-free, data races, and unauthorized mutable aliasing.
+        /// A return value of `true` indicates strict compliance with these rules.
         ///
-        /// This method should check that the ownership
-        /// and borrowing rules of Rust are properly observed.
-        /// For instance, it could validate
-        /// that mutable references to the data structure are uniquely held,
-        /// or that ownership transfers (such as passing a value to another thread or function)
-        /// have been performed safely,
-        /// without violating Rust's guarantees about memory safety and concurrency.
-        /// Observing ownership rules is fundamental
-        /// in preventing data races and ensuring thread safety.
-        fn ownership(&self) -> bool;
+        /// However, it is crucial to return `false` under the following conditions:
+        /// - The instance is derived from a raw pointer, and operates in a multi-core or multi-threaded
+        ///   context without appropriate synchronization mechanisms (e.g., mutexes). This situation
+        ///   significantly increases the risk of unsafe access patterns, such as data races or
+        ///   simultaneous mutable aliasing, that violate Rust’s guarantees on memory safety.
+        /// - Any other detected violation of ownership rules, such as incorrect lifecycle management
+        ///   leading to potential dangling references or use-after-free scenarios.
+        ///
+        /// By mandating the use of synchronization tools in concurrent environments for instances
+        /// originating from raw pointers, this function underscores the necessity of diligent safety
+        /// practices to uphold Rust's safety guarantees, alerting developers to areas of concern
+        /// that require attention.
+        fn verify_ownership(&self) -> bool;
     }
 
     /// Attempts to create a `SafetyAssumed` instance from a address.
@@ -221,7 +202,7 @@ pub mod raw_ptr {
         //         without actually dereferencing the pointer.
         let ref_ = unsafe { &*(ptr) };
         let checked = ref_.is_not_null() && ref_.is_aligned() && ref_.has_permission();
-        let assured = ref_.initialized() && ref_.lifetime() && ref_.ownership();
+        let assured = ref_.is_initialized() && ref_.verify_ownership();
 
         match checked && assured {
             true => Some(SafetyAssumed { addr }),

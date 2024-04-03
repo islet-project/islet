@@ -6,7 +6,7 @@ use crate::event::Mainloop;
 use crate::granule::{
     is_granule_aligned, is_not_in_realm, set_granule, GranuleState, GRANULE_SHIFT, GRANULE_SIZE,
 };
-use crate::host::pointer::Pointer as HostPointer;
+use crate::host;
 use crate::host::DataPage;
 use crate::listen;
 use crate::measurement::HashContext;
@@ -198,7 +198,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rmm.page_table.map(target_pa, true);
 
         // read src page
-        let src_page = copy_from_host_or_ret!(DataPage, src_pa);
+        let src_page = host::copy_from::<DataPage>(src_pa).ok_or(Error::RmiErrorInput)?;
 
         HashContext::new(rd)?.measure_data_granule(&src_page, ipa, flags)?;
 

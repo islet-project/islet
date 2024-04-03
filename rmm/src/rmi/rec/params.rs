@@ -1,7 +1,6 @@
 use super::mpidr;
 use crate::const_assert_eq;
 use crate::granule::{GranuleState, GRANULE_SIZE};
-use crate::host::Accessor as HostAccessor;
 use crate::measurement::Hashable;
 use crate::rmi::error::Error;
 use crate::{get_granule, get_granule_if};
@@ -25,7 +24,11 @@ pub struct Params {
 const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
 
 impl Params {
-    pub fn validate_aux(&self, rec: usize, rd: usize, params_ptr: usize) -> Result<(), Error> {
+    pub fn verify_compliance(&self, rec: usize, rd: usize, params_ptr: usize) -> Result<(), Error> {
+        if !mpidr::validate(self.mpidr) || self.num_aux as usize > NR_AUX {
+            return Err(Error::RmiErrorInput);
+        }
+
         let mut aux = self.aux;
         aux.sort();
         for idx in 0..self.num_aux as usize {
@@ -58,17 +61,27 @@ impl core::fmt::Debug for Params {
     }
 }
 
-impl HostAccessor for Params {
-    fn validate(&self) -> bool {
-        trace!("{:?}", self);
-        if !mpidr::validate(self.mpidr) {
-            return false;
-        }
+impl safe_abstraction::raw_ptr::RawPtr for Params {}
 
-        if self.num_aux as usize > NR_AUX {
-            return false;
-        }
+impl safe_abstraction::raw_ptr::SafetyChecked for Params {}
 
+impl safe_abstraction::raw_ptr::SafetyAssured for Params {
+    fn is_initialized(&self) -> bool {
+        // Given the fact that this memory is initialized by the Host,
+        // it's not possible to unequivocally guarantee
+        // that the values have been initialized from the perspective of the RMM.
+        // However, any values, whether correctly initialized or not, will undergo
+        // verification during the Measurement phase.
+        // Consequently, this function returns `true`.
+        true
+    }
+
+    fn verify_ownership(&self) -> bool {
+        // This memory has permissions from the Host's perspective,
+        // which inherently implies that exclusive ownership cannot be guaranteed by the RMM alone.
+        // However, since the RMM only performs read operations and any incorrect values will be
+        // verified during the Measurement phase.
+        // Consequently, this function returns `true`.
         true
     }
 }

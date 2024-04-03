@@ -70,4 +70,6 @@ LINUX_CROSS_COMPILE = os.path.join(ROOT, "assets/toolchain/aarch64-none-linux-gn
 KVMTOOL_CROSS_COMPILE = os.path.join(ROOT, "assets/toolchain/aarch64-none-linux-gnu-10-2/bin/aarch64-none-linux-gnu-")
 FVP_DIR = os.path.join(THIRD_PARTY, "fvp/Base_RevC_AEMvA_pkg/models/Linux64_GCC-9.3")
 FVP_BIN = os.path.join(FVP_DIR, "./FVP_Base_RevC-2xAEMvA")
-TRACE_PATH = os.path.join(THIRD_PARTY, "fvp/Base_RevC_AEMvA_pkg/plugins/Linux64_GCC-9.3/TarmacTrace.so")
+PLUGIN_PATH = os.path.join(THIRD_PARTY, "fvp/Base_RevC_AEMvA_pkg/plugins/Linux64_GCC-9.3/")
+TRACE_LIB = os.path.join(PLUGIN_PATH, "TarmacTrace.so")
+TOGGLE_LIB = os.path.join(PLUGIN_PATH, "ToggleMTIPlugin.so")

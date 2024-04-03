@@ -64,6 +64,7 @@ macro_rules! pad_field_and_impl_default {
 
         $crate::paste::paste! {
             #[repr(C)]
+            #[derive(Clone, Copy)]
             $(#[$attr])* $vis struct $name { $($vis_field $id: $ty, [<_pad $id>]: [u8;$amount]),* }
         }
 

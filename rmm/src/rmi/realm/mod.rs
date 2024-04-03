@@ -7,9 +7,8 @@ use self::params::Params;
 use self::rd::State;
 use super::error::Error;
 use crate::event::Mainloop;
-use crate::granule::GRANULE_SIZE;
 use crate::granule::{set_granule, GranuleState};
-use crate::host::pointer::Pointer as HostPointer;
+use crate::host;
 use crate::listen;
 use crate::measurement::HashContext;
 use crate::mm::translation::PageTable;
@@ -20,6 +19,7 @@ use crate::realm::vcpu::remove;
 use crate::realm::Realm;
 use crate::rmi;
 use crate::{get_granule, get_granule_if};
+
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use spin::mutex::Mutex;
@@ -53,13 +53,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd_obj = rd_granule.content_mut::<Rd>();
         rmm.page_table.map(rd, true);
 
-        let params = copy_from_host_or_ret!(Params, params_ptr);
-        if params.rtt_base as usize == rd {
-            return Err(Error::RmiErrorInput);
-        }
-        if params.rtt_base as usize % GRANULE_SIZE != 0 {
-            return Err(Error::RmiErrorInput);
-        }
+        let params = host::copy_from::<Params>(params_ptr).ok_or(Error::RmiErrorInput)?;
+        params.verify_compliance(rd)?;
+
         let rtt_granule = get_granule_if!(params.rtt_base as usize, GranuleState::Delegated)?;
         // This is required to prevent from the deadlock in the below epilog
         // which acquires the same lock again

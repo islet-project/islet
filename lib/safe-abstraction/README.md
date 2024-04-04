@@ -140,16 +140,12 @@ preventing potential null pointer dereferences.
 Requires that the address within the raw pointer is properly aligned,
 aligning with hardware's memory access requirements.
 
-4. **Appropriate Permissions**:
-Checks that the raw pointer has suitable permissions
-for the intended operation (such as read, write, execute).
-
-5. **Initialization Assurance**:
+4. **Initialization Assurance**:
 Assures that the instance pointed
 to by the raw pointer is properly initialized,
 preventing undefined behavior from uninitialized memory access.
 
-6. **Ownership Rules Compliance**:
+5. **Ownership Rules Compliance**:
 Assures adherence to Rust's ownership rules,
 safeguarding against data races and unsafe memory access.
 

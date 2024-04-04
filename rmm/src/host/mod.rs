@@ -1,6 +1,3 @@
-#[macro_use]
-pub mod pointer;
-
 use crate::granule::validate_addr;
 use crate::granule::{GranuleState, GRANULE_SIZE};
 use crate::mm::translation::PageTable;
@@ -30,34 +27,6 @@ pub fn copy_to<T: SafetyChecked + SafetyAssured + Copy>(src: &T, dst: usize) -> 
         .map(|safety_assumed| safety_assumed.mut_with(|ref_: &mut T| *ref_ = *src));
     PageTable::get_ref().unmap(dst);
     ret
-}
-
-/// This trait is used to enforce security checks for physical region allocated by the host.
-/// This is used for `PointerGuard` which is not able to modify data.
-pub trait Accessor {
-    /// Try to do page-relevant stuff (e.g., RMM map).
-    /// returns true only if everything goes well.
-    fn acquire(ptr: usize) -> bool {
-        if !validate_addr(ptr) {
-            return false;
-        }
-        // TODO: check if the granule state of `ptr` is Undelegated.
-        PageTable::get_ref().map(ptr, false)
-    }
-
-    /// Try to clean up page-relevant stuff done by `acquire`.
-    /// Structs that implement this trait must synchronize this function with `acquire`.
-    /// returns true only if everything goes well.
-    fn release(ptr: usize) -> bool {
-        // TODO: check if the granule state of `ptr` is Undelegated.
-        PageTable::get_ref().unmap(ptr)
-    }
-
-    /// Validate each field in a struct that implements this trait.
-    /// returns true only if everything goes well.
-    fn validate(&self) -> bool {
-        true
-    }
 }
 
 /// DataPage is used to convey realm data from host to realm.

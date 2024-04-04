@@ -28,11 +28,7 @@ const ASSUMED_SAFE_BY_DEVELOPER: bool = true;
 
 impl RawPtr for MyStruct {}
 
-impl SafetyChecked for MyStruct {
-    fn has_permission(&self) -> bool {
-        ASSUMED_SAFE_BY_DEVELOPER
-    }
-}
+impl SafetyChecked for MyStruct {}
 
 // Assume that the developer has assured it.
 impl SafetyAssured for MyStruct {

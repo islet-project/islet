@@ -51,8 +51,8 @@ pub mod raw_ptr {
     //! pointed to by the raw pointer is determined at compile time,
     //! enabling safe memory operations.
     //!
-    //! - `SafetyChecked`: Implements checks to ensure that the raw pointer is not null,
-    //! properly aligned, and has the appropriate permissions for the intended memory operation.
+    //! - `SafetyChecked`: Implements checks to ensure that the raw pointer
+    //! is not null and properly aligned.
     //!
     //! - `SafetyAssured`: Provides guarantees that the instance
     //! pointed to by the raw pointer is properly initialized,
@@ -111,23 +111,6 @@ pub mod raw_ptr {
         fn is_aligned(&self) -> bool {
             self.addr() % core::mem::align_of::<usize>() == 0
         }
-
-        /// Evaluates whether the necessary permissions are upheld for this instance.
-        ///
-        /// The instance pointer must have the appropriate permissions
-        /// for the operation, such as read, write, or execute permissions.
-        ///
-        /// For structures defined within the RMM Spec, strict adherence to granule rules is
-        /// essential. These rules dictate the alignment and granularity with which data can be
-        /// accessed or modified, serving as a foundational aspect of memory safety within the RMM.
-        ///
-        /// A return value of `true` signifies that the instance fully complies with all
-        /// required permissions, including granule rules. Conversely, `false` must be returned
-        /// in the following circumstances:
-        /// - The instance violates the granule rules specified in the RMM Spec.
-        /// - Any other detected permission violations that could potentially lead to unsafe
-        ///   memory access patterns or data integrity issues.
-        fn has_permission(&self) -> bool;
     }
 
     /// `SafetyAssured` Trait
@@ -201,7 +184,7 @@ pub mod raw_ptr {
         //         because it is used solely for the purpose of verifying alignment and range,
         //         without actually dereferencing the pointer.
         let ref_ = unsafe { &*(ptr) };
-        let checked = ref_.is_not_null() && ref_.is_aligned() && ref_.has_permission();
+        let checked = ref_.is_not_null() && ref_.is_aligned();
         let assured = ref_.is_initialized() && ref_.verify_ownership();
 
         match checked && assured {

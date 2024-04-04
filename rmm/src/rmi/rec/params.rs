@@ -6,43 +6,23 @@ use crate::measurement::Hashable;
 use crate::rmi::error::Error;
 use crate::{get_granule, get_granule_if};
 
-const MAX_AUX: usize = 16;
-const PADDING: [usize; 5] = [248, 248, 248, 1216, 1912];
+use autopadding::*;
 
-#[repr(C)]
+const NR_AUX: usize = 16;
+const NR_GPRS: usize = 8;
+
+pad_struct_and_impl_default!(
 pub struct Params {
-    pub flags: u64,
-    padding0: [u8; PADDING[0]],
-    pub mpidr: u64,
-    padding1: [u8; PADDING[1]],
-    pub pc: u64,
-    padding2: [u8; PADDING[2]],
-    pub gprs: [u64; 8],
-    padding3: [u8; PADDING[3]],
-    pub num_aux: u64,
-    pub aux: [u64; MAX_AUX],
-    padding4: [u8; PADDING[4]],
+    0x0    pub flags: u64,
+    0x100  pub mpidr: u64,
+    0x200  pub pc: u64,
+    0x300  pub gprs: [u64; NR_GPRS],
+    0x800  pub num_aux: u64,
+    0x808  pub aux: [u64; NR_AUX],
+    0x1000 => @END,
 }
-
+);
 const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
-
-impl Default for Params {
-    fn default() -> Self {
-        Self {
-            flags: 0,
-            padding0: [0; PADDING[0]],
-            mpidr: 0,
-            padding1: [0; PADDING[1]],
-            pc: 0,
-            padding2: [0; PADDING[2]],
-            gprs: [0; 8],
-            padding3: [0; PADDING[3]],
-            num_aux: 0,
-            aux: [0; MAX_AUX],
-            padding4: [0; PADDING[4]],
-        }
-    }
-}
 
 impl Params {
     pub fn validate_aux(&self, rec: usize, rd: usize, params_ptr: usize) -> Result<(), Error> {
@@ -85,7 +65,7 @@ impl HostAccessor for Params {
             return false;
         }
 
-        if self.num_aux as usize > MAX_AUX {
+        if self.num_aux as usize > NR_AUX {
             return false;
         }
 
@@ -101,16 +81,16 @@ impl Hashable for Params {
     ) -> Result<(), crate::measurement::MeasurementError> {
         hasher.hash_fields_into(out, |h| {
             h.hash_u64(self.flags);
-            h.hash(self.padding0);
+            h.hash(self._padflags);
             h.hash_u64(0); // mpidr not used
-            h.hash(self.padding1);
+            h.hash(self._padmpidr);
             h.hash_u64(self.pc);
-            h.hash(self.padding2);
+            h.hash(self._padpc);
             h.hash_u64_array(self.gprs.as_slice());
-            h.hash(self.padding3);
+            h.hash(self._padgprs);
             h.hash_u64(0); // num_aux not used
             h.hash_u64_array([0u64; 16].as_slice()); // aux is not used
-            h.hash(self.padding4);
+            h.hash(self._padaux);
         })
     }
 }

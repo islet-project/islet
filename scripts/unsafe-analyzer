@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from dataclasses import dataclass
 import os
 import subprocess
 import sys
@@ -14,6 +15,27 @@ VMSA = os.path.join(ROOT, "lib/vmsa")
 OUT = os.path.join(ROOT, "out/unsafe-result.log")
 
 TARGET = [ARMV9A, FVP, RMM, UART, VMSA]
+
+@dataclass
+class UnsafeKeyword:
+    total: int = 0
+    functions: int = 0
+    blocks: int = 0
+    impls: int = 0
+    traits: int = 0
+
+    def __str__(self):
+        total = "Total"
+        functions = "Functions"
+        blocks = "Blocks"
+        impls = "Impls"
+        return "Unsafe Keywords:\n" + \
+               f" - {total:<15} | {self.total:<15}\n"\
+               f" - {functions:<15} | {self.functions:<15}\n"\
+               f" - {blocks:<15} | {self.blocks:<15}\n"\
+               f" - {impls:<15} | {self.impls:<15}"
+
+unsafe_keyword = UnsafeKeyword()
 
 def shell(cmd, cwd):
     return subprocess.run(cmd, cwd=cwd,
@@ -63,17 +85,26 @@ def report(out):
         else:
             skipped += 1
 
-    report = {
-        'Total': len(lines),
-        'Deref Operation': deref_op,
-        'Unclassified': unclassified,
-        'Skipped': skipped,
-        'Exprs' : expr,
-        'Stmts' : stmt,
+    usage = {
+        ' - Total': len(lines),
+        ' - Deref Operation': deref_op,
+        ' - Unclassified': unclassified,
+        ' - Skipped': skipped,
     }
 
-    for key, value in report.items():
-        print(f"{key:<15} | {value:<15}")
+    print(unsafe_keyword)
+    print("\nUnsafe Usage (approximate figures):")
+    for key, value in usage.items():
+        print(f"{key:<18} | {value:<15}")
+
+    print("\nUnsafe Internal (approximate figures):")
+    internal = {
+        ' - Exprs' : expr,
+        ' - Stmts' : stmt,
+    }
+
+    for key, value in internal.items():
+        print(f"{key:<18} | {value:<15}")
 
 def add_hint(cwd):
     print(f"[!] Adding hint: {cwd}...")
@@ -94,8 +125,32 @@ def del_hint(cwd):
     cmd = f"git restore {cwd}/*"
     shell(cmd, cwd=cwd)
 
+def record_unsafe_keyword(cwd):
+    cmd = "grep -nr \"unsafe\" | wc -l"
+    process = shell(cmd, cwd)
+    unsafe_keyword.total += int(process.stdout)
+
+    cmd = "grep -nr \"unsafe {\" | wc -l"
+    process = shell(cmd, cwd)
+    unsafe_keyword.blocks += int(process.stdout)
+
+    cmd = "grep -nr \"unsafe\" | grep fn | wc -l"
+    process = shell(cmd, cwd)
+    unsafe_keyword.functions += int(process.stdout)
+
+    cmd = "grep -nr \"unsafe impl\"| wc -l"
+    process = shell(cmd, cwd)
+    unsafe_keyword.impls += int(process.stdout)
+
+    cmd = "grep -nr \"unsafe trait\"| wc -l"
+    process = shell(cmd, cwd)
+    unsafe_keyword.traits += int(process.stdout)
+
 if __name__ == "__main__":
     shell('cargo clean', cwd=ROOT)
+
+    for path in TARGET:
+        record_unsafe_keyword(cwd=path)
 
     for path in TARGET:
         add_hint(cwd=path)

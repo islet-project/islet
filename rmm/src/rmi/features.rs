@@ -1,7 +1,6 @@
 use crate::event::Mainloop;
 use crate::listen;
 use crate::rmi;
-use crate::rmi::error::Error;
 
 extern crate alloc;
 
@@ -45,7 +44,7 @@ fn mask(shift: usize, width: usize) -> usize {
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::FEATURES, |arg, ret, _| {
         if arg[0] != FEATURE_REGISTER_0_INDEX {
-            return Err(Error::RmiErrorInput);
+            return Ok(());
         }
 
         let mut feat_reg0: usize = 0;

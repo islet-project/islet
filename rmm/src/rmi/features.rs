@@ -44,6 +44,7 @@ fn mask(shift: usize, width: usize) -> usize {
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::FEATURES, |arg, ret, _| {
         if arg[0] != FEATURE_REGISTER_0_INDEX {
+            ret[1] = 0;
             return Ok(());
         }
 

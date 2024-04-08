@@ -1,5 +1,6 @@
 use prusti_contracts::*;
-use common::ioctl::{cloak_connect, cloak_read, cloak_write};
+use common::ioctl::{cloak_connect, cloak_read, cloak_write, cloak_set_status};
+use std::{thread, time};
 
 pub struct LocalChannelApp<S, M> where
     S: LocalChannelState,
@@ -77,9 +78,9 @@ impl SharedMemory<ReadWrite> {
 
 impl<S: LocalChannelState, M: SharedMemoryState> LocalChannelApp<S, M> {
     #[ensures( ((&result).state.is_created()) && ((&result).shared_memory.state.is_unmapped()) )]
-    pub const fn new() -> LocalChannelApp<Created, Unmapped> {
+    pub const fn new(id: usize) -> LocalChannelApp<Created, Unmapped> {
         LocalChannelApp {
-            id: 0,
+            id: id,
             shared_memory: SharedMemory::<Unmapped>::new(0),
             state: Created,
         }
@@ -103,6 +104,11 @@ impl LocalChannelApp<Created, Unmapped> {
     pub fn connect(self) -> Option<LocalChannelApp<Connected, ReadOnly>> {
         match cloak_connect(self.id) {
             Ok(_) => {
+                match cloak_set_status(self.id, 1) {
+                    Ok(_) => println!("cloak_set_status success"),
+                    Err(_) => println!("cloak_set_status fail"),
+                }
+
                 Some(LocalChannelApp {
                     id: self.id,
                     shared_memory: self.shared_memory.into_read_only(),
@@ -118,7 +124,18 @@ impl LocalChannelApp<Connected, ReadOnly> {
     #[requires( ((&self).state.is_connected()) && ((&self).shared_memory.state.is_read_only()) )]
     #[ensures( ((&result).state.is_received()) && ((&result).shared_memory.state.is_read_only()) )]
     pub fn wait_for_signed_cert(self) -> LocalChannelApp<Received, ReadOnly> {
-        // something
+        loop {
+            let mut data: [u8; 4096] = [0; 4096];
+            let read_res = self.shared_memory.read_only(self.id, &mut data);
+            if read_res == false {
+                thread::sleep(time::Duration::from_millis(1000)); // 1s
+                continue;
+            }
+            if data[0] == 0x01 {
+                break;
+            }
+            thread::sleep(time::Duration::from_millis(1000));
+        }
         
         LocalChannelApp {
             id: self.id,

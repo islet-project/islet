@@ -1,6 +1,7 @@
 extern crate serde;
 extern crate serde_json;
 
+use common::ioctl::{measurement_extend, attestation_token};
 use prusti_contracts::*;
 use std::{net::TcpStream, sync::Arc, ops::DerefMut, ops::Deref, net::TcpListener};
 use rustls::{ClientConnection, ClientConfig, server::DnsName, Stream, ConnectionCommon, SideData};
@@ -10,6 +11,7 @@ use std::fs::File;
 use std::time;
 use std::io::{Read, BufReader, Write};
 use std::process::Command;
+use pkcs8::DecodePrivateKey;
 
 //use log::{debug, info};
 use rcgen::{CertificateParams, KeyPair, CustomExtension, Certificate as RcgenCert, date_time_ymd, DistinguishedName as RcgenDistinguishedName};
@@ -135,6 +137,29 @@ pub struct CVMServer;
 impl CVMServer {
     pub fn new() -> Self {
         Self
+    }
+
+    pub fn bind(&mut self) -> Result<TlsConnection<ServerConnection>, TlsError> {
+        let certs = load_certificates_from_pem("cvm1.crt")?;
+        let key = load_private_key_from_file("cvm1.key")?;
+        let root_cert_store = load_root_cert_store("root.crt")?;
+        let mut root_certs = load_certificates_from_pem("root.crt")?;
+        let verifier = CVMServerVerifier::new(root_cert_store, root_certs.remove(0));
+
+        let config = ServerConfig::builder()
+            .with_safe_defaults()
+            .with_client_cert_verifier(Arc::new(verifier))
+            .with_single_cert(certs, key)?;
+
+        let conn = ServerConnection::new(Arc::new(config))?;
+        let listener = TcpListener::bind("193.168.10.15:1999")?;
+        let sock = listener.accept()?.0;
+        let mut tlsconn = TlsConnection::new(sock, conn);
+
+        println!("new connection accepted!");
+        self.handshake(&mut tlsconn)?;
+        println!("after handshake!");
+        Ok(tlsconn)
     }
 
     pub fn run(&mut self) -> Result<(), TlsError>{
@@ -432,15 +457,17 @@ impl TlsCertResolver {
         info!("Finished generating RSA key."); */
 
         // priv_key.serde.arm64 for RA-TLS with TTP
+        /*
         if let Ok(mut file) = File::open("priv_key.serde.arm64") {
             let mut buf = vec![];
             if file.read_to_end(&mut buf).is_ok() {
                 if let Ok(private_key) = serde_json::from_slice::<RsaPrivateKey>(&buf[..]) {
                     let pub_key = private_key.to_public_key();
                     let data = b"hello world";
-                    //let enc_data = pub_key.encrypt(&mut OsRng, Pkcs1v15Encrypt, &data[..]).expect("failed to encrypt");
-                    //let dec_data = private_key.decrypt(Pkcs1v15Encrypt, &enc_data).expect("failed to decrypt");
-                    //assert_eq!(&data[..], &dec_data[..]);
+
+                    let enc_data = pub_key.encrypt(&mut OsRng, Pkcs1v15Encrypt, &data[..]).expect("failed to encrypt");
+                    let dec_data = private_key.decrypt(Pkcs1v15Encrypt, &enc_data).expect("failed to decrypt");
+                    assert_eq!(&data[..], &dec_data[..]);
 
                     println!("private_key read!");
                     return Ok(Self {
@@ -453,12 +480,19 @@ impl TlsCertResolver {
 
         let key_size = 2048;
         let private_key = RsaPrivateKey::new(&mut OsRng, key_size)?;
-        //info!("Finished generating RSA key.");
+        //info!("Finished generating RSA key."); */
 
-        Ok(Self {
-            rem,
-            private_key
-        })
+        match RsaPrivateKey::read_pkcs8_pem_file("ra_tls.key") {
+            Ok(private_key) => {
+                Ok(Self {
+                    rem,
+                    private_key
+                })
+            },
+            Err(_) => {
+                Err(TlsError::GenericTokenResolverError())
+            }
+        }
     }
 
     #[cfg(target_arch = "aarch64")]

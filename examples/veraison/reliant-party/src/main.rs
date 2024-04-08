@@ -144,7 +144,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut conn_iter = server.connections(args.server_bind_address)?;
     loop {
-        info!("Awaiting connection!!");
+        info!("Awaiting connection!!!!");
         let conn_iter_next = conn_iter.next();
         if conn_iter_next.is_none() {
             break;
@@ -153,8 +153,8 @@ fn main() -> Result<(), Box<dyn Error>> {
             Ok(mut conn) => {
                 info!("New connection accepted");
                 let mut buf: [u8; 4096] = [0; 4096];
-                
-                while let Ok(len) = conn.stream().read_exact(&mut buf) {
+
+                if let Ok(len) = conn.stream().read_exact(&mut buf) {
                     // 1. read CVM's public key
                     info!("Message from client!! len");
 

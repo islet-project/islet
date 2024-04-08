@@ -2,7 +2,7 @@ use prusti_contracts::*;
 use ioctl_gen::*;
 
 use std::fs::File;
-use std::io;
+use std::io::{self, Read, Write};
 use std::os::raw::{c_int, c_ulong};
 use std::os::fd::AsRawFd;
 use std::mem::size_of;
@@ -18,6 +18,7 @@ const ATTESTATION_TOKEN: u32 = iowr!(b'x', 194, size_of::<RsiAttestation>());
 const CHANNEL_CREATE: u32 = iowr!(b'x', 195, size_of::<RsiCloak>());
 const CHANNEL_CONNECT: u32 = iowr!(b'x', 196, size_of::<RsiCloak>());
 const CHANNEL_GEN_REPORT: u32 = iowr!(b'x', 197, size_of::<RsiCloak>());
+const CHANNEL_RESULT: u32 = iowr!(b'x', 198, size_of::<RsiCloak>());
 
 const CHANNEL_WRITE: u32 = iowr!(b'x', 199, size_of::<RsiCloak>());
 const CHANNEL_READ: u32 = iowr!(b'x', 200, size_of::<RsiCloak>());
@@ -185,6 +186,44 @@ pub fn cloak_read(id: usize, data: &mut [u8; 4096]) -> io::Result<()> {
 pub fn cloak_read(id: usize, data: &mut [u8; 4096]) -> io::Result<()> {
     let one: [u8; 4096] = [1; 4096];
     data.copy_from_slice(&one);
+    Ok(())
+}
+
+// status()
+// 0: not connected, 1: connected
+#[cfg(target_arch = "aarch64")]
+pub fn cloak_status(id: usize) -> io::Result<usize> {
+    let fd = File::open(DEV)?;
+    let cloak = RsiCloak::new(id);
+    let cloak_addr = convert_to_usize(&cloak);
+
+    match ioctl_wrapper(&fd, CHANNEL_RESULT as usize, cloak_addr) {
+        0 => Ok(cloak.result),
+        _ => Err(io::Error::from_raw_os_error(22)),
+    }
+}
+#[cfg(any(target_arch = "x86_64", target_arch = "emul"))]
+pub fn cloak_status(id: usize) -> io::Result<usize> {
+    let file_name = format!("lc_status_{}.txt", id);
+    let mut content = String::new();
+    let mut file = File::open(file_name)?;
+    file.read_to_string(&mut content)?;
+    if let Ok(status) = content.trim().parse::<usize>() {
+        Ok(status)
+    } else {
+        Err(io::Error::from_raw_os_error(22))
+    }
+}
+
+#[cfg(target_arch = "aarch64")]
+pub fn cloak_set_status(_id: usize, _status: usize) -> io::Result<()> {
+    Ok(())
+}
+#[cfg(any(target_arch = "x86_64", target_arch = "emul"))]
+pub fn cloak_set_status(id: usize, status: usize) -> io::Result<()> {
+    let file_name = format!("lc_status_{}.txt", id);
+    let mut file = File::create(file_name)?;
+    writeln!(file, "{}", status)?;
     Ok(())
 }
 

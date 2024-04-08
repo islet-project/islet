@@ -632,8 +632,20 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
                 channel.connector_ipa = ipa;
                 channel.creator_registered = true;
                 channel.state = CHANNEL_STATE_CONNECTED;
-
                 info!("[JB] CHANNEL_CONNECT success! realmid: {}, ipa: {:x}", realmid, ipa);
+
+                // 3. create a shared mapping
+                if channel.creator_realmid == channel.connector_realmid {
+                    channel.state = CHANNEL_STATE_ESTABLISHED;
+                    info!("[JB] test case! no shared mapping needed!");
+                } else {
+                    match create_shared_mapping(&channel) {
+                        Ok(_) => info!("[JB] create_shared_mapping success"),
+                        Err(_) => info!("[JB] create_shared_mapping fail"),
+                    }
+                    channel.state = CHANNEL_STATE_ESTABLISHED;
+                    info!("[JB] CHANNEL_STATE_ESTABLISHED! creator_realmid: {}, creator_ipa: {:x}, connector_realmid: {}, connector_ipa: {:x}", channel.creator_realmid, channel.creator_ipa, channel.connector_realmid, channel.connector_ipa);
+                }
 
                 /*
                 match walk_page_table(realmid) {
@@ -689,8 +701,8 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         // input_r2: ipa address that report is going to be written onto. 
         match LOCAL_CHANNEL_TABLE.lock().get_mut(&channel_id) {
             Some(channel) => {
-                if channel.state != CHANNEL_STATE_CONNECTED {
-                    info!("channel not yet connected");
+                if channel.state != CHANNEL_STATE_ESTABLISHED {
+                    info!("channel not yet established");
                     set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
                     return Ok(());
                 }
@@ -713,15 +725,19 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
     });
 
     listen!(rsi, CHANNEL_RESULT, |_arg, ret, _rmm, rec, _run| {
-        // input_r1: result (0: fail, 1: success)
-        // TODO: signed_RC_Cert
         let realmid = rec.realmid()?;
         let vcpuid = rec.vcpuid();
         let channel_id = get_reg(realmid, vcpuid, 1)?;
-        let channel_result = get_reg(realmid, vcpuid, 2)?;
 
-        match LOCAL_CHANNEL_TABLE.lock().get_mut(&channel_id) {
+        match LOCAL_CHANNEL_TABLE.lock().get(&channel_id) {
             Some(channel) => {
+                if channel.state == CHANNEL_STATE_ESTABLISHED {
+                    set_reg(realmid, vcpuid, 1, 1)?;  // connected: 1
+                } else {
+                    set_reg(realmid, vcpuid, 1, 0)?;  // not connected: 0
+                }
+
+                /*
                 if channel_result == 1 {
                     match create_shared_mapping(&channel) {
                         Ok(_) => info!("[JB] create_shared_mapping success"),
@@ -730,7 +746,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
                     channel.state = CHANNEL_STATE_ESTABLISHED;
                     info!("[JB] CHANNEL_STATE_ESTABLISHED! creator_realmid: {}, creator_ipa: {:x}, connector_realmid: {}, connector_ipa: {:x}", channel.creator_realmid, channel.creator_ipa, channel.connector_realmid, channel.connector_ipa);
-                }
+                } */
             },
             None => {
                 return Err(Error::RmiErrorInput);

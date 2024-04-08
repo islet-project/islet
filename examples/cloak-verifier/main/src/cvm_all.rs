@@ -146,15 +146,10 @@ fn test_data_mirai() {
 }
 
 fn main() {
-    //test_local_channel_app();
-    //test_local_channel_gateway();
-    //test_all();
-    
-    // test
-    println!("test_simple start");
+    println!("CVM_All start");
 
     // 1. GW: create
-    let channel_gw = Gateway::<Initialized, UnmappedGateway, Initialized>::new();
+    let channel_gw = Gateway::<Initialized, UnmappedGateway, Initialized>::new(0, false);
     let channel_gw = channel_gw.create();
     if channel_gw.is_none() {
         println!("channel_gw.create error");
@@ -163,7 +158,7 @@ fn main() {
     println!("channel_gw.create success");
 
     // 2. APP: connect
-    let channel_app = LocalChannelApp::<Start, UnmappedApp>::new();
+    let channel_app = LocalChannelApp::<Start, UnmappedApp>::new(0);
     let channel_app = channel_app.connect();
     if channel_app.is_none() {
         println!("channel_app.connect error");
@@ -229,5 +224,5 @@ fn main() {
         false => println!("write_to_remote failed!"),
     }
 
-    println!("test_simple end");
+    println!("CVM_All end");
 }

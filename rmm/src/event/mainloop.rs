@@ -44,6 +44,8 @@ impl Mainloop {
             feature = "mc_rmi_granule_undelegate"
         ))]
         rmi::gpt::set_event_handler(self);
+        #[cfg(feature = "mc_rmi_version")]
+        rmi::version::set_event_handler(self);
     }
 
     #[cfg(not(kani))]

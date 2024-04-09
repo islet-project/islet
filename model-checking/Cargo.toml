@@ -9,6 +9,7 @@ edition = "2021"
 mc_rmi_features = ["islet_rmm/mc_rmi_features"]
 mc_rmi_granule_delegate = ["islet_rmm/mc_rmi_granule_delegate"]
 mc_rmi_granule_undelegate = ["islet_rmm/mc_rmi_granule_undelegate"]
+mc_rmi_version = ["islet_rmm/mc_rmi_version"]
 
 [dependencies]
 islet_rmm = { path = "../rmm" }

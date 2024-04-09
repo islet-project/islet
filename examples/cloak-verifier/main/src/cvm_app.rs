@@ -107,6 +107,10 @@ fn main() {
     println!("channel_app.connect success");
 
     // 2. APP: wait_for_signed_cert
+    println!("type in anything after CVM_GW writes signed_cert to shared memory..");
+    let mut line = String::new();
+    io::stdin().lock().read_line(&mut line).unwrap();
+
     let channel_app = channel_app.unwrap().wait_for_signed_cert();
     println!("channel_app.wait_for_signed_cert success");
 

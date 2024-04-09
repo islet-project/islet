@@ -10,6 +10,7 @@ description = "verifier for Cloak"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+common = { path = "../common" }
 local-channel-app = { path = "../local_channel_app" }
 gateway = { path = "../gateway" }
 prusti-contracts = "0.2.0"
@@ -27,6 +28,10 @@ path = "src/cvm_gw.rs"
 [[bin]]
 name = "cvm_app"
 path = "src/cvm_app.rs"
+
+[[bin]]
+name = "shm_test"
+path = "src/shm_test.rs"
 
 [features]
 emul = []

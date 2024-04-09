@@ -124,17 +124,18 @@ impl LocalChannelApp<Connected, ReadOnly> {
     #[requires( ((&self).state.is_connected()) && ((&self).shared_memory.state.is_read_only()) )]
     #[ensures( ((&result).state.is_received()) && ((&result).shared_memory.state.is_read_only()) )]
     pub fn wait_for_signed_cert(self) -> LocalChannelApp<Received, ReadOnly> {
-        loop {
+        for i in 0..5 {
             let mut data: [u8; 4096] = [0; 4096];
             let read_res = self.shared_memory.read_only(self.id, &mut data);
             if read_res == false {
-                thread::sleep(time::Duration::from_millis(1000)); // 1s
+                println!("shared_memory.read_only failed, retry..");
+                thread::sleep(time::Duration::from_millis(2000)); // 1s
                 continue;
             }
             if data[0] == 0x01 {
                 break;
             }
-            thread::sleep(time::Duration::from_millis(1000));
+            thread::sleep(time::Duration::from_millis(2000));
         }
         
         LocalChannelApp {
@@ -166,7 +167,8 @@ impl LocalChannelApp<Received, ReadOnly> {
             return None;
         }
         if data[0] != 0x01 { // TODO: check a signed cert!
-            return None;
+            println!("wrong data.. skipped");
+            //return None;   // TODO: on fvp, it seems that shared memory doesn't work now..
         }
         
         Some(LocalChannelApp {

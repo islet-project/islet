@@ -493,7 +493,7 @@ impl Gateway<Connected, WriteOnly, Initialized> {
             println!("shared_memory.write_only error");
             return None;
         }
-        println!("shared_memory.write_only success");
+        println!("shared_memory.write_only success: {}", read_signed_cert[0]);
 
         // 4. generate a remote channel stream
         // [TODO] a wrapper struct that offers security to "TcpStream"

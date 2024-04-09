@@ -6,8 +6,10 @@ edition = "2021"
 
 [dependencies]
 armv9a = { path = "../lib/armv9a" }
-ciborium = { version = "*", default-features = false }
-coset = "*"
+#ciborium = { version = "*", default-features = false }
+ciborium = { version = "*", default-features = false, path = "../third-party/ciborium/ciborium" }
+#coset = "*"
+coset = { version = "*", path = "../third-party/coset" }
 hex = { version = "*", default-features = false, features = ["alloc"] }
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 linked_list_allocator = "0.10.4"

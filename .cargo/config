@@ -2,5 +2,5 @@
 target = "aarch64-unknown-none-softfloat"
 target-dir = "out"
 
-[target.aarch64-unknown-none-softfloat]
-rustflags = [ "-C", "target-feature=+neon" ]
+#[target.aarch64-unknown-none-softfloat]
+#rustflags = [ "-C", "target-feature=+neon" ]

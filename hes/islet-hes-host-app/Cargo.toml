@@ -9,6 +9,7 @@ edition = "2021"
 clap = { version = "4.3.0", features = ["derive"] }
 islet-hes = {version = "*", path = "../islet-hes"}
 tinyvec = "*"
-coset = "*"
+#coset = "*"
+coset = { version = "*", path = "../../third-party/coset" }
 hex = "*"
 daemonize = "*"

@@ -12,7 +12,8 @@ description = "Command Line Interface for Islet"
 [dependencies]
 cca_token = { path = "../lib/cca-token" }
 cfg-if = "1.0"
-ciborium = "*"
+#ciborium = "*"
+ciborium = { version = "*", path = "../third-party/ciborium/ciborium" }
 clap = { version = "*", features = ["derive"] }
 colored = "*"
 hex = "*"

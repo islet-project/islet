@@ -15,9 +15,9 @@ use pkcs8::DecodePrivateKey;
 
 //use log::{debug, info};
 use rcgen::{CertificateParams, KeyPair, CustomExtension, Certificate as RcgenCert, date_time_ymd, DistinguishedName as RcgenDistinguishedName};
-use rustls::{client::ResolvesClientCert, server::ClientCertVerified, server::ResolvesServerCert, sign::{CertifiedKey, RsaSigningKey}, Certificate, PrivateKey, RootCertStore};
+use rustls::{client::ResolvesClientCert, server::ClientCertVerified, server::ParsedCertificate, server::ResolvesServerCert, sign::{CertifiedKey, RsaSigningKey}, Certificate, PrivateKey, RootCertStore};
 use rustls::{ServerConnection, ServerConfig, server::ClientCertVerifier, DistinguishedName};
-use rustls::client::{ServerCertVerifier, ServerCertVerified};
+use rustls::client::{ServerCertVerifier, ServerCertVerified, verify_server_cert_signed_by_trust_anchor};
 use rand::rngs::OsRng;
 use pkcs8::{EncodePublicKey, EncodePrivateKey};
 use crate::error::TlsError;
@@ -221,6 +221,18 @@ impl ClientCertVerifier for CVMServerVerifier {
     fn verify_client_cert(
         &self,
         end_entity: &Certificate,
+        intermediates: &[Certificate],
+        now: time::SystemTime,
+    ) -> Result<ClientCertVerified, rustls::Error> {
+        let cert = ParsedCertificate::try_from(end_entity)?;
+        verify_server_cert_signed_by_trust_anchor(&cert, &self.roots, intermediates, now)?;
+        Ok(ClientCertVerified::assertion())
+    }
+
+    /*
+    fn verify_client_cert(
+        &self,
+        end_entity: &Certificate,
         _intermediates: &[Certificate],
         _now: time::SystemTime,
     ) -> Result<ClientCertVerified, rustls::Error> {
@@ -264,22 +276,40 @@ impl ClientCertVerifier for CVMServerVerifier {
                 Err(rustls::Error::UnsupportedNameType)
             },
         }
-    }
+    } */
 }
 
 pub struct CVMClientVerifier {
-    root_crt: Certificate
+    root_crt: Certificate,
+    roots: RootCertStore,
 }
 
 impl CVMClientVerifier {
-    pub fn new(root_crt: Certificate) -> Self {
+    pub fn new(root_crt: Certificate, roots: RootCertStore) -> Self {
         Self {
             root_crt: root_crt,
+            roots: roots,
         }
     }
 }
 
 impl ServerCertVerifier for CVMClientVerifier {
+    fn verify_server_cert(
+        &self,
+        end_entity: &Certificate,
+        intermediates: &[Certificate],
+        _server_name: &rustls::ServerName,
+        _scts: &mut dyn Iterator<Item = &[u8]>,
+        _ocsp_response: &[u8],
+        now: time::SystemTime,
+    ) -> Result<ServerCertVerified, rustls::Error> {
+        let cert = ParsedCertificate::try_from(end_entity)?;
+        verify_server_cert_signed_by_trust_anchor(&cert, &self.roots, intermediates, now)?;
+        Ok(ServerCertVerified::assertion())
+    }
+
+    /*
+    #[cfg(any(target_arch = "x86_64", target_arch = "emul"))]
     fn verify_server_cert(
         &self,
         end_entity: &Certificate,
@@ -331,7 +361,7 @@ impl ServerCertVerifier for CVMClientVerifier {
         }
 
         //Ok(ServerCertVerified::assertion())
-    }
+    } */
 }
 
 #[allow(dead_code)]
@@ -364,7 +394,8 @@ impl TlsClient {
             },
             ClientMode::CVMClient => {
                 let mut root_certs = load_certificates_from_pem("root.crt").expect("load root crt");
-                let verifier = CVMClientVerifier::new(root_certs.remove(0));
+                let roots = load_root_cert_store("root.crt")?;
+                let verifier = CVMClientVerifier::new(root_certs.remove(0), roots);
 
                 Ok((ClientConfig::builder()
                         .with_safe_defaults()

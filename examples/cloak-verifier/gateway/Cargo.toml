@@ -21,6 +21,7 @@ simple_asn1 = "*"
 x509-certificate = "*"
 rustls = { version = "*", features = ["dangerous_configuration"] }
 #rustls = { path = "../../../../remote-attestation/lib/rustls/rustls", version = "0.21.10", features = ["dangerous_configuration"] }
+#rustls = { path = "../../../../remote-attestation/lib/rustls/rustls", version = "0.21.10", features = ["dangerous_configuration"] }
 rustls-pemfile = "1.*"
 pkcs8 = { version = "*", features = ["alloc"] }
 rand = "*"

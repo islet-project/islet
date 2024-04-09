@@ -120,11 +120,6 @@ fn main() {
 
     let channel_app = channel_app.unwrap();
 
-    // wait.. [TO REMOVE]
-    println!("type anything to continue...");
-    let mut line = String::new();
-    io::stdin().read_line(&mut line).expect("read_line");
-
     // 4. transmit some data through remote channel
     // App write something to LocalChannel
     let write_data: [u8; 4096] = [3; 4096];

@@ -12,9 +12,9 @@ use std::io::{Read, BufReader, Write};
 use std::process::Command;
 
 use rcgen::{CertificateParams, KeyPair, CustomExtension, Certificate as RcgenCert, date_time_ymd, DistinguishedName as RcgenDistinguishedName};
-use rustls::{client::ResolvesClientCert, server::ClientCertVerified, server::ResolvesServerCert, sign::{CertifiedKey, RsaSigningKey}, Certificate, PrivateKey, RootCertStore};
+use rustls::{client::ResolvesClientCert, server::ClientCertVerified, server::ParsedCertificate, server::ResolvesServerCert, sign::{CertifiedKey, RsaSigningKey}, Certificate, PrivateKey, RootCertStore};
 use rustls::{ServerConnection, ServerConfig, server::ClientCertVerifier, DistinguishedName};
-use rustls::client::{ServerCertVerifier, ServerCertVerified};
+use rustls::client::{ServerCertVerifier, ServerCertVerified, verify_server_cert_signed_by_trust_anchor};
 use rand::rngs::OsRng;
 use pkcs8::{EncodePublicKey, EncodePrivateKey};
 use crate::error::TlsError;
@@ -195,6 +195,18 @@ impl ClientCertVerifier for CVMServerVerifier {
     fn verify_client_cert(
         &self,
         end_entity: &Certificate,
+        intermediates: &[Certificate],
+        now: time::SystemTime,
+    ) -> Result<ClientCertVerified, rustls::Error> {
+        let cert = ParsedCertificate::try_from(end_entity)?;
+        verify_server_cert_signed_by_trust_anchor(&cert, &self.roots, intermediates, now)?;
+        Ok(ClientCertVerified::assertion())
+    }
+
+    /*
+    fn verify_client_cert(
+        &self,
+        end_entity: &Certificate,
         _intermediates: &[Certificate],
         _now: time::SystemTime,
     ) -> Result<ClientCertVerified, rustls::Error> {
@@ -238,7 +250,7 @@ impl ClientCertVerifier for CVMServerVerifier {
                 Err(rustls::Error::UnsupportedNameType)
             },
         }
-    }
+    } */
 }
 
 pub struct CVMClientVerifier {

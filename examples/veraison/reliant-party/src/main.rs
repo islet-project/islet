@@ -12,7 +12,7 @@ use ratls::{ChainVerifier, RaTlsServer};
 use veraison_verifier::VeraisonTokenVerifer;
 
 use log::{debug, error, info};
-use std::{thread, time};
+//use std::{thread, time};
 
 /// Creates a path to a resource file
 macro_rules! resource_file {
@@ -173,10 +173,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
                     // [JB]
                     info!("write attempt!");
+                    //thread::sleep(time::Duration::from_millis(2000));
+
                     let write_data: [u8; 4096] = [1; 4096];
-                    if let Ok(_) = conn.stream().write_all(&write_data) {
+                    if let Ok(_) = conn.stream().write(&write_data) {
                         info!("write 1 success!");
                         conn.stream().flush();
+                        //thread::sleep(time::Duration::from_millis(2000));
                     } else {
                         info!("write 1 fail!");
                     }

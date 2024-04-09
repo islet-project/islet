@@ -108,6 +108,8 @@ impl Context {
                 feature = "mc_rmi_granule_undelegate"
             ))]
             assert!(ret_len == 1);
+            #[cfg(feature = "mc_rmi_version")]
+            assert!(ret_len == 3);
         }
         result[..ret_len].copy_from_slice(&self.ret[..]);
         result

@@ -15,6 +15,7 @@ the conformance of the two systems written in different languages.
 rmi_features
 rmi_granule_delegate
 rmi_granule_undelegate
+rmi_version
 ```
 
 ## Verifying Islet

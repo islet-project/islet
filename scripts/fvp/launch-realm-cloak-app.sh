@@ -10,6 +10,7 @@ cd /shared
 	--console serial \
 	--irqchip=gicv3 \
 	--realm-pv="no_shared_region" \
+	--vcpu-affinity 0-1 \
 	-m 256M \
 	-c 1 \
 	-k linux.realm \

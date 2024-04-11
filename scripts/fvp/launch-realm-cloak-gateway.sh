@@ -13,6 +13,7 @@ cd /shared
 	--irqchip=gicv3 \
 	--network virtio \
 	--9p /shared,FMR \
+	--vcpu-affinity 2-3 \
 	-m 256M \
 	-c 1 \
 	-k linux.realm \

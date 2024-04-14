@@ -143,6 +143,12 @@ jobs:
     - name: Check pylint
       run: ./scripts/pylint.sh
 
+    - name: Check third-party Rust dependencies
+      run: |
+        cargo install --locked cargo-vet
+        cargo vet init
+        cargo vet
+
     - uses: actions-rs/audit-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}

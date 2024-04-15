@@ -40,6 +40,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - uses: actions/cache@v3
+        with:
+          path: .git/modules/assets
+          key: ${{ runner.os }}-assets-${{ hashFiles('.gitmodules', 'assets') }}
+
       - name: Install dependencies
         run: ./scripts/init_min_acs.sh
 
@@ -83,6 +88,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - uses: actions/cache@v3
+        with:
+          path: .git/modules/assets
+          key: ${{ runner.os }}-assets-${{ hashFiles('.gitmodules', 'assets') }}
+
       - name: Install dependencies
         run: ./scripts/init_min.sh
 
@@ -99,6 +109,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - uses: actions/cache@v3
+      with:
+        path: .git/modules/assets
+        key: ${{ runner.os }}-assets-${{ hashFiles('.gitmodules', 'assets') }}
+
     - name: Install dependencies
       run: |
         ./scripts/deps/assets.sh
@@ -113,6 +128,11 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
+
+    - uses: actions/cache@v3
+      with:
+        path: .git/modules/assets
+        key: ${{ runner.os }}-assets-${{ hashFiles('.gitmodules', 'assets') }}
 
     - name: Install dependencies
       run: |
@@ -158,6 +178,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - uses: actions/cache@v3
+      with:
+        path: .git/modules/assets
+        key: ${{ runner.os }}-assets-${{ hashFiles('.gitmodules', 'assets') }}
+
     - name: Install dependencies
       run: |
         ./scripts/deps/assets.sh
@@ -188,6 +213,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - uses: actions/cache@v3
+      with:
+        path: .git/modules/assets
+        key: ${{ runner.os }}-assets-${{ hashFiles('.gitmodules', 'assets') }}
+
     - name: Install dependencies
       run: |
         ./scripts/deps/assets.sh
@@ -201,6 +231,11 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
+
+    - uses: actions/cache@v3
+      with:
+        path: .git/modules/assets
+        key: ${{ runner.os }}-assets-${{ hashFiles('.gitmodules', 'assets') }}
 
     - name: Install dependencies
       run: |

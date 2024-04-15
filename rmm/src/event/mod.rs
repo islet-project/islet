@@ -64,10 +64,11 @@ impl Context {
         self.cmd
     }
 
-    pub fn do_rmi<F>(&mut self, handler: F)
+    pub fn do_rmi<F>(&mut self, handler: F) -> [usize; 5]
     where
         F: Fn(&[usize], &mut [usize]) -> Result<(), Error>,
     {
+        let mut result = [0; 5];
         self.ret[0] = rmi::SUCCESS;
 
         #[cfg(feature = "stat")]
@@ -99,6 +100,10 @@ impl Context {
 
         self.arg.clear();
         self.arg.extend_from_slice(&self.ret[..]);
+
+        let ret_len = self.ret.len();
+        result[..ret_len].copy_from_slice(&self.ret[..]);
+        return result;
     }
 
     pub fn do_rsi<F>(&mut self, mut handler: F)

@@ -35,6 +35,7 @@ impl Mainloop {
         rmi::version::set_event_handler(self);
     }
 
+    #[cfg(not(kani))]
     pub fn boot_complete(&mut self) {
         let mut ctx = Context::new(rmi::BOOT_COMPLETE);
         ctx.init_arg(&[rmi::BOOT_SUCCESS]);
@@ -42,7 +43,17 @@ impl Mainloop {
         self.add_event_handlers();
         self.dispatch(ctx);
     }
+    #[cfg(kani)]
+    // DIFF: `symbolic` parameter is added to pass symbolic input
+    pub fn boot_complete(&mut self, symbolic: [usize; 8]) {
+        let mut ctx = Context::new(rmi::BOOT_COMPLETE);
+        ctx.init_arg(&[rmi::BOOT_SUCCESS]);
 
+        self.add_event_handlers();
+        self.dispatch(ctx, symbolic);
+    }
+
+    #[cfg(not(kani))]
     pub fn dispatch(&self, ctx: Context) {
         let ret = smc(ctx.cmd(), ctx.arg_slice());
         let cmd = ret[0];
@@ -61,7 +72,29 @@ impl Mainloop {
             },
         );
     }
+    #[cfg(kani)]
+    // DIFF: `symbolic` parameter is added to pass symbolic input
+    pub fn dispatch(&self, ctx: Context, symbolic: [usize; 8]) {
+        let _ret = smc(ctx.cmd(), ctx.arg_slice());
+        let ret = symbolic;
+        let cmd = ret[0];
 
+        rmi::constraint::validate(
+            cmd,
+            |arg_num, ret_num| {
+                let mut ctx = Context::new(cmd);
+                ctx.init_arg(&ret[1..arg_num]);
+                ctx.resize_ret(ret_num);
+                self.queue.lock().push_back(ctx);
+            },
+            || {
+                let ctx = Context::new(rmi::NOT_SUPPORTED_YET);
+                self.queue.lock().push_back(ctx);
+            },
+        );
+    }
+
+    #[cfg(not(kani))]
     pub fn run(&self, monitor: &Monitor) {
         loop {
             let mut ctx = self.queue.lock().pop_front().unwrap(); // TODO: remove unwrap here, by introducing a more realistic queue
@@ -81,6 +114,27 @@ impl Mainloop {
 
             ctx.cmd = rmi::REQ_COMPLETE;
             self.dispatch(ctx);
+        }
+    }
+    #[cfg(kani)]
+    // DIFF: infinite loop is removed
+    //       return value is added to track output
+    pub fn run(&self, monitor: &Monitor) -> [usize; 5] {
+        let mut ctx = self.queue.lock().pop_front().unwrap();
+
+        if self.on_event.is_empty() {
+            panic!("There is no registered event handler.");
+        }
+
+        match self.on_event.get(&ctx.cmd()) {
+            Some(handler) => ctx.do_rmi(|arg, ret| handler(arg, ret, monitor)),
+            None => {
+                assert!(false);
+                error!("Not registered event: {:X}", ctx.cmd());
+                ctx.init_arg(&[rmi::RET_FAIL]);
+
+                return [0; 5]; // this is a bogus statement to meet the return type
+            }
         }
     }
 

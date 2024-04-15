@@ -25,9 +25,18 @@ impl Monitor {
         Self {}
     }
 
+    #[cfg(not(kani))]
     pub fn run(&self) {
         let mut mainloop = Mainloop::new();
         mainloop.boot_complete();
-        mainloop.run(self);
+        mainloop.run(self)
+    }
+    #[cfg(kani)]
+    // DIFF: `symbolic` parameter is added to pass symbolic input
+    //       return value is added to track output
+    pub fn run(&self, symbolic: [usize; 8]) -> [usize; 5] {
+        let mut mainloop = Mainloop::new();
+        mainloop.boot_complete(symbolic);
+        mainloop.run(self)
     }
 }

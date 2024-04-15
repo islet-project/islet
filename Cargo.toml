@@ -12,6 +12,7 @@ members = [
     "realm/rsi-test",
     "rmm/",
     "sdk",
+    "model-checking",
 ]
 
 [profile.dev]

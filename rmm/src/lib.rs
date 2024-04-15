@@ -34,6 +34,11 @@ pub mod stat;
 #[macro_use]
 pub mod r#macro;
 mod measurement;
+#[cfg(kani)]
+// we declare monitor as `pub` in model checking, so that
+// its member can be accessed freely outside the rmm crate
+pub mod monitor;
+#[cfg(not(kani))]
 mod monitor;
 mod rmm_el3;
 
@@ -55,6 +60,10 @@ use crate::rmm_el3::setup_el3_ifc;
 use armv9a::{bits_in_reg, regs::*};
 use core::ptr::addr_of;
 
+#[cfg(not(kani))]
+// model checking harnesses do not use this function, instead
+// they use their own entry points marked with #[kani::proof]
+// where slightly adjusted `Monitor` is used
 pub unsafe fn start(cpu_id: usize) {
     setup_mmu_cfg();
     setup_el2();

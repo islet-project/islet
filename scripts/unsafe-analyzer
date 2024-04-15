@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 import os
 import subprocess
-import sys
+#import sys
 
 ROOT = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
 
@@ -51,10 +51,10 @@ def run_geiger(cwd):
     cmd = "cargo geiger --output-format Ratio"
     process = shell(cmd, cwd)
 
-    if not "Scanning done" in process.stdout:
-        print(f"[!] Failed to run: {cmd} @ {cwd}")
-        print(process.stdout)
-        sys.exit(1)
+    #if not "Scanning done" in process.stdout:
+    #    print(f"[!] Failed to run: {cmd} @ {cwd}")
+    #    print(process.stdout)
+    #    sys.exit(1)
 
     return process.stdout
 

@@ -26,6 +26,7 @@ impl Mainloop {
         }
     }
 
+    #[cfg(not(kani))]
     fn add_event_handlers(&mut self) {
         rmi::features::set_event_handler(self);
         rmi::gpt::set_event_handler(self);
@@ -33,6 +34,11 @@ impl Mainloop {
         rmi::rec::set_event_handler(self);
         rmi::rtt::set_event_handler(self);
         rmi::version::set_event_handler(self);
+    }
+    #[cfg(kani)]
+    fn add_event_handlers(&mut self) {
+        #[cfg(feature = "mc_rmi_features")]
+        rmi::features::set_event_handler(self);
     }
 
     #[cfg(not(kani))]

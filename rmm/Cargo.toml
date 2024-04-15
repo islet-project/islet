@@ -36,3 +36,6 @@ max_level_trace = ["log/max_level_trace"]
 realm_linux = []
 stat = []
 gst_page_table = []
+
+# The below are features relevant for model checking
+mc_rmi_features = []

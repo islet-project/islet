@@ -1,0 +1,12 @@
+[package]
+name = "islet_mc_harnesses"
+version = "0.0.1"
+authors = ["Islet Contributors"]
+edition = "2021"
+
+[features]
+# The below are features relevant for model checking
+mc_rmi_features = ["islet_rmm/mc_rmi_features"]
+
+[dependencies]
+islet_rmm = { path = "../rmm" }

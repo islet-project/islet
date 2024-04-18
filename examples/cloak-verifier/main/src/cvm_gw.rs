@@ -84,13 +84,12 @@ fn sink_func<S: DataState>(data: Data<S>) {
 }
 
 fn main() {
-    // args[1] == id, args[2] == mode (server or client)
-    let mut mode_server = false;
+    // args[1] == id
     let mut channel_id = 0;
 
     let args: Vec<String> = env::args().collect();
-    if args.len() != 3 {
-        println!("args[1]: id, args[2]: mode (server or client)");
+    if args.len() != 2 {
+        println!("args[1]: id");
         return;
     }
     if let Some(id_str) = args.get(1) {
@@ -100,17 +99,10 @@ fn main() {
         }
         println!("gateway channel_id: {}", channel_id);
     }
-    if let Some(mode) = args.get(2) {
-        if mode == "server" {
-            mode_server = true;
-        }
-        println!("gateway mode_server: {}", mode_server);
-    }
-
     println!("CVM_Gateway start");
 
     // 1. GW: create
-    let channel_gw = Gateway::<Initialized, UnmappedGateway, Initialized>::new(channel_id, mode_server);
+    let channel_gw = Gateway::<Initialized, UnmappedGateway, Initialized>::new(channel_id);
     let channel_gw = channel_gw.create();
     if channel_gw.is_none() {
         println!("channel_gw.create error");
@@ -137,27 +129,23 @@ fn main() {
     println!("channel_gw.establish success");
 
     // 5. GW read or write
-    if mode_server {
-        // server mode (read first)
-        channel_gw.run_server(&mut remote_channel);
-    } else {
-        // client mode (write first)
-        println!("type in anything after CVM_App writes something to shared memory..");
-        let mut line = String::new();
-        io::stdin().lock().read_line(&mut line).unwrap();
+    // client mode (write first)
+    // :: Support storage first!!
+    println!("type in anything after CVM_App writes something to shared memory..");
+    let mut line = String::new();
+    io::stdin().lock().read_line(&mut line).unwrap();
 
-        let local_data = channel_gw.read_from_local();
-        if local_data.is_none() {
-            println!("channel_gw.read_from_local failed");
-            return;
-        }
-        let local_data = local_data.unwrap();
-        let local_enc_data = channel_gw.encrypt_data(local_data);
+    let local_data = channel_gw.read_from_local();
+    if local_data.is_none() {
+        println!("channel_gw.read_from_local failed");
+        return;
+    }
+    let local_data = local_data.unwrap();
+    let local_enc_data = channel_gw.encrypt_data(local_data);
 
-        match channel_gw.write_to_remote(&mut remote_channel, local_enc_data) {
-            true => println!("write_to_remote success!"),
-            false => println!("write_to_remote failed!"),
-        }
+    match channel_gw.write_to_remote(&mut remote_channel, local_enc_data) {
+        true => println!("write_to_remote success!"),
+        false => println!("write_to_remote failed!"),
     }
 
     println!("CVM_Gateway end");

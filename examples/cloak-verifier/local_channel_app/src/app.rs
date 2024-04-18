@@ -36,7 +36,17 @@ impl SharedMemory<Unmapped> {
             state: ReadOnly,
         }
     }
+
+    #[requires(self.state.is_unmapped())]
+    #[ensures((&result).state.is_read_write() && old(self).ipa == (&result).ipa)]
+    fn into_read_write(self) -> SharedMemory<ReadWrite> {
+        SharedMemory {
+            ipa: self.ipa,
+            state: ReadWrite,
+        }
+    }
 }
+/*
 impl SharedMemory<ReadOnly> {
     #[requires(self.state.is_read_only())]
     #[ensures((&result).state.is_read_write() && old(self).ipa == (&result).ipa)]
@@ -55,7 +65,8 @@ impl SharedMemory<ReadOnly> {
             Err(_) => false,
         }
     }
-}
+} */
+
 impl SharedMemory<ReadWrite> {
     #[requires(self.state.is_read_write())]
     #[ensures(self.state.is_read_write())]
@@ -88,10 +99,10 @@ impl<S: LocalChannelState, M: SharedMemoryState> LocalChannelApp<S, M> {
 }
 
 #[pure]
-fn ensures_connect(res: &Option<LocalChannelApp<Connected, ReadOnly>>) -> bool {
+fn ensures_connect(res: &Option<LocalChannelApp<Established, ReadWrite>>) -> bool {
     match res {
         Some(app) => {
-            app.state.is_connected() && app.shared_memory.state.is_read_only()
+            app.state.is_established() && app.shared_memory.state.is_read_only()
         },
         None => true,
     }
@@ -101,7 +112,7 @@ impl LocalChannelApp<Created, Unmapped> {
     #[requires( ((&self).state.is_created()) && ((&self).shared_memory.state.is_unmapped()) )]
     #[ensures(ensures_connect(&result))]
     //#[ensures( ((&result).state.is_connected()) && ((&result).shared_memory.state.is_read_only()) )]
-    pub fn connect(self) -> Option<LocalChannelApp<Connected, ReadOnly>> {
+    pub fn connect(self) -> Option<LocalChannelApp<Established, ReadWrite>> {
         match cloak_connect(self.id) {
             Ok(_) => {
                 match cloak_set_status(self.id, 1) {
@@ -111,8 +122,8 @@ impl LocalChannelApp<Created, Unmapped> {
 
                 Some(LocalChannelApp {
                     id: self.id,
-                    shared_memory: self.shared_memory.into_read_only(),
-                    state: Connected,
+                    shared_memory: self.shared_memory.into_read_write(),
+                    state: Established,
                 })
             },
             Err(_) => None,
@@ -120,6 +131,7 @@ impl LocalChannelApp<Created, Unmapped> {
     }
 }
 
+/*
 impl LocalChannelApp<Connected, ReadOnly> {
     #[requires( ((&self).state.is_connected()) && ((&self).shared_memory.state.is_read_only()) )]
     #[ensures( ((&result).state.is_received()) && ((&result).shared_memory.state.is_read_only()) )]
@@ -144,8 +156,9 @@ impl LocalChannelApp<Connected, ReadOnly> {
             state: Received,
         }
     }
-}
+} */
 
+/*
 #[pure]
 fn ensures_establish(res: &Option<LocalChannelApp<Established, ReadWrite>>) -> bool {
     match res {
@@ -156,8 +169,8 @@ fn ensures_establish(res: &Option<LocalChannelApp<Established, ReadWrite>>) -> b
     }
 }
 
-impl LocalChannelApp<Received, ReadOnly> {
-    #[requires( ((&self).state.is_received()) && ((&self).shared_memory.state.is_read_only()) )]
+impl LocalChannelApp<Connected, ReadOnly> {
+    #[requires( ((&self).state.is_connected()) && ((&self).shared_memory.state.is_read_only()) )]
     #[ensures(ensures_establish(&result))]
     //#[ensures( ((&result).state.is_established()) && ((&result).shared_memory.state.is_read_write()) )]
     pub fn establish(self) -> Option<LocalChannelApp<Established, ReadWrite>> {
@@ -177,7 +190,7 @@ impl LocalChannelApp<Received, ReadOnly> {
             state: Established,
         })
     }
-}
+} */
 
 impl LocalChannelApp<Established, ReadWrite> {
     #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) )]

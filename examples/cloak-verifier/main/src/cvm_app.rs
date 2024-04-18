@@ -106,6 +106,7 @@ fn main() {
     }
     println!("channel_app.connect success");
 
+    /*
     // 2. APP: wait_for_signed_cert
     println!("type in anything after CVM_GW writes signed_cert to shared memory..");
     let mut line = String::new();
@@ -120,12 +121,25 @@ fn main() {
         println!("channel_app.establish error");
         return;
     }
-    println!("channel_app.establish success");
+    println!("channel_app.establish success"); */
 
     let channel_app = channel_app.unwrap();
 
+    // 2. read some data through remote channel
+    let mut read_data: [u8; 4096] = [0; 4096];
+    match channel_app.read(&mut read_data) {
+        true => {
+            println!("channel_app.read success: {:x}", read_data[0]);
+        },
+        false => {
+            println!("channel_app.read failed");
+            return;
+        },
+    }
+
     // 4. transmit some data through remote channel
     // App write something to LocalChannel
+    /*
     let write_data: [u8; 4096] = [3; 4096];
     match channel_app.write(&write_data) {
         true => {},
@@ -133,7 +147,7 @@ fn main() {
             println!("channel_app.write failed");
             return;
         },
-    }
+    } */
 
     println!("CVM_App end");
 }

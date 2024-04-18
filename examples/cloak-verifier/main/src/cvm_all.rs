@@ -149,7 +149,7 @@ fn main() {
     println!("CVM_All start");
 
     // 1. GW: create
-    let channel_gw = Gateway::<Initialized, UnmappedGateway, Initialized>::new(0, false);
+    let channel_gw = Gateway::<Initialized, UnmappedGateway, Initialized>::new(0);
     let channel_gw = channel_gw.create();
     if channel_gw.is_none() {
         println!("channel_gw.create error");

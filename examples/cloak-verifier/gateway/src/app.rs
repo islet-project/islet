@@ -47,7 +47,6 @@ pub struct Gateway<S, M, R> where
     //T: ChannelTTPState
 {
     id: usize,
-    mode_server: bool,
     shared_memory: SharedMemory<M>,
     //channel_ttp: ChannelTTP<T>,  // (0) Initialized --> (1) Established --> (2) Verified --> (3) Destroyed
     state: S,  // (0) Initialized --> (1) Created --> (2) Connected --> (3) Established
@@ -98,85 +97,21 @@ impl ChannelTTP<Verified> {
 
 pub struct RemoteChannel
 {
-    mode_server: bool,
-    client_conn: Option<TlsConnection<ClientConnection>>,
-    server_conn: Option<TlsConnection<ServerConnection>>,
+    conn: TlsConnection<ClientConnection>,
 }
 impl RemoteChannel {
-    fn new(mode_server: bool) -> Option<RemoteChannel> {
-        if mode_server {
-            RemoteChannel::bind()
-        } else {
-            RemoteChannel::connect()
-        }
-    }
-
-    fn connect() -> Option<RemoteChannel> {
-        let client = ttp::TlsClient::new(ttp::ClientMode::CVMClient {});
-        if client.is_err() {
-            println!("CVMClient::new error");
-            return None;
-        }
-        println!("CVMClient::new success");
-
-        let client = client.unwrap();
-        let connection = client.connect("193.168.10.15:1999".to_string(), "localhost".to_string());
-        if connection.is_err() {
-            println!("CVMClient.connect error");
-            return None;
-        }
-        println!("CVMClient.connect success");
-
-        Some(RemoteChannel {
-            mode_server: false,
-            client_conn: Some(connection.unwrap()),
-            server_conn: None,
-        })
-    }
-
-    fn bind() -> Option<RemoteChannel> {
-        let mut server = ttp::CVMServer::new();
-        if let Ok(conn) = server.bind() {
-            Some(RemoteChannel {
-                mode_server: true,
-                client_conn: None,
-                server_conn: Some(conn),
-            })
-        } else {
-            None
+    fn new(conn: TlsConnection<ClientConnection>) -> RemoteChannel {
+        Self {
+            conn,
         }
     }
 
     fn read(&mut self, data: &mut [u8; 4096]) -> Result<(), TlsError> {
-        if self.mode_server {
-            if let Some(conn) = &mut self.server_conn {
-                Ok(conn.stream().read_exact(data)?)
-            } else {
-                Err(TlsError::RustlsError())
-            }
-        } else {
-            if let Some(conn) = &mut self.client_conn {
-                Ok(conn.stream().read_exact(data)?)
-            } else {
-                Err(TlsError::RustlsError())
-            }
-        }
+        Ok(self.conn.stream().read_exact(data)?)
     }
 
     fn write(&mut self, data: &[u8; 4096]) -> Result<(), TlsError> {
-        if self.mode_server {
-            if let Some(conn) = &mut self.server_conn {
-                Ok(conn.stream().write_all(data)?)
-            } else {
-                Err(TlsError::RustlsError())
-            }
-        } else {
-            if let Some(conn) = &mut self.client_conn {
-                Ok(conn.stream().write_all(data)?)
-            } else {
-                Err(TlsError::RustlsError())
-            }
-        }
+        Ok(self.conn.stream().write_all(data)?)
     }
 }
 
@@ -310,10 +245,9 @@ impl Data<EncryptedRemoteData> {
 
 impl<S: LocalChannelState, M: SharedMemoryState, R: RemoteChannelState> Gateway<S, M, R> {
     #[ensures( ((&result).state.is_initialized()) && ((&result).shared_memory.state.is_unmapped()) && ((&result).rc_state.is_rc_initialized()) )]
-    pub const fn new(id: usize, mode_server: bool) -> Gateway<Initialized, Unmapped, Initialized> {
+    pub const fn new(id: usize) -> Gateway<Initialized, Unmapped, Initialized> {
         Gateway {
             id: id,
-            mode_server: mode_server,
             shared_memory: SharedMemory::<Unmapped>::new(0),
             state: Initialized,
             rc_state: Initialized,
@@ -342,7 +276,6 @@ impl Gateway<Initialized, Unmapped, Initialized> {
             Ok(_) => {
                 Some(Gateway {
                     id: self.id,
-                    mode_server: self.mode_server,
                     shared_memory: self.shared_memory,
                     state: Created,
                     rc_state: Initialized,
@@ -377,7 +310,6 @@ impl Gateway<Created, Unmapped, Initialized> {
         
         Gateway {
             id: self.id,
-            mode_server: self.mode_server,
             shared_memory: self.shared_memory.into_write_only(),
             state: Connected,
             rc_state: Initialized,
@@ -402,7 +334,7 @@ impl Gateway<Connected, WriteOnly, Initialized> {
     pub fn establish(self) -> Option< (Gateway<Established, ReadWrite, Established>, RemoteChannel) > {
         // do something here!
         // -- (1) communicate with TTP
-        // -- (2) receive a signed cert
+
         // -- (3) send the cert to App
         // -- (4) validate the cert and change it to Established.
         /*
@@ -465,6 +397,20 @@ impl Gateway<Connected, WriteOnly, Initialized> {
         }
         println!("connection.write success");
 
+        // N.B. we don't need RemoteChannel, a channel used to communicate between two CVMs.
+        //     instead, RemoteChannel represents a RA-TLS channel between data-provider and CVM.
+        let rc = RemoteChannel::new(connection);
+        Some((
+            Gateway {
+                id: self.id,
+                shared_memory: self.shared_memory.into_read_write(),
+                state: Established,
+                rc_state: Established,
+            },
+            rc,
+        ))
+
+        /*
         // 2-3. read a signed_cert
         //
         // taint analysis PoC with RA-TLS:
@@ -481,24 +427,23 @@ impl Gateway<Connected, WriteOnly, Initialized> {
             Ok(_) => {
                 println!("connection.read success");
             },
-        }
-
-        // 2-4. verify the signed cert
-        // TODO: verify
+        } */
 
         // 3. write the signed cert to "shared memory"
         //let data: [u8; 4096] = [1; 4096];
+        /*
         let write_res = self.shared_memory.write_only(self.id, &read_signed_cert);
         if write_res == false {
             println!("shared_memory.write_only error");
             return None;
         }
-        println!("shared_memory.write_only success: {}", read_signed_cert[0]);
+        println!("shared_memory.write_only success: {}", read_signed_cert[0]); */
 
         // 4. generate a remote channel stream
         // [TODO] a wrapper struct that offers security to "TcpStream"
         // in order to ensure that the created TcpStream will not change after this flow..
         // --> how to guarantee this? --> prusti check! (possible?)
+        /*
         match RemoteChannel::new(self.mode_server) {
             Some(rc) => {
                 println!("RemoteChannel::new() success");
@@ -517,7 +462,7 @@ impl Gateway<Connected, WriteOnly, Initialized> {
                 println!("RemoteChannel::new() error");
                 None
             },
-        }
+        } */
     }
 
     pub fn test_mirai_taint(self) -> Data<UnencryptedRemoteData> {

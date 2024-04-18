@@ -17,9 +17,9 @@ prusti-contracts = "0.2.0"
 prusti-std = "0.2.0"
 mirai-annotations = "*"
 
-[[bin]]
-name = "cvm_all"
-path = "src/cvm_all.rs"
+#[[bin]]
+#name = "cvm_all"
+#path = "src/cvm_all.rs"
 
 [[bin]]
 name = "cvm_gw"

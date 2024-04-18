@@ -175,6 +175,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                     info!("write attempt!");
                     //thread::sleep(time::Duration::from_millis(2000));
 
+                    // Given the one-way communication, data-provider <-> CVM,
+                    // data-provider doesn't have to send an additional certificate to CVM.
+                    // All it has to do is do send their data (e.g., AI model).
                     let write_data: [u8; 4096] = [1; 4096];
                     if let Ok(_) = conn.stream().write(&write_data) {
                         info!("write 1 success!");

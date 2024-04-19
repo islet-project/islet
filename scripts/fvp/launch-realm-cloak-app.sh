@@ -15,4 +15,4 @@ cd /shared
 	-c 1 \
 	-k linux.realm \
 	-i rootfs-realm.cpio.gz \
-	-p "earlycon=ttyS0 printk.devkmsg=on"
+	-p "earlycon=ttyS0 printk.devkmsg=on no_shared_region=on"

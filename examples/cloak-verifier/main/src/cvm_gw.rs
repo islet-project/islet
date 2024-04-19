@@ -4,7 +4,10 @@ extern crate mirai_annotations;
 use local_channel_app::app::{LocalChannelApp, Start, Unmapped as UnmappedApp};
 use gateway::app::{Gateway, Initialized, Unmapped as UnmappedGateway, test_mirai_taint, remote_channel_sink_test};
 use std::env;
+use std::fs::File;
 use std::io::{self, BufRead};
+use std::collections::HashMap;
+use common::util::*;
 
 // for testing MIRAI
 #[cfg_attr(mirai, allow(incomplete_features), feature(generic_const_exprs))]
@@ -101,6 +104,9 @@ fn main() {
     }
     println!("CVM_Gateway start");
 
+    // HashMap to manage file descriptors for storage support
+    let mut storage_map: HashMap<i32, File> = HashMap::<i32, File>::new();
+
     // 1. GW: create
     let channel_gw = Gateway::<Initialized, UnmappedGateway, Initialized>::new(channel_id);
     let channel_gw = channel_gw.create();
@@ -128,25 +134,39 @@ fn main() {
     let (channel_gw, mut remote_channel) = gw_establish_res.unwrap();
     println!("channel_gw.establish success");
 
-    // 5. GW read or write
-    // client mode (write first)
-    // :: Support storage first!!
-    println!("type in anything after CVM_App writes something to shared memory..");
-    let mut line = String::new();
-    io::stdin().lock().read_line(&mut line).unwrap();
+    // 5. GW storage test: open()-write()-read()
+    for i in 0..3 {
+        match i {
+            0 => {
+                println!("CVM_GW: wait open() req..");
+                get_line();
+            },
+            1 => {
+                println!("CVM_GW: wait write() req..");
+                get_line();
+            },
+            2 => {
+                println!("CVM_GW: wait read() req..");
+                get_line();
+            },
+            _ => {},
+        }
 
-    let local_data = channel_gw.read_from_local();
-    if local_data.is_none() {
-        println!("channel_gw.read_from_local failed");
-        return;
+        let local_data = channel_gw.read_from_local();
+        if local_data.is_none() {
+            println!("channel_gw.read_from_local failed");
+            return;
+        }
+        let local_data = local_data.unwrap();
+        channel_gw.do_local_operation(local_data, &mut storage_map);
     }
-    let local_data = local_data.unwrap();
-    let local_enc_data = channel_gw.encrypt_data(local_data);
 
+    /*
+    let local_enc_data = channel_gw.encrypt_data(local_data);
     match channel_gw.write_to_remote(&mut remote_channel, local_enc_data) {
         true => println!("write_to_remote success!"),
         false => println!("write_to_remote failed!"),
-    }
+    } */
 
     println!("CVM_Gateway end");
 }

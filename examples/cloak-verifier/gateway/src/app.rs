@@ -1,5 +1,7 @@
 use prusti_contracts::*;
 use common::ioctl::{cloak_create, cloak_gen_report, cloak_write, cloak_read, cloak_status};
+use common::shared::*;
+use crate::operation::*;
 use sha2::{Sha512, Digest};
 
 use std::sync::Arc;
@@ -8,6 +10,8 @@ use crate::error::TlsError;
 use std::io::{Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::{thread, time};
+use std::collections::HashMap;
+use std::fs::File;
 use rustls::{ClientConnection, ServerConnection};
 
 // MIRAI
@@ -37,7 +41,6 @@ const SANITIZED_MASK: TagPropagationSet = tag_propagation_set!(TagPropagation::S
 type Sanitized = SanitizedKind<SANITIZED_MASK>;
 #[cfg(not(mirai))]
 type Sanitized = ();  // Attach "Sanitized" when secret is encrypted
-
 
 pub struct Gateway<S, M, R> where
     S: LocalChannelState,
@@ -112,6 +115,15 @@ impl RemoteChannel {
 
     fn write(&mut self, data: &[u8; 4096]) -> Result<(), TlsError> {
         Ok(self.conn.stream().write_all(data)?)
+    }
+}
+
+fn any_as_u8_slice<T: Sized>(p: &T) -> &[u8] {
+    unsafe {
+        ::core::slice::from_raw_parts(
+            (p as *const T) as *const u8,
+            ::core::mem::size_of::<T>(),
+        )
     }
 }
 
@@ -194,6 +206,8 @@ impl SharedMemory<ReadWrite> {
             Err(_) => None,
         }
     }
+
+    // syscall_handling: open()
 }
 
 pub struct Data<S> where
@@ -217,6 +231,45 @@ impl Data<Uninitialized> {
         Data {
             data: data,
             state: EncryptedRemoteData,
+        }
+    }
+
+    fn new_from_syscall_open_resp(resp: SharedOpenResp) -> Data<UnencryptedRemoteData> {
+        let resp_bytes = any_as_u8_slice(&resp);
+        let mut data: [u8; 4096] = [0; 4096];
+        for (dst, src) in data.iter_mut().zip(resp_bytes) {
+            *dst = *src;
+        }
+
+        Data {
+            data: data,
+            state: UnencryptedRemoteData,
+        }
+    }
+
+    fn new_from_syscall_write_resp(resp: SharedWriteResp) -> Data<UnencryptedRemoteData> {
+        let resp_bytes = any_as_u8_slice(&resp);
+        let mut data: [u8; 4096] = [0; 4096];
+        for (dst, src) in data.iter_mut().zip(resp_bytes) {
+            *dst = *src;
+        }
+
+        Data {
+            data: data,
+            state: UnencryptedRemoteData,
+        }
+    }
+
+    fn new_from_syscall_read_resp(resp: SharedReadResp) -> Data<UnencryptedRemoteData> {
+        let resp_bytes = any_as_u8_slice(&resp);
+        let mut data: [u8; 4096] = [0; 4096];
+        for (dst, src) in data.iter_mut().zip(resp_bytes) {
+            *dst = *src;
+        }
+
+        Data {
+            data: data,
+            state: UnencryptedRemoteData,
         }
     }
 }
@@ -496,6 +549,13 @@ fn ensures_read_from_local(res: &Option<Data<UnencryptedLocalData>>) -> bool {
     }
 }
 
+fn get_local_operation_type(data: &[u8; 4096]) -> u32 {
+    let mut buf: [u8; 4] = [0; 4];
+    buf.copy_from_slice(&data[0..4]);
+    let num = u32::from_le_bytes(buf);
+    num
+}
+
 impl Gateway<Established, ReadWrite, Established> {
     #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) && ((&self).rc_state.is_rc_established()) )]
     pub fn perform(&self) {
@@ -506,6 +566,57 @@ impl Gateway<Established, ReadWrite, Established> {
     #[ensures(ensures_read_from_local(&result))]
     pub fn read_from_local(&self) -> Option<Data<UnencryptedLocalData>> {
         self.shared_memory.read(self.id)
+    }
+
+    pub fn do_local_operation(&self, data: Data<UnencryptedLocalData>, storage_map: &mut HashMap<i32, File>) {
+        let dtype = get_local_operation_type(&data.data);
+        println!("local_operation_type: {}", dtype);
+
+        match dtype {
+            DEL_SYSCALL_OPEN => {
+                match local_op_storage_open(get_shared_type(&data.data), storage_map) {
+                    Ok(resp) => {
+                        let fd = resp.fd;
+                        println!("storage_open fd: {}", fd);
+                        let d = Data::<Uninitialized>::new_from_syscall_open_resp(resp);
+                        match self.write_to_local(&d) {
+                            true => println!("open_resp success"),
+                            false => println!("open_resp error"),
+                        }
+                    }
+                    Err(e) => println!("storage_open error: {}", e),
+                }
+            },
+            DEL_SYSCALL_WRITE => {
+                match local_op_storage_write(get_shared_type(&data.data), storage_map) {
+                    Ok(resp) => {
+                        let size = resp.size;
+                        println!("storage_write size: {}", size);
+                        let d = Data::<Uninitialized>::new_from_syscall_write_resp(resp);
+                        match self.write_to_local(&d) {
+                            true => println!("write_resp success"),
+                            false => println!("write_resp error"),
+                        }
+                    },
+                    Err(e) => println!("storage_write error: {}", e),
+                }
+            },
+            DEL_SYSCALL_READ => {
+                match local_op_storage_read(get_shared_type(&data.data), storage_map) {
+                    Ok(resp) => {
+                        let size = resp.size;
+                        println!("storage_read size: {}, data: {}", size, resp.data[0]);
+                        let d = Data::<Uninitialized>::new_from_syscall_read_resp(resp);
+                        match self.write_to_local(&d) {
+                            true => println!("read_resp success"),
+                            false => println!("read_resp error"),
+                        }
+                    },
+                    Err(e) => println!("storage_read error: {}", e),
+                }
+            },
+            _ => {},
+        }
     }
 
     #[requires( ((&self).state.is_established()) && ((&self).shared_memory.state.is_read_write()) && ((&self).rc_state.is_rc_established()) )]

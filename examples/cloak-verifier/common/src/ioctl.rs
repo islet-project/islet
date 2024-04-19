@@ -164,7 +164,12 @@ pub fn cloak_write(id: usize, data: &[u8; 4096]) -> io::Result<()> {
     }
 }
 #[cfg(any(target_arch = "x86_64", target_arch = "emul"))]
-pub fn cloak_write(id: usize, _data: &[u8; 4096]) -> io::Result<()> {
+pub fn cloak_write(id: usize, data: &[u8; 4096]) -> io::Result<()> {
+    // file write
+    println!("cloak_write start");
+    let mut file = File::create("shared_mem.txt")?;
+    file.write_all(data)?;
+    println!("cloak_write success");
     Ok(())
 }
 
@@ -184,8 +189,11 @@ pub fn cloak_read(id: usize, data: &mut [u8; 4096]) -> io::Result<()> {
 }
 #[cfg(any(target_arch = "x86_64", target_arch = "emul"))]
 pub fn cloak_read(id: usize, data: &mut [u8; 4096]) -> io::Result<()> {
-    let one: [u8; 4096] = [1; 4096];
-    data.copy_from_slice(&one);
+    // file read
+    println!("cloak_read start");
+    let mut file = File::open("shared_mem.txt")?;
+    file.read_exact(data)?;
+    println!("cloak_read success");
     Ok(())
 }
 

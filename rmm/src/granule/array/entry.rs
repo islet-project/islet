@@ -22,7 +22,10 @@ impl Granule {
     }
 
     pub fn set_state(&mut self, state: u8) -> Result<(), Error> {
-        if state == GranuleState::Delegated {
+        let prev = self.state;
+        if (prev == GranuleState::Delegated && state == GranuleState::Undelegated)
+            || (state == GranuleState::Delegated)
+        {
             self.zeroize();
         }
         self.state = state;

@@ -2,5 +2,5 @@
 
 set -e
 
-cargo install cross --git https://github.com/cross-rs/cross
+cargo install cross --git https://github.com/bitboom/cross
 sudo systemctl start docker

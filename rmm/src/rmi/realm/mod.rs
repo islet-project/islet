@@ -78,7 +78,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let id = rd_obj.id();
         let rtt_base = rd_obj.rtt_base();
         // The below is added to avoid a fault regarding the RTT entry
-        PageTable::get_ref().map(rtt_base, true);
+        for i in 0..params.rtt_num_start as usize {
+            let rtt = rtt_base + i * GRANULE_SIZE;
+            PageTable::get_ref().map(rtt, true);
+        }
 
         rd_obj.set_hash_algo(params.hash_algo);
 

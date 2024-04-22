@@ -12,7 +12,7 @@ pub fn copy_from<T: SafetyChecked + SafetyAssured + Copy>(addr: usize) -> Option
     }
 
     PageTable::get_ref().map(addr, false);
-    let ret = assume_safe::<T>(addr).map(|safety_assumed| safety_assumed.with(|ref_: &T| *ref_));
+    let ret = assume_safe::<T>(addr).map(|safety_assumed| *safety_assumed);
     PageTable::get_ref().unmap(addr);
     ret
 }
@@ -23,8 +23,7 @@ pub fn copy_to<T: SafetyChecked + SafetyAssured + Copy>(src: &T, dst: usize) -> 
     }
 
     PageTable::get_ref().map(dst, false);
-    let ret = assume_safe::<T>(dst)
-        .map(|safety_assumed| safety_assumed.mut_with(|ref_: &mut T| *ref_ = *src));
+    let ret = assume_safe::<T>(dst).map(|mut safety_assumed| *safety_assumed = *src);
     PageTable::get_ref().unmap(dst);
     ret
 }

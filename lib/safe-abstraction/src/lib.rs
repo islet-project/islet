@@ -178,7 +178,7 @@ pub mod raw_ptr {
     ///
     /// Returns `Some(SafetyAssumed)` if all safety checks are satisfied,
     /// or `None` if any of the checks fail, indicating that it is not safe to proceed.
-    pub fn assume_safe<T: SafetyChecked + SafetyAssured>(addr: usize) -> Option<SafetyAssumed> {
+    pub fn assume_safe<T: SafetyChecked + SafetyAssured>(addr: usize) -> Option<SafetyAssumed<T>> {
         let ptr = addr as *const T;
         // Safety: This cast from a raw pointer to a reference is considered safe
         //         because it is used solely for the purpose of verifying alignment and range,
@@ -188,7 +188,10 @@ pub mod raw_ptr {
         let assured = ref_.is_initialized() && ref_.verify_ownership();
 
         match checked && assured {
-            true => Some(SafetyAssumed { addr }),
+            true => Some(SafetyAssumed {
+                addr,
+                _phantom: core::marker::PhantomData,
+            }),
             false => None,
         }
     }
@@ -205,75 +208,41 @@ pub mod raw_ptr {
     /// # Fields
     ///
     /// * `addr` - The raw address of the safely assumed target instance.
-    pub struct SafetyAssumed {
+    /// * `_phantom` - A `PhantomData` used to associate generic type `T` with this struct
+    ///                without storing any data of type `T`. This helps manage type invariance
+    ///                and ensure that the Rust compiler accounts for `T` in its type checking.
+    pub struct SafetyAssumed<T: SafetyChecked + SafetyAssured> {
         addr: usize,
+        _phantom: core::marker::PhantomData<T>,
     }
 
-    impl SafetyAssumed {
-        /// Provides safe access to a target structure
-        /// by ensuring that `SafetyChecked` and `SafetyAssured` traits are implemented.
+    impl<T> AsRef<T> for SafetyAssumed<T>
+    where
+        T: SafetyChecked + SafetyAssured,
+    {
+        /// Safely returns a mutable reference to the instance of `T`.
         ///
         /// # Safety
-        /// This function facilitates safe interaction
-        /// with structures accessed through raw pointers by leveraging
-        /// the Rust's safety guarantees built upon
-        /// the assumption that developers ensure the safety of `unsafe` code.
-        ///
-        /// # TODO: Checked the claim below by MIRI
-        /// However, `unsafe` code passed through a closure,
-        /// it becomes a subject for analysis at the MIR (Mid-level Intermediate Representation) stage.
-        /// This allows for further security enhancements
-        /// through the use of `unsafe` code analysis tools.
-        ///
-        /// # Caution
-        /// It's important to remember that while this function aims
-        /// to provide a safer interface for interacting with `unsafe` code,
-        /// the inherent risks associated with `unsafe` code cannot be entirely eliminated.
-        /// Developers are encouraged to use `unsafe` analysis tools
-        /// to strengthen security and ensure that all
-        /// safety guarantees are thoroughly verified.
-        pub fn with<T, F, R>(&self, f: F) -> R
-        where
-            T: SafetyChecked + SafetyAssured,
-            F: Fn(&T) -> R,
-        {
-            unsafe {
-                let obj = T::as_ref(self.addr);
-                f(obj)
-            }
+        /// Similar to `as_ref`, this function assumes that all required safety checks
+        /// are in place. Mutable access is granted under the presumption of exclusive ownership
+        /// and proper synchronization when accessed in multi-threaded contexts.
+        fn as_ref(&self) -> &T {
+            unsafe { T::as_ref(self.addr) }
         }
+    }
 
-        /// Provides safe mutation to a target structure
-        /// by ensuring that `SafetyChecked` and `SafetyAssured` traits are implemented.
+    impl<T> AsMut<T> for SafetyAssumed<T>
+    where
+        T: SafetyChecked + SafetyAssured,
+    {
+        /// Safely returns a mutable reference to the instance of `T`.
         ///
         /// # Safety
-        /// This function facilitates safe interaction
-        /// with structures accessed through raw pointers by leveraging
-        /// the Rust's safety guarantees built upon
-        /// the assumption that developers ensure the safety of `unsafe` code.
-        ///
-        /// # TODO: Checked the claim below by MIRI
-        /// However, `unsafe` code passed through a closure,
-        /// it becomes a subject for analysis at the MIR (Mid-level Intermediate Representation) stage.
-        /// This allows for further security enhancements
-        /// through the use of `unsafe` code analysis tools.
-        ///
-        /// # Caution
-        /// It's important to remember that while this function aims
-        /// to provide a safer interface for interacting with `unsafe` code,
-        /// the inherent risks associated with `unsafe` code cannot be entirely eliminated.
-        /// Developers are encouraged to use `unsafe` analysis tools
-        /// to strengthen security and ensure that all
-        /// safety guarantees are thoroughly verified.
-        pub fn mut_with<T, F, R>(&self, mut f: F) -> R
-        where
-            T: SafetyChecked + SafetyAssured,
-            F: FnMut(&mut T) -> R,
-        {
-            unsafe {
-                let obj = T::as_mut(self.addr);
-                f(obj)
-            }
+        /// Similar to `as_ref`, this function assumes that all required safety checks
+        /// are in place. Mutable access is granted under the presumption of exclusive ownership
+        /// and proper synchronization when accessed in multi-threaded contexts.
+        fn as_mut(&mut self) -> &mut T {
+            unsafe { T::as_mut(self.addr) }
         }
     }
 }

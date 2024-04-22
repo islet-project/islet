@@ -2,9 +2,11 @@
 
 set -e
 
-apt update && apt -y install sudo
+apt-get update && apt -y install sudo
 
-sudo apt install -y -qq --no-install-recommends \
+sudo apt-get update
+
+sudo apt-get install -y -qq --no-install-recommends --fix-missing \
 	gcc-multilib g++-multilib cmake libssl-dev \
 	binutils python3-pip \
 	device-tree-compiler xterm fakeroot mtools fdisk cpio \

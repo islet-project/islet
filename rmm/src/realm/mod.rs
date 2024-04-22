@@ -21,7 +21,6 @@ extern crate alloc;
 pub struct Realm<T: Context> {
     id: usize,
     pub vmid: u16,
-    pub state: State,
     pub vcpus: Vec<Arc<Mutex<VCPU<T>>>>,
     pub page_table: Arc<Mutex<Box<dyn IPATranslation>>>,
     pub measurements: [Measurement; MEASUREMENTS_SLOT_NR],
@@ -38,7 +37,6 @@ impl<T: Context + Default> Realm<T> {
             Mutex::new(Self {
                 id,
                 vmid,
-                state: State::New,
                 vcpus,
                 page_table,
                 measurements: [Measurement::empty(); MEASUREMENTS_SLOT_NR],
@@ -51,12 +49,4 @@ impl<T: Context> Drop for Realm<T> {
     fn drop(&mut self) {
         info!("Realm #{} was destroyed!", self.id);
     }
-}
-
-#[derive(Debug)]
-pub enum State {
-    Null,
-    New,
-    Active,
-    SystemOff,
 }

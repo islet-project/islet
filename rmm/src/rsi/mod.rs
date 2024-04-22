@@ -74,13 +74,13 @@ pub fn do_host_call(
         )
         .ok_or(Error::RmiErrorInput)?;
 
-    let mut safety_assumed = assume_safe::<HostCall>(pa.into()).ok_or(Error::RmiErrorInput)?;
-    let imm = safety_assumed.as_ref().imm();
+    let mut host_call = assume_safe::<HostCall>(pa.into()).ok_or(Error::RmiErrorInput)?;
+    let imm = host_call.imm();
 
     if rec.host_call_pending() {
         for i in 0..HOST_CALL_NR_GPRS {
             let val = run.entry_gpr(i)?;
-            safety_assumed.as_mut().set_gpr(i, val)?
+            host_call.set_gpr(i, val)?
         }
         rec.set_host_call_pending(false);
     } else {
@@ -89,7 +89,7 @@ pub fn do_host_call(
         rec.set_host_call_pending(true);
     }
 
-    trace!("HOST_CALL param: {:#X?}", safety_assumed.as_ref());
+    trace!("HOST_CALL param: {:#X?}", *host_call);
 
     ret[0] = rmi::SUCCESS;
     Ok(())

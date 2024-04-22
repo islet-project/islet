@@ -21,7 +21,7 @@ impl RealmConfig {
     // So, we get back to use the same kernel argument with TF-RMM's one (uart0 & uart3).
     pub fn init(config_addr: usize, ipa_width: usize) -> Result<(), Error> {
         assume_safe::<RealmConfig>(config_addr)
-            .map(|mut realm_config| realm_config.as_mut().ipa_width = ipa_width)
+            .map(|mut realm_config| realm_config.ipa_width = ipa_width)
             .ok_or(Error::RmiErrorInput)
     }
 }

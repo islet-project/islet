@@ -6,10 +6,8 @@ pub mod timer;
 pub mod vcpu;
 
 use crate::measurement::{Measurement, MEASUREMENTS_SLOT_NR};
-use crate::realm::mm::IPATranslation;
 use crate::realm::vcpu::{Context, VCPU};
 
-use alloc::boxed::Box;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 use core::fmt::Debug;
@@ -22,23 +20,17 @@ pub struct Realm<T: Context> {
     id: usize,
     pub vmid: u16,
     pub vcpus: Vec<Arc<Mutex<VCPU<T>>>>,
-    pub page_table: Arc<Mutex<Box<dyn IPATranslation>>>,
     pub measurements: [Measurement; MEASUREMENTS_SLOT_NR],
 }
 
 impl<T: Context + Default> Realm<T> {
-    pub fn new(
-        id: usize,
-        vmid: u16,
-        page_table: Arc<Mutex<Box<dyn IPATranslation>>>,
-    ) -> Arc<Mutex<Self>> {
+    pub fn new(id: usize, vmid: u16) -> Arc<Mutex<Self>> {
         Arc::new({
             let vcpus = Vec::new();
             Mutex::new(Self {
                 id,
                 vmid,
                 vcpus,
-                page_table,
                 measurements: [Measurement::empty(); MEASUREMENTS_SLOT_NR],
             })
         })

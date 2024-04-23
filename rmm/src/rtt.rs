@@ -6,9 +6,7 @@ use crate::realm::mm::page_table::pte::attribute;
 use crate::realm::mm::page_table::pte::{permission, shareable};
 use crate::realm::mm::stage2_tte::{desc_type, invalid_hipas, invalid_ripas};
 use crate::realm::mm::stage2_tte::{RttPage, INVALID_UNPROTECTED, S2TTE};
-use crate::realm::registry::get_realm;
 use crate::rmi::error::Error;
-use crate::rmi::error::InternalError::*;
 use crate::rmi::realm::Rd;
 use crate::rmi::rtt::RTT_PAGE_LEVEL;
 use crate::rmi::rtt::S2TTE_STRIDE;
@@ -16,11 +14,11 @@ use crate::rmi::rtt_entry_state;
 use crate::{get_granule, get_granule_if};
 use armv9a::bits_in_reg;
 
-pub fn create(id: usize, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), Error> {
+pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), Error> {
     let mut rtt_granule = get_granule_if!(rtt_addr, GranuleState::Delegated)?;
     let s2tt = rtt_granule.content_mut::<RttPage>();
 
-    let (parent_s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level - 1, Error::RmiErrorInput)?;
+    let (parent_s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level - 1, Error::RmiErrorInput)?;
 
     if last_level != level - 1 {
         return Err(Error::RmiErrorRtt(last_level));
@@ -88,10 +86,7 @@ pub fn create(id: usize, rtt_addr: usize, ipa: usize, level: usize) -> Result<()
     set_granule(&mut rtt_granule, GranuleState::RTT)?;
 
     let parent_s2tte = rtt_addr as u64 | bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_TABLE);
-    get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-        .lock()
-        .page_table
+    rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level - 1, parent_s2tte)?;
 
@@ -102,8 +97,7 @@ pub fn create(id: usize, rtt_addr: usize, ipa: usize, level: usize) -> Result<()
 }
 
 pub fn destroy(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), Error> {
-    let id = rd.id();
-    let (parent_s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level - 1, Error::RmiErrorRtt(0))?;
+    let (parent_s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level - 1, Error::RmiErrorRtt(0))?;
 
     if last_level != level - 1 {
         return Err(Error::RmiErrorRtt(last_level));
@@ -130,10 +124,7 @@ pub fn destroy(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(),
         INVALID_UNPROTECTED
     };
 
-    get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-        .lock()
-        .page_table
+    rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level - 1, parent_s2tte)?;
 
@@ -141,8 +132,8 @@ pub fn destroy(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(),
     Ok(())
 }
 
-pub fn init_ripas(id: usize, ipa: usize, level: usize) -> Result<(), Error> {
-    let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
+pub fn init_ripas(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error> {
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 
     if level != last_level {
         return Err(Error::RmiErrorRtt(last_level));
@@ -155,18 +146,15 @@ pub fn init_ripas(id: usize, ipa: usize, level: usize) -> Result<(), Error> {
     let mut new_s2tte = s2tte.get();
     new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::RAM);
 
-    get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-        .lock()
-        .page_table
+    rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
 
     Ok(())
 }
 
-pub fn get_ripas(id: usize, ipa: usize, level: usize) -> Result<u64, Error> {
-    let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
+pub fn get_ripas(rd: &Rd, ipa: usize, level: usize) -> Result<u64, Error> {
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 
     if level != last_level {
         return Err(Error::RmiErrorRtt(last_level));
@@ -179,8 +167,8 @@ pub fn get_ripas(id: usize, ipa: usize, level: usize) -> Result<u64, Error> {
     Ok(s2tte.get_ripas())
 }
 
-pub fn read_entry(id: usize, ipa: usize, level: usize) -> Result<[usize; 4], Error> {
-    let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
+pub fn read_entry(rd: &Rd, ipa: usize, level: usize) -> Result<[usize; 4], Error> {
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 
     let r1 = last_level;
     let (mut r2, mut r3, mut r4) = (0, 0, 0);
@@ -234,8 +222,7 @@ pub fn map_unprotected(rd: &Rd, ipa: usize, level: usize, host_s2tte: usize) -> 
         return Err(Error::RmiErrorInput);
     }
 
-    let id = rd.id();
-    let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 
     if level != last_level {
         return Err(Error::RmiErrorRtt(last_level));
@@ -258,18 +245,15 @@ pub fn map_unprotected(rd: &Rd, ipa: usize, level: usize, host_s2tte: usize) -> 
             | bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_BLOCK);
     }
 
-    get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-        .lock()
-        .page_table
+    rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
 
     Ok(())
 }
 
-pub fn unmap_unprotected(id: usize, ipa: usize, level: usize) -> Result<(), Error> {
-    let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
+pub fn unmap_unprotected(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error> {
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 
     if level != last_level {
         return Err(Error::RmiErrorRtt(last_level));
@@ -281,10 +265,7 @@ pub fn unmap_unprotected(id: usize, ipa: usize, level: usize) -> Result<(), Erro
 
     let new_s2tte: u64 = INVALID_UNPROTECTED;
 
-    get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-        .lock()
-        .page_table
+    rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
 
@@ -293,8 +274,8 @@ pub fn unmap_unprotected(id: usize, ipa: usize, level: usize) -> Result<(), Erro
     Ok(())
 }
 
-pub fn make_shared(id: usize, ipa: usize, level: usize) -> Result<(), Error> {
-    let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
+pub fn make_shared(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error> {
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 
     if level != last_level {
         return Err(Error::RmiErrorRtt(last_level)); //XXX: check this again
@@ -312,10 +293,7 @@ pub fn make_shared(id: usize, ipa: usize, level: usize) -> Result<(), Error> {
         flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
         let new_s2tte = pa as u64 | flags;
 
-        get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
+        rd.s2_table()
             .lock()
             .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
     } else if s2tte.is_unassigned() || s2tte.is_assigned() {
@@ -323,10 +301,7 @@ pub fn make_shared(id: usize, ipa: usize, level: usize) -> Result<(), Error> {
         let flags = bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
         let new_s2tte = pa as u64 | flags;
 
-        get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
+        rd.s2_table()
             .lock()
             .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
     }
@@ -334,8 +309,8 @@ pub fn make_shared(id: usize, ipa: usize, level: usize) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn make_exclusive(id: usize, ipa: usize, level: usize) -> Result<(), Error> {
-    let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
+pub fn make_exclusive(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error> {
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 
     if level != last_level {
         return Err(Error::RmiErrorRtt(last_level)); //XXX: check this again
@@ -347,10 +322,7 @@ pub fn make_exclusive(id: usize, ipa: usize, level: usize) -> Result<(), Error> 
         let flags = bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::RAM);
         let new_s2tte = s2tte.get() | flags;
 
-        get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
+        rd.s2_table()
             .lock()
             .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
     } else {
@@ -360,9 +332,9 @@ pub fn make_exclusive(id: usize, ipa: usize, level: usize) -> Result<(), Error> 
     Ok(())
 }
 
-pub fn data_create(id: usize, ipa: usize, target_pa: usize) -> Result<(), Error> {
+pub fn data_create(rd: &Rd, ipa: usize, target_pa: usize) -> Result<(), Error> {
     let level = RTT_PAGE_LEVEL;
-    let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 
     if level != last_level {
         return Err(Error::RmiErrorRtt(last_level));
@@ -392,19 +364,16 @@ pub fn data_create(id: usize, ipa: usize, target_pa: usize) -> Result<(), Error>
         panic!("Unexpected ripas: {}", ripas);
     }
 
-    get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-        .lock()
-        .page_table
+    rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
 
     Ok(())
 }
 
-pub fn data_destroy(id: usize, ipa: usize) -> Result<usize, Error> {
+pub fn data_destroy(rd: &Rd, ipa: usize) -> Result<usize, Error> {
     let level = RTT_PAGE_LEVEL;
-    let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 
     if last_level != level {
         return Err(Error::RmiErrorRtt(last_level));
@@ -428,10 +397,7 @@ pub fn data_destroy(id: usize, ipa: usize) -> Result<usize, Error> {
         flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
     }
     let new_s2tte = flags;
-    get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-        .lock()
-        .page_table
+    rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
 

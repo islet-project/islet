@@ -4,8 +4,8 @@ use vmsa::address::PhysAddr;
 use super::address::GuestPhysAddr;
 use crate::granule::GRANULE_SIZE;
 use crate::realm::mm::page_table::pte::{attribute, shareable};
-use crate::realm::registry::get_realm;
-use crate::rmi::error::{Error, InternalError::NotExistRealm};
+use crate::rmi::error::Error;
+use crate::rmi::realm::Rd;
 use crate::rmi::rtt::{RTT_MIN_BLOCK_LEVEL, RTT_PAGE_LEVEL};
 use armv9a::{define_bitfield, define_bits, define_mask};
 use vmsa::guard::Content;
@@ -77,15 +77,13 @@ impl From<usize> for S2TTE {
 
 impl S2TTE {
     pub fn get_s2tte(
-        realm_id: usize,
+        rd: &Rd,
         ipa: usize,
         level: usize,
         error_code: Error,
     ) -> Result<(S2TTE, usize), Error> {
-        let (s2tte, last_level) = get_realm(realm_id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
+        let (s2tte, last_level) = rd
+            .s2_table()
             .lock()
             .ipa_to_pte(GuestPhysAddr::from(ipa), level)
             .ok_or(error_code)?;

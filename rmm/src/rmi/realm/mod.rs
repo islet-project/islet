@@ -63,12 +63,17 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         core::mem::drop(rtt_granule);
 
         // revisit rmi.create_realm() (is it necessary?)
-        create_realm(params.vmid, params.rtt_base as usize).map(|id| {
+        create_realm(params.vmid).map(|id| {
+            let s2_table = Arc::new(Mutex::new(Box::new(Stage2Translation::new(
+                params.rtt_base as usize,
+            )) as Box<dyn IPATranslation>));
+
             rd_obj.init(
                 id,
                 params.rtt_base as usize,
                 params.ipa_bits(),
                 params.rtt_level_start as isize,
+                s2_table,
             )
         })?;
 
@@ -119,7 +124,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 }
 
-fn create_realm(vmid: u16, rtt_base: usize) -> Result<usize, Error> {
+fn create_realm(vmid: u16) -> Result<usize, Error> {
     let mut rms = RMS.lock();
 
     for realm in rms.1.values() {
@@ -129,10 +134,7 @@ fn create_realm(vmid: u16, rtt_base: usize) -> Result<usize, Error> {
     }
 
     let id = rms.0;
-    let s2_table = Arc::new(Mutex::new(
-        Box::new(Stage2Translation::new(rtt_base)) as Box<dyn IPATranslation>
-    ));
-    let realm = Realm::new(id, vmid, s2_table);
+    let realm = Realm::new(id, vmid);
 
     rms.0 += 1;
     rms.1.insert(id, realm.clone());

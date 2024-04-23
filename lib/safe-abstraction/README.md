@@ -189,8 +189,7 @@ unsafe {
 // to prohibit the use of unsafe code.
 let addr = mock_get_addr_of_instance_from_external();
 
-let mut safety_assumed = assume_safe::<MyStruct>(addr).expect("Memory Safety Violation!");
-let my_struct = safety_assumed.as_mut();
+let mut my_struct = assume_safe::<MyStruct>(addr).expect("Memory Safety Violation!");
 my_struct.set(0xDEF);
 my_struct.print();
 ```

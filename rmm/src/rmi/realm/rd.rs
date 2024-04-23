@@ -10,10 +10,9 @@ use alloc::sync::Arc;
 use alloc::vec::Vec;
 use spin::mutex::Mutex;
 
-// TODO: Integrate with our `struct Realm`
 #[derive(Debug)]
 pub struct Rd {
-    realm_id: usize,
+    vmid: u16,
     state: State,
     rtt_base: usize,
     ipa_bits: usize,
@@ -28,13 +27,13 @@ pub struct Rd {
 impl Rd {
     pub fn init(
         &mut self,
-        id: usize,
+        vmid: u16,
         rtt_base: usize,
         ipa_bits: usize,
         s2_starting_level: isize,
         s2_table: Arc<Mutex<Box<dyn IPATranslation>>>,
     ) {
-        self.realm_id = id;
+        self.vmid = vmid;
         self.state = State::New;
         self.rtt_base = rtt_base;
         self.ipa_bits = ipa_bits;
@@ -47,7 +46,7 @@ impl Rd {
     }
 
     pub fn id(&self) -> usize {
-        self.realm_id
+        self.vmid as usize
     }
 
     pub fn s2_table(&self) -> &Arc<Mutex<Box<dyn IPATranslation>>> {

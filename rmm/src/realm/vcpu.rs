@@ -1,9 +1,6 @@
-use super::Realm;
-
 use crate::gic;
 use crate::realm::context::Context;
-use crate::realm::registry::get_realm;
-use crate::realm::registry::RMS;
+use crate::realm::registry::VMID_SET;
 use crate::realm::timer;
 use crate::rmi::error::Error;
 use crate::rmi::realm::Rd;
@@ -20,15 +17,13 @@ pub struct VCPU {
     pub context: Context,
     pub state: State,
     pub pcpu: Option<usize>,
-    pub realm: Arc<Mutex<Realm>>, // Realm struct the VCPU belongs to
     me: Weak<Mutex<Self>>,
 }
 
 impl VCPU {
-    pub fn new(realm: Arc<Mutex<Realm>>) -> Arc<Mutex<Self>> {
+    pub fn new() -> Arc<Mutex<Self>> {
         Arc::<Mutex<Self>>::new_cyclic(|me| {
             Mutex::new(Self {
-                realm,
                 me: me.clone(),
                 state: State::Ready,
                 context: Context::new(),
@@ -58,7 +53,8 @@ impl VCPU {
     }
 
     pub fn is_realm_dead(&self) -> bool {
-        Arc::strong_count(&self.realm) == 0
+        // XXX: is this function necessary?
+        false
     }
 }
 
@@ -82,14 +78,12 @@ pub unsafe fn current() -> Option<&'static mut VCPU> {
     }
 }
 
-pub fn create_vcpu(id: usize, rd: &mut Rd) -> Result<usize, Error> {
-    let realm = get_realm(id).ok_or(Error::RmiErrorInput)?;
-
+pub fn create_vcpu(rd: &mut Rd) -> Result<usize, Error> {
     let page_table = rd.s2_table().lock().get_base_address();
-    let vttbr =
-        bits_in_reg(VTTBR_EL2::VMID, id as u64) | bits_in_reg(VTTBR_EL2::BADDR, page_table as u64);
+    let vttbr = bits_in_reg(VTTBR_EL2::VMID, rd.id() as u64)
+        | bits_in_reg(VTTBR_EL2::BADDR, page_table as u64);
 
-    let vcpu = VCPU::new(realm.clone());
+    let vcpu = VCPU::new();
     vcpu.lock().context.sys_regs.vttbr = vttbr;
     timer::init_timer(&mut vcpu.lock());
     gic::init_gic(&mut vcpu.lock());
@@ -100,6 +94,9 @@ pub fn create_vcpu(id: usize, rd: &mut Rd) -> Result<usize, Error> {
 }
 
 pub fn remove(id: usize) -> Result<(), Error> {
-    RMS.lock().1.remove(&id).ok_or(Error::RmiErrorInput)?;
-    Ok(())
+    VMID_SET
+        .lock()
+        .remove(&id)
+        .then_some(())
+        .ok_or(Error::RmiErrorInput)
 }

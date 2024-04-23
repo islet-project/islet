@@ -15,9 +15,8 @@ use crate::measurement::HashContext;
 use crate::mm::translation::PageTable;
 use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::IPATranslation;
-use crate::realm::registry::RMS;
+use crate::realm::registry::VMID_SET;
 use crate::realm::vcpu::remove;
-use crate::realm::Realm;
 use crate::rmi;
 use crate::{get_granule, get_granule_if};
 
@@ -63,13 +62,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         core::mem::drop(rtt_granule);
 
         // revisit rmi.create_realm() (is it necessary?)
-        create_realm(params.vmid).map(|id| {
+        create_realm(params.vmid as usize).map(|_| {
             let s2_table = Arc::new(Mutex::new(Box::new(Stage2Translation::new(
                 params.rtt_base as usize,
             )) as Box<dyn IPATranslation>));
 
             rd_obj.init(
-                id,
+                params.vmid,
                 params.rtt_base as usize,
                 params.ipa_bits(),
                 params.rtt_level_start as isize,
@@ -77,7 +76,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             )
         })?;
 
-        let id = rd_obj.id();
         let rtt_base = rd_obj.rtt_base();
         // The below is added to avoid a fault regarding the RTT entry
         for i in 0..params.rtt_num_start as usize {
@@ -97,7 +95,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         eplilog().map_err(|e| {
             rmm.page_table.unmap(rd);
-            remove(id).expect("Realm should be created before.");
+            remove(params.vmid as usize).expect("Realm should be created before.");
             e
         })
     });
@@ -124,20 +122,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 }
 
-fn create_realm(vmid: u16) -> Result<usize, Error> {
-    let mut rms = RMS.lock();
+fn create_realm(vmid: usize) -> Result<(), Error> {
+    let mut vmid_set = VMID_SET.lock();
+    if vmid_set.contains(&vmid) {
+        return Err(Error::RmiErrorInput);
+    } else {
+        vmid_set.insert(vmid);
+    };
 
-    for realm in rms.1.values() {
-        if vmid == realm.lock().vmid {
-            return Err(Error::RmiErrorInput);
-        }
-    }
-
-    let id = rms.0;
-    let realm = Realm::new(id, vmid);
-
-    rms.0 += 1;
-    rms.1.insert(id, realm.clone());
-
-    Ok(id)
+    Ok(())
 }

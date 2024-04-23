@@ -2,6 +2,11 @@ use crate::rmi::rtt::realm_par_size;
 
 use vmsa::guard::Content;
 
+use crate::realm::mm::IPATranslation;
+use alloc::boxed::Box;
+use alloc::sync::Arc;
+use spin::mutex::Mutex;
+
 // TODO: Integrate with our `struct Realm`
 #[derive(Debug)]
 pub struct Rd {
@@ -11,21 +16,35 @@ pub struct Rd {
     ipa_bits: usize,
     rec_index: usize,
     s2_starting_level: isize,
+    s2_table: Arc<Mutex<Box<dyn IPATranslation>>>,
     hash_algo: u8,
 }
 
 impl Rd {
-    pub fn init(&mut self, id: usize, rtt_base: usize, ipa_bits: usize, s2_starting_level: isize) {
+    pub fn init(
+        &mut self,
+        id: usize,
+        rtt_base: usize,
+        ipa_bits: usize,
+        s2_starting_level: isize,
+        s2_table: Arc<Mutex<Box<dyn IPATranslation>>>,
+    ) {
         self.realm_id = id;
         self.state = State::New;
         self.rtt_base = rtt_base;
         self.ipa_bits = ipa_bits;
         self.rec_index = 0;
         self.s2_starting_level = s2_starting_level;
+        // XXX: without `clone()`, the below assignment would cause a data abort exception
+        self.s2_table = s2_table.clone();
     }
 
     pub fn id(&self) -> usize {
         self.realm_id
+    }
+
+    pub fn s2_table(&self) -> &Arc<Mutex<Box<dyn IPATranslation>>> {
+        &self.s2_table
     }
 
     pub fn state(&self) -> State {

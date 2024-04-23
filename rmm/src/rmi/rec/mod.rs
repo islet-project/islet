@@ -184,7 +184,7 @@ fn enter() -> [usize; 4] {
             if vcpu.is_realm_dead() {
                 vcpu.from_current();
             } else {
-                vcpu.realm.lock().page_table.lock().clean();
+                // TODO: add code equivalent to the previous clean()
                 return rmm_exit([0; 4]);
             }
         }

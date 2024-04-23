@@ -60,13 +60,13 @@ pub fn do_host_call(
 ) -> core::result::Result<(), Error> {
     let vcpuid = rec.vcpuid();
     let realmid = rec.realmid()?;
+    let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+    let rd = rd_granule.content::<Rd>();
 
     let ipa = get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
 
-    let pa = crate::realm::registry::get_realm(realmid)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-        .lock()
-        .page_table
+    let pa = rd
+        .s2_table()
         .lock()
         .ipa_to_pa(
             crate::realm::mm::address::GuestPhysAddr::from(ipa),
@@ -125,9 +125,9 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let realmid = rec.realmid()?;
         let ipa_bits = rec.ipa_bits()?;
 
-        let hash_algo = get_granule_if!(rec.owner()?, GranuleState::RD)?
-            .content::<Rd>()
-            .hash_algo(); // Rd dropped
+        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
+        let hash_algo = rd.hash_algo();
 
         let vcpuid = rec.vcpuid();
 
@@ -146,10 +146,8 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             return Ok(());
         }
 
-        let pa = crate::realm::registry::get_realm(realmid)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .page_table
+        let pa = rd
+            .s2_table()
             .lock()
             .ipa_to_pa(GuestPhysAddr::from(attest_ipa), RTT_PAGE_LEVEL)
             .ok_or(Error::RmiErrorInput)?;
@@ -254,6 +252,9 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let vcpuid = rec.vcpuid();
         let ipa_bits = rec.ipa_bits()?;
         let realmid = rec.realmid()?;
+        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
+
         let config_ipa = get_reg(realmid, vcpuid, 1)?;
         if validate_ipa(config_ipa, ipa_bits).is_err() {
             set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
@@ -261,7 +262,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             return Ok(());
         }
 
-        realm_config(realmid, config_ipa, ipa_bits)?;
+        realm_config(rd, config_ipa, ipa_bits)?;
 
         if set_reg(realmid, vcpuid, 0, SUCCESS).is_err() {
             warn!(
@@ -277,6 +278,8 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let vcpuid = rec.vcpuid();
         let ipa_bits = rec.ipa_bits()?;
         let realmid = rec.realmid()?;
+        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
 
         let ipa_page = get_reg(realmid, vcpuid, 1)?;
         if validate_ipa(ipa_page, ipa_bits).is_err() {
@@ -290,7 +293,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             return Ok(());
         }
 
-        let ripas = crate::rtt::get_ripas(realmid, ipa_page, RTT_PAGE_LEVEL)? as usize;
+        let ripas = crate::rtt::get_ripas(rd, ipa_page, RTT_PAGE_LEVEL)? as usize;
 
         debug!(
             "RSI_IPA_STATE_GET: ipa_page: {:X} ripas: {:X}",

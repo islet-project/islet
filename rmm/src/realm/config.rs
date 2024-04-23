@@ -1,7 +1,6 @@
 use crate::realm::mm::address::GuestPhysAddr;
-use crate::realm::registry::get_realm;
 use crate::rmi::error::Error;
-use crate::rmi::error::InternalError::*;
+use crate::rmi::realm::Rd;
 use crate::rmi::rtt::RTT_PAGE_LEVEL;
 
 use safe_abstraction::raw_ptr::assume_safe;
@@ -25,11 +24,9 @@ impl RealmConfig {
     }
 }
 
-pub fn realm_config(id: usize, config_ipa: usize, ipa_bits: usize) -> Result<(), Error> {
-    let res = get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-        .lock()
-        .page_table
+pub fn realm_config(rd: &Rd, config_ipa: usize, ipa_bits: usize) -> Result<(), Error> {
+    let res = rd
+        .s2_table()
         .lock()
         .ipa_to_pa(GuestPhysAddr::from(config_ipa), RTT_PAGE_LEVEL);
     if let Some(pa) = res {

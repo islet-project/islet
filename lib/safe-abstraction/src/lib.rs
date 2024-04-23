@@ -245,4 +245,24 @@ pub mod raw_ptr {
             unsafe { T::as_mut(self.addr) }
         }
     }
+
+    impl<T> core::ops::Deref for SafetyAssumed<T>
+    where
+        T: SafetyChecked + SafetyAssured,
+    {
+        type Target = T;
+
+        fn deref(&self) -> &Self::Target {
+            self.as_ref()
+        }
+    }
+
+    impl<T> core::ops::DerefMut for SafetyAssumed<T>
+    where
+        T: SafetyChecked + SafetyAssured,
+    {
+        fn deref_mut(&mut self) -> &mut T {
+            self.as_mut()
+        }
+    }
 }

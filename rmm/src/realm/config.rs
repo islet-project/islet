@@ -20,9 +20,8 @@ impl RealmConfig {
     // `console=ttyS0 root=/dev/vda rw  console=pl011,mmio,0x1c0a0000 console=ttyAMA0 printk.devkmsg=on`.
     // So, we get back to use the same kernel argument with TF-RMM's one (uart0 & uart3).
     pub fn init(config_addr: usize, ipa_width: usize) -> Result<(), Error> {
-        assume_safe::<RealmConfig>(config_addr)
-            .map(|mut realm_config| realm_config.ipa_width = ipa_width)
-            .ok_or(Error::RmiErrorInput)
+        Ok(assume_safe::<RealmConfig>(config_addr)
+            .map(|mut realm_config| realm_config.ipa_width = ipa_width)?)
     }
 }
 

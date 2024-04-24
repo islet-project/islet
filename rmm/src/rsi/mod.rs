@@ -74,7 +74,7 @@ pub fn do_host_call(
         )
         .ok_or(Error::RmiErrorInput)?;
 
-    let mut host_call = assume_safe::<HostCall>(pa.into()).ok_or(Error::RmiErrorInput)?;
+    let mut host_call = assume_safe::<HostCall>(pa.into())?;
     let imm = host_call.imm();
 
     if rec.host_call_pending() {

@@ -2,6 +2,7 @@ use crate::rmi::rtt::realm_par_size;
 
 use vmsa::guard::Content;
 
+use crate::measurement::{Measurement, MEASUREMENTS_SLOT_NR};
 use crate::realm::mm::IPATranslation;
 use alloc::boxed::Box;
 use alloc::sync::Arc;
@@ -18,6 +19,7 @@ pub struct Rd {
     s2_starting_level: isize,
     s2_table: Arc<Mutex<Box<dyn IPATranslation>>>,
     hash_algo: u8,
+    pub measurements: [Measurement; MEASUREMENTS_SLOT_NR],
 }
 
 impl Rd {
@@ -37,6 +39,7 @@ impl Rd {
         self.s2_starting_level = s2_starting_level;
         // XXX: without `clone()`, the below assignment would cause a data abort exception
         self.s2_table = s2_table.clone();
+        self.measurements = [Measurement::empty(); MEASUREMENTS_SLOT_NR];
     }
 
     pub fn id(&self) -> usize {

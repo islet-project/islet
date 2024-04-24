@@ -15,7 +15,7 @@ use crate::realm::context::{get_reg, set_reg};
 use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::mm::stage2_tte::invalid_ripas;
 use crate::rmi;
-use crate::rmi::error::{Error, InternalError::NotExistRealm};
+use crate::rmi::error::Error;
 use crate::rmi::realm::Rd;
 use crate::rmi::rec::run::Run;
 use crate::rmi::rec::{Rec, RmmRecAttestState};
@@ -152,10 +152,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             .ipa_to_pa(GuestPhysAddr::from(attest_ipa), RTT_PAGE_LEVEL)
             .ok_or(Error::RmiErrorInput)?;
 
-        let measurements = crate::realm::registry::get_realm(realmid)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .measurements;
+        let measurements = rd.measurements;
 
         let attest_size = crate::rsi::attestation::get_token(
             pa.into(),
@@ -191,6 +188,8 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
     listen!(rsi, MEASUREMENT_READ, |_arg, ret, _rmm, rec, _| {
         let vcpuid = rec.vcpuid();
         let realmid = rec.realmid()?;
+        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
         let mut measurement = Measurement::empty();
         let index = get_reg(realmid, vcpuid, 1)?;
 
@@ -201,7 +200,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             return Ok(());
         }
 
-        crate::rsi::measurement::read(realmid, index, &mut measurement)?;
+        crate::rsi::measurement::read(rd, index, &mut measurement)?;
         set_reg(realmid, vcpuid, 0, SUCCESS)?;
         for (ind, chunk) in measurement
             .as_slice()
@@ -239,8 +238,8 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             return Ok(());
         }
 
-        let rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd.content::<Rd>();
+        let mut rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd.content_mut::<Rd>();
         HashContext::new(rd)?.extend_measurement(&buffer[0..size], index)?;
 
         set_reg(realmid, vcpuid, 0, SUCCESS)?;

@@ -11,25 +11,29 @@ use crate::{
 
 pub struct HashContext<'a> {
     hasher: Hasher,
-    rd: &'a Rd,
+    rd: &'a mut Rd,
 }
 
 impl<'a> HashContext<'a> {
-    pub fn new(rd: &'a Rd) -> Result<Self, MeasurementError> {
+    pub fn new(rd: &'a mut Rd) -> Result<Self, MeasurementError> {
         Ok(Self {
             hasher: Hasher::from_hash_algo(rd.hash_algo())?,
             rd,
         })
     }
 
-    pub fn measure_realm_create(&self, params: &RealmParams) -> Result<(), rsi::error::Error> {
-        crate::rsi::measurement::extend(self.rd.id(), MEASUREMENTS_SLOT_RIM, |rim| {
+    pub fn measure_realm_create(&mut self, params: &RealmParams) -> Result<(), rsi::error::Error> {
+        crate::rsi::measurement::extend(self.rd, MEASUREMENTS_SLOT_RIM, |rim| {
             self.hasher.hash_object_into(params, rim)
         })
     }
 
-    pub fn extend_measurement(&self, buffer: &[u8], index: usize) -> Result<(), rsi::error::Error> {
-        crate::rsi::measurement::extend(self.rd.id(), index, |current| {
+    pub fn extend_measurement(
+        &mut self,
+        buffer: &[u8],
+        index: usize,
+    ) -> Result<(), rsi::error::Error> {
+        crate::rsi::measurement::extend(self.rd, index, |current| {
             let old_value = *current;
 
             self.hasher.hash_fields_into(current, |h| {
@@ -40,7 +44,7 @@ impl<'a> HashContext<'a> {
     }
 
     pub fn measure_data_granule(
-        &self,
+        &mut self,
         data: &DataPage,
         ipa: usize,
         flags: usize,
@@ -53,7 +57,7 @@ impl<'a> HashContext<'a> {
             })?;
         }
 
-        crate::rsi::measurement::extend(self.rd.id(), MEASUREMENTS_SLOT_RIM, |current| {
+        crate::rsi::measurement::extend(self.rd, MEASUREMENTS_SLOT_RIM, |current| {
             let oldrim = *current;
 
             self.hasher.hash_fields_into(current, |h| {
@@ -69,12 +73,12 @@ impl<'a> HashContext<'a> {
         })
     }
 
-    pub fn measure_rec_params(&self, params: &RecParams) -> Result<(), rsi::error::Error> {
+    pub fn measure_rec_params(&mut self, params: &RecParams) -> Result<(), rsi::error::Error> {
         let mut params_measurement = Measurement::empty();
         self.hasher
             .hash_object_into(params, &mut params_measurement)?;
 
-        crate::rsi::measurement::extend(self.rd.id(), MEASUREMENTS_SLOT_RIM, |current| {
+        crate::rsi::measurement::extend(self.rd, MEASUREMENTS_SLOT_RIM, |current| {
             let oldrim = *current;
 
             self.hasher.hash_fields_into(current, |h| {
@@ -88,8 +92,12 @@ impl<'a> HashContext<'a> {
         })
     }
 
-    pub fn measure_ripas_granule(&self, ipa: usize, level: u8) -> Result<(), rsi::error::Error> {
-        crate::rsi::measurement::extend(self.rd.id(), MEASUREMENTS_SLOT_RIM, |current| {
+    pub fn measure_ripas_granule(
+        &mut self,
+        ipa: usize,
+        level: u8,
+    ) -> Result<(), rsi::error::Error> {
+        crate::rsi::measurement::extend(self.rd, MEASUREMENTS_SLOT_RIM, |current| {
             let oldrim = *current;
 
             self.hasher.hash_fields_into(current, |h| {

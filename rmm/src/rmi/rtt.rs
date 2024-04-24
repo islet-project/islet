@@ -86,8 +86,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     listen!(mainloop, rmi::RTT_INIT_RIPAS, |arg, _ret, _rmm| {
-        let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let mut rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        let rd = rd_granule.content_mut::<Rd>();
         let ipa = arg[1];
         let level = arg[2];
 
@@ -176,8 +176,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         // rd granule lock
-        let rd_granule = get_granule_if!(rd, GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
+        let rd = rd_granule.content_mut::<Rd>();
 
         // Make sure DATA_CREATE is only processed
         // when the realm is in its New state.

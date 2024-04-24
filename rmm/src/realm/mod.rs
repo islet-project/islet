@@ -5,7 +5,6 @@ pub mod registry;
 pub mod timer;
 pub mod vcpu;
 
-use crate::measurement::{Measurement, MEASUREMENTS_SLOT_NR};
 use crate::realm::vcpu::{Context, VCPU};
 
 use alloc::sync::Arc;
@@ -20,19 +19,13 @@ pub struct Realm<T: Context> {
     id: usize,
     pub vmid: u16,
     pub vcpus: Vec<Arc<Mutex<VCPU<T>>>>,
-    pub measurements: [Measurement; MEASUREMENTS_SLOT_NR],
 }
 
 impl<T: Context + Default> Realm<T> {
     pub fn new(id: usize, vmid: u16) -> Arc<Mutex<Self>> {
         Arc::new({
             let vcpus = Vec::new();
-            Mutex::new(Self {
-                id,
-                vmid,
-                vcpus,
-                measurements: [Measurement::empty(); MEASUREMENTS_SLOT_NR],
-            })
+            Mutex::new(Self { id, vmid, vcpus })
         })
     }
 }

@@ -1,19 +1,15 @@
 use crate::measurement::MeasurementError;
-use crate::realm::registry::get_realm;
 use crate::rsi::error::Error;
+use crate::rsi::Rd;
 
 pub fn read(
-    realmid: usize,
+    rd: &Rd,
     index: usize,
     out: &mut crate::measurement::Measurement,
 ) -> Result<(), crate::rsi::error::Error> {
-    let realm_lock = get_realm(realmid).ok_or(Error::RealmDoesNotExists)?;
-
-    let mut realm = realm_lock.lock();
-
-    let measurement = realm
+    let measurement = rd
         .measurements
-        .iter_mut()
+        .iter()
         .nth(index)
         .ok_or(Error::InvalidMeasurementIndex)?;
 
@@ -22,15 +18,11 @@ pub fn read(
 }
 
 pub fn extend(
-    realmid: usize,
+    rd: &mut Rd,
     index: usize,
     f: impl Fn(&mut crate::measurement::Measurement) -> Result<(), MeasurementError>,
 ) -> Result<(), crate::rsi::error::Error> {
-    let realm_lock = get_realm(realmid).ok_or(Error::RealmDoesNotExists)?;
-
-    let mut realm = realm_lock.lock();
-
-    let measurement = realm
+    let measurement = rd
         .measurements
         .iter_mut()
         .nth(index)

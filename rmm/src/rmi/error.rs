@@ -1,5 +1,7 @@
 use crate::{measurement::MeasurementError, rsi};
 
+use safe_abstraction::raw_ptr;
+
 // B3.4.1 RmiCommandReturnCode type
 // Default index is 0
 #[derive(Debug)]
@@ -57,5 +59,12 @@ impl From<rsi::error::Error> for Error {
             }
             _ => Self::RmiErrorOthers(InternalError::InvalidMeasurementIndex),
         }
+    }
+}
+
+impl From<raw_ptr::Error> for Error {
+    fn from(error: raw_ptr::Error) -> Self {
+        error!("Failed to convert a raw pointer to the struct. {:?}", error);
+        Error::RmiErrorInput
     }
 }

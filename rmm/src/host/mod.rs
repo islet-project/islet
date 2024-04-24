@@ -14,7 +14,14 @@ pub fn copy_from<T: SafetyChecked + SafetyAssured + Copy>(addr: usize) -> Option
     PageTable::get_ref().map(addr, false);
     let ret = assume_safe::<T>(addr).map(|safety_assumed| *safety_assumed);
     PageTable::get_ref().unmap(addr);
-    ret
+
+    match ret {
+        Ok(obj) => Some(obj),
+        Err(err) => {
+            error!("Failed to convert a raw pointer to the struct. {:?}", err);
+            None
+        }
+    }
 }
 
 pub fn copy_to<T: SafetyChecked + SafetyAssured + Copy>(src: &T, dst: usize) -> Option<()> {
@@ -25,7 +32,14 @@ pub fn copy_to<T: SafetyChecked + SafetyAssured + Copy>(src: &T, dst: usize) -> 
     PageTable::get_ref().map(dst, false);
     let ret = assume_safe::<T>(dst).map(|mut safety_assumed| *safety_assumed = *src);
     PageTable::get_ref().unmap(dst);
-    ret
+
+    match ret {
+        Ok(_) => Some(()),
+        Err(err) => {
+            error!("Failed to convert a raw pointer to the struct. {:?}", err);
+            None
+        }
+    }
 }
 
 /// DataPage is used to convey realm data from host to realm.

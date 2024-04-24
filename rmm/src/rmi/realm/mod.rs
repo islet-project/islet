@@ -7,6 +7,7 @@ use self::params::Params;
 use self::rd::State;
 use super::error::Error;
 use crate::event::Mainloop;
+use crate::granule::GRANULE_SIZE;
 use crate::granule::{set_granule, GranuleState};
 use crate::host;
 use crate::listen;

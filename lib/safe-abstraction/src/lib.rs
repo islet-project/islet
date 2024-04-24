@@ -1,6 +1,7 @@
 #![warn(rust_2018_idioms)]
 #![deny(warnings)]
 #![no_std]
+#![feature(error_in_core)]
 
 //! # Safe Abstraction Crate
 //!
@@ -162,6 +163,27 @@ pub mod raw_ptr {
         fn verify_ownership(&self) -> bool;
     }
 
+    /// Enumerates the types of errors that can occur in the `assume_safe` function.
+    #[derive(Debug)]
+    pub enum Error {
+        /// Indicates a failure in safety checks (SafetyChecked trait).
+        SafetyCheckFailed,
+
+        /// Indicates a failure in assurance checks (SafetyAssured trait).
+        AssuranceCheckFailed,
+    }
+
+    impl core::fmt::Display for Error {
+        fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+            match *self {
+                Error::SafetyCheckFailed => write!(f, "Safety check failed"),
+                Error::AssuranceCheckFailed => write!(f, "Assurance check failed"),
+            }
+        }
+    }
+
+    impl core::error::Error for Error {}
+
     /// Attempts to create a `SafetyAssumed` instance from a address.
     ///
     /// This function checks both `SafetyChecked` and `SafetyAssured` traits' conditions
@@ -176,24 +198,28 @@ pub mod raw_ptr {
     ///
     /// # Returns
     ///
-    /// Returns `Some(SafetyAssumed)` if all safety checks are satisfied,
-    /// or `None` if any of the checks fail, indicating that it is not safe to proceed.
-    pub fn assume_safe<T: SafetyChecked + SafetyAssured>(addr: usize) -> Option<SafetyAssumed<T>> {
+    /// Returns `Ok(SafetyAssumed)` if all safety checks are satisfied, or `Error`
+    pub fn assume_safe<T: SafetyChecked + SafetyAssured>(
+        addr: usize,
+    ) -> Result<SafetyAssumed<T>, Error> {
         let ptr = addr as *const T;
         // Safety: This cast from a raw pointer to a reference is considered safe
         //         because it is used solely for the purpose of verifying alignment and range,
         //         without actually dereferencing the pointer.
         let ref_ = unsafe { &*(ptr) };
-        let checked = ref_.is_not_null() && ref_.is_aligned();
-        let assured = ref_.is_initialized() && ref_.verify_ownership();
 
-        match checked && assured {
-            true => Some(SafetyAssumed {
-                addr,
-                _phantom: core::marker::PhantomData,
-            }),
-            false => None,
+        if !ref_.is_not_null() || !ref_.is_aligned() {
+            return Err(Error::SafetyCheckFailed);
         }
+
+        if !ref_.is_initialized() || !ref_.verify_ownership() {
+            return Err(Error::AssuranceCheckFailed);
+        }
+
+        Ok(SafetyAssumed {
+            addr,
+            _phantom: core::marker::PhantomData,
+        })
     }
 
     /// Represents a target instance that has passed all necessary safety checks.

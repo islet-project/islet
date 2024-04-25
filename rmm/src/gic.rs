@@ -1,4 +1,3 @@
-use crate::realm::context::Context;
 use crate::realm::registry::get_realm;
 use crate::realm::vcpu::VCPU;
 use crate::rmi::error::Error;
@@ -84,7 +83,7 @@ lazy_static! {
     };
 }
 
-pub fn init_gic(vcpu: &mut VCPU<Context>) {
+pub fn init_gic(vcpu: &mut VCPU) {
     let gic_state = &mut vcpu.context.gic_state;
     gic_state.ich_hcr_el2 =
         ICH_HCR_EL2_EN_BIT | ICH_HCR_EL2_VSGIEEOICOUNT_BIT | ICH_HCR_EL2_DVIM_BIT
@@ -196,7 +195,7 @@ fn get_ap1r(i: usize) -> u64 {
     }
 }
 
-pub fn restore_state(vcpu: &VCPU<Context>) {
+pub fn restore_state(vcpu: &VCPU) {
     let gic_state = &vcpu.context.gic_state;
     let nr_lrs = GIC_FEATURES.nr_lrs;
     let nr_aprs = GIC_FEATURES.nr_aprs;
@@ -212,7 +211,7 @@ pub fn restore_state(vcpu: &VCPU<Context>) {
     unsafe { ICH_HCR_EL2.set(gic_state.ich_hcr_el2) };
 }
 
-pub fn save_state(vcpu: &mut VCPU<Context>) {
+pub fn save_state(vcpu: &mut VCPU) {
     let gic_state = &mut vcpu.context.gic_state;
     let nr_lrs = GIC_FEATURES.nr_lrs;
     let nr_aprs = GIC_FEATURES.nr_aprs;

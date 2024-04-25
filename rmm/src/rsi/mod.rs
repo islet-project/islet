@@ -59,11 +59,10 @@ pub fn do_host_call(
     run: &mut Run,
 ) -> core::result::Result<(), Error> {
     let vcpuid = rec.vcpuid();
-    let realmid = rec.realmid()?;
     let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
     let rd = rd_granule.content::<Rd>();
 
-    let ipa = get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
+    let ipa = get_reg(rd, vcpuid, 1).unwrap_or(0x0);
 
     let pa = rd
         .s2_table()
@@ -97,13 +96,14 @@ pub fn do_host_call(
 
 pub fn set_event_handler(rsi: &mut RsiHandle) {
     listen!(rsi, ATTEST_TOKEN_INIT, |_arg, ret, _rmm, rec, _| {
-        let realmid = rec.realmid()?;
         let vcpuid = rec.vcpuid();
+        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
 
         let mut challenge: [u8; 64] = [0; 64];
 
         for i in 0..8 {
-            let challenge_part = get_reg(realmid, vcpuid, i + 2)?;
+            let challenge_part = get_reg(rd, vcpuid, i + 2)?;
             let start_idx = i * 8;
             let end_idx = start_idx + 8;
             challenge[start_idx..end_idx].copy_from_slice(&challenge_part.to_le_bytes());
@@ -112,17 +112,16 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         rec.set_attest_challenge(&challenge);
         rec.set_attest_state(RmmRecAttestState::AttestInProgress);
 
-        set_reg(realmid, vcpuid, 0, SUCCESS)?;
+        set_reg(rd, vcpuid, 0, SUCCESS)?;
 
         // TODO: Calculate real token size
-        set_reg(realmid, vcpuid, 1, 4096)?;
+        set_reg(rd, vcpuid, 1, 4096)?;
 
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
     });
 
     listen!(rsi, ATTEST_TOKEN_CONTINUE, |_arg, ret, _rmm, rec, _| {
-        let realmid = rec.realmid()?;
         let ipa_bits = rec.ipa_bits()?;
 
         let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
@@ -133,15 +132,15 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
         if rec.attest_state() != RmmRecAttestState::AttestInProgress {
             warn!("Calling attest token continue without init");
-            set_reg(realmid, vcpuid, 0, ERROR_STATE)?;
+            set_reg(rd, vcpuid, 0, ERROR_STATE)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
 
-        let attest_ipa = get_reg(realmid, vcpuid, 1)?;
+        let attest_ipa = get_reg(rd, vcpuid, 1)?;
         if validate_ipa(attest_ipa, ipa_bits).is_err() {
             warn!("Wrong ipa passed {}", attest_ipa);
-            set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            set_reg(rd, vcpuid, 0, ERROR_INPUT)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
@@ -161,8 +160,8 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             hash_algo,
         );
 
-        set_reg(realmid, vcpuid, 0, SUCCESS)?;
-        set_reg(realmid, vcpuid, 1, attest_size)?;
+        set_reg(rd, vcpuid, 0, SUCCESS)?;
+        set_reg(rd, vcpuid, 1, attest_size)?;
 
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
@@ -173,8 +172,10 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
     listen!(rsi, ABI_VERSION, |_arg, ret, _rmm, rec, _| {
         let vcpuid = rec.vcpuid();
         let realmid = rec.realmid()?;
+        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
 
-        if set_reg(realmid, vcpuid, 0, VERSION).is_err() {
+        if set_reg(rd, vcpuid, 0, VERSION).is_err() {
             warn!(
                 "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
                 realmid, vcpuid
@@ -187,28 +188,27 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, MEASUREMENT_READ, |_arg, ret, _rmm, rec, _| {
         let vcpuid = rec.vcpuid();
-        let realmid = rec.realmid()?;
         let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let mut measurement = Measurement::empty();
-        let index = get_reg(realmid, vcpuid, 1)?;
+        let index = get_reg(rd, vcpuid, 1)?;
 
         if index >= MEASUREMENTS_SLOT_NR {
             warn!("Wrong index passed: {}", index);
-            set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            set_reg(rd, vcpuid, 0, ERROR_INPUT)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
 
         crate::rsi::measurement::read(rd, index, &mut measurement)?;
-        set_reg(realmid, vcpuid, 0, SUCCESS)?;
+        set_reg(rd, vcpuid, 0, SUCCESS)?;
         for (ind, chunk) in measurement
             .as_slice()
             .chunks_exact(core::mem::size_of::<usize>())
             .enumerate()
         {
             let reg_value = usize::from_le_bytes(chunk.try_into().unwrap());
-            set_reg(realmid, vcpuid, ind + 1, reg_value)?;
+            set_reg(rd, vcpuid, ind + 1, reg_value)?;
         }
 
         ret[0] = rmi::SUCCESS_REC_ENTER;
@@ -217,15 +217,16 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, MEASUREMENT_EXTEND, |_arg, ret, _rmm, rec, _| {
         let vcpuid = rec.vcpuid();
-        let realmid = rec.realmid()?;
+        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
 
-        let index = get_reg(realmid, vcpuid, 1)?;
-        let size = get_reg(realmid, vcpuid, 2)?;
+        let index = get_reg(rd, vcpuid, 1)?;
+        let size = get_reg(rd, vcpuid, 2)?;
         let mut buffer = [0u8; 64];
 
         for i in 0..8 {
             buffer[i * 8..i * 8 + 8]
-                .copy_from_slice(get_reg(realmid, vcpuid, i + 3)?.to_le_bytes().as_slice());
+                .copy_from_slice(get_reg(rd, vcpuid, i + 3)?.to_le_bytes().as_slice());
         }
 
         if size > buffer.len() || index == MEASUREMENTS_SLOT_RIM || index >= MEASUREMENTS_SLOT_NR {
@@ -233,7 +234,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
                 "Wrong index or buffer size passed: idx: {}, size: {}",
                 index, size
             );
-            set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            set_reg(rd, vcpuid, 0, ERROR_INPUT)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
@@ -242,7 +243,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let rd = rd.content_mut::<Rd>();
         HashContext::new(rd)?.extend_measurement(&buffer[0..size], index)?;
 
-        set_reg(realmid, vcpuid, 0, SUCCESS)?;
+        set_reg(rd, vcpuid, 0, SUCCESS)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
     });
@@ -254,16 +255,16 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
 
-        let config_ipa = get_reg(realmid, vcpuid, 1)?;
+        let config_ipa = get_reg(rd, vcpuid, 1)?;
         if validate_ipa(config_ipa, ipa_bits).is_err() {
-            set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            set_reg(rd, vcpuid, 0, ERROR_INPUT)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
 
         realm_config(rd, config_ipa, ipa_bits)?;
 
-        if set_reg(realmid, vcpuid, 0, SUCCESS).is_err() {
+        if set_reg(rd, vcpuid, 0, SUCCESS).is_err() {
             warn!(
                 "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
                 realmid, vcpuid
@@ -280,9 +281,9 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
 
-        let ipa_page = get_reg(realmid, vcpuid, 1)?;
+        let ipa_page = get_reg(rd, vcpuid, 1)?;
         if validate_ipa(ipa_page, ipa_bits).is_err() {
-            if set_reg(realmid, vcpuid, 0, ERROR_INPUT).is_err() {
+            if set_reg(rd, vcpuid, 0, ERROR_INPUT).is_err() {
                 warn!(
                     "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
                     realmid, vcpuid
@@ -299,14 +300,14 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             ipa_page, ripas
         );
 
-        if set_reg(realmid, vcpuid, 0, SUCCESS).is_err() {
+        if set_reg(rd, vcpuid, 0, SUCCESS).is_err() {
             warn!(
                 "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
                 realmid, vcpuid
             );
         }
 
-        if set_reg(realmid, vcpuid, 1, ripas).is_err() {
+        if set_reg(rd, vcpuid, 1, ripas).is_err() {
             warn!(
                 "Unable to set register 1. realmid: {:?} vcpuid: {:?}",
                 realmid, vcpuid
@@ -319,12 +320,13 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, IPA_STATE_SET, |_arg, ret, _rmm, rec, run| {
         let vcpuid = rec.vcpuid();
-        let realmid = rec.realmid()?;
         let ipa_bits = rec.ipa_bits()?;
+        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
 
-        let ipa_start = get_reg(realmid, vcpuid, 1)?;
-        let ipa_size = get_reg(realmid, vcpuid, 2)?;
-        let ipa_state = get_reg(realmid, vcpuid, 3)? as u8;
+        let ipa_start = get_reg(rd, vcpuid, 1)?;
+        let ipa_size = get_reg(rd, vcpuid, 2)?;
+        let ipa_state = get_reg(rd, vcpuid, 3)? as u8;
         let ipa_end = ipa_start + ipa_size;
 
         if ipa_end <= ipa_start {
@@ -337,7 +339,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             || !is_protected_ipa(ipa_start, ipa_bits)
             || !is_protected_ipa(ipa_end - 1, ipa_bits)
         {
-            set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            set_reg(rd, vcpuid, 0, ERROR_INPUT)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }

@@ -5,7 +5,6 @@ pub mod params;
 pub mod run;
 pub mod vtcr;
 use crate::realm;
-use crate::realm::registry::get_realm;
 use crate::realm::vcpu::State as RecState;
 use crate::realm::vcpu::VCPU;
 use crate::rmi::error::Error;
@@ -200,12 +199,9 @@ fn exit() {
     }
 }
 
-pub fn run(id: usize, vcpu: usize, incr_pc: usize) -> Result<[usize; 4], Error> {
+pub fn run_prepare(rd: &Rd, vcpu: usize, incr_pc: usize) -> Result<(), Error> {
     if incr_pc == 1 {
-        get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .vcpus
+        rd.vcpus
             .get(vcpu)
             .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
             .lock()
@@ -214,27 +210,22 @@ pub fn run(id: usize, vcpu: usize, incr_pc: usize) -> Result<[usize; 4], Error> 
     }
     debug!(
         "resuming: {:#x}",
-        get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-            .lock()
-            .vcpus
+        rd.vcpus
             .get(vcpu)
             .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
             .lock()
             .context
             .elr
     );
-
-    if let Some(vcpu) = get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-        .lock()
-        .vcpus
-        .get(vcpu)
-    {
+    if let Some(vcpu) = rd.vcpus.get(vcpu) {
         VCPU::into_current(&mut *vcpu.lock())
     }
 
-    trace!("Switched to VCPU {} on Realm {}", vcpu, id);
+    trace!("Switched to VCPU {} on Realm {}", vcpu, rd.id());
+    Ok(())
+}
+
+pub fn run() -> Result<[usize; 4], Error> {
     let ret = enter();
 
     exit();

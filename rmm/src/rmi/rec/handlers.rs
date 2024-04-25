@@ -61,11 +61,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         for (idx, gpr) in params.gprs.iter().enumerate() {
-            if set_reg(rd.id(), rec.vcpuid(), idx, *gpr as usize).is_err() {
+            if set_reg(rd, rec.vcpuid(), idx, *gpr as usize).is_err() {
                 return Err(Error::RmiErrorInput);
             }
         }
-        if set_reg(rd.id(), rec.vcpuid(), 31, params.pc as usize).is_err() {
+        if set_reg(rd, rec.vcpuid(), 31, params.pc as usize).is_err() {
             return Err(Error::RmiErrorInput);
         }
         rec.set_vtcr(prepare_vtcr(rd)?);
@@ -96,7 +96,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // grab the lock for Rec
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
         let rec = rec_granule.content_mut::<Rec<'_>>();
-        let realm_id = rec.realmid()?;
 
         if !rec.runnable() {
             return Err(Error::RmiErrorRec);
@@ -107,10 +106,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorRec);
         }
 
-        match get_granule_if!(rec.owner()?, GranuleState::RD)?
-            .content::<Rd>()
-            .state() // Rd dropped
-        {
+        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
+        match rd.state() {
             State::Active => {}
             State::New => {
                 return Err(Error::RmiErrorRealm(0));
@@ -122,6 +120,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 panic!("Unexpected realm state");
             }
         }
+        // XXX: we explicitly release Rd's lock here to avoid a deadlock
+        core::mem::drop(rd_granule);
 
         // read Run
         let mut run = host::copy_from::<Run>(run_pa).ok_or(Error::RmiErrorInput)?;
@@ -129,18 +129,23 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         trace!("{:?}", run);
 
         if rec.host_call_pending() {
+            // The below should be called without holding rd's lock
             do_host_call(arg, ret, rmm, rec, &mut run)?;
         }
 
-        crate::gic::receive_state_from_host(realm_id, rec.vcpuid(), &run)?;
-        crate::mmio::emulate_mmio(realm_id, rec.vcpuid(), &run)?;
+        let mut rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content_mut::<Rd>();
+        crate::gic::receive_state_from_host(rd, rec.vcpuid(), &run)?;
+        crate::mmio::emulate_mmio(rd, rec.vcpuid(), &run)?;
 
         let ripas = rec.ripas_addr() as usize;
         if ripas > 0 {
-            set_reg(realm_id, rec.vcpuid(), 0, 0)?;
-            set_reg(realm_id, rec.vcpuid(), 1, ripas)?;
+            set_reg(rd, rec.vcpuid(), 0, 0)?;
+            set_reg(rd, rec.vcpuid(), 1, ripas)?;
             rec.set_ripas(0, 0, 0, 0);
         }
+        // XXX: we explicitly release Rd's lock here to avoid a deadlock
+        core::mem::drop(rd_granule);
 
         let wfx_flag = run.entry_flags();
         if wfx_flag & (REC_ENTRY_FLAG_TRAP_WFI | REC_ENTRY_FLAG_TRAP_WFE) != 0 {
@@ -155,8 +160,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             ret_ns = true;
             run.set_imm(0);
 
+            let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+            let rd = rd_granule.content::<Rd>();
             rec.set_state(RecState::Running);
-            match crate::rmi::rec::run(realm_id, rec.vcpuid(), 0) {
+            crate::rmi::rec::run_prepare(rd, rec.vcpuid(), 0)?;
+            // XXX: we explicitly release Rd's lock here, because RSI calls
+            //      would acquire the same lock again (deadlock).
+            core::mem::drop(rd_granule);
+            match crate::rmi::rec::run() {
                 Ok(realm_exit_res) => {
                     (ret_ns, ret[0]) = handle_realm_exit(realm_exit_res, rmm, rec, &mut run)?
                 }
@@ -168,8 +179,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 break;
             }
         }
-        crate::gic::send_state_to_host(realm_id, rec.vcpuid(), &mut run)?;
-        crate::realm::timer::send_state_to_host(realm_id, rec.vcpuid(), &mut run)?;
+        let mut rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content_mut::<Rd>();
+        crate::gic::send_state_to_host(rd, rec.vcpuid(), &mut run)?;
+        crate::realm::timer::send_state_to_host(rd, rec.vcpuid(), &mut run)?;
 
         // NOTICE: do not modify `run` after copy_to_host_or_ret!(). it won't have any effect.
         host::copy_to::<Run>(&run, run_pa).ok_or(Error::RmiErrorInput)

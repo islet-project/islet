@@ -2,6 +2,10 @@ extern crate alloc;
 
 use super::Context;
 
+use crate::get_granule;
+use crate::get_granule_if;
+use crate::granule::GranuleState;
+use crate::rmi::realm::Rd;
 use crate::rmi::rec::run::Run;
 use crate::rmi::rec::Rec;
 use crate::rsi;
@@ -53,16 +57,24 @@ impl RsiHandle {
                     RsiHandle::NOT_SUPPORTED
                 );
 
-                let realm_id = match rec.realmid() {
-                    Ok(realm_id) => realm_id,
-                    Err(e) => {
-                        error!("Failed to get realmid with {:?}", e);
-                        return RsiHandle::RET_FAIL;
-                    }
+                let res = rec.owner();
+                let rec_owner = if let Ok(owner) = res {
+                    owner
+                } else {
+                    error!("Failed to get realm owner");
+                    return RsiHandle::RET_FAIL;
                 };
+                let res = get_granule_if!(rec_owner, GranuleState::RD);
+                let rd_granule = if let Ok(x) = res {
+                    x
+                } else {
+                    error!("Failed to get rd granule");
+                    return RsiHandle::RET_FAIL;
+                };
+                let rd = rd_granule.content::<Rd>();
 
                 // TODO: handle the error properly
-                let _ = set_reg(realm_id, rec.vcpuid(), 0, RsiHandle::NOT_SUPPORTED);
+                let _ = set_reg(rd, rec.vcpuid(), 0, RsiHandle::NOT_SUPPORTED);
 
                 return RsiHandle::RET_FAIL;
             }

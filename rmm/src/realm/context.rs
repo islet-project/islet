@@ -1,10 +1,10 @@
 use super::timer;
 use crate::cpu::get_cpu_id;
 use crate::gic;
-use crate::realm::registry::get_realm;
 use crate::realm::vcpu::VCPU;
 use crate::rmi::error::Error;
 use crate::rmi::error::InternalError::*;
+use crate::rmi::realm::Rd;
 
 use armv9a::regs::*;
 
@@ -20,13 +20,10 @@ pub struct Context {
     pub fp_regs: [u128; 32],
 }
 
-pub fn set_reg(id: usize, vcpu: usize, register: usize, value: usize) -> Result<(), Error> {
+pub fn set_reg(rd: &Rd, vcpu: usize, register: usize, value: usize) -> Result<(), Error> {
     match register {
         0..=30 => {
-            get_realm(id)
-                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-                .lock()
-                .vcpus
+            rd.vcpus
                 .get(vcpu)
                 .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
                 .lock()
@@ -35,10 +32,7 @@ pub fn set_reg(id: usize, vcpu: usize, register: usize, value: usize) -> Result<
             Ok(())
         }
         31 => {
-            get_realm(id)
-                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-                .lock()
-                .vcpus
+            rd.vcpus
                 .get(vcpu)
                 .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
                 .lock()
@@ -47,10 +41,7 @@ pub fn set_reg(id: usize, vcpu: usize, register: usize, value: usize) -> Result<
             Ok(())
         }
         32 => {
-            get_realm(id)
-                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-                .lock()
-                .vcpus
+            rd.vcpus
                 .get(vcpu)
                 .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
                 .lock()
@@ -63,12 +54,10 @@ pub fn set_reg(id: usize, vcpu: usize, register: usize, value: usize) -> Result<
     Ok(())
 }
 
-pub fn get_reg(id: usize, vcpu: usize, register: usize) -> Result<usize, Error> {
+pub fn get_reg(rd: &Rd, vcpu: usize, register: usize) -> Result<usize, Error> {
     match register {
         0..=30 => {
-            let value = get_realm(id)
-                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-                .lock()
+            let value = rd
                 .vcpus
                 .get(vcpu)
                 .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
@@ -78,9 +67,7 @@ pub fn get_reg(id: usize, vcpu: usize, register: usize) -> Result<usize, Error> 
             Ok(value as usize)
         }
         31 => {
-            let value = get_realm(id)
-                .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-                .lock()
+            let value = rd
                 .vcpus
                 .get(vcpu)
                 .ok_or(Error::RmiErrorOthers(NotExistVCPU))?

@@ -87,12 +87,12 @@ fn is_non_emulatable_data_abort(
     Ok(ret)
 }
 
-fn get_write_val(realm_id: usize, vcpu_id: usize, esr_el2: u64) -> Result<u64, Error> {
+fn get_write_val(rd: &Rd, vcpu_id: usize, esr_el2: u64) -> Result<u64, Error> {
     let esr_el2 = EsrEl2::new(esr_el2);
     let rt = esr_el2.get_masked_value(EsrEl2::SRT) as usize;
     let write_val = match rt == 31 {
         true => 0, // xzr
-        false => get_reg(realm_id, vcpu_id, rt)? as u64 & esr_el2.get_access_size_mask(),
+        false => get_reg(rd, vcpu_id, rt)? as u64 & esr_el2.get_access_size_mask(),
     };
     Ok(write_val)
 }
@@ -102,7 +102,6 @@ fn handle_data_abort(
     rec: &Rec<'_>,
     run: &mut Run,
 ) -> Result<usize, Error> {
-    let realm_id = rec.realmid()?;
     let ipa_bits = rec.ipa_bits()?;
     let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
     let rd = rd_granule.content::<Rd>();
@@ -121,7 +120,7 @@ fn handle_data_abort(
         true => (esr_el2 & NON_EMULATABLE_ABORT_MASK, 0),
         false => {
             if esr_el2 & EsrEl2::WNR != 0 {
-                let write_val = get_write_val(realm_id, rec.vcpuid(), esr_el2)?;
+                let write_val = get_write_val(rd, rec.vcpuid(), esr_el2)?;
                 run.set_gpr(0, write_val)?;
             }
             (

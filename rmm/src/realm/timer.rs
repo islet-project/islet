@@ -1,4 +1,3 @@
-use super::context::Context;
 use crate::realm::registry::get_realm;
 use crate::realm::vcpu::VCPU;
 use crate::rmi::error::Error;
@@ -7,17 +6,17 @@ use crate::rmi::rec::run::Run;
 
 use armv9a::regs::*;
 
-pub fn init_timer(vcpu: &mut VCPU<Context>) {
+pub fn init_timer(vcpu: &mut VCPU) {
     let timer = &mut vcpu.context.timer;
     timer.cnthctl_el2 = S3_4_C14_C1_0::EL1PCTEN | S3_4_C14_C1_0::EL1PTEN;
 }
 
-pub fn set_cnthctl(vcpu: &mut VCPU<Context>, val: u64) {
+pub fn set_cnthctl(vcpu: &mut VCPU, val: u64) {
     let timer = &mut vcpu.context.timer;
     timer.cnthctl_el2 = val;
 }
 
-pub fn restore_state(vcpu: &VCPU<Context>) {
+pub fn restore_state(vcpu: &VCPU) {
     let timer = &vcpu.context.timer;
 
     unsafe { CNTVOFF_EL2.set(timer.cntvoff_el2) };
@@ -29,7 +28,7 @@ pub fn restore_state(vcpu: &VCPU<Context>) {
     unsafe { S3_4_C14_C1_0.set(timer.cnthctl_el2) }; // CNTHCTL_EL2
 }
 
-pub fn save_state(vcpu: &mut VCPU<Context>) {
+pub fn save_state(vcpu: &mut VCPU) {
     let timer = &mut vcpu.context.timer;
 
     timer.cntvoff_el2 = unsafe { CNTVOFF_EL2.get() };

@@ -1,5 +1,4 @@
 use crate::exception::trap;
-use crate::realm::context::Context;
 use crate::realm::vcpu::VCPU;
 
 use armv9a::regs::*;
@@ -9,14 +8,14 @@ fn check_sysreg_id_access(esr: u64) -> bool {
     (esr.get_masked(ISS::Op0) | esr.get_masked(ISS::Op1) | esr.get_masked(ISS::CRn)) == ISS::Op0
 }
 
-pub fn handle(vcpu: &mut VCPU<Context>, esr: u64) -> u64 {
+pub fn handle(vcpu: &mut VCPU, esr: u64) -> u64 {
     if check_sysreg_id_access(esr) {
         handle_sysreg_id(vcpu, esr);
     }
     trap::RET_TO_REC
 }
 
-fn handle_sysreg_id(vcpu: &mut VCPU<Context>, esr: u64) -> u64 {
+fn handle_sysreg_id(vcpu: &mut VCPU, esr: u64) -> u64 {
     let esr = ISS::new(esr);
     let il = esr.get_masked_value(ISS::IL);
     let rt = esr.get_masked_value(ISS::Rt) as usize;

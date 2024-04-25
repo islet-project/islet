@@ -8,7 +8,6 @@ use super::lower::synchronous;
 use crate::cpu;
 use crate::event::realmexit::{ExitSyncType, RecExitReason};
 use crate::mm::translation::PageTable;
-use crate::realm::context::Context;
 use crate::realm::vcpu::VCPU;
 
 use armv9a::regs::*;
@@ -142,7 +141,7 @@ pub const RET_TO_RMM: u64 = 1;
 pub extern "C" fn handle_lower_exception(
     info: Info,
     esr: u32,
-    vcpu: &mut VCPU<Context>,
+    vcpu: &mut VCPU,
     tf: &mut TrapFrame,
 ) -> u64 {
     match info.kind {
@@ -242,6 +241,6 @@ pub extern "C" fn handle_lower_exception(
 }
 
 #[inline(always)]
-fn advance_pc(vcpu: &mut VCPU<Context>) {
+fn advance_pc(vcpu: &mut VCPU) {
     vcpu.context.elr += 4;
 }

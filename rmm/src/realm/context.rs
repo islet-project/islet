@@ -93,8 +93,8 @@ pub fn get_reg(id: usize, vcpu: usize, register: usize) -> Result<usize, Error> 
     }
 }
 
-impl crate::realm::vcpu::Context for Context {
-    fn new() -> Self {
+impl Context {
+    pub fn new() -> Self {
         // Set appropriate sys registers
         // TODO: enable floating point
         // CPTR_EL2, CPACR_EL1, update vectors.s, etc..
@@ -104,7 +104,7 @@ impl crate::realm::vcpu::Context for Context {
         }
     }
 
-    unsafe fn into_current(vcpu: &mut VCPU<Self>) {
+    pub unsafe fn into_current(vcpu: &mut VCPU) {
         vcpu.pcpu = Some(get_cpu_id());
         vcpu.context.sys_regs.vmpidr = vcpu.pcpu.unwrap() as u64;
         TPIDR_EL2.set(vcpu as *const _ as u64);
@@ -112,7 +112,7 @@ impl crate::realm::vcpu::Context for Context {
         timer::restore_state(vcpu);
     }
 
-    unsafe fn from_current(vcpu: &mut VCPU<Self>) {
+    pub unsafe fn from_current(vcpu: &mut VCPU) {
         gic::save_state(vcpu);
         timer::save_state(vcpu);
         vcpu.pcpu = None;

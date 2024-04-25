@@ -5,7 +5,7 @@ pub mod registry;
 pub mod timer;
 pub mod vcpu;
 
-use crate::realm::vcpu::{Context, VCPU};
+use crate::realm::vcpu::VCPU;
 
 use alloc::sync::Arc;
 use alloc::vec::Vec;
@@ -15,13 +15,13 @@ use spin::mutex::Mutex;
 extern crate alloc;
 
 #[derive(Debug)]
-pub struct Realm<T: Context> {
+pub struct Realm {
     id: usize,
     pub vmid: u16,
-    pub vcpus: Vec<Arc<Mutex<VCPU<T>>>>,
+    pub vcpus: Vec<Arc<Mutex<VCPU>>>,
 }
 
-impl<T: Context + Default> Realm<T> {
+impl Realm {
     pub fn new(id: usize, vmid: u16) -> Arc<Mutex<Self>> {
         Arc::new({
             let vcpus = Vec::new();
@@ -30,7 +30,7 @@ impl<T: Context + Default> Realm<T> {
     }
 }
 
-impl<T: Context> Drop for Realm<T> {
+impl Drop for Realm {
     fn drop(&mut self) {
         info!("Realm #{} was destroyed!", self.id);
     }

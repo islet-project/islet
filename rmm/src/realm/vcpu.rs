@@ -1,6 +1,7 @@
 use super::Realm;
 
 use crate::gic;
+use crate::realm::context::Context;
 use crate::realm::registry::get_realm;
 use crate::realm::registry::RMS;
 use crate::realm::timer;
@@ -13,38 +14,24 @@ use spin::Mutex;
 
 extern crate alloc;
 
-pub trait Context {
-    fn new() -> Self
-    where
-        Self: Sized;
-
-    unsafe fn into_current(vcpu: &mut VCPU<Self>)
-    where
-        Self: Sized;
-
-    unsafe fn from_current(vcpu: &mut VCPU<Self>)
-    where
-        Self: Sized;
-}
-
 #[repr(C)]
 #[derive(Debug)]
-pub struct VCPU<T: Context> {
-    pub context: T,
+pub struct VCPU {
+    pub context: Context,
     pub state: State,
     pub pcpu: Option<usize>,
-    pub realm: Arc<Mutex<Realm<T>>>, // Realm struct the VCPU belongs to
+    pub realm: Arc<Mutex<Realm>>, // Realm struct the VCPU belongs to
     me: Weak<Mutex<Self>>,
 }
 
-impl<T: Context + Default> VCPU<T> {
-    pub fn new(realm: Arc<Mutex<Realm<T>>>) -> Arc<Mutex<Self>> {
+impl VCPU {
+    pub fn new(realm: Arc<Mutex<Realm>>) -> Arc<Mutex<Self>> {
         Arc::<Mutex<Self>>::new_cyclic(|me| {
             Mutex::new(Self {
                 realm,
                 me: me.clone(),
                 state: State::Ready,
-                context: T::new(),
+                context: Context::new(),
                 pcpu: None,
             })
         })
@@ -52,7 +39,7 @@ impl<T: Context + Default> VCPU<T> {
 
     pub fn into_current(&mut self) {
         unsafe {
-            T::into_current(self);
+            Context::into_current(self);
 
             core::mem::forget(self.me.upgrade().unwrap());
         }
@@ -61,7 +48,7 @@ impl<T: Context + Default> VCPU<T> {
 
     pub fn from_current(&mut self) {
         unsafe {
-            T::from_current(self);
+            Context::from_current(self);
 
             let ptr = Arc::into_raw(self.me.upgrade().unwrap());
             Arc::decrement_strong_count(ptr);
@@ -75,7 +62,7 @@ impl<T: Context + Default> VCPU<T> {
     }
 }
 
-impl<T: Context> Drop for VCPU<T> {
+impl Drop for VCPU {
     fn drop(&mut self) {
         info!("VCPU dropeed!");
     }
@@ -88,10 +75,10 @@ pub enum State {
     Running = 2,
 }
 
-pub unsafe fn current() -> Option<&'static mut VCPU<crate::realm::context::Context>> {
+pub unsafe fn current() -> Option<&'static mut VCPU> {
     match TPIDR_EL2.get() {
         0 => None,
-        current => Some(&mut *(current as *mut VCPU<crate::realm::context::Context>)),
+        current => Some(&mut *(current as *mut VCPU)),
     }
 }
 

@@ -1,13 +1,11 @@
-use crate::realm::registry::get_realm;
 use crate::rmi::error::Error;
 use crate::rmi::error::InternalError::*;
+use crate::rmi::realm::Rd;
 use crate::rmi::rec::run::{Run, REC_ENTRY_FLAG_EMUL_MMIO};
 use armv9a::regs::*;
 
-pub fn emulate_mmio(id: usize, vcpu: usize, run: &Run) -> Result<(), Error> {
-    let realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))?;
-    let mut locked_realm = realm.lock();
-    let vcpu = locked_realm
+pub fn emulate_mmio(rd: &mut Rd, vcpu: usize, run: &Run) -> Result<(), Error> {
+    let vcpu = rd
         .vcpus
         .get_mut(vcpu)
         .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;

@@ -1,7 +1,7 @@
-use crate::realm::registry::get_realm;
 use crate::realm::vcpu::VCPU;
 use crate::rmi::error::Error;
 use crate::rmi::error::InternalError::*;
+use crate::rmi::realm::Rd;
 use crate::rmi::rec::run::Run;
 
 use armv9a::regs::*;
@@ -231,10 +231,8 @@ pub fn save_state(vcpu: &mut VCPU) {
     unsafe { ICH_HCR_EL2.set(gic_state.ich_hcr_el2 & !ICH_HCR_EL2_EN_BIT) };
 }
 
-pub fn receive_state_from_host(id: usize, vcpu: usize, run: &Run) -> Result<(), Error> {
-    let realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))?;
-    let locked_realm = realm.lock();
-    let vcpu = locked_realm
+pub fn receive_state_from_host(rd: &Rd, vcpu: usize, run: &Run) -> Result<(), Error> {
+    let vcpu = rd
         .vcpus
         .get(vcpu)
         .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
@@ -247,10 +245,8 @@ pub fn receive_state_from_host(id: usize, vcpu: usize, run: &Run) -> Result<(), 
     Ok(())
 }
 
-pub fn send_state_to_host(id: usize, vcpu: usize, run: &mut Run) -> Result<(), Error> {
-    let realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))?;
-    let mut locked_realm = realm.lock();
-    let vcpu = locked_realm
+pub fn send_state_to_host(rd: &mut Rd, vcpu: usize, run: &mut Run) -> Result<(), Error> {
+    let vcpu = rd
         .vcpus
         .get_mut(vcpu)
         .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;

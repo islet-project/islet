@@ -82,7 +82,7 @@ pub unsafe fn current() -> Option<&'static mut VCPU> {
     }
 }
 
-pub fn create_vcpu(id: usize, rd: &Rd) -> Result<usize, Error> {
+pub fn create_vcpu(id: usize, rd: &mut Rd) -> Result<usize, Error> {
     let realm = get_realm(id).ok_or(Error::RmiErrorInput)?;
 
     let page_table = rd.s2_table().lock().get_base_address();
@@ -94,8 +94,8 @@ pub fn create_vcpu(id: usize, rd: &Rd) -> Result<usize, Error> {
     timer::init_timer(&mut vcpu.lock());
     gic::init_gic(&mut vcpu.lock());
 
-    realm.lock().vcpus.push(vcpu);
-    let vcpuid = realm.lock().vcpus.len() - 1;
+    rd.vcpus.push(vcpu);
+    let vcpuid = rd.vcpus.len() - 1;
     Ok(vcpuid)
 }
 

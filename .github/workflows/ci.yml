@@ -209,6 +209,9 @@ jobs:
       working-directory: sdk
       run: make sdk
 
+    - name: Test Certifier compatibility
+      run: ./scripts/tests/certifier-compatibility.sh
+
   cli:
     runs-on: ubuntu-22.04
     steps:

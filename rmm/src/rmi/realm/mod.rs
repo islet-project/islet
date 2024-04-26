@@ -64,6 +64,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         create_realm(params.vmid as usize).map(|_| {
             let s2_table = Arc::new(Mutex::new(Box::new(Stage2Translation::new(
                 params.rtt_base as usize,
+                params.rtt_level_start as usize,
+                params.rtt_num_start as usize,
             )) as Box<dyn IPATranslation>));
 
             rd_obj.init(

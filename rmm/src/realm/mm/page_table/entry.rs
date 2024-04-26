@@ -1,6 +1,6 @@
 use super::pte;
-#[cfg(feature = "realm_linux")]
-use crate::realm::mm::stage2_tte::S2TTE;
+use super::L3Table;
+use crate::config::PAGE_SIZE;
 use crate::realm::mm::translation_granule_4k::RawPTE;
 use vmsa::address::PhysAddr;
 use vmsa::error::Error;
@@ -84,22 +84,30 @@ impl page_table::Entry for Entry {
         )
     }
 
-    #[cfg(feature = "realm_linux")]
     fn index<L: Level>(addr: usize) -> usize {
         match L::THIS_LEVEL {
             0 => RawGPA::from(addr).get_masked_value(RawGPA::L0Index) as usize,
-            1 => RawGPA::from(addr).get_masked_value(RawGPA::L1Index) as usize,
-            2 => RawGPA::from(addr).get_masked_value(S2TTE::ADDR_L2_PAGE) as usize,
-            3 => RawGPA::from(addr).get_masked_value(RawGPA::L3Index) as usize,
-            _ => panic!(),
-        }
-    }
-    #[cfg(not(feature = "realm_linux"))]
-    fn index<L: Level>(addr: usize) -> usize {
-        match L::THIS_LEVEL {
-            0 => RawGPA::from(addr).get_masked_value(RawGPA::L0Index) as usize,
-            1 => RawGPA::from(addr).get_masked_value(RawGPA::L1Index) as usize,
-            2 => RawGPA::from(addr).get_masked_value(RawGPA::L2Index) as usize,
+            1 => {
+                if L::TABLE_SIZE > PAGE_SIZE {
+                    // We know that refering one direct parent table is enough
+                    // because concatenation of the initial lookup table is upto 16.
+                    let l0 = RawGPA::from(addr).get_masked_value(RawGPA::L0Index) as usize;
+                    let l1 = RawGPA::from(addr).get_masked_value(RawGPA::L1Index) as usize;
+                    // assuming L3Table is a single page-sized
+                    l0 * L3Table::NUM_ENTRIES + l1
+                } else {
+                    RawGPA::from(addr).get_masked_value(RawGPA::L1Index) as usize
+                }
+            }
+            2 => {
+                if L::TABLE_SIZE > PAGE_SIZE {
+                    let l1 = RawGPA::from(addr).get_masked_value(RawGPA::L1Index) as usize;
+                    let l2 = RawGPA::from(addr).get_masked_value(RawGPA::L2Index) as usize;
+                    l1 * L3Table::NUM_ENTRIES + l2
+                } else {
+                    RawGPA::from(addr).get_masked_value(RawGPA::L2Index) as usize
+                }
+            }
             3 => RawGPA::from(addr).get_masked_value(RawGPA::L3Index) as usize,
             _ => panic!(),
         }

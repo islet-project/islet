@@ -356,6 +356,7 @@ pub fn unmap_unprotected(rd: &Rd, ipa: usize, level: usize) -> Result<usize, Err
 pub fn set_ripas(rd: &Rd, base: usize, top: usize, ripas: u8, flags: u64) -> Result<usize, Error> {
     // TODO: get it from s2table with the start address
     let level = RTT_PAGE_LEVEL;
+    let (_s2tte, level) = S2TTE::get_s2tte(rd, base, level, Error::RmiErrorRtt(level))?;
     let map_size = level_map_size(level);
 
     let mut addr = base & !(map_size - 1);

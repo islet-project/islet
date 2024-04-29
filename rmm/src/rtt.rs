@@ -16,6 +16,20 @@ use armv9a::bits_in_reg;
 
 const CHANGE_DESTROYED: u64 = 0x1;
 
+#[cfg(feature = "realm_linux")]
+// TODO: get this from the S2 table
+fn level_map_size(level: usize) -> usize {
+    // TODO: get the translation granule from src/armv9
+    match level {
+        3 => GRANULE_SIZE, // 4096
+        2 => GRANULE_SIZE << S2TTE_STRIDE,
+        1 => (GRANULE_SIZE << (S2TTE_STRIDE * 2)) * 8,
+        0 => GRANULE_SIZE << (S2TTE_STRIDE * 3),
+        _ => unreachable!(),
+    }
+}
+
+#[cfg(not(feature = "realm_linux"))]
 fn level_map_size(level: usize) -> usize {
     // TODO: get the translation granule from src/armv9
     match level {
@@ -179,7 +193,7 @@ pub fn init_ripas(rd: &Rd, base: usize, top: usize) -> Result<usize, Error> {
         return Err(Error::RmiErrorRtt(last_level));
     }
 
-    let parent_map_size = map_size << S2TTE_STRIDE;
+    let parent_map_size = level_map_size(level - 1);
     let top_addr = (addr & !(parent_map_size - 1)) + parent_map_size;
     while addr < top_addr {
         let next = addr + map_size;
@@ -356,7 +370,8 @@ pub fn unmap_unprotected(rd: &Rd, ipa: usize, level: usize) -> Result<usize, Err
 pub fn set_ripas(rd: &Rd, base: usize, top: usize, ripas: u8, flags: u64) -> Result<usize, Error> {
     // TODO: get it from s2table with the start address
     let level = RTT_PAGE_LEVEL;
-    let (_s2tte, level) = S2TTE::get_s2tte(rd, base, level, Error::RmiErrorRtt(level))?;
+    let (_s2tte, level) = S2TTE::get_s2tte(rd, base, RTT_PAGE_LEVEL, Error::RmiErrorRtt(level))?;
+
     let map_size = level_map_size(level);
 
     let mut addr = base & !(map_size - 1);
@@ -369,19 +384,21 @@ pub fn set_ripas(rd: &Rd, base: usize, top: usize, ripas: u8, flags: u64) -> Res
     let parent_map_size = level_map_size(level - 1);
     let table_top = (addr & !(parent_map_size - 1)) + parent_map_size;
     if table_top < top {
-        warn!(
+        debug!(
             "table can address upto 0x{:X}, top {:X} overlimits the range",
             table_top, top
         );
-        // TODO: return actual last level
-        return Err(Error::RmiErrorRtt(level - 1));
     }
 
     while addr < table_top && addr < top {
-        let (s2tte, last_level) = S2TTE::get_s2tte(rd, addr, level, Error::RmiErrorRtt(level))?;
+        let (s2tte, last_level) =
+            S2TTE::get_s2tte(rd, addr, RTT_PAGE_LEVEL, Error::RmiErrorRtt(level))?;
         let mut new_s2tte = 0;
         let mut add_pa = false;
 
+        if level != last_level {
+            break;
+        }
         let pa: usize = s2tte
             .address(last_level)
             .ok_or(Error::RmiErrorRtt(0))?
@@ -441,6 +458,7 @@ pub fn set_ripas(rd: &Rd, base: usize, top: usize, ripas: u8, flags: u64) -> Res
                     break;
                 }
             } else {
+                addr += map_size;
                 continue; // do nothing
             }
         } else {
@@ -547,7 +565,7 @@ fn skip_non_live_entries(rd: &Rd, base: usize, level: usize) -> Result<usize, Er
         return Err(Error::RmiErrorRtt(level));
     }
 
-    let parent_map_size = map_size << S2TTE_STRIDE;
+    let parent_map_size = level_map_size(level - 1);
     let top_addr = (addr & !(parent_map_size - 1)) + parent_map_size;
     while addr < top_addr {
         let (s2tte, _last_level) = S2TTE::get_s2tte(rd, addr, level, Error::RmiErrorRtt(level))?;

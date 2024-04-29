@@ -136,7 +136,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorRec);
         }
 
-        if rec.ripas_start() != base as u64 || rec.ripas_end() < top as u64 {
+        if rec.ripas_addr() != base as u64 || rec.ripas_end() < top as u64 {
             return Err(Error::RmiErrorInput);
         }
 

@@ -1,6 +1,8 @@
 use crate::allocator;
 use crate::rmi;
 use crate::rsi;
+
+use core::sync::atomic::{AtomicUsize, Ordering};
 use spin::mutex::Mutex;
 
 //NOTE: RMI, RSI_CMD_MAX are should be updated whenever there is a new command
@@ -18,7 +20,7 @@ const RSI_CMD_CNT: usize = RSI_CMD_MAX - RSI_CMD_MIN + 1;
 const MAX_CMD_CNT: usize = max(RMI_CMD_CNT, RSI_CMD_CNT);
 const MAX_KIND: usize = Kind::Undefined as usize;
 
-static mut COLLECTED_STAT_CNT: u64 = 0;
+static COLLECTED_STAT_CNT: AtomicUsize = AtomicUsize::new(0);
 
 const fn max(a: usize, b: usize) -> usize {
     if a >= b {
@@ -95,12 +97,10 @@ impl Stats {
             return Err(Error::IntegerOverflow);
         }
 
-        unsafe {
-            COLLECTED_STAT_CNT = COLLECTED_STAT_CNT.wrapping_add(1);
-            if COLLECTED_STAT_CNT % 10 == 0 {
-                self.print();
-            }
-        };
+        COLLECTED_STAT_CNT.fetch_add(1, Ordering::SeqCst);
+        if COLLECTED_STAT_CNT.load(Ordering::SeqCst) % 10 == 0 {
+            self.print();
+        }
 
         Ok(())
     }

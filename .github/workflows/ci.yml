@@ -151,6 +151,7 @@ jobs:
         --exclude islet_sdk --exclude rsi_el0
         --exclude cose --exclude cca_token
         --exclude ciborium
+        --exclude islet_mc_harnesses
 
     - name: Check rust coding-style
       run: |

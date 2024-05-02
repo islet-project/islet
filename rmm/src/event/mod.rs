@@ -105,7 +105,10 @@ impl Context {
         #[cfg(kani)]
         // the below is a proof helper
         {
-            #[cfg(feature = "mc_rmi_granule_delegate")]
+            #[cfg(any(
+                feature = "mc_rmi_granule_delegate",
+                feature = "mc_rmi_granule_undelegate"
+            ))]
             assert!(ret_len == 1);
         }
         result[..ret_len].copy_from_slice(&self.ret[..]);

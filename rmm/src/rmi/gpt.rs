@@ -48,7 +48,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    #[cfg(not(kani))]
+    #[cfg(any(not(kani), feature = "mc_rmi_granule_undelegate"))]
     listen!(mainloop, rmi::GRANULE_UNDELEGATE, |arg, _, rmm| {
         let addr = arg[0];
         let mut granule = get_granule_if!(addr, GranuleState::Delegated)?;

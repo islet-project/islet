@@ -11,12 +11,48 @@ use crate::granule::{FVP_DRAM0_REGION, FVP_DRAM1_IDX, FVP_DRAM1_REGION};
 //  - For a granule status table that manages granules, it doesn't use a big lock for efficiency.
 //    So, we need to associate "lock" with each granule entry.
 
+#[cfg(not(kani))]
 pub struct Granule {
     /// granule state
     state: u8,
 }
+#[cfg(kani)]
+// DIFF: `gpt` ghost field is added to track GPT entry's status
+pub struct Granule {
+    /// granule state
+    state: u8,
+    /// granule protection table (ghost field)
+    pub gpt: GranuleGpt,
+}
+
+#[cfg(kani)]
+#[derive(Copy, Clone, PartialEq, kani::Arbitrary)]
+pub enum GranuleGpt {
+    GPT_NS,
+    GPT_OTHER,
+    GPT_REALM,
+}
 
 impl Granule {
+    #[cfg(not(kani))]
+    fn new() -> Self {
+        let state = GranuleState::Undelegated;
+        Granule { state }
+    }
+    #[cfg(kani)]
+    // DIFF: `state` and `gpt` are filled with non-deterministic values
+    fn new() -> Self {
+        let state = kani::any();
+        kani::assume(state >= GranuleState::Undelegated && state <= GranuleState::RTT);
+        let gpt = kani::any();
+        Granule { state, gpt }
+    }
+
+    #[cfg(kani)]
+    pub fn set_gpt(&mut self, gpt: GranuleGpt) {
+        self.gpt = gpt;
+    }
+
     pub fn state(&self) -> u8 {
         self.state
     }
@@ -75,9 +111,7 @@ impl Granule {
 pub struct Entry(Spinlock<Granule>);
 impl Entry {
     pub fn new() -> Self {
-        Self(Spinlock::new(Granule {
-            state: GranuleState::Undelegated,
-        }))
+        Self(Spinlock::new(Granule::new()))
     }
 
     pub fn lock(&self) -> Result<SpinlockGuard<'_, Granule>, Error> {

@@ -1,6 +1,8 @@
 use core::arch::asm;
 
 pub const SMC_SUCCESS: usize = 0;
+#[cfg(kani)]
+pub const SMC_ERROR: usize = 1;
 
 pub fn smc(cmd: usize, args: &[usize]) -> [usize; 8] {
     let mut ret: [usize; 8] = [0usize; 8];
@@ -20,6 +22,32 @@ pub fn smc(cmd: usize, args: &[usize]) -> [usize; 8] {
     };
     put(&mut ret);
     put(&mut padded_args);
+    #[cfg(kani)]
+    if cmd == crate::rmi::gpt::MARK_REALM {
+        use crate::get_granule;
+        use crate::granule::entry::GranuleGpt;
+        let addr = args[0];
+        let gpt = get_granule!(addr).map(|guard| guard.gpt).unwrap();
+        if gpt != GranuleGpt::GPT_NS {
+            ret[0] = SMC_ERROR;
+        } else {
+            let _ = get_granule!(addr).map(|mut guard| guard.set_gpt(GranuleGpt::GPT_REALM));
+            ret[0] = SMC_SUCCESS;
+        }
+    } else if cmd == crate::rmi::gpt::MARK_NONSECURE {
+        use crate::get_granule;
+        use crate::granule::entry::GranuleGpt;
+        let addr = args[0];
+        let is_valid = get_granule!(addr).map(|guard| guard.is_valid()).unwrap();
+        assert!(is_valid);
+        let gpt = get_granule!(addr).map(|guard| guard.gpt).unwrap();
+        if gpt != GranuleGpt::GPT_REALM {
+            ret[0] = SMC_ERROR;
+        } else {
+            let _ = get_granule!(addr).map(|mut guard| guard.set_gpt(GranuleGpt::GPT_NS));
+            ret[0] = SMC_SUCCESS;
+        }
+    }
 
     // TODO: support more number of registers than 8 if needed
     #[cfg(not(kani))]

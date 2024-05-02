@@ -23,6 +23,7 @@ use spin::mutex::Mutex;
 extern crate alloc;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
+    #[cfg(any(not(kani), feature = "mc_rmi_realm_activate"))]
     listen!(mainloop, rmi::REALM_ACTIVATE, |arg, _, _| {
         let rd = arg[0];
 
@@ -37,6 +38,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
+    #[cfg(not(kani))]
     listen!(mainloop, rmi::REALM_CREATE, |arg, _, rmm| {
         let rd = arg[0];
         let params_ptr = arg[1];
@@ -106,12 +108,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         })
     });
 
+    #[cfg(not(kani))]
     listen!(mainloop, rmi::REC_AUX_COUNT, |arg, ret, _| {
         let _ = get_granule_if!(arg[0], GranuleState::RD)?;
         ret[1] = rmi::MAX_REC_AUX_GRANULES;
         Ok(())
     });
 
+    #[cfg(not(kani))]
     listen!(mainloop, rmi::REALM_DESTROY, |arg, _ret, rmm| {
         // get the lock for Rd
         let mut rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;

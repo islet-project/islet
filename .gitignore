@@ -1,7 +1,6 @@
 *.swp
 *.swo
 /out/
-Cargo.lock
 __pycache__
 target/
 

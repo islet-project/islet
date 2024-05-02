@@ -89,6 +89,13 @@ impl GranuleStatusTable {
             entries: core::array::from_fn(|_| Entry::new()),
         }
     }
+
+    #[cfg(kani)]
+    pub fn is_valid(&self) -> bool {
+        self.entries
+            .iter()
+            .fold(true, |acc, x| acc && x.lock().unwrap().is_valid())
+    }
 }
 
 #[macro_export]

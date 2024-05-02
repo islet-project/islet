@@ -44,13 +44,33 @@ impl Granule {
     fn new() -> Self {
         let state = kani::any();
         kani::assume(state >= GranuleState::Undelegated && state <= GranuleState::RTT);
-        let gpt = kani::any();
+        let gpt = {
+            if state != GranuleState::Undelegated {
+                GranuleGpt::GPT_REALM
+            } else {
+                let gpt = kani::any();
+                kani::assume(gpt != GranuleGpt::GPT_REALM);
+                gpt
+            }
+        };
         Granule { state, gpt }
     }
 
     #[cfg(kani)]
     pub fn set_gpt(&mut self, gpt: GranuleGpt) {
         self.gpt = gpt;
+    }
+
+    #[cfg(kani)]
+    pub fn is_valid(&self) -> bool {
+        self.state >= GranuleState::Undelegated &&
+        self.state <= GranuleState::RTT &&
+        // XXX: the below condition holds from beta0 to eac4
+        if self.state != GranuleState::Undelegated {
+            self.gpt == GranuleGpt::GPT_REALM
+        } else {
+            self.gpt != GranuleGpt::GPT_REALM
+        }
     }
 
     pub fn state(&self) -> u8 {
@@ -110,8 +130,16 @@ impl Granule {
 
 pub struct Entry(Spinlock<Granule>);
 impl Entry {
+    #[cfg(not(kani))]
     pub fn new() -> Self {
         Self(Spinlock::new(Granule::new()))
+    }
+    #[cfg(kani)]
+    // DIFF: assertion is added to reduce the proof burden
+    pub fn new() -> Self {
+        let granule = Granule::new();
+        assert!(granule.is_valid());
+        Self(Spinlock::new(granule))
     }
 
     pub fn lock(&self) -> Result<SpinlockGuard<'_, Granule>, Error> {

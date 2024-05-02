@@ -10,7 +10,8 @@ KANI_FLAGS := \
 RMI_TARGET ?= rmi_features
 ALLOWED_RMI_TARGET = \
 	rmi_features \
-	rmi_granule_delegate
+	rmi_granule_delegate \
+	rmi_granule_undelegate
 
 ifeq ("$(filter $(RMI_TARGET), $(ALLOWED_RMI_TARGET))", "")
     $(error Invalid RMI_TARGET. Choose one of the following: $(ALLOWED_RMI_TARGET))

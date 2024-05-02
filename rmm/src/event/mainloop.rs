@@ -39,7 +39,10 @@ impl Mainloop {
     fn add_event_handlers(&mut self) {
         #[cfg(feature = "mc_rmi_features")]
         rmi::features::set_event_handler(self);
-        #[cfg(feature = "mc_rmi_granule_delegate")]
+        #[cfg(any(
+            feature = "mc_rmi_granule_delegate",
+            feature = "mc_rmi_granule_undelegate"
+        ))]
         rmi::gpt::set_event_handler(self);
     }
 

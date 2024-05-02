@@ -130,10 +130,25 @@ impl Granule {
         return GRANULE_REGION.as_ptr() as usize + (idx * GRANULE_SIZE);
     }
 
+    #[cfg(not(kani))]
     fn zeroize(&mut self) {
         let addr = self.index_to_addr();
         unsafe {
             core::ptr::write_bytes(addr as *mut u8, 0x0, GRANULE_SIZE);
+        }
+    }
+    #[cfg(kani)]
+    // DIFF: assertion is added to reduce the proof burden
+    //       `write_bytes()` uses a small count value
+    fn zeroize(&mut self) {
+        let addr = self.index_to_addr();
+        let g_start = crate::granule::array::GRANULE_REGION.as_ptr() as usize;
+        let g_end = g_start + crate::granule::array::GRANULE_MEM_SIZE;
+        assert!(addr >= g_start && addr < g_end);
+
+        unsafe {
+            core::ptr::write_bytes(addr as *mut u8, 0x0, 8);
+            assert!(*(addr as *const u8) == 0);
         }
     }
 }

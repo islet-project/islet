@@ -1,5 +1,8 @@
 use islet_rmm::granule::array::{GRANULE_REGION, GRANULE_SIZE};
 use islet_rmm::granule::entry::GranuleGpt;
+use islet_rmm::granule::validate_addr;
+use islet_rmm::realm::rd::Rd;
+use islet_rmm::realm::rd::State; // tmp
 
 extern "C" {
     fn CPROVER_havoc_object(address: usize);
@@ -31,6 +34,16 @@ macro_rules! get_granule {
             }
         }
     }};
+}
+
+// TODO: find an object to which life should be bound
+fn content_mut<T>(addr: usize) -> &'static mut T {
+    unsafe { &mut *(addr as *mut T) }
+}
+
+// TODO: find an object to which life should be bound
+fn content<T>(addr: usize) -> &'static T {
+    unsafe { &*(addr as *const T) }
 }
 
 pub fn addr_is_granule_aligned(addr: usize) -> bool {
@@ -75,6 +88,32 @@ pub fn pre_granule_gpt(addr: usize) -> GranuleGpt {
 // `unwrap()` is guaranteed not to be reached.
 pub fn post_granule_gpt(addr: usize) -> GranuleGpt {
     get_granule!(addr).map(|guard| guard.gpt).unwrap()
+}
+
+fn pre_valid_addr(addr: usize) -> usize {
+    let indexed_addr = get_granule!(addr).map(|guard| guard.index_to_addr());
+    let valid_addr = if let Ok(addr) = indexed_addr {
+        addr
+    } else {
+        let addr = kani::any();
+        kani::assume(validate_addr(addr));
+        addr
+    };
+    valid_addr
+}
+
+pub fn pre_rd_state(addr: usize) -> State {
+    let valid_addr = pre_valid_addr(addr);
+    let rd = content_mut::<Rd>(valid_addr);
+    rd.state()
+}
+
+pub fn post_rd_state(addr: usize) -> State {
+    let valid_addr = get_granule!(addr)
+        .map(|guard| guard.index_to_addr())
+        .unwrap();
+    let rd = content::<Rd>(valid_addr);
+    rd.state()
 }
 
 pub fn initialize() {

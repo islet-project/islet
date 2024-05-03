@@ -103,7 +103,7 @@ impl Context {
 
         let ret_len = self.ret.len();
         result[..ret_len].copy_from_slice(&self.ret[..]);
-        return result;
+        result
     }
 
     pub fn do_rsi<F>(&mut self, mut handler: F)

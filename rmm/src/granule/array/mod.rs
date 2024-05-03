@@ -143,14 +143,14 @@ impl GranuleStatusTable {
 #[macro_export]
 macro_rules! get_granule {
     ($addr:expr) => {{
-        use crate::granule::array::GRANULE_STATUS_TABLE;
+        use crate::granule::array::{GRANULE_STATUS_TABLE, GRANULE_STATUS_TABLE_SIZE};
         use crate::granule::{granule_addr_to_index, validate_addr};
         use crate::rmi::error::Error;
         if !validate_addr($addr) {
             Err(Error::RmiErrorInput)
         } else {
             let idx = granule_addr_to_index($addr);
-            if idx == usize::MAX {
+            if idx >= GRANULE_STATUS_TABLE_SIZE {
                 Err(Error::RmiErrorInput)
             } else {
                 let gst = &GRANULE_STATUS_TABLE;

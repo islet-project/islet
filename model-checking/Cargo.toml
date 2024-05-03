@@ -7,6 +7,7 @@ edition = "2021"
 [features]
 # The below are features relevant for model checking
 mc_rmi_features = ["islet_rmm/mc_rmi_features"]
+mc_rmi_granule_delegate = ["islet_rmm/mc_rmi_granule_delegate"]
 
 [dependencies]
 islet_rmm = { path = "../rmm" }

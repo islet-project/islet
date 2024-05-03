@@ -19,6 +19,7 @@ pub const MARK_REALM: usize = 0xc400_01b0;
 pub const MARK_NONSECURE: usize = 0xc400_01b1;
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
+    #[cfg(any(not(kani), feature = "mc_rmi_granule_delegate"))]
     listen!(mainloop, rmi::GRANULE_DELEGATE, |arg, _, rmm| {
         let addr = arg[0];
         #[cfg(feature = "gst_page_table")]
@@ -47,6 +48,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
+    #[cfg(not(kani))]
     listen!(mainloop, rmi::GRANULE_UNDELEGATE, |arg, _, rmm| {
         let addr = arg[0];
         let mut granule = get_granule_if!(addr, GranuleState::Delegated)?;

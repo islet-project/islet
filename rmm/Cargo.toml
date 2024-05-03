@@ -39,3 +39,4 @@ gst_page_table = []
 
 # The below are features relevant for model checking
 mc_rmi_features = []
+mc_rmi_granule_delegate = []

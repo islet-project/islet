@@ -102,6 +102,12 @@ impl Context {
         self.arg.extend_from_slice(&self.ret[..]);
 
         let ret_len = self.ret.len();
+        #[cfg(kani)]
+        // the below is a proof helper
+        {
+            #[cfg(feature = "mc_rmi_granule_delegate")]
+            assert!(ret_len == 1);
+        }
         result[..ret_len].copy_from_slice(&self.ret[..]);
         result
     }

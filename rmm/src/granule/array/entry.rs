@@ -5,6 +5,7 @@ use super::{GranuleState, GRANULE_SIZE};
 use spinning_top::{Spinlock, SpinlockGuard};
 use vmsa::guard::Content;
 
+#[cfg(not(kani))]
 use crate::granule::{FVP_DRAM0_REGION, FVP_DRAM1_IDX, FVP_DRAM1_REGION};
 
 // Safety: concurrency safety
@@ -112,12 +113,21 @@ impl Granule {
         (entry_addr - table_base) / core::mem::size_of::<Entry>()
     }
 
+    #[cfg(not(kani))]
     fn index_to_addr(&self) -> usize {
         let idx = self.index();
         if idx < FVP_DRAM1_IDX {
             return FVP_DRAM0_REGION.start + (idx * GRANULE_SIZE);
         }
         FVP_DRAM1_REGION.start + ((idx - FVP_DRAM1_IDX) * GRANULE_SIZE)
+    }
+    #[cfg(kani)]
+    // DIFF: calculate addr using GRANULE_REGION
+    pub fn index_to_addr(&self) -> usize {
+        use crate::granule::GRANULE_REGION;
+        let idx = self.index();
+        assert!(idx >= 0 && idx < 8);
+        return GRANULE_REGION.as_ptr() as usize + (idx * GRANULE_SIZE);
     }
 
     fn zeroize(&mut self) {

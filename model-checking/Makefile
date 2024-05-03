@@ -1,7 +1,11 @@
+MODEL_CHECKING_DIR := $(CURDIR)/src
+
 KANI_FLAGS := \
 	--enable-unstable \
 	--ignore-global-asm \
-	--restrict-vtable
+	--restrict-vtable \
+	--c-lib $(MODEL_CHECKING_DIR)/stub.c \
+	-Z c-ffi
 
 RMI_TARGET ?= rmi_features
 ALLOWED_RMI_TARGET = \

@@ -9,18 +9,34 @@ pub const GRANULE_SHIFT: usize = 12;
 pub const GRANULE_MASK: usize = !((1 << GRANULE_SHIFT) - 1);
 
 // TODO: move this FVP-specific address info
+#[cfg(not(kani))]
 pub(super) const FVP_DRAM0_REGION: core::ops::Range<usize> = core::ops::Range {
     start: 0x8000_0000,
     end: 0x8000_0000 + 0x7C00_0000,
 };
+#[cfg(not(kani))]
 pub(super) const FVP_DRAM1_REGION: core::ops::Range<usize> = core::ops::Range {
     start: 0x8_8000_0000,
     end: 0x8_8000_0000 + 0x8000_0000,
 };
 
+#[cfg(not(kani))]
 pub(super) const FVP_DRAM1_IDX: usize =
     (FVP_DRAM0_REGION.end - FVP_DRAM0_REGION.start) / GRANULE_SIZE;
 
+#[cfg(kani)]
+pub const GRANULE_MEM_SIZE: usize = GRANULE_SIZE * GRANULE_STATUS_TABLE_SIZE;
+#[cfg(kani)]
+// We model the Host memory as a pre-allocated memory region which
+// can avoid a false positive related to invalid memory accesses
+// in model checking. Also, instead of using the same starting
+// address (e.g., 0x8000_0000), we use a mock region filled with
+// non-deterministic contents. It helps to address an issue related
+// to the backend CBMC's pointer encoding, as 0x8000_0000 cannot be
+// distinguished from null pointer in CBMC.
+pub const GRANULE_REGION: [u8; GRANULE_MEM_SIZE] = [0; GRANULE_MEM_SIZE];
+
+#[cfg(not(kani))]
 pub fn validate_addr(addr: usize) -> bool {
     if addr % GRANULE_SIZE != 0 {
         // if the address is out of range.
@@ -34,13 +50,36 @@ pub fn validate_addr(addr: usize) -> bool {
     }
     true
 }
+#[cfg(kani)]
+// DIFF: check against GRANULE_REGION
+pub fn validate_addr(addr: usize) -> bool {
+    if addr % GRANULE_SIZE != 0 {
+        // if the address is out of range.
+        warn!("address need to be aligned 0x{:X}", addr);
+        return false;
+    }
+    let g_start = GRANULE_REGION.as_ptr() as usize;
+    let g_end = g_start + GRANULE_MEM_SIZE;
+    (addr >= g_start && addr < g_end)
+}
 
+#[cfg(not(kani))]
 pub fn granule_addr_to_index(addr: usize) -> usize {
     if FVP_DRAM0_REGION.contains(&addr) {
         return (addr - FVP_DRAM0_REGION.start) / GRANULE_SIZE;
     }
     if FVP_DRAM1_REGION.contains(&addr) {
         return ((addr - FVP_DRAM1_REGION.start) / GRANULE_SIZE) + FVP_DRAM1_IDX;
+    }
+    usize::MAX
+}
+#[cfg(kani)]
+// DIFF: calculate index using GRANULE_REGION
+pub fn granule_addr_to_index(addr: usize) -> usize {
+    let g_start = GRANULE_REGION.as_ptr() as usize;
+    let g_end = g_start + GRANULE_MEM_SIZE;
+    if addr >= g_start && addr < g_end {
+        return (addr - g_start) / GRANULE_SIZE;
     }
     usize::MAX
 }
@@ -77,7 +116,10 @@ lazy_static! {
     pub static ref GRANULE_STATUS_TABLE: GranuleStatusTable = GranuleStatusTable::new();
 }
 
-const GRANULE_STATUS_TABLE_SIZE: usize = 0xfc000; // == RMM_MAX_GRANULES
+#[cfg(not(kani))]
+pub const GRANULE_STATUS_TABLE_SIZE: usize = 0xfc000; // == RMM_MAX_GRANULES
+#[cfg(kani)]
+pub const GRANULE_STATUS_TABLE_SIZE: usize = 8;
 
 pub struct GranuleStatusTable {
     pub entries: [Entry; GRANULE_STATUS_TABLE_SIZE],

@@ -1,5 +1,9 @@
-use islet_rmm::granule::array::GRANULE_SIZE;
+use islet_rmm::granule::array::{GRANULE_REGION, GRANULE_SIZE};
 use islet_rmm::granule::entry::GranuleGpt;
+
+extern "C" {
+    fn CPROVER_havoc_object(address: usize);
+}
 
 #[macro_export]
 // DIFF: `islet_rmm` is used to find the names outside the `islet_rmm` crate
@@ -71,4 +75,10 @@ pub fn pre_granule_gpt(addr: usize) -> GranuleGpt {
 // `unwrap()` is guaranteed not to be reached.
 pub fn post_granule_gpt(addr: usize) -> GranuleGpt {
     get_granule!(addr).map(|guard| guard.gpt).unwrap()
+}
+
+pub fn initialize() {
+    unsafe {
+        CPROVER_havoc_object(GRANULE_REGION.as_ptr() as usize);
+    }
 }

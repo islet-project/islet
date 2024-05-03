@@ -16,4 +16,5 @@ cargo clippy --lib -p islet_rmm -- \
 	-A clippy::new_without_default \
 	-A clippy::redundant_pattern_matching \
 	-A clippy::type_complexity \
-	-A clippy::identity_op
+	-A clippy::identity_op \
+	--deny "warnings"

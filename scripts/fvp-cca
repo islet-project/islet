@@ -310,6 +310,15 @@ def prepare_nw_aosp(no_prebuilt_initrd):
     ]
     make(BUILD_SCRIPT, args)
 
+def prepare_eventfd_manager():
+    print("[!] Building eventfd_manager...")
+    args = [
+        "CROSS_COMPILE=%s" % KVMTOOL_CROSS_COMPILE,
+    ]
+    print(args)
+    make(EVENTFD_MANAGER, args)
+    run(["cp", "%s/%s" % (EVENTFD_MANAGER, "eventfd_manager"), OUT], cwd=ROOT)
+
 
 def prepare_kvmtool(lkvm="lkvm"):
     print("[!] Building kvmtool...")
@@ -319,6 +328,7 @@ def prepare_kvmtool(lkvm="lkvm"):
         "LIBFDT_DIR=%s/libfdt" % DTC,
         lkvm,
     ]
+    print(args)
     make(KVMTOOL, args)
     run(["cp", "%s/%s" % (KVMTOOL, lkvm), OUT], cwd=ROOT)
 
@@ -519,6 +529,7 @@ def place_realm_at_shared(rmm, realm_ip, fvp_tap_ip, host_ip, no_kvm_unit_tests,
     run(["cp", "%s/rootfs-realm.cpio.gz" % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
     run(["mv", "%s/realm/linux.realm" % OUT, SHARED_PATH], cwd=ROOT)
     run(["mv", "%s/lkvm" % OUT, SHARED_PATH], cwd=ROOT)
+    run(["mv", "%s/eventfd_manager" % OUT, SHARED_PATH], cwd=ROOT)
     place_script_at_shared()
     if no_kvm_unit_tests == False:
         run(["cp", "-R", "%s/kvm-unit-tests" % OUT, SHARED_PATH], cwd=ROOT)
@@ -684,6 +695,7 @@ if __name__ == "__main__":
                 prepare_bootloaders(args.rmm, ACS_HOST, args.hes)
         else:
             prepare_kvmtool()
+            prepare_eventfd_manager()
             if args.no_kvm_unit_tests is False:
                 prepare_kvm_unit_tests()
             prepare_nw_linux(args.fvp_ip, args.host_ip, args.realm_launch)

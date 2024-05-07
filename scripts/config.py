@@ -55,6 +55,7 @@ TFTF_BIN = os.path.join(TF_A_TESTS, "build/fvp/debug/tftf.bin")
 TF_RMM = os.path.join(THIRD_PARTY, "tf-rmm")
 KVMTOOL = os.path.join(THIRD_PARTY, "kvmtool")
 KVM_UNIT_TESTS = os.path.join(THIRD_PARTY, "kvm-unit-tests")
+EVENTFD_MANAGER = os.path.join(THIRD_PARTY, "eventfd_manager")
 
 RSI_TEST = os.path.join(ROOT, "realm/rsi-test")
 RSI_TEST_BIN = os.path.join(OUT, "rsi-test.bin")

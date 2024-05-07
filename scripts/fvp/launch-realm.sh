@@ -18,7 +18,10 @@ fi
 	--console serial \
 	--irqchip=gicv3 \
 	--network virtio \
+	--force-pci \
 	--9p /shared,FMR \
+	--socket-path /tmp/eventfd_manager_socket \
+	--shm-id 1 \
 	-m 256M \
 	-c 1 \
 	-k linux.realm \

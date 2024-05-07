@@ -68,6 +68,7 @@ const CHANNEL_STATE_ESTABLISHED: usize = 2;
 #[derive(Copy, Clone)]
 struct LocalChannel {
     id: usize,
+    size: usize,
     creator_registered: bool,
     connector_registered: bool,
     creator_realmid: usize,
@@ -79,9 +80,10 @@ struct LocalChannel {
 }
 
 impl LocalChannel {
-    const fn create(id: usize, realmid: usize, ipa: usize) -> Self {
+    const fn create(id: usize, realmid: usize, ipa: usize, size: usize) -> Self {
         let channel = LocalChannel {
             id: id,
+            size: size,
             creator_registered: true,
             connector_registered: false,
             creator_realmid: realmid,
@@ -578,7 +580,9 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             );
             ret[0] = rmi::SUCCESS;
         };
-        debug!(
+
+        // [JB]
+        info!(
             "RSI_IPA_STATE_SET: {:X} ~ {:X} {:X}",
             ipa_start,
             ipa_start + ipa_size,
@@ -595,11 +599,18 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let vcpuid = rec.vcpuid();
         let channel_id = get_reg(realmid, vcpuid, 1)?;
         let ipa = get_reg(realmid, vcpuid, 2)?;
+        let size = get_reg(realmid, vcpuid, 3)?;
 
-        let channel = LocalChannel::create(channel_id, realmid, ipa);
+        if ipa % 4096 != 0 || size % 4096 != 0 {
+            set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            ret[0] = rmi::SUCCESS_REC_ENTER;
+            return Ok(());
+        }
+
+        let channel = LocalChannel::create(channel_id, realmid, ipa, size);
         LOCAL_CHANNEL_TABLE.lock().insert(channel_id, channel);
 
-        info!("[JB] CHANNEL_CREATE success! realmid: {}, ipa: {:x}", realmid, ipa);
+        info!("[JB] CHANNEL_CREATE success! realmid: {}, ipa: {:x}, size: {:x}", realmid, ipa, size);
         set_reg(realmid, vcpuid, 0, SUCCESS)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
@@ -612,8 +623,15 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let vcpuid = rec.vcpuid();
         let channel_id = get_reg(realmid, vcpuid, 1)?;
         let ipa = get_reg(realmid, vcpuid, 2)?;
+        let size = get_reg(realmid, vcpuid, 3)?;
         let ipa_bits = rec.ipa_bits()?;
         let hash_algo = rd.hash_algo();
+
+        if ipa % 4096 != 0 || size % 4096 != 0 {
+            set_reg(realmid, vcpuid, 0, ERROR_INPUT)?;
+            ret[0] = rmi::SUCCESS_REC_ENTER;
+            return Ok(());
+        }
 
         info!("CHANNEL_CONNECT start!");
         match LOCAL_CHANNEL_TABLE.lock().get_mut(&channel_id) {
@@ -632,7 +650,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
                 channel.connector_ipa = ipa;
                 channel.creator_registered = true;
                 channel.state = CHANNEL_STATE_CONNECTED;
-                info!("[JB] CHANNEL_CONNECT success! realmid: {}, ipa: {:x}", realmid, ipa);
+                info!("[JB] CHANNEL_CONNECT success! realmid: {}, ipa: {:x}, size: {:x}", realmid, ipa, size);
 
                 // 3. create a shared mapping
                 if channel.creator_realmid == channel.connector_realmid {
@@ -772,33 +790,45 @@ fn create_shared_mapping(channel: &LocalChannel) -> Result<(), Error> {
     //   3-1: get pte of connector_ipa (pa)
     //   3-2: copy pte to creator's RTT
     //   3-3: two new syscalls for test (write_to_channel, read_from_channel)
-    let res = get_realm(channel.connector_realmid)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-        .lock()
-        .page_table
-        .lock()
-        .ipa_to_pte(GuestPhysAddr::from(channel.connector_ipa), RTT_PAGE_LEVEL);
+    let start = channel.connector_ipa;
+    let end = channel.connector_ipa + channel.size;
+    let mut curr = start;
+    let mut offset: usize = 0;
 
-    let connector_pte = if let Some(p) = res {
-        p.0
-    } else {
-        info!("[JB] connector ipa_to_pte error");
-        return Err(Error::RmiErrorInput);
-    };
-    info!("[JB] connector pte: {}", connector_pte);
+    while curr < end {
+        let res = get_realm(channel.connector_realmid)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .ipa_to_pte(GuestPhysAddr::from(channel.connector_ipa + offset), RTT_PAGE_LEVEL);
 
-    let res = get_realm(channel.creator_realmid)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
-        .lock()
-        .page_table
-        .lock()
-        .ipa_to_pte_set(GuestPhysAddr::from(channel.creator_ipa), RTT_PAGE_LEVEL, connector_pte);
+        let connector_pte = if let Some(p) = res {
+            p.0
+        } else {
+            info!("[JB] connector ipa_to_pte error");
+            return Err(Error::RmiErrorInput);
+        };
+        //info!("[JB] connector pte: {}", connector_pte);
 
-    match res {
-        Ok(_) => {
-            info!("[JB] creator ipa_to_pte_set success");
-            Ok(())
-        },
-        Err(e) => Err(e),
+        let res = get_realm(channel.creator_realmid)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .ipa_to_pte_set(GuestPhysAddr::from(channel.creator_ipa + offset), RTT_PAGE_LEVEL, connector_pte);
+
+        match res {
+            Ok(_) => {
+                curr += 4096;
+                offset += 4096;
+            },
+            Err(e) => {
+                info!("[JB] create_shared_mapping error: {:x}", curr);
+                return Err(e);
+            }
+        }  
     }
+
+    Ok(())
 }

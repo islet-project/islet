@@ -18,8 +18,6 @@ const RSI_CMD_CNT: usize = RSI_CMD_MAX - RSI_CMD_MIN + 1;
 const MAX_CMD_CNT: usize = max(RMI_CMD_CNT, RSI_CMD_CNT);
 const MAX_KIND: usize = Kind::Undefined as usize;
 
-static mut COLLECTED_STAT_CNT: u64 = 0;
-
 const fn max(a: usize, b: usize) -> usize {
     if a >= b {
         a
@@ -45,12 +43,14 @@ fn is_rsi_cmd(cmd: usize) -> bool {
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct Stats {
+    collected_stat_cnt: u64,
     list: [Stat; MAX_KIND],
 }
 
 impl Stats {
     fn new() -> Self {
         let mut stats = Stats {
+            collected_stat_cnt: 0,
             list: [Stat::default(); MAX_KIND],
         };
 
@@ -95,12 +95,10 @@ impl Stats {
             return Err(Error::IntegerOverflow);
         }
 
-        unsafe {
-            COLLECTED_STAT_CNT = COLLECTED_STAT_CNT.wrapping_add(1);
-            if COLLECTED_STAT_CNT % 10 == 0 {
-                self.print();
-            }
-        };
+        self.collected_stat_cnt = self.collected_stat_cnt.wrapping_add(1);
+        if self.collected_stat_cnt % 10 == 0 {
+            self.print();
+        }
 
         Ok(())
     }

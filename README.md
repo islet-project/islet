@@ -27,6 +27,7 @@ machine-to-machine computing without the need for server intervention
 - Realm Management Monitor
 - Hardware Enforced Security
 - Confidential Computing API Standardization
+- Automated Verification
 - Use case : Confidential Machine Learning
 
 ## Overall Architecture

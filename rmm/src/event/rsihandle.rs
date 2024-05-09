@@ -5,7 +5,7 @@ use super::Context;
 use crate::get_granule;
 use crate::get_granule_if;
 use crate::granule::GranuleState;
-use crate::rmi::realm::Rd;
+use crate::realm::rd::Rd;
 use crate::rmi::rec::run::Run;
 use crate::rmi::rec::Rec;
 use crate::rsi;

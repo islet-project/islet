@@ -1,6 +1,6 @@
 use crate::realm::mm::address::GuestPhysAddr;
+use crate::realm::rd::Rd;
 use crate::rmi::error::Error;
-use crate::rmi::realm::Rd;
 use crate::rmi::rtt::RTT_PAGE_LEVEL;
 
 use safe_abstraction::raw_ptr::assume_safe;

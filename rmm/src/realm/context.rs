@@ -1,10 +1,10 @@
 use super::timer;
 use crate::cpu::get_cpu_id;
 use crate::gic;
+use crate::realm::rd::Rd;
 use crate::realm::vcpu::VCPU;
 use crate::rmi::error::Error;
 use crate::rmi::error::InternalError::*;
-use crate::rmi::realm::Rd;
 
 use armv9a::regs::*;
 

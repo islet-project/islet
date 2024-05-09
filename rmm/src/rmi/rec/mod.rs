@@ -5,11 +5,11 @@ pub mod params;
 pub mod run;
 pub mod vtcr;
 use crate::realm;
+use crate::realm::rd::Rd;
 use crate::realm::vcpu::State as RecState;
 use crate::realm::vcpu::VCPU;
 use crate::rmi::error::Error;
 use crate::rmi::error::InternalError::*;
-use crate::rmi::Rd;
 use crate::rmm_exit;
 use core::cell::OnceCell;
 

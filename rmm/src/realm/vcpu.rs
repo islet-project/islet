@@ -1,9 +1,9 @@
 use crate::gic;
 use crate::realm::context::Context;
+use crate::realm::rd::Rd;
 use crate::realm::registry::VMID_SET;
 use crate::realm::timer;
 use crate::rmi::error::Error;
-use crate::rmi::realm::Rd;
 use alloc::sync::{Arc, Weak};
 use armv9a::bits_in_reg;
 use armv9a::regs::*;

@@ -1,6 +1,5 @@
 extern crate alloc;
 
-use super::realm::{rd::State, Rd};
 use super::rec::Rec;
 use crate::event::Mainloop;
 use crate::granule::{
@@ -11,6 +10,7 @@ use crate::host::DataPage;
 use crate::listen;
 use crate::measurement::HashContext;
 use crate::realm::mm::stage2_tte::S2TTE;
+use crate::realm::rd::{Rd, State};
 use crate::rmi;
 use crate::rmi::error::Error;
 #[cfg(not(feature = "gst_page_table"))]

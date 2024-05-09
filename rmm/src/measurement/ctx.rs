@@ -3,11 +3,7 @@ use super::{
     MEASURE_DESC_TYPE_REC, MEASURE_DESC_TYPE_RIPAS, RMI_MEASURE_CONTENT,
 };
 use crate::rmi::rec::params::Params as RecParams;
-use crate::{
-    host::DataPage,
-    rmi::realm::{params::Params as RealmParams, Rd},
-    rsi,
-};
+use crate::{host::DataPage, realm::rd::Rd, rmi::realm::params::Params as RealmParams, rsi};
 
 pub struct HashContext<'a> {
     hasher: Hasher,

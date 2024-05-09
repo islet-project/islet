@@ -8,7 +8,6 @@ pub mod rtt;
 pub mod version;
 
 use crate::define_interface;
-use crate::rmi::realm::Rd;
 
 define_interface! {
     command {

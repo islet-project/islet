@@ -1,10 +1,5 @@
 pub(crate) mod params;
-pub(crate) mod rd;
-
-pub use self::rd::Rd;
-
 use self::params::Params;
-use self::rd::State;
 use super::error::Error;
 use crate::event::Mainloop;
 use crate::granule::GRANULE_SIZE;
@@ -15,6 +10,8 @@ use crate::measurement::HashContext;
 use crate::mm::translation::PageTable;
 use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::IPATranslation;
+use crate::realm::rd::Rd;
+use crate::realm::rd::State;
 use crate::realm::registry::VMID_SET;
 use crate::realm::vcpu::remove;
 use crate::rmi;

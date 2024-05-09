@@ -1,5 +1,7 @@
 <p align="center"><img src="https://github.com/islet-project/islet/blob/main/doc/res/logo-title.jpg?raw=true" height="100px"></p>
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/8915/badge)](https://www.bestpractices.dev/projects/8915)
+
 Islet is an open-source software project written in Rust that enables confidential computing
 on ARM architecture devices using the ARMv9 CCA.
 The primary objective of Islet is to enable on-device confidential computing

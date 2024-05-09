@@ -125,61 +125,37 @@
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
 <a href="#127" id="127">127</a>
-<a href="#128" id="128">128</a>
-<a href="#129" id="129">129</a>
-<a href="#130" id="130">130</a>
-<a href="#131" id="131">131</a>
-<a href="#132" id="132">132</a>
-<a href="#133" id="133">133</a>
-<a href="#134" id="134">134</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::mpidr;
 <span class="kw">use </span><span class="kw">crate</span>::const_assert_eq;
 <span class="kw">use </span><span class="kw">crate</span>::granule::{GranuleState, GRANULE_SIZE};
-<span class="kw">use </span><span class="kw">crate</span>::host::Accessor <span class="kw">as </span>HostAccessor;
 <span class="kw">use </span><span class="kw">crate</span>::measurement::Hashable;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
 <span class="kw">use crate</span>::{get_granule, get_granule_if};
 
-<span class="kw">const </span>MAX_AUX: usize = <span class="number">16</span>;
-<span class="kw">const </span>PADDING: [usize; <span class="number">5</span>] = [<span class="number">248</span>, <span class="number">248</span>, <span class="number">248</span>, <span class="number">1216</span>, <span class="number">1912</span>];
+<span class="kw">use </span>autopadding::<span class="kw-2">*</span>;
 
-<span class="attr">#[repr(C)]
-</span><span class="kw">pub struct </span>Params {
-    <span class="kw">pub </span>flags: u64,
-    padding0: [u8; PADDING[<span class="number">0</span>]],
-    <span class="kw">pub </span>mpidr: u64,
-    padding1: [u8; PADDING[<span class="number">1</span>]],
-    <span class="kw">pub </span>pc: u64,
-    padding2: [u8; PADDING[<span class="number">2</span>]],
-    <span class="kw">pub </span>gprs: [u64; <span class="number">8</span>],
-    padding3: [u8; PADDING[<span class="number">3</span>]],
-    <span class="kw">pub </span>num_aux: u64,
-    <span class="kw">pub </span>aux: [u64; MAX_AUX],
-    padding4: [u8; PADDING[<span class="number">4</span>]],
+<span class="kw">const </span>NR_AUX: usize = <span class="number">16</span>;
+<span class="kw">const </span>NR_GPRS: usize = <span class="number">8</span>;
+
+<span class="macro">pad_struct_and_impl_default!</span>(
+<span class="kw">pub struct </span>Params {
+    <span class="number">0x0    </span><span class="kw">pub </span>flags: u64,
+    <span class="number">0x100  </span><span class="kw">pub </span>mpidr: u64,
+    <span class="number">0x200  </span><span class="kw">pub </span>pc: u64,
+    <span class="number">0x300  </span><span class="kw">pub </span>gprs: [u64; NR_GPRS],
+    <span class="number">0x800  </span><span class="kw">pub </span>num_aux: u64,
+    <span class="number">0x808  </span><span class="kw">pub </span>aux: [u64; NR_AUX],
+    <span class="number">0x1000 </span>=&gt; @END,
 }
-
+);
 <span class="macro">const_assert_eq!</span>(core::mem::size_of::&lt;Params&gt;(), GRANULE_SIZE);
 
-<span class="kw">impl </span>Default <span class="kw">for </span>Params {
-    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{
-            flags: <span class="number">0</span>,
-            padding0: [<span class="number">0</span>; PADDING[<span class="number">0</span>]],
-            mpidr: <span class="number">0</span>,
-            padding1: [<span class="number">0</span>; PADDING[<span class="number">1</span>]],
-            pc: <span class="number">0</span>,
-            padding2: [<span class="number">0</span>; PADDING[<span class="number">2</span>]],
-            gprs: [<span class="number">0</span>; <span class="number">8</span>],
-            padding3: [<span class="number">0</span>; PADDING[<span class="number">3</span>]],
-            num_aux: <span class="number">0</span>,
-            aux: [<span class="number">0</span>; MAX_AUX],
-            padding4: [<span class="number">0</span>; PADDING[<span class="number">4</span>]],
-        }
-    }
-}
-
 <span class="kw">impl </span>Params {
-    <span class="kw">pub fn </span>validate_aux(<span class="kw-2">&amp;</span><span class="self">self</span>, rec: usize, rd: usize, params_ptr: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">pub fn </span>verify_compliance(<span class="kw-2">&amp;</span><span class="self">self</span>, rec: usize, rd: usize, params_ptr: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+        <span class="kw">if </span>!mpidr::validate(<span class="self">self</span>.mpidr) || <span class="self">self</span>.num_aux <span class="kw">as </span>usize &gt; NR_AUX {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
+        }
+
         <span class="kw">let </span><span class="kw-2">mut </span>aux = <span class="self">self</span>.aux;
         aux.sort();
         <span class="kw">for </span>idx <span class="kw">in </span><span class="number">0</span>..<span class="self">self</span>.num_aux <span class="kw">as </span>usize {
@@ -212,18 +188,28 @@
     }
 }
 
-<span class="kw">impl </span>HostAccessor <span class="kw">for </span>Params {
-    <span class="kw">fn </span>validate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="macro">trace!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>);
-        <span class="kw">if </span>!mpidr::validate(<span class="self">self</span>.mpidr) {
-            <span class="kw">return </span><span class="bool-val">false</span>;
-        }
+<span class="kw">impl </span>safe_abstraction::raw_ptr::RawPtr <span class="kw">for </span>Params {}
 
-        <span class="kw">if </span><span class="self">self</span>.num_aux <span class="kw">as </span>usize &gt; MAX_AUX {
-            <span class="kw">return </span><span class="bool-val">false</span>;
-        }
+<span class="kw">impl </span>safe_abstraction::raw_ptr::SafetyChecked <span class="kw">for </span>Params {}
 
-        <span class="bool-val">true
+<span class="kw">impl </span>safe_abstraction::raw_ptr::SafetyAssured <span class="kw">for </span>Params {
+    <span class="kw">fn </span>is_initialized(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="comment">// Given the fact that this memory is initialized by the Host,
+        // it&#39;s not possible to unequivocally guarantee
+        // that the values have been initialized from the perspective of the RMM.
+        // However, any values, whether correctly initialized or not, will undergo
+        // verification during the Measurement phase.
+        // Consequently, this function returns `true`.
+        </span><span class="bool-val">true
+    </span>}
+
+    <span class="kw">fn </span>verify_ownership(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="comment">// This memory has permissions from the Host&#39;s perspective,
+        // which inherently implies that exclusive ownership cannot be guaranteed by the RMM alone.
+        // However, since the RMM only performs read operations and any incorrect values will be
+        // verified during the Measurement phase.
+        // Consequently, this function returns `true`.
+        </span><span class="bool-val">true
     </span>}
 }
 
@@ -235,16 +221,16 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw">crate</span>::measurement::MeasurementError&gt; {
         hasher.hash_fields_into(out, |h| {
             h.hash_u64(<span class="self">self</span>.flags);
-            h.hash(<span class="self">self</span>.padding0);
+            h.hash(<span class="self">self</span>._padflags);
             h.hash_u64(<span class="number">0</span>); <span class="comment">// mpidr not used
-            </span>h.hash(<span class="self">self</span>.padding1);
+            </span>h.hash(<span class="self">self</span>._padmpidr);
             h.hash_u64(<span class="self">self</span>.pc);
-            h.hash(<span class="self">self</span>.padding2);
+            h.hash(<span class="self">self</span>._padpc);
             h.hash_u64_array(<span class="self">self</span>.gprs.as_slice());
-            h.hash(<span class="self">self</span>.padding3);
+            h.hash(<span class="self">self</span>._padgprs);
             h.hash_u64(<span class="number">0</span>); <span class="comment">// num_aux not used
             </span>h.hash_u64_array([<span class="number">0u64</span>; <span class="number">16</span>].as_slice()); <span class="comment">// aux is not used
-            </span>h.hash(<span class="self">self</span>.padding4);
+            </span>h.hash(<span class="self">self</span>._padaux);
         })
     }
 }

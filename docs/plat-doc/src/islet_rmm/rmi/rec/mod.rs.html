@@ -231,15 +231,6 @@
 <a href="#231" id="231">231</a>
 <a href="#232" id="232">232</a>
 <a href="#233" id="233">233</a>
-<a href="#234" id="234">234</a>
-<a href="#235" id="235">235</a>
-<a href="#236" id="236">236</a>
-<a href="#237" id="237">237</a>
-<a href="#238" id="238">238</a>
-<a href="#239" id="239">239</a>
-<a href="#240" id="240">240</a>
-<a href="#241" id="241">241</a>
-<a href="#242" id="242">242</a>
 </pre></div><pre class="rust"><code><span class="kw">pub mod </span>exit;
 <span class="kw">pub mod </span>handlers;
 <span class="kw">pub mod </span>mpidr;
@@ -247,7 +238,6 @@
 <span class="kw">pub mod </span>run;
 <span class="kw">pub mod </span>vtcr;
 <span class="kw">use </span><span class="kw">crate</span>::realm;
-<span class="kw">use </span><span class="kw">crate</span>::realm::registry::get_realm;
 <span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::State <span class="kw">as </span>RecState;
 <span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::VCPU;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
@@ -426,8 +416,8 @@
             <span class="kw">if </span>vcpu.is_realm_dead() {
                 vcpu.from_current();
             } <span class="kw">else </span>{
-                vcpu.realm.lock().page_table.lock().clean();
-                <span class="kw">return </span>rmm_exit([<span class="number">0</span>; <span class="number">4</span>]);
+                <span class="comment">// TODO: add code equivalent to the previous clean()
+                </span><span class="kw">return </span>rmm_exit([<span class="number">0</span>; <span class="number">4</span>]);
             }
         }
         [<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>]
@@ -442,12 +432,9 @@
     }
 }
 
-<span class="kw">pub fn </span>run(id: usize, vcpu: usize, incr_pc: usize) -&gt; <span class="prelude-ty">Result</span>&lt;[usize; <span class="number">4</span>], Error&gt; {
+<span class="kw">pub fn </span>run_prepare(rd: <span class="kw-2">&amp;</span>Rd, vcpu: usize, incr_pc: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
     <span class="kw">if </span>incr_pc == <span class="number">1 </span>{
-        get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-            </span>.lock()
-            .vcpus
+        rd.vcpus
             .get(vcpu)
             .ok_or(Error::RmiErrorOthers(NotExistVCPU))<span class="question-mark">?
             </span>.lock()
@@ -456,27 +443,22 @@
     }
     <span class="macro">debug!</span>(
         <span class="string">&quot;resuming: {:#x}&quot;</span>,
-        get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-            </span>.lock()
-            .vcpus
+        rd.vcpus
             .get(vcpu)
             .ok_or(Error::RmiErrorOthers(NotExistVCPU))<span class="question-mark">?
             </span>.lock()
             .context
             .elr
     );
-
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(vcpu) = get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-        </span>.lock()
-        .vcpus
-        .get(vcpu)
-    {
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(vcpu) = rd.vcpus.get(vcpu) {
         VCPU::into_current(<span class="kw-2">&amp;mut *</span>vcpu.lock())
     }
 
-    <span class="macro">trace!</span>(<span class="string">&quot;Switched to VCPU {} on Realm {}&quot;</span>, vcpu, id);
+    <span class="macro">trace!</span>(<span class="string">&quot;Switched to VCPU {} on Realm {}&quot;</span>, vcpu, rd.id());
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="kw">pub fn </span>run() -&gt; <span class="prelude-ty">Result</span>&lt;[usize; <span class="number">4</span>], Error&gt; {
     <span class="kw">let </span>ret = enter();
 
     exit();

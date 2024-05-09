@@ -84,9 +84,7 @@
 <a href="#84" id="84">84</a>
 <a href="#85" id="85">85</a>
 <a href="#86" id="86">86</a>
-<a href="#87" id="87">87</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::exception::trap;
-<span class="kw">use </span><span class="kw">crate</span>::realm::context::Context;
 <span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::VCPU;
 
 <span class="kw">use </span>armv9a::regs::<span class="kw-2">*</span>;
@@ -96,14 +94,14 @@
     (esr.get_masked(ISS::Op0) | esr.get_masked(ISS::Op1) | esr.get_masked(ISS::CRn)) == ISS::Op0
 }
 
-<span class="kw">pub fn </span>handle(vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;Context&gt;, esr: u64) -&gt; u64 {
+<span class="kw">pub fn </span>handle(vcpu: <span class="kw-2">&amp;mut </span>VCPU, esr: u64) -&gt; u64 {
     <span class="kw">if </span>check_sysreg_id_access(esr) {
         handle_sysreg_id(vcpu, esr);
     }
     trap::RET_TO_REC
 }
 
-<span class="kw">fn </span>handle_sysreg_id(vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;Context&gt;, esr: u64) -&gt; u64 {
+<span class="kw">fn </span>handle_sysreg_id(vcpu: <span class="kw-2">&amp;mut </span>VCPU, esr: u64) -&gt; u64 {
     <span class="kw">let </span>esr = ISS::new(esr);
     <span class="kw">let </span>il = esr.get_masked_value(ISS::IL);
     <span class="kw">let </span>rt = esr.get_masked_value(ISS::Rt) <span class="kw">as </span>usize;

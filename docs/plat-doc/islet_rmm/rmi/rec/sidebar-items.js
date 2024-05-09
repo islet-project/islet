@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["RmmRecAttestState"],"fn":["run"],"mod":["exit","handlers","mpidr","params","run","vtcr"],"struct":["Rec"]};
+window.SIDEBAR_ITEMS = {"enum":["RmmRecAttestState"],"fn":["run","run_prepare"],"mod":["exit","handlers","mpidr","params","run","vtcr"],"struct":["Rec"]};

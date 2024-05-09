@@ -65,50 +65,8 @@
 <a href="#65" id="65">65</a>
 <a href="#66" id="66">66</a>
 <a href="#67" id="67">67</a>
-<a href="#68" id="68">68</a>
-<a href="#69" id="69">69</a>
-<a href="#70" id="70">70</a>
-<a href="#71" id="71">71</a>
-<a href="#72" id="72">72</a>
-<a href="#73" id="73">73</a>
-<a href="#74" id="74">74</a>
-<a href="#75" id="75">75</a>
-<a href="#76" id="76">76</a>
-<a href="#77" id="77">77</a>
-<a href="#78" id="78">78</a>
-<a href="#79" id="79">79</a>
-<a href="#80" id="80">80</a>
-<a href="#81" id="81">81</a>
-<a href="#82" id="82">82</a>
-<a href="#83" id="83">83</a>
-<a href="#84" id="84">84</a>
-<a href="#85" id="85">85</a>
-<a href="#86" id="86">86</a>
-<a href="#87" id="87">87</a>
-<a href="#88" id="88">88</a>
-<a href="#89" id="89">89</a>
-<a href="#90" id="90">90</a>
-<a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
-<a href="#93" id="93">93</a>
-<a href="#94" id="94">94</a>
-<a href="#95" id="95">95</a>
-<a href="#96" id="96">96</a>
-<a href="#97" id="97">97</a>
-<a href="#98" id="98">98</a>
-<a href="#99" id="99">99</a>
-<a href="#100" id="100">100</a>
-<a href="#101" id="101">101</a>
-<a href="#102" id="102">102</a>
-<a href="#103" id="103">103</a>
-<a href="#104" id="104">104</a>
-<a href="#105" id="105">105</a>
-<a href="#106" id="106">106</a>
-</pre></div><pre class="rust"><code><span class="kw">extern crate </span>alloc;
-
-<span class="kw">use </span><span class="kw">crate</span>::event::Command;
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::event::Command;
 <span class="kw">use </span><span class="kw">crate</span>::rmi;
-<span class="kw">use </span>alloc::collections::btree_map::BTreeMap;
 
 <span class="attr">#[allow(dead_code)]
 #[derive(Default, Copy, Clone)]
@@ -129,73 +87,37 @@
     }
 }
 
-<span class="macro">lazy_static! </span>{
-    <span class="kw">static </span><span class="kw-2">ref </span>CONSTRAINTS: BTreeMap&lt;Command, Constraint&gt; = {
-        <span class="kw">let </span><span class="kw-2">mut </span>m = BTreeMap::new();
-        m.insert(rmi::VERSION, Constraint::new(rmi::VERSION, <span class="number">1</span>, <span class="number">1</span>));
-        m.insert(
-            rmi::GRANULE_DELEGATE,
-            Constraint::new(rmi::GRANULE_DELEGATE, <span class="number">2</span>, <span class="number">1</span>),
-        );
-        m.insert(
-            rmi::GRANULE_UNDELEGATE,
-            Constraint::new(rmi::GRANULE_UNDELEGATE, <span class="number">2</span>, <span class="number">1</span>),
-        );
-        m.insert(rmi::DATA_CREATE, Constraint::new(rmi::DATA_CREATE, <span class="number">6</span>, <span class="number">1</span>));
-        m.insert(rmi::DATA_CREATE_UNKNOWN, Constraint::new(rmi::DATA_CREATE_UNKNOWN, <span class="number">4</span>, <span class="number">1</span>));
-        m.insert(rmi::DATA_DESTROY, Constraint::new(rmi::DATA_DESTROY, <span class="number">3</span>, <span class="number">3</span>));
-        m.insert(
-            rmi::REALM_ACTIVATE,
-            Constraint::new(rmi::REALM_ACTIVATE, <span class="number">2</span>, <span class="number">1</span>),
-        );
+<span class="kw">fn </span>pick(cmd: Command) -&gt; <span class="prelude-ty">Option</span>&lt;Constraint&gt; {
+    <span class="kw">let </span>constraint = <span class="kw">match </span>cmd {
+        rmi::VERSION =&gt; Constraint::new(rmi::VERSION, <span class="number">1</span>, <span class="number">1</span>),
+        rmi::GRANULE_DELEGATE =&gt; Constraint::new(rmi::GRANULE_DELEGATE, <span class="number">2</span>, <span class="number">1</span>),
+        rmi::GRANULE_UNDELEGATE =&gt; Constraint::new(rmi::GRANULE_UNDELEGATE, <span class="number">2</span>, <span class="number">1</span>),
+        rmi::DATA_CREATE =&gt; Constraint::new(rmi::DATA_CREATE, <span class="number">6</span>, <span class="number">1</span>),
+        rmi::DATA_CREATE_UNKNOWN =&gt; Constraint::new(rmi::DATA_CREATE_UNKNOWN, <span class="number">4</span>, <span class="number">1</span>),
+        rmi::DATA_DESTROY =&gt; Constraint::new(rmi::DATA_DESTROY, <span class="number">3</span>, <span class="number">3</span>),
+        rmi::REALM_ACTIVATE =&gt; Constraint::new(rmi::REALM_ACTIVATE, <span class="number">2</span>, <span class="number">1</span>),
         <span class="comment">// NOTE: REALM_CREATE has 3 of arg_num and 1 of ret_num according to the specification,
         //       but we&#39;re using one more return value for our own purpose.
-        </span>m.insert(rmi::REALM_CREATE, Constraint::new(rmi::REALM_CREATE, <span class="number">3</span>, <span class="number">2</span>));
-        m.insert(
-            rmi::REALM_DESTROY,
-            Constraint::new(rmi::REALM_DESTROY, <span class="number">2</span>, <span class="number">1</span>),
-        );
+        </span>rmi::REALM_CREATE =&gt; Constraint::new(rmi::REALM_CREATE, <span class="number">3</span>, <span class="number">2</span>),
+        rmi::REALM_DESTROY =&gt; Constraint::new(rmi::REALM_DESTROY, <span class="number">2</span>, <span class="number">1</span>),
         <span class="comment">// NOTE: REC_CREATE has 4 of arg_num and 1 of ret_num according to the specification,
         //       but we&#39;re using one more return value for our own purpose.
-        </span>m.insert(rmi::REC_CREATE, Constraint::new(rmi::REC_CREATE, <span class="number">4</span>, <span class="number">2</span>));
-        m.insert(rmi::REC_DESTROY, Constraint::new(rmi::REC_DESTROY, <span class="number">4</span>, <span class="number">1</span>));
-        m.insert(rmi::REC_ENTER, Constraint::new(rmi::REC_ENTER, <span class="number">3</span>, <span class="number">1</span>));
-        m.insert(
-            rmi::RTT_MAP_UNPROTECTED,
-            Constraint::new(rmi::RTT_MAP_UNPROTECTED, <span class="number">5</span>, <span class="number">1</span>),
-        );
-        m.insert(
-            rmi::RTT_UNMAP_UNPROTECTED,
-            Constraint::new(rmi::RTT_UNMAP_UNPROTECTED, <span class="number">4</span>, <span class="number">1</span>),
-        );
-        m.insert(
-            rmi::RTT_READ_ENTRY,
-            Constraint::new(rmi::RTT_READ_ENTRY, <span class="number">4</span>, <span class="number">5</span>),
-        );
-        m.insert(rmi::FEATURES, Constraint::new(rmi::FEATURES, <span class="number">2</span>, <span class="number">2</span>));
-        m.insert(
-            rmi::REC_AUX_COUNT,
-            Constraint::new(rmi::REC_AUX_COUNT, <span class="number">2</span>, <span class="number">2</span>),
-        );
-        m.insert(
-            rmi::RTT_CREATE,
-            Constraint::new(rmi::RTT_CREATE, <span class="number">5</span>, <span class="number">1</span>),
-        );
-        m.insert(
-            rmi::RTT_DESTROY,
-            Constraint::new(rmi::RTT_DESTROY, <span class="number">5</span>, <span class="number">1</span>),
-        );
-        m.insert(
-            rmi::RTT_INIT_RIPAS,
-            Constraint::new(rmi::RTT_INIT_RIPAS, <span class="number">4</span>, <span class="number">2</span>),
-        );
-        m.insert(
-            rmi::RTT_SET_RIPAS,
-            Constraint::new(rmi::RTT_SET_RIPAS, <span class="number">6</span>, <span class="number">2</span>),
-        );
-        m.insert(rmi::REQ_COMPLETE, Constraint::new(rmi::REQ_COMPLETE, <span class="number">4</span>, <span class="number">2</span>));
-        m
+        </span>rmi::REC_CREATE =&gt; Constraint::new(rmi::REC_CREATE, <span class="number">4</span>, <span class="number">2</span>),
+        rmi::REC_DESTROY =&gt; Constraint::new(rmi::REC_DESTROY, <span class="number">4</span>, <span class="number">1</span>),
+        rmi::REC_ENTER =&gt; Constraint::new(rmi::REC_ENTER, <span class="number">3</span>, <span class="number">1</span>),
+        rmi::RTT_MAP_UNPROTECTED =&gt; Constraint::new(rmi::RTT_MAP_UNPROTECTED, <span class="number">5</span>, <span class="number">1</span>),
+        rmi::RTT_UNMAP_UNPROTECTED =&gt; Constraint::new(rmi::RTT_UNMAP_UNPROTECTED, <span class="number">4</span>, <span class="number">1</span>),
+        rmi::RTT_READ_ENTRY =&gt; Constraint::new(rmi::RTT_READ_ENTRY, <span class="number">4</span>, <span class="number">5</span>),
+        rmi::FEATURES =&gt; Constraint::new(rmi::FEATURES, <span class="number">2</span>, <span class="number">2</span>),
+        rmi::REC_AUX_COUNT =&gt; Constraint::new(rmi::REC_AUX_COUNT, <span class="number">2</span>, <span class="number">2</span>),
+        rmi::RTT_CREATE =&gt; Constraint::new(rmi::RTT_CREATE, <span class="number">5</span>, <span class="number">1</span>),
+        rmi::RTT_DESTROY =&gt; Constraint::new(rmi::RTT_DESTROY, <span class="number">5</span>, <span class="number">1</span>),
+        rmi::RTT_INIT_RIPAS =&gt; Constraint::new(rmi::RTT_INIT_RIPAS, <span class="number">4</span>, <span class="number">2</span>),
+        rmi::RTT_SET_RIPAS =&gt; Constraint::new(rmi::RTT_SET_RIPAS, <span class="number">6</span>, <span class="number">2</span>),
+        rmi::REQ_COMPLETE =&gt; Constraint::new(rmi::REQ_COMPLETE, <span class="number">4</span>, <span class="number">2</span>),
+        <span class="kw">_ </span>=&gt; <span class="kw">return </span><span class="prelude-val">None</span>,
     };
+    <span class="prelude-val">Some</span>(constraint)
 }
 
 <span class="kw">pub fn </span>validate&lt;T, G&gt;(cmd: Command, ok_func: T, else_func: G)
@@ -203,7 +125,7 @@
     </span>T: Fn(usize, usize),
     G: FnOnce(), <span class="comment">// TODO: error command?
 </span>{
-    <span class="kw">if let </span><span class="prelude-val">Some</span>(c) = CONSTRAINTS.get(<span class="kw-2">&amp;</span>cmd) {
+    <span class="kw">if let </span><span class="prelude-val">Some</span>(c) = pick(cmd) {
         <span class="comment">// TODO: command-specific validation routine if needed
         </span>ok_func(c.arg_num, c.ret_num);
     } <span class="kw">else </span>{

@@ -31,30 +31,18 @@
 <a href="#31" id="31">31</a>
 <a href="#32" id="32">32</a>
 <a href="#33" id="33">33</a>
-<a href="#34" id="34">34</a>
-<a href="#35" id="35">35</a>
-<a href="#36" id="36">36</a>
-<a href="#37" id="37">37</a>
-<a href="#38" id="38">38</a>
-<a href="#39" id="39">39</a>
-<a href="#40" id="40">40</a>
-<a href="#41" id="41">41</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::measurement::MeasurementError;
-<span class="kw">use </span><span class="kw">crate</span>::realm::registry::get_realm;
 <span class="kw">use </span><span class="kw">crate</span>::rsi::error::Error;
+<span class="kw">use </span><span class="kw">crate</span>::rsi::Rd;
 
 <span class="kw">pub fn </span>read(
-    realmid: usize,
+    rd: <span class="kw-2">&amp;</span>Rd,
     index: usize,
     out: <span class="kw-2">&amp;mut </span><span class="kw">crate</span>::measurement::Measurement,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw">crate</span>::rsi::error::Error&gt; {
-    <span class="kw">let </span>realm_lock = get_realm(realmid).ok_or(Error::RealmDoesNotExists)<span class="question-mark">?</span>;
-
-    <span class="kw">let </span><span class="kw-2">mut </span>realm = realm_lock.lock();
-
-    <span class="kw">let </span>measurement = realm
+    <span class="kw">let </span>measurement = rd
         .measurements
-        .iter_mut()
+        .iter()
         .nth(index)
         .ok_or(Error::InvalidMeasurementIndex)<span class="question-mark">?</span>;
 
@@ -63,15 +51,11 @@
 }
 
 <span class="kw">pub fn </span>extend(
-    realmid: usize,
+    rd: <span class="kw-2">&amp;mut </span>Rd,
     index: usize,
     f: <span class="kw">impl </span>Fn(<span class="kw-2">&amp;mut </span><span class="kw">crate</span>::measurement::Measurement) -&gt; <span class="prelude-ty">Result</span>&lt;(), MeasurementError&gt;,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw">crate</span>::rsi::error::Error&gt; {
-    <span class="kw">let </span>realm_lock = get_realm(realmid).ok_or(Error::RealmDoesNotExists)<span class="question-mark">?</span>;
-
-    <span class="kw">let </span><span class="kw-2">mut </span>realm = realm_lock.lock();
-
-    <span class="kw">let </span>measurement = realm
+    <span class="kw">let </span>measurement = rd
         .measurements
         .iter_mut()
         .nth(index)

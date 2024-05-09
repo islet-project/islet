@@ -163,6 +163,14 @@
 <a href="#163" id="163">163</a>
 <a href="#164" id="164">164</a>
 <a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
 </pre></div><pre class="rust"><code><span class="attr">#![no_std]
 #![allow(incomplete_features)]
 #![feature(alloc_error_handler)]
@@ -170,7 +178,6 @@
 #![feature(const_mut_refs)]
 #![feature(specialization)]
 #![warn(rust_2018_idioms)]
-#![deny(warnings)]
 
 #[cfg(not(test))]
 </span><span class="kw">pub mod </span>allocator;
@@ -200,7 +207,12 @@
 <span class="attr">#[macro_use]
 </span><span class="kw">pub mod </span>r#macro;
 <span class="kw">mod </span>measurement;
-<span class="kw">mod </span>monitor;
+<span class="attr">#[cfg(kani)]
+</span><span class="comment">// we declare monitor as `pub` in model checking, so that
+// its member can be accessed freely outside the rmm crate
+</span><span class="kw">pub mod </span>monitor;
+<span class="attr">#[cfg(not(kani))]
+</span><span class="kw">mod </span>monitor;
 <span class="kw">mod </span>rmm_el3;
 
 <span class="kw">extern crate </span>alloc;
@@ -221,7 +233,11 @@
 <span class="kw">use </span>armv9a::{bits_in_reg, regs::<span class="kw-2">*</span>};
 <span class="kw">use </span>core::ptr::addr_of;
 
-<span class="kw">pub unsafe fn </span>start(cpu_id: usize) {
+<span class="attr">#[cfg(not(kani))]
+</span><span class="comment">// model checking harnesses do not use this function, instead
+// they use their own entry points marked with #[kani::proof]
+// where slightly adjusted `Monitor` is used
+</span><span class="kw">pub unsafe fn </span>start(cpu_id: usize) {
     setup_mmu_cfg();
     setup_el2();
     <span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]

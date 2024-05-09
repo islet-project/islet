@@ -43,24 +43,20 @@
 <a href="#43" id="43">43</a>
 <a href="#44" id="44">44</a>
 <a href="#45" id="45">45</a>
-<a href="#46" id="46">46</a>
-<a href="#47" id="47">47</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::realm::registry::get_realm;
-<span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::InternalError::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rmi::realm::Rd;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rec::run::{Run, REC_ENTRY_FLAG_EMUL_MMIO};
 <span class="kw">use </span>armv9a::regs::<span class="kw-2">*</span>;
 
-<span class="kw">pub fn </span>emulate_mmio(id: usize, vcpu: usize, run: <span class="kw-2">&amp;</span>Run) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-    <span class="kw">let </span>realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?</span>;
-    <span class="kw">let </span><span class="kw-2">mut </span>locked_realm = realm.lock();
-    <span class="kw">let </span>vcpu = locked_realm
+<span class="kw">pub fn </span>emulate_mmio(rd: <span class="kw-2">&amp;mut </span>Rd, vcpu: usize, run: <span class="kw-2">&amp;</span>Run) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">let </span>vcpu = rd
         .vcpus
         .get_mut(vcpu)
         .ok_or(Error::RmiErrorOthers(NotExistVCPU))<span class="question-mark">?</span>;
     <span class="kw">let </span>context = <span class="kw-2">&amp;mut </span>vcpu.lock().context;
 
-    <span class="kw">let </span>flags = <span class="kw">unsafe </span>{ run.entry_flags() };
+    <span class="kw">let </span>flags = run.entry_flags();
 
     <span class="comment">// Host has not completed emulation for an Emulatable Abort.
     </span><span class="kw">if </span>(flags &amp; REC_ENTRY_FLAG_EMUL_MMIO) == <span class="number">0 </span>{
@@ -81,7 +77,7 @@
     <span class="comment">// MMIO read case
     </span><span class="kw">if </span>wnr == <span class="number">0 </span>&amp;&amp; rt != <span class="number">31 </span>{
         <span class="kw">let </span>mask = esr.get_access_size_mask();
-        <span class="kw">let </span>val = <span class="kw">unsafe </span>{ run.entry_gpr(<span class="number">0</span>)<span class="question-mark">? </span>} &amp; mask;
+        <span class="kw">let </span>val = run.entry_gpr(<span class="number">0</span>)<span class="question-mark">? </span>&amp; mask;
         <span class="kw">let </span>sign_extended = esr.get_masked_value(EsrEl2::SSE);
         <span class="kw">if </span>sign_extended != <span class="number">0 </span>{
             <span class="comment">// TODO

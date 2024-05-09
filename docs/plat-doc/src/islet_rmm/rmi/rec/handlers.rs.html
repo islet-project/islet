@@ -176,6 +176,26 @@
 <a href="#176" id="176">176</a>
 <a href="#177" id="177">177</a>
 <a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::mpidr::MPIDR;
 <span class="kw">use </span><span class="kw">super</span>::params::Params;
 <span class="kw">use </span><span class="kw">super</span>::run::{Run, REC_ENTRY_FLAG_TRAP_WFE, REC_ENTRY_FLAG_TRAP_WFI};
@@ -186,8 +206,7 @@
 </span><span class="kw">use </span><span class="kw">crate</span>::granule::{set_granule, set_granule_with_parent, GranuleState};
 <span class="attr">#[cfg(not(feature = <span class="string">&quot;gst_page_table&quot;</span>))]
 </span><span class="kw">use </span><span class="kw">crate</span>::granule::{set_granule, GranuleState};
-<span class="kw">use </span><span class="kw">crate</span>::host::pointer::Pointer <span class="kw">as </span>HostPointer;
-<span class="kw">use </span><span class="kw">crate</span>::host::pointer::PointerMut <span class="kw">as </span>HostPointerMut;
+<span class="kw">use </span><span class="kw">crate</span>::host;
 <span class="kw">use </span><span class="kw">crate</span>::listen;
 <span class="kw">use </span><span class="kw">crate</span>::measurement::HashContext;
 <span class="kw">use </span><span class="kw">crate</span>::realm::context::set_reg;
@@ -213,8 +232,8 @@
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
         }
 
-        <span class="kw">let </span>params = <span class="macro">copy_from_host_or_ret!</span>(Params, params_ptr);
-        params.validate_aux(rec, rd, params_ptr)<span class="question-mark">?</span>;
+        <span class="kw">let </span>params = host::copy_from::&lt;Params&gt;(params_ptr).ok_or(Error::RmiErrorInput)<span class="question-mark">?</span>;
+        params.verify_compliance(rec, rd, params_ptr)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>rec_index = MPIDR::from(params.mpidr).index();
         <span class="kw">let </span><span class="kw-2">mut </span>rd_granule = <span class="macro">get_granule_if!</span>(rd, GranuleState::RD)<span class="question-mark">?</span>;
@@ -228,10 +247,12 @@
         }
         <span class="comment">// set Rec_state and grab the lock for Rec granule
         </span><span class="kw">let </span><span class="kw-2">mut </span>rec_granule = <span class="macro">get_granule_if!</span>(rec, GranuleState::Delegated)<span class="question-mark">?</span>;
-        rmm.page_table.map(rec, <span class="bool-val">true</span>);
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `page_table` is currently not reachable in model checking harnesses
+        </span>rmm.page_table.map(rec, <span class="bool-val">true</span>);
         <span class="kw">let </span>rec = rec_granule.content_mut::&lt;Rec&lt;<span class="lifetime">&#39;_</span>&gt;&gt;();
 
-        <span class="kw">match </span>create_vcpu(rd.id()) {
+        <span class="kw">match </span>create_vcpu(rd) {
             <span class="prelude-val">Ok</span>(vcpuid) =&gt; {
                 ret[<span class="number">1</span>] = vcpuid;
                 rec.init(owner, vcpuid, params.flags)<span class="question-mark">?</span>;
@@ -240,17 +261,19 @@
         }
 
         <span class="kw">for </span>(idx, gpr) <span class="kw">in </span>params.gprs.iter().enumerate() {
-            <span class="kw">if </span>set_reg(rd.id(), rec.vcpuid(), idx, <span class="kw-2">*</span>gpr <span class="kw">as </span>usize).is_err() {
+            <span class="kw">if </span>set_reg(rd, rec.vcpuid(), idx, <span class="kw-2">*</span>gpr <span class="kw">as </span>usize).is_err() {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
             }
         }
-        <span class="kw">if </span>set_reg(rd.id(), rec.vcpuid(), <span class="number">31</span>, params.pc <span class="kw">as </span>usize).is_err() {
+        <span class="kw">if </span>set_reg(rd, rec.vcpuid(), <span class="number">31</span>, params.pc <span class="kw">as </span>usize).is_err() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
         }
         rec.set_vtcr(prepare_vtcr(rd)<span class="question-mark">?</span>);
 
         rd.inc_rec_index();
-        HashContext::new(rd)<span class="question-mark">?</span>.measure_rec_params(<span class="kw-2">&amp;</span>params)<span class="question-mark">?</span>;
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `rsi` is currently not reachable in model checking harnesses
+        </span>HashContext::new(rd)<span class="question-mark">?</span>.measure_rec_params(<span class="kw-2">&amp;</span>params)<span class="question-mark">?</span>;
 
         <span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]
         </span><span class="kw">return </span>set_granule_with_parent(rd_granule.clone(), <span class="kw-2">&amp;mut </span>rec_granule, GranuleState::Rec);
@@ -262,10 +285,14 @@
         <span class="kw">let </span><span class="kw-2">mut </span>rec_granule = <span class="macro">get_granule_if!</span>(arg[<span class="number">0</span>], GranuleState::Rec)<span class="question-mark">?</span>;
 
         set_granule(<span class="kw-2">&amp;mut </span>rec_granule, GranuleState::Delegated).map_err(|e| {
-            rmm.page_table.unmap(arg[<span class="number">0</span>]);
+            <span class="attr">#[cfg(not(kani))]
+            </span><span class="comment">// `page_table` is currently not reachable in model checking harnesses
+            </span>rmm.page_table.unmap(arg[<span class="number">0</span>]);
             e
         })<span class="question-mark">?</span>;
-        rmm.page_table.unmap(arg[<span class="number">0</span>]);
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `page_table` is currently not reachable in model checking harnesses
+        </span>rmm.page_table.unmap(arg[<span class="number">0</span>]);
         <span class="prelude-val">Ok</span>(())
     });
 
@@ -275,7 +302,6 @@
         <span class="comment">// grab the lock for Rec
         </span><span class="kw">let </span><span class="kw-2">mut </span>rec_granule = <span class="macro">get_granule_if!</span>(arg[<span class="number">0</span>], GranuleState::Rec)<span class="question-mark">?</span>;
         <span class="kw">let </span>rec = rec_granule.content_mut::&lt;Rec&lt;<span class="lifetime">&#39;_</span>&gt;&gt;();
-        <span class="kw">let </span>realm_id = rec.realmid()<span class="question-mark">?</span>;
 
         <span class="kw">if </span>!rec.runnable() {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorRec);
@@ -286,10 +312,9 @@
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorRec);
         }
 
-        <span class="kw">match </span><span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?
-            </span>.content::&lt;Rd&gt;()
-            .state() <span class="comment">// Rd dropped
-        </span>{
+        <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
+        <span class="kw">match </span>rd.state() {
             State::Active =&gt; {}
             State::New =&gt; {
                 <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorRealm(<span class="number">0</span>));
@@ -301,26 +326,34 @@
                 <span class="macro">panic!</span>(<span class="string">&quot;Unexpected realm state&quot;</span>);
             }
         }
+        <span class="comment">// XXX: we explicitly release Rd&#39;s lock here to avoid a deadlock
+        </span>core::mem::drop(rd_granule);
 
         <span class="comment">// read Run
-        </span><span class="kw">let </span><span class="kw-2">mut </span>run = <span class="macro">copy_from_host_or_ret!</span>(Run, run_pa, Error::RmiErrorRec);
+        </span><span class="kw">let </span><span class="kw-2">mut </span>run = host::copy_from::&lt;Run&gt;(run_pa).ok_or(Error::RmiErrorInput)<span class="question-mark">?</span>;
+        run.verify_compliance()<span class="question-mark">?</span>;
         <span class="macro">trace!</span>(<span class="string">&quot;{:?}&quot;</span>, run);
 
         <span class="kw">if </span>rec.host_call_pending() {
-            do_host_call(arg, ret, rmm, rec, <span class="kw-2">&amp;mut </span>run)<span class="question-mark">?</span>;
+            <span class="comment">// The below should be called without holding rd&#39;s lock
+            </span>do_host_call(arg, ret, rmm, rec, <span class="kw-2">&amp;mut </span>run)<span class="question-mark">?</span>;
         }
 
-        <span class="kw">crate</span>::gic::receive_state_from_host(realm_id, rec.vcpuid(), <span class="kw-2">&amp;</span>run)<span class="question-mark">?</span>;
-        <span class="kw">crate</span>::mmio::emulate_mmio(realm_id, rec.vcpuid(), <span class="kw-2">&amp;</span>run)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content_mut::&lt;Rd&gt;();
+        <span class="kw">crate</span>::gic::receive_state_from_host(rd, rec.vcpuid(), <span class="kw-2">&amp;</span>run)<span class="question-mark">?</span>;
+        <span class="kw">crate</span>::mmio::emulate_mmio(rd, rec.vcpuid(), <span class="kw-2">&amp;</span>run)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>ripas = rec.ripas_addr() <span class="kw">as </span>usize;
         <span class="kw">if </span>ripas &gt; <span class="number">0 </span>{
-            set_reg(realm_id, rec.vcpuid(), <span class="number">0</span>, <span class="number">0</span>)<span class="question-mark">?</span>;
-            set_reg(realm_id, rec.vcpuid(), <span class="number">1</span>, ripas)<span class="question-mark">?</span>;
+            set_reg(rd, rec.vcpuid(), <span class="number">0</span>, <span class="number">0</span>)<span class="question-mark">?</span>;
+            set_reg(rd, rec.vcpuid(), <span class="number">1</span>, ripas)<span class="question-mark">?</span>;
             rec.set_ripas(<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);
         }
+        <span class="comment">// XXX: we explicitly release Rd&#39;s lock here to avoid a deadlock
+        </span>core::mem::drop(rd_granule);
 
-        <span class="kw">let </span>wfx_flag = <span class="kw">unsafe </span>{ run.entry_flags() };
+        <span class="kw">let </span>wfx_flag = run.entry_flags();
         <span class="kw">if </span>wfx_flag &amp; (REC_ENTRY_FLAG_TRAP_WFI | REC_ENTRY_FLAG_TRAP_WFE) != <span class="number">0 </span>{
             <span class="macro">warn!</span>(<span class="string">&quot;Islet does not support re-configuring the WFI(E) trap&quot;</span>);
             <span class="macro">warn!</span>(<span class="string">&quot;TWI(E) in HCR_EL2 is currently fixed to &#39;no trap&#39;&quot;</span>);
@@ -331,10 +364,16 @@
         <span class="kw">let </span><span class="kw-2">mut </span>ret_ns;
         <span class="kw">loop </span>{
             ret_ns = <span class="bool-val">true</span>;
-            <span class="kw">unsafe </span>{ run.set_imm(<span class="number">0</span>) };
+            run.set_imm(<span class="number">0</span>);
 
+            <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+            <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
             rec.set_state(RecState::Running);
-            <span class="kw">match </span><span class="kw">crate</span>::rmi::rec::run(realm_id, rec.vcpuid(), <span class="number">0</span>) {
+            <span class="kw">crate</span>::rmi::rec::run_prepare(rd, rec.vcpuid(), <span class="number">0</span>)<span class="question-mark">?</span>;
+            <span class="comment">// XXX: we explicitly release Rd&#39;s lock here, because RSI calls
+            //      would acquire the same lock again (deadlock).
+            </span>core::mem::drop(rd_granule);
+            <span class="kw">match </span><span class="kw">crate</span>::rmi::rec::run() {
                 <span class="prelude-val">Ok</span>(realm_exit_res) =&gt; {
                     (ret_ns, ret[<span class="number">0</span>]) = handle_realm_exit(realm_exit_res, rmm, rec, <span class="kw-2">&amp;mut </span>run)<span class="question-mark">?
                 </span>}
@@ -346,12 +385,13 @@
                 <span class="kw">break</span>;
             }
         }
-        <span class="kw">crate</span>::gic::send_state_to_host(realm_id, rec.vcpuid(), <span class="kw-2">&amp;mut </span>run)<span class="question-mark">?</span>;
-        <span class="kw">crate</span>::realm::timer::send_state_to_host(realm_id, rec.vcpuid(), <span class="kw-2">&amp;mut </span>run)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content_mut::&lt;Rd&gt;();
+        <span class="kw">crate</span>::gic::send_state_to_host(rd, rec.vcpuid(), <span class="kw-2">&amp;mut </span>run)<span class="question-mark">?</span>;
+        <span class="kw">crate</span>::realm::timer::send_state_to_host(rd, rec.vcpuid(), <span class="kw-2">&amp;mut </span>run)<span class="question-mark">?</span>;
 
         <span class="comment">// NOTICE: do not modify `run` after copy_to_host_or_ret!(). it won&#39;t have any effect.
-        </span><span class="macro">copy_to_host_or_ret!</span>(Run, <span class="kw-2">&amp;</span>run, run_pa);
-        <span class="prelude-val">Ok</span>(())
+        </span>host::copy_to::&lt;Run&gt;(<span class="kw-2">&amp;</span>run, run_pa).ok_or(Error::RmiErrorInput)
     });
 }
 </code></pre></div></section></main></body></html>

@@ -244,7 +244,6 @@
 <a href="#244" id="244">244</a>
 <a href="#245" id="245">245</a>
 <a href="#246" id="246">246</a>
-<a href="#247" id="247">247</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>frame;
 <span class="kw">pub mod </span>syndrome;
 
@@ -255,7 +254,6 @@
 <span class="kw">use </span><span class="kw">crate</span>::cpu;
 <span class="kw">use </span><span class="kw">crate</span>::event::realmexit::{ExitSyncType, RecExitReason};
 <span class="kw">use </span><span class="kw">crate</span>::mm::translation::PageTable;
-<span class="kw">use </span><span class="kw">crate</span>::realm::context::Context;
 <span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::VCPU;
 
 <span class="kw">use </span>armv9a::regs::<span class="kw-2">*</span>;
@@ -389,7 +387,7 @@
 </span><span class="kw">pub extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn </span>handle_lower_exception(
     info: Info,
     esr: u32,
-    vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;Context&gt;,
+    vcpu: <span class="kw-2">&amp;mut </span>VCPU,
     tf: <span class="kw-2">&amp;mut </span>TrapFrame,
 ) -&gt; u64 {
     <span class="kw">match </span>info.kind {
@@ -489,7 +487,7 @@
 }
 
 <span class="attr">#[inline(always)]
-</span><span class="kw">fn </span>advance_pc(vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;Context&gt;) {
+</span><span class="kw">fn </span>advance_pc(vcpu: <span class="kw-2">&amp;mut </span>VCPU) {
     vcpu.context.elr += <span class="number">4</span>;
 }
 </code></pre></div></section></main></body></html>

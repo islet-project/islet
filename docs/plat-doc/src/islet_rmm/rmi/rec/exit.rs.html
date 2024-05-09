@@ -136,8 +136,12 @@
 <a href="#136" id="136">136</a>
 <a href="#137" id="137">137</a>
 <a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::event::realmexit::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::event::{Context, RsiHandle};
+<span class="kw">use </span><span class="kw">crate</span>::get_granule;
+<span class="kw">use </span><span class="kw">crate</span>::get_granule_if;
+<span class="kw">use </span><span class="kw">crate</span>::granule::GranuleState;
 <span class="kw">use </span><span class="kw">crate</span>::granule::GRANULE_MASK;
 <span class="kw">use </span><span class="kw">crate</span>::realm::context::get_reg;
 <span class="kw">use </span><span class="kw">crate</span>::realm::mm::stage2_tte::S2TTE;
@@ -146,6 +150,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rec::Rec;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rtt::is_protected_ipa;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rtt::RTT_PAGE_LEVEL;
+<span class="kw">use </span><span class="kw">crate</span>::rmi::Rd;
 <span class="kw">use </span><span class="kw">crate</span>::Monitor;
 <span class="kw">use crate</span>::{rmi, rsi};
 <span class="kw">use </span>armv9a::{EsrEl2, EMULATABLE_ABORT_MASK, HPFAR_EL2, NON_EMULATABLE_ABORT_MASK};
@@ -158,7 +163,9 @@
 ) -&gt; <span class="prelude-ty">Result</span>&lt;(bool, usize), Error&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>return_to_ns = <span class="bool-val">true</span>;
     <span class="kw">let </span>ret = <span class="kw">match </span>RecExitReason::from(realm_exit_res[<span class="number">0</span>]) {
-        RecExitReason::Sync(ExitSyncType::RSI) =&gt; {
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `rsi` is currently not reachable in model checking harnesses
+        </span>RecExitReason::Sync(ExitSyncType::RSI) =&gt; {
             <span class="macro">trace!</span>(<span class="string">&quot;REC_ENTER ret: {:#X?}&quot;</span>, realm_exit_res);
             <span class="kw">let </span>rsi = <span class="kw-2">&amp;</span>rmm.rsi;
             <span class="kw">let </span>cmd = realm_exit_res[<span class="number">1</span>];
@@ -183,21 +190,21 @@
         RecExitReason::Sync(ExitSyncType::DataAbort) =&gt; {
             handle_data_abort(realm_exit_res, rec, run)<span class="question-mark">?
         </span>}
-        RecExitReason::IRQ =&gt; <span class="kw">unsafe </span>{
+        RecExitReason::IRQ =&gt; {
             run.set_exit_reason(rmi::EXIT_IRQ);
             run.set_esr(realm_exit_res[<span class="number">1</span>] <span class="kw">as </span>u64);
             run.set_hpfar(realm_exit_res[<span class="number">2</span>] <span class="kw">as </span>u64);
             run.set_far(realm_exit_res[<span class="number">3</span>] <span class="kw">as </span>u64);
             rmi::SUCCESS
-        },
+        }
         RecExitReason::Sync(ExitSyncType::InstAbort)
-        | RecExitReason::Sync(ExitSyncType::Undefined) =&gt; <span class="kw">unsafe </span>{
+        | RecExitReason::Sync(ExitSyncType::Undefined) =&gt; {
             run.set_exit_reason(rmi::EXIT_SYNC);
             run.set_esr(realm_exit_res[<span class="number">1</span>] <span class="kw">as </span>u64);
             run.set_hpfar(realm_exit_res[<span class="number">2</span>] <span class="kw">as </span>u64);
             run.set_far(realm_exit_res[<span class="number">3</span>] <span class="kw">as </span>u64);
             rmi::SUCCESS
-        },
+        }
         <span class="kw">_ </span>=&gt; rmi::SUCCESS,
     };
 
@@ -205,12 +212,12 @@
 }
 
 <span class="kw">fn </span>is_non_emulatable_data_abort(
-    realm_id: usize,
+    rd: <span class="kw-2">&amp;</span>Rd,
     ipa_bits: usize,
     fault_ipa: usize,
     esr_el2: u64,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;bool, Error&gt; {
-    <span class="kw">let </span>(s2tte, <span class="kw">_</span>) = S2TTE::get_s2tte(realm_id, fault_ipa, RTT_PAGE_LEVEL, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>(s2tte, <span class="kw">_</span>) = S2TTE::get_s2tte(rd, fault_ipa, RTT_PAGE_LEVEL, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
     <span class="kw">let </span>is_protected_ipa = is_protected_ipa(fault_ipa, ipa_bits);
 
     <span class="kw">let </span>ret = <span class="kw">match </span>is_protected_ipa {
@@ -221,12 +228,12 @@
     <span class="prelude-val">Ok</span>(ret)
 }
 
-<span class="kw">fn </span>get_write_val(realm_id: usize, vcpu_id: usize, esr_el2: u64) -&gt; <span class="prelude-ty">Result</span>&lt;u64, Error&gt; {
+<span class="kw">fn </span>get_write_val(rd: <span class="kw-2">&amp;</span>Rd, vcpu_id: usize, esr_el2: u64) -&gt; <span class="prelude-ty">Result</span>&lt;u64, Error&gt; {
     <span class="kw">let </span>esr_el2 = EsrEl2::new(esr_el2);
     <span class="kw">let </span>rt = esr_el2.get_masked_value(EsrEl2::SRT) <span class="kw">as </span>usize;
     <span class="kw">let </span>write_val = <span class="kw">match </span>rt == <span class="number">31 </span>{
         <span class="bool-val">true </span>=&gt; <span class="number">0</span>, <span class="comment">// xzr
-        </span><span class="bool-val">false </span>=&gt; get_reg(realm_id, vcpu_id, rt)<span class="question-mark">? </span><span class="kw">as </span>u64 &amp; esr_el2.get_access_size_mask(),
+        </span><span class="bool-val">false </span>=&gt; get_reg(rd, vcpu_id, rt)<span class="question-mark">? </span><span class="kw">as </span>u64 &amp; esr_el2.get_access_size_mask(),
     };
     <span class="prelude-val">Ok</span>(write_val)
 }
@@ -236,41 +243,36 @@
     rec: <span class="kw-2">&amp;</span>Rec&lt;<span class="lifetime">&#39;_</span>&gt;,
     run: <span class="kw-2">&amp;mut </span>Run,
 ) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
-    <span class="kw">let </span>realm_id = rec.realmid()<span class="question-mark">?</span>;
     <span class="kw">let </span>ipa_bits = rec.ipa_bits()<span class="question-mark">?</span>;
+    <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+    <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
 
     <span class="kw">let </span>esr_el2 = realm_exit_res[<span class="number">1</span>] <span class="kw">as </span>u64;
     <span class="kw">let </span>hpfar_el2 = realm_exit_res[<span class="number">2</span>] <span class="kw">as </span>u64;
     <span class="kw">let </span>far_el2 = realm_exit_res[<span class="number">3</span>] <span class="kw">as </span>u64;
 
-    <span class="kw">unsafe </span>{
-        run.set_exit_reason(rmi::EXIT_SYNC);
-        run.set_hpfar(hpfar_el2);
-    }
+    run.set_exit_reason(rmi::EXIT_SYNC);
+    run.set_hpfar(hpfar_el2);
 
     <span class="kw">let </span>fault_ipa = ((HPFAR_EL2::FIPA &amp; hpfar_el2) &lt;&lt; <span class="number">8</span>) <span class="kw">as </span>usize;
 
-    <span class="kw">let </span>(exit_esr, exit_far) =
-        <span class="kw">match </span>is_non_emulatable_data_abort(realm_id, ipa_bits, fault_ipa, esr_el2)<span class="question-mark">? </span>{
-            <span class="bool-val">true </span>=&gt; (esr_el2 &amp; NON_EMULATABLE_ABORT_MASK, <span class="number">0</span>),
-            <span class="bool-val">false </span>=&gt; {
-                <span class="kw">if </span>esr_el2 &amp; EsrEl2::WNR != <span class="number">0 </span>{
-                    <span class="kw">let </span>write_val = get_write_val(realm_id, rec.vcpuid(), esr_el2)<span class="question-mark">?</span>;
-                    <span class="kw">unsafe </span>{
-                        run.set_gpr(<span class="number">0</span>, write_val)<span class="question-mark">?</span>;
-                    }
-                }
-                (
-                    esr_el2 &amp; EMULATABLE_ABORT_MASK,
-                    (far_el2 &amp; !(GRANULE_MASK <span class="kw">as </span>u64)),
-                )
+    <span class="kw">let </span>(exit_esr, exit_far) = <span class="kw">match </span>is_non_emulatable_data_abort(rd, ipa_bits, fault_ipa, esr_el2)<span class="question-mark">?
+    </span>{
+        <span class="bool-val">true </span>=&gt; (esr_el2 &amp; NON_EMULATABLE_ABORT_MASK, <span class="number">0</span>),
+        <span class="bool-val">false </span>=&gt; {
+            <span class="kw">if </span>esr_el2 &amp; EsrEl2::WNR != <span class="number">0 </span>{
+                <span class="kw">let </span>write_val = get_write_val(rd, rec.vcpuid(), esr_el2)<span class="question-mark">?</span>;
+                run.set_gpr(<span class="number">0</span>, write_val)<span class="question-mark">?</span>;
             }
-        };
+            (
+                esr_el2 &amp; EMULATABLE_ABORT_MASK,
+                (far_el2 &amp; !(GRANULE_MASK <span class="kw">as </span>u64)),
+            )
+        }
+    };
 
-    <span class="kw">unsafe </span>{
-        run.set_esr(exit_esr);
-        run.set_far(exit_far);
-    }
+    run.set_esr(exit_esr);
+    run.set_far(exit_far);
 
     <span class="prelude-val">Ok</span>(rmi::SUCCESS)
 }

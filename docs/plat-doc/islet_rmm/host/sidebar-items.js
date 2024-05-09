@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["pointer"],"struct":["DataPage"],"trait":["Accessor"]};
+window.SIDEBAR_ITEMS = {"fn":["copy_from","copy_to"],"struct":["DataPage"]};

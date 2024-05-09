@@ -82,10 +82,26 @@
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
 <a href="#84" id="84">84</a>
+<a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
 </pre></div><pre class="rust"><code><span class="kw">extern crate </span>alloc;
 
 <span class="kw">use </span><span class="kw">super</span>::Context;
 
+<span class="kw">use </span><span class="kw">crate</span>::get_granule;
+<span class="kw">use </span><span class="kw">crate</span>::get_granule_if;
+<span class="kw">use </span><span class="kw">crate</span>::granule::GranuleState;
+<span class="kw">use </span><span class="kw">crate</span>::rmi::realm::Rd;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rec::run::Run;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rec::Rec;
 <span class="kw">use </span><span class="kw">crate</span>::rsi;
@@ -137,16 +153,24 @@
                     RsiHandle::NOT_SUPPORTED
                 );
 
-                <span class="kw">let </span>realm_id = <span class="kw">match </span>rec.realmid() {
-                    <span class="prelude-val">Ok</span>(realm_id) =&gt; realm_id,
-                    <span class="prelude-val">Err</span>(e) =&gt; {
-                        <span class="macro">error!</span>(<span class="string">&quot;Failed to get realmid with {:?}&quot;</span>, e);
-                        <span class="kw">return </span>RsiHandle::RET_FAIL;
-                    }
+                <span class="kw">let </span>res = rec.owner();
+                <span class="kw">let </span>rec_owner = <span class="kw">if let </span><span class="prelude-val">Ok</span>(owner) = res {
+                    owner
+                } <span class="kw">else </span>{
+                    <span class="macro">error!</span>(<span class="string">&quot;Failed to get realm owner&quot;</span>);
+                    <span class="kw">return </span>RsiHandle::RET_FAIL;
                 };
+                <span class="kw">let </span>res = <span class="macro">get_granule_if!</span>(rec_owner, GranuleState::RD);
+                <span class="kw">let </span>rd_granule = <span class="kw">if let </span><span class="prelude-val">Ok</span>(x) = res {
+                    x
+                } <span class="kw">else </span>{
+                    <span class="macro">error!</span>(<span class="string">&quot;Failed to get rd granule&quot;</span>);
+                    <span class="kw">return </span>RsiHandle::RET_FAIL;
+                };
+                <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
 
                 <span class="comment">// TODO: handle the error properly
-                </span><span class="kw">let _ </span>= set_reg(realm_id, rec.vcpuid(), <span class="number">0</span>, RsiHandle::NOT_SUPPORTED);
+                </span><span class="kw">let _ </span>= set_reg(rd, rec.vcpuid(), <span class="number">0</span>, RsiHandle::NOT_SUPPORTED);
 
                 <span class="kw">return </span>RsiHandle::RET_FAIL;
             }

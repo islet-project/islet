@@ -105,6 +105,14 @@
 <a href="#105" id="105">105</a>
 <a href="#106" id="106">106</a>
 <a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
+<a href="#111" id="111">111</a>
+<a href="#112" id="112">112</a>
+<a href="#113" id="113">113</a>
+<a href="#114" id="114">114</a>
+<a href="#115" id="115">115</a>
 </pre></div><pre class="rust"><code><span class="kw">use super</span>::{
     Hasher, Measurement, MeasurementError, MEASUREMENTS_SLOT_RIM, MEASURE_DESC_TYPE_DATA,
     MEASURE_DESC_TYPE_REC, MEASURE_DESC_TYPE_RIPAS, RMI_MEASURE_CONTENT,
@@ -118,25 +126,29 @@
 
 <span class="kw">pub struct </span>HashContext&lt;<span class="lifetime">&#39;a</span>&gt; {
     hasher: Hasher,
-    rd: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Rd,
+    rd: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Rd,
 }
 
 <span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; HashContext&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">pub fn </span>new(rd: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>Rd) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, MeasurementError&gt; {
+    <span class="kw">pub fn </span>new(rd: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>Rd) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, MeasurementError&gt; {
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             hasher: Hasher::from_hash_algo(rd.hash_algo())<span class="question-mark">?</span>,
             rd,
         })
     }
 
-    <span class="kw">pub fn </span>measure_realm_create(<span class="kw-2">&amp;</span><span class="self">self</span>, params: <span class="kw-2">&amp;</span>RealmParams) -&gt; <span class="prelude-ty">Result</span>&lt;(), rsi::error::Error&gt; {
-        <span class="kw">crate</span>::rsi::measurement::extend(<span class="self">self</span>.rd.id(), MEASUREMENTS_SLOT_RIM, |rim| {
+    <span class="kw">pub fn </span>measure_realm_create(<span class="kw-2">&amp;mut </span><span class="self">self</span>, params: <span class="kw-2">&amp;</span>RealmParams) -&gt; <span class="prelude-ty">Result</span>&lt;(), rsi::error::Error&gt; {
+        <span class="kw">crate</span>::rsi::measurement::extend(<span class="self">self</span>.rd, MEASUREMENTS_SLOT_RIM, |rim| {
             <span class="self">self</span>.hasher.hash_object_into(params, rim)
         })
     }
 
-    <span class="kw">pub fn </span>extend_measurement(<span class="kw-2">&amp;</span><span class="self">self</span>, buffer: <span class="kw-2">&amp;</span>[u8], index: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), rsi::error::Error&gt; {
-        <span class="kw">crate</span>::rsi::measurement::extend(<span class="self">self</span>.rd.id(), index, |current| {
+    <span class="kw">pub fn </span>extend_measurement(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        buffer: <span class="kw-2">&amp;</span>[u8],
+        index: usize,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), rsi::error::Error&gt; {
+        <span class="kw">crate</span>::rsi::measurement::extend(<span class="self">self</span>.rd, index, |current| {
             <span class="kw">let </span>old_value = <span class="kw-2">*</span>current;
 
             <span class="self">self</span>.hasher.hash_fields_into(current, |h| {
@@ -147,7 +159,7 @@
     }
 
     <span class="kw">pub fn </span>measure_data_granule(
-        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
         data: <span class="kw-2">&amp;</span>DataPage,
         ipa: usize,
         flags: usize,
@@ -160,7 +172,7 @@
             })<span class="question-mark">?</span>;
         }
 
-        <span class="kw">crate</span>::rsi::measurement::extend(<span class="self">self</span>.rd.id(), MEASUREMENTS_SLOT_RIM, |current| {
+        <span class="kw">crate</span>::rsi::measurement::extend(<span class="self">self</span>.rd, MEASUREMENTS_SLOT_RIM, |current| {
             <span class="kw">let </span>oldrim = <span class="kw-2">*</span>current;
 
             <span class="self">self</span>.hasher.hash_fields_into(current, |h| {
@@ -176,12 +188,12 @@
         })
     }
 
-    <span class="kw">pub fn </span>measure_rec_params(<span class="kw-2">&amp;</span><span class="self">self</span>, params: <span class="kw-2">&amp;</span>RecParams) -&gt; <span class="prelude-ty">Result</span>&lt;(), rsi::error::Error&gt; {
+    <span class="kw">pub fn </span>measure_rec_params(<span class="kw-2">&amp;mut </span><span class="self">self</span>, params: <span class="kw-2">&amp;</span>RecParams) -&gt; <span class="prelude-ty">Result</span>&lt;(), rsi::error::Error&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>params_measurement = Measurement::empty();
         <span class="self">self</span>.hasher
             .hash_object_into(params, <span class="kw-2">&amp;mut </span>params_measurement)<span class="question-mark">?</span>;
 
-        <span class="kw">crate</span>::rsi::measurement::extend(<span class="self">self</span>.rd.id(), MEASUREMENTS_SLOT_RIM, |current| {
+        <span class="kw">crate</span>::rsi::measurement::extend(<span class="self">self</span>.rd, MEASUREMENTS_SLOT_RIM, |current| {
             <span class="kw">let </span>oldrim = <span class="kw-2">*</span>current;
 
             <span class="self">self</span>.hasher.hash_fields_into(current, |h| {
@@ -195,8 +207,12 @@
         })
     }
 
-    <span class="kw">pub fn </span>measure_ripas_granule(<span class="kw-2">&amp;</span><span class="self">self</span>, ipa: usize, level: u8) -&gt; <span class="prelude-ty">Result</span>&lt;(), rsi::error::Error&gt; {
-        <span class="kw">crate</span>::rsi::measurement::extend(<span class="self">self</span>.rd.id(), MEASUREMENTS_SLOT_RIM, |current| {
+    <span class="kw">pub fn </span>measure_ripas_granule(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        ipa: usize,
+        level: u8,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;(), rsi::error::Error&gt; {
+        <span class="kw">crate</span>::rsi::measurement::extend(<span class="self">self</span>.rd, MEASUREMENTS_SLOT_RIM, |current| {
             <span class="kw">let </span>oldrim = <span class="kw-2">*</span>current;
 
             <span class="self">self</span>.hasher.hash_fields_into(current, |h| {

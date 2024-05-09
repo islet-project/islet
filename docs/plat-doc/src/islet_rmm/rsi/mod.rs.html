@@ -366,6 +366,19 @@
 <a href="#366" id="366">366</a>
 <a href="#367" id="367">367</a>
 <a href="#368" id="368">368</a>
+<a href="#369" id="369">369</a>
+<a href="#370" id="370">370</a>
+<a href="#371" id="371">371</a>
+<a href="#372" id="372">372</a>
+<a href="#373" id="373">373</a>
+<a href="#374" id="374">374</a>
+<a href="#375" id="375">375</a>
+<a href="#376" id="376">376</a>
+<a href="#377" id="377">377</a>
+<a href="#378" id="378">378</a>
+<a href="#379" id="379">379</a>
+<a href="#380" id="380">380</a>
+<a href="#381" id="381">381</a>
 </pre></div><pre class="rust"><code><span class="kw">pub mod </span>attestation;
 <span class="kw">pub mod </span>constraint;
 <span class="kw">pub mod </span>error;
@@ -383,7 +396,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::realm::mm::address::GuestPhysAddr;
 <span class="kw">use </span><span class="kw">crate</span>::realm::mm::stage2_tte::invalid_ripas;
 <span class="kw">use </span><span class="kw">crate</span>::rmi;
-<span class="kw">use </span><span class="kw">crate</span>::rmi::error::{Error, InternalError::NotExistRealm};
+<span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::realm::Rd;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rec::run::Run;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rec::{Rec, RmmRecAttestState};
@@ -391,6 +404,8 @@
 <span class="kw">use </span><span class="kw">crate</span>::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 <span class="kw">use </span><span class="kw">crate</span>::Monitor;
 <span class="kw">use crate</span>::{get_granule, get_granule_if};
+
+<span class="kw">use </span>safe_abstraction::raw_ptr::assume_safe;
 
 <span class="macro">define_interface! </span>{
     command {
@@ -425,14 +440,13 @@
     run: <span class="kw-2">&amp;mut </span>Run,
 ) -&gt; core::result::Result&lt;(), Error&gt; {
     <span class="kw">let </span>vcpuid = rec.vcpuid();
-    <span class="kw">let </span>realmid = rec.realmid()<span class="question-mark">?</span>;
+    <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+    <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
 
-    <span class="kw">let </span>ipa = get_reg(realmid, vcpuid, <span class="number">1</span>).unwrap_or(<span class="number">0x0</span>);
+    <span class="kw">let </span>ipa = get_reg(rd, vcpuid, <span class="number">1</span>).unwrap_or(<span class="number">0x0</span>);
 
-    <span class="kw">let </span>pa = <span class="kw">crate</span>::realm::registry::get_realm(realmid)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-        </span>.lock()
-        .page_table
+    <span class="kw">let </span>pa = rd
+        .s2_table()
         .lock()
         .ipa_to_pa(
             <span class="kw">crate</span>::realm::mm::address::GuestPhysAddr::from(ipa),
@@ -440,21 +454,22 @@
         )
         .ok_or(Error::RmiErrorInput)<span class="question-mark">?</span>;
 
-    <span class="kw">unsafe </span>{
-        <span class="kw">let </span>host_call = HostCall::parse_mut(pa.into());
-        <span class="kw">if </span>rec.host_call_pending() {
-            <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..HOST_CALL_NR_GPRS {
-                <span class="kw">let </span>val = run.entry_gpr(i)<span class="question-mark">?</span>;
-                host_call.set_gpr(i, val)<span class="question-mark">?
-            </span>}
-            rec.set_host_call_pending(<span class="bool-val">false</span>);
-        } <span class="kw">else </span>{
-            run.set_imm(host_call.imm());
-            run.set_exit_reason(rmi::EXIT_HOST_CALL);
-            rec.set_host_call_pending(<span class="bool-val">true</span>);
-        }
-        <span class="macro">trace!</span>(<span class="string">&quot;HOST_CALL param: {:#X?}&quot;</span>, host_call)
+    <span class="kw">let </span><span class="kw-2">mut </span>host_call = assume_safe::&lt;HostCall&gt;(pa.into())<span class="question-mark">?</span>;
+    <span class="kw">let </span>imm = host_call.imm();
+
+    <span class="kw">if </span>rec.host_call_pending() {
+        <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..HOST_CALL_NR_GPRS {
+            <span class="kw">let </span>val = run.entry_gpr(i)<span class="question-mark">?</span>;
+            host_call.set_gpr(i, val)<span class="question-mark">?
+        </span>}
+        rec.set_host_call_pending(<span class="bool-val">false</span>);
+    } <span class="kw">else </span>{
+        run.set_imm(imm);
+        run.set_exit_reason(rmi::EXIT_HOST_CALL);
+        rec.set_host_call_pending(<span class="bool-val">true</span>);
     }
+
+    <span class="macro">trace!</span>(<span class="string">&quot;HOST_CALL param: {:#X?}&quot;</span>, <span class="kw-2">*</span>host_call);
 
     ret[<span class="number">0</span>] = rmi::SUCCESS;
     <span class="prelude-val">Ok</span>(())
@@ -462,13 +477,14 @@
 
 <span class="kw">pub fn </span>set_event_handler(rsi: <span class="kw-2">&amp;mut </span>RsiHandle) {
     <span class="macro">listen!</span>(rsi, ATTEST_TOKEN_INIT, |_arg, ret, _rmm, rec, <span class="kw">_</span>| {
-        <span class="kw">let </span>realmid = rec.realmid()<span class="question-mark">?</span>;
         <span class="kw">let </span>vcpuid = rec.vcpuid();
+        <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
 
         <span class="kw">let </span><span class="kw-2">mut </span>challenge: [u8; <span class="number">64</span>] = [<span class="number">0</span>; <span class="number">64</span>];
 
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">8 </span>{
-            <span class="kw">let </span>challenge_part = get_reg(realmid, vcpuid, i + <span class="number">2</span>)<span class="question-mark">?</span>;
+            <span class="kw">let </span>challenge_part = get_reg(rd, vcpuid, i + <span class="number">2</span>)<span class="question-mark">?</span>;
             <span class="kw">let </span>start_idx = i * <span class="number">8</span>;
             <span class="kw">let </span>end_idx = start_idx + <span class="number">8</span>;
             challenge[start_idx..end_idx].copy_from_slice(<span class="kw-2">&amp;</span>challenge_part.to_le_bytes());
@@ -477,62 +493,60 @@
         rec.set_attest_challenge(<span class="kw-2">&amp;</span>challenge);
         rec.set_attest_state(RmmRecAttestState::AttestInProgress);
 
-        set_reg(realmid, vcpuid, <span class="number">0</span>, SUCCESS)<span class="question-mark">?</span>;
+        set_reg(rd, vcpuid, <span class="number">0</span>, SUCCESS)<span class="question-mark">?</span>;
 
         <span class="comment">// TODO: Calculate real token size
-        </span>set_reg(realmid, vcpuid, <span class="number">1</span>, <span class="number">4096</span>)<span class="question-mark">?</span>;
+        </span>set_reg(rd, vcpuid, <span class="number">1</span>, <span class="number">4096</span>)<span class="question-mark">?</span>;
 
         ret[<span class="number">0</span>] = rmi::SUCCESS_REC_ENTER;
         <span class="prelude-val">Ok</span>(())
     });
 
     <span class="macro">listen!</span>(rsi, ATTEST_TOKEN_CONTINUE, |_arg, ret, _rmm, rec, <span class="kw">_</span>| {
-        <span class="kw">let </span>realmid = rec.realmid()<span class="question-mark">?</span>;
         <span class="kw">let </span>ipa_bits = rec.ipa_bits()<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>hash_algo = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?
-            </span>.content::&lt;Rd&gt;()
-            .hash_algo(); <span class="comment">// Rd dropped
+        <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
+        <span class="kw">let </span>hash_algo = rd.hash_algo();
 
-        </span><span class="kw">let </span>vcpuid = rec.vcpuid();
+        <span class="kw">let </span>vcpuid = rec.vcpuid();
 
         <span class="kw">if </span>rec.attest_state() != RmmRecAttestState::AttestInProgress {
             <span class="macro">warn!</span>(<span class="string">&quot;Calling attest token continue without init&quot;</span>);
-            set_reg(realmid, vcpuid, <span class="number">0</span>, ERROR_STATE)<span class="question-mark">?</span>;
+            set_reg(rd, vcpuid, <span class="number">0</span>, ERROR_STATE)<span class="question-mark">?</span>;
             ret[<span class="number">0</span>] = rmi::SUCCESS_REC_ENTER;
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
-        <span class="kw">let </span>attest_ipa = get_reg(realmid, vcpuid, <span class="number">1</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>attest_ipa = get_reg(rd, vcpuid, <span class="number">1</span>)<span class="question-mark">?</span>;
         <span class="kw">if </span>validate_ipa(attest_ipa, ipa_bits).is_err() {
             <span class="macro">warn!</span>(<span class="string">&quot;Wrong ipa passed {}&quot;</span>, attest_ipa);
-            set_reg(realmid, vcpuid, <span class="number">0</span>, ERROR_INPUT)<span class="question-mark">?</span>;
+            set_reg(rd, vcpuid, <span class="number">0</span>, ERROR_INPUT)<span class="question-mark">?</span>;
             ret[<span class="number">0</span>] = rmi::SUCCESS_REC_ENTER;
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
-        <span class="kw">let </span>pa = <span class="kw">crate</span>::realm::registry::get_realm(realmid)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-            </span>.lock()
-            .page_table
+        <span class="kw">let </span>pa = rd
+            .s2_table()
             .lock()
             .ipa_to_pa(GuestPhysAddr::from(attest_ipa), RTT_PAGE_LEVEL)
             .ok_or(Error::RmiErrorInput)<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>measurements = <span class="kw">crate</span>::realm::registry::get_realm(realmid)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-            </span>.lock()
-            .measurements;
+        <span class="kw">let </span>measurements = rd.measurements;
 
-        <span class="kw">let </span>attest_size = <span class="kw">crate</span>::rsi::attestation::get_token(
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `rsi` is currently not reachable in model checking harnesses
+        </span><span class="kw">let </span>attest_size = <span class="kw">crate</span>::rsi::attestation::get_token(
             pa.into(),
             rec.attest_challenge(),
             <span class="kw-2">&amp;</span>measurements,
             hash_algo,
         );
 
-        set_reg(realmid, vcpuid, <span class="number">0</span>, SUCCESS)<span class="question-mark">?</span>;
-        set_reg(realmid, vcpuid, <span class="number">1</span>, attest_size)<span class="question-mark">?</span>;
+        set_reg(rd, vcpuid, <span class="number">0</span>, SUCCESS)<span class="question-mark">?</span>;
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `rsi` is currently not reachable in model checking harnesses
+        </span>set_reg(rd, vcpuid, <span class="number">1</span>, attest_size)<span class="question-mark">?</span>;
 
         ret[<span class="number">0</span>] = rmi::SUCCESS_REC_ENTER;
         <span class="prelude-val">Ok</span>(())
@@ -543,8 +557,10 @@
     <span class="macro">listen!</span>(rsi, ABI_VERSION, |_arg, ret, _rmm, rec, <span class="kw">_</span>| {
         <span class="kw">let </span>vcpuid = rec.vcpuid();
         <span class="kw">let </span>realmid = rec.realmid()<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
 
-        <span class="kw">if </span>set_reg(realmid, vcpuid, <span class="number">0</span>, VERSION).is_err() {
+        <span class="kw">if </span>set_reg(rd, vcpuid, <span class="number">0</span>, VERSION).is_err() {
             <span class="macro">warn!</span>(
                 <span class="string">&quot;Unable to set register 0. realmid: {:?} vcpuid: {:?}&quot;</span>,
                 realmid, vcpuid
@@ -557,26 +573,29 @@
 
     <span class="macro">listen!</span>(rsi, MEASUREMENT_READ, |_arg, ret, _rmm, rec, <span class="kw">_</span>| {
         <span class="kw">let </span>vcpuid = rec.vcpuid();
-        <span class="kw">let </span>realmid = rec.realmid()<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
         <span class="kw">let </span><span class="kw-2">mut </span>measurement = Measurement::empty();
-        <span class="kw">let </span>index = get_reg(realmid, vcpuid, <span class="number">1</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>index = get_reg(rd, vcpuid, <span class="number">1</span>)<span class="question-mark">?</span>;
 
         <span class="kw">if </span>index &gt;= MEASUREMENTS_SLOT_NR {
             <span class="macro">warn!</span>(<span class="string">&quot;Wrong index passed: {}&quot;</span>, index);
-            set_reg(realmid, vcpuid, <span class="number">0</span>, ERROR_INPUT)<span class="question-mark">?</span>;
+            set_reg(rd, vcpuid, <span class="number">0</span>, ERROR_INPUT)<span class="question-mark">?</span>;
             ret[<span class="number">0</span>] = rmi::SUCCESS_REC_ENTER;
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
-        <span class="kw">crate</span>::rsi::measurement::read(realmid, index, <span class="kw-2">&amp;mut </span>measurement)<span class="question-mark">?</span>;
-        set_reg(realmid, vcpuid, <span class="number">0</span>, SUCCESS)<span class="question-mark">?</span>;
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `rsi` is currently not reachable in model checking harnesses
+        </span><span class="kw">crate</span>::rsi::measurement::read(rd, index, <span class="kw-2">&amp;mut </span>measurement)<span class="question-mark">?</span>;
+        set_reg(rd, vcpuid, <span class="number">0</span>, SUCCESS)<span class="question-mark">?</span>;
         <span class="kw">for </span>(ind, chunk) <span class="kw">in </span>measurement
             .as_slice()
             .chunks_exact(core::mem::size_of::&lt;usize&gt;())
             .enumerate()
         {
             <span class="kw">let </span>reg_value = usize::from_le_bytes(chunk.try_into().unwrap());
-            set_reg(realmid, vcpuid, ind + <span class="number">1</span>, reg_value)<span class="question-mark">?</span>;
+            set_reg(rd, vcpuid, ind + <span class="number">1</span>, reg_value)<span class="question-mark">?</span>;
         }
 
         ret[<span class="number">0</span>] = rmi::SUCCESS_REC_ENTER;
@@ -585,15 +604,16 @@
 
     <span class="macro">listen!</span>(rsi, MEASUREMENT_EXTEND, |_arg, ret, _rmm, rec, <span class="kw">_</span>| {
         <span class="kw">let </span>vcpuid = rec.vcpuid();
-        <span class="kw">let </span>realmid = rec.realmid()<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
 
-        <span class="kw">let </span>index = get_reg(realmid, vcpuid, <span class="number">1</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>size = get_reg(realmid, vcpuid, <span class="number">2</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>index = get_reg(rd, vcpuid, <span class="number">1</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>size = get_reg(rd, vcpuid, <span class="number">2</span>)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>buffer = [<span class="number">0u8</span>; <span class="number">64</span>];
 
         <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..<span class="number">8 </span>{
             buffer[i * <span class="number">8</span>..i * <span class="number">8 </span>+ <span class="number">8</span>]
-                .copy_from_slice(get_reg(realmid, vcpuid, i + <span class="number">3</span>)<span class="question-mark">?</span>.to_le_bytes().as_slice());
+                .copy_from_slice(get_reg(rd, vcpuid, i + <span class="number">3</span>)<span class="question-mark">?</span>.to_le_bytes().as_slice());
         }
 
         <span class="kw">if </span>size &gt; buffer.len() || index == MEASUREMENTS_SLOT_RIM || index &gt;= MEASUREMENTS_SLOT_NR {
@@ -601,16 +621,18 @@
                 <span class="string">&quot;Wrong index or buffer size passed: idx: {}, size: {}&quot;</span>,
                 index, size
             );
-            set_reg(realmid, vcpuid, <span class="number">0</span>, ERROR_INPUT)<span class="question-mark">?</span>;
+            set_reg(rd, vcpuid, <span class="number">0</span>, ERROR_INPUT)<span class="question-mark">?</span>;
             ret[<span class="number">0</span>] = rmi::SUCCESS_REC_ENTER;
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
-        <span class="kw">let </span>rd = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
-        <span class="kw">let </span>rd = rd.content::&lt;Rd&gt;();
-        HashContext::new(rd)<span class="question-mark">?</span>.extend_measurement(<span class="kw-2">&amp;</span>buffer[<span class="number">0</span>..size], index)<span class="question-mark">?</span>;
+        <span class="kw">let </span><span class="kw-2">mut </span>rd = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd.content_mut::&lt;Rd&gt;();
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `rsi` is currently not reachable in model checking harnesses
+        </span>HashContext::new(rd)<span class="question-mark">?</span>.extend_measurement(<span class="kw-2">&amp;</span>buffer[<span class="number">0</span>..size], index)<span class="question-mark">?</span>;
 
-        set_reg(realmid, vcpuid, <span class="number">0</span>, SUCCESS)<span class="question-mark">?</span>;
+        set_reg(rd, vcpuid, <span class="number">0</span>, SUCCESS)<span class="question-mark">?</span>;
         ret[<span class="number">0</span>] = rmi::SUCCESS_REC_ENTER;
         <span class="prelude-val">Ok</span>(())
     });
@@ -619,16 +641,19 @@
         <span class="kw">let </span>vcpuid = rec.vcpuid();
         <span class="kw">let </span>ipa_bits = rec.ipa_bits()<span class="question-mark">?</span>;
         <span class="kw">let </span>realmid = rec.realmid()<span class="question-mark">?</span>;
-        <span class="kw">let </span>config_ipa = get_reg(realmid, vcpuid, <span class="number">1</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
+
+        <span class="kw">let </span>config_ipa = get_reg(rd, vcpuid, <span class="number">1</span>)<span class="question-mark">?</span>;
         <span class="kw">if </span>validate_ipa(config_ipa, ipa_bits).is_err() {
-            set_reg(realmid, vcpuid, <span class="number">0</span>, ERROR_INPUT)<span class="question-mark">?</span>;
+            set_reg(rd, vcpuid, <span class="number">0</span>, ERROR_INPUT)<span class="question-mark">?</span>;
             ret[<span class="number">0</span>] = rmi::SUCCESS_REC_ENTER;
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
-        realm_config(realmid, config_ipa, ipa_bits)<span class="question-mark">?</span>;
+        realm_config(rd, config_ipa, ipa_bits)<span class="question-mark">?</span>;
 
-        <span class="kw">if </span>set_reg(realmid, vcpuid, <span class="number">0</span>, SUCCESS).is_err() {
+        <span class="kw">if </span>set_reg(rd, vcpuid, <span class="number">0</span>, SUCCESS).is_err() {
             <span class="macro">warn!</span>(
                 <span class="string">&quot;Unable to set register 0. realmid: {:?} vcpuid: {:?}&quot;</span>,
                 realmid, vcpuid
@@ -642,10 +667,12 @@
         <span class="kw">let </span>vcpuid = rec.vcpuid();
         <span class="kw">let </span>ipa_bits = rec.ipa_bits()<span class="question-mark">?</span>;
         <span class="kw">let </span>realmid = rec.realmid()<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
 
-        <span class="kw">let </span>ipa_page = get_reg(realmid, vcpuid, <span class="number">1</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ipa_page = get_reg(rd, vcpuid, <span class="number">1</span>)<span class="question-mark">?</span>;
         <span class="kw">if </span>validate_ipa(ipa_page, ipa_bits).is_err() {
-            <span class="kw">if </span>set_reg(realmid, vcpuid, <span class="number">0</span>, ERROR_INPUT).is_err() {
+            <span class="kw">if </span>set_reg(rd, vcpuid, <span class="number">0</span>, ERROR_INPUT).is_err() {
                 <span class="macro">warn!</span>(
                     <span class="string">&quot;Unable to set register 0. realmid: {:?} vcpuid: {:?}&quot;</span>,
                     realmid, vcpuid
@@ -655,21 +682,21 @@
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
-        <span class="kw">let </span>ripas = <span class="kw">crate</span>::rtt::get_ripas(realmid, ipa_page, RTT_PAGE_LEVEL)<span class="question-mark">? </span><span class="kw">as </span>usize;
+        <span class="kw">let </span>ripas = <span class="kw">crate</span>::rtt::get_ripas(rd, ipa_page, RTT_PAGE_LEVEL)<span class="question-mark">? </span><span class="kw">as </span>usize;
 
         <span class="macro">debug!</span>(
             <span class="string">&quot;RSI_IPA_STATE_GET: ipa_page: {:X} ripas: {:X}&quot;</span>,
             ipa_page, ripas
         );
 
-        <span class="kw">if </span>set_reg(realmid, vcpuid, <span class="number">0</span>, SUCCESS).is_err() {
+        <span class="kw">if </span>set_reg(rd, vcpuid, <span class="number">0</span>, SUCCESS).is_err() {
             <span class="macro">warn!</span>(
                 <span class="string">&quot;Unable to set register 0. realmid: {:?} vcpuid: {:?}&quot;</span>,
                 realmid, vcpuid
             );
         }
 
-        <span class="kw">if </span>set_reg(realmid, vcpuid, <span class="number">1</span>, ripas).is_err() {
+        <span class="kw">if </span>set_reg(rd, vcpuid, <span class="number">1</span>, ripas).is_err() {
             <span class="macro">warn!</span>(
                 <span class="string">&quot;Unable to set register 1. realmid: {:?} vcpuid: {:?}&quot;</span>,
                 realmid, vcpuid
@@ -682,12 +709,13 @@
 
     <span class="macro">listen!</span>(rsi, IPA_STATE_SET, |_arg, ret, _rmm, rec, run| {
         <span class="kw">let </span>vcpuid = rec.vcpuid();
-        <span class="kw">let </span>realmid = rec.realmid()<span class="question-mark">?</span>;
         <span class="kw">let </span>ipa_bits = rec.ipa_bits()<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
 
-        <span class="kw">let </span>ipa_start = get_reg(realmid, vcpuid, <span class="number">1</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>ipa_size = get_reg(realmid, vcpuid, <span class="number">2</span>)<span class="question-mark">?</span>;
-        <span class="kw">let </span>ipa_state = get_reg(realmid, vcpuid, <span class="number">3</span>)<span class="question-mark">? </span><span class="kw">as </span>u8;
+        <span class="kw">let </span>ipa_start = get_reg(rd, vcpuid, <span class="number">1</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ipa_size = get_reg(rd, vcpuid, <span class="number">2</span>)<span class="question-mark">?</span>;
+        <span class="kw">let </span>ipa_state = get_reg(rd, vcpuid, <span class="number">3</span>)<span class="question-mark">? </span><span class="kw">as </span>u8;
         <span class="kw">let </span>ipa_end = ipa_start + ipa_size;
 
         <span class="kw">if </span>ipa_end &lt;= ipa_start {
@@ -700,23 +728,21 @@
             || !is_protected_ipa(ipa_start, ipa_bits)
             || !is_protected_ipa(ipa_end - <span class="number">1</span>, ipa_bits)
         {
-            set_reg(realmid, vcpuid, <span class="number">0</span>, ERROR_INPUT)<span class="question-mark">?</span>;
+            set_reg(rd, vcpuid, <span class="number">0</span>, ERROR_INPUT)<span class="question-mark">?</span>;
             ret[<span class="number">0</span>] = rmi::SUCCESS_REC_ENTER;
             <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
         <span class="comment">// TODO: check ipa_state value, ipa address granularity
-        </span><span class="kw">unsafe </span>{
-            run.set_exit_reason(rmi::EXIT_RIPAS_CHANGE);
-            run.set_ripas(ipa_start <span class="kw">as </span>u64, ipa_size <span class="kw">as </span>u64, ipa_state);
-            rec.set_ripas(
-                ipa_start <span class="kw">as </span>u64,
-                ipa_end <span class="kw">as </span>u64,
-                ipa_start <span class="kw">as </span>u64,
-                ipa_state,
-            );
-            ret[<span class="number">0</span>] = rmi::SUCCESS;
-        };
+        </span>run.set_exit_reason(rmi::EXIT_RIPAS_CHANGE);
+        run.set_ripas(ipa_start <span class="kw">as </span>u64, ipa_size <span class="kw">as </span>u64, ipa_state);
+        rec.set_ripas(
+            ipa_start <span class="kw">as </span>u64,
+            ipa_end <span class="kw">as </span>u64,
+            ipa_start <span class="kw">as </span>u64,
+            ipa_state,
+        );
+        ret[<span class="number">0</span>] = rmi::SUCCESS;
         <span class="macro">debug!</span>(
             <span class="string">&quot;RSI_IPA_STATE_SET: {:X} ~ {:X} {:X}&quot;</span>,
             ipa_start,

@@ -83,34 +83,84 @@
 <a href="#83" id="83">83</a>
 <a href="#84" id="84">84</a>
 <a href="#85" id="85">85</a>
+<a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
+<a href="#98" id="98">98</a>
+<a href="#99" id="99">99</a>
+<a href="#100" id="100">100</a>
+<a href="#101" id="101">101</a>
+<a href="#102" id="102">102</a>
+<a href="#103" id="103">103</a>
+<a href="#104" id="104">104</a>
+<a href="#105" id="105">105</a>
+<a href="#106" id="106">106</a>
+<a href="#107" id="107">107</a>
+<a href="#108" id="108">108</a>
+<a href="#109" id="109">109</a>
+<a href="#110" id="110">110</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::rmi::rtt::realm_par_size;
 
 <span class="kw">use </span>vmsa::guard::Content;
 
-<span class="comment">// TODO: Integrate with our `struct Realm`
-</span><span class="attr">#[derive(Debug)]
+<span class="kw">use </span><span class="kw">crate</span>::measurement::{Measurement, MEASUREMENTS_SLOT_NR};
+<span class="kw">use </span><span class="kw">crate</span>::realm::mm::IPATranslation;
+<span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::VCPU;
+<span class="kw">use </span>alloc::boxed::Box;
+<span class="kw">use </span>alloc::sync::Arc;
+<span class="kw">use </span>alloc::vec::Vec;
+<span class="kw">use </span>spin::mutex::Mutex;
+
+<span class="attr">#[derive(Debug)]
 </span><span class="kw">pub struct </span>Rd {
-    realm_id: usize,
+    vmid: u16,
     state: State,
     rtt_base: usize,
     ipa_bits: usize,
     rec_index: usize,
     s2_starting_level: isize,
+    s2_table: Arc&lt;Mutex&lt;Box&lt;<span class="kw">dyn </span>IPATranslation&gt;&gt;&gt;,
     hash_algo: u8,
+    <span class="kw">pub </span>measurements: [Measurement; MEASUREMENTS_SLOT_NR],
+    <span class="kw">pub </span>vcpus: Vec&lt;Arc&lt;Mutex&lt;VCPU&gt;&gt;&gt;,
 }
 
 <span class="kw">impl </span>Rd {
-    <span class="kw">pub fn </span>init(<span class="kw-2">&amp;mut </span><span class="self">self</span>, id: usize, rtt_base: usize, ipa_bits: usize, s2_starting_level: isize) {
-        <span class="self">self</span>.realm_id = id;
+    <span class="kw">pub fn </span>init(
+        <span class="kw-2">&amp;mut </span><span class="self">self</span>,
+        vmid: u16,
+        rtt_base: usize,
+        ipa_bits: usize,
+        s2_starting_level: isize,
+        s2_table: Arc&lt;Mutex&lt;Box&lt;<span class="kw">dyn </span>IPATranslation&gt;&gt;&gt;,
+    ) {
+        <span class="self">self</span>.vmid = vmid;
         <span class="self">self</span>.state = State::New;
         <span class="self">self</span>.rtt_base = rtt_base;
         <span class="self">self</span>.ipa_bits = ipa_bits;
         <span class="self">self</span>.rec_index = <span class="number">0</span>;
         <span class="self">self</span>.s2_starting_level = s2_starting_level;
+        <span class="comment">// XXX: without `clone()`, the below assignment would cause a data abort exception
+        </span><span class="self">self</span>.s2_table = s2_table.clone();
+        <span class="self">self</span>.measurements = [Measurement::empty(); MEASUREMENTS_SLOT_NR];
+        <span class="self">self</span>.vcpus = Vec::new();
     }
 
     <span class="kw">pub fn </span>id(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-        <span class="self">self</span>.realm_id
+        <span class="self">self</span>.vmid <span class="kw">as </span>usize
+    }
+
+    <span class="kw">pub fn </span>s2_table(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Arc&lt;Mutex&lt;Box&lt;<span class="kw">dyn </span>IPATranslation&gt;&gt;&gt; {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.s2_table
     }
 
     <span class="kw">pub fn </span>state(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; State {

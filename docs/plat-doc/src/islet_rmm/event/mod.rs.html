@@ -141,6 +141,20 @@
 <a href="#141" id="141">141</a>
 <a href="#142" id="142">142</a>
 <a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
 </pre></div><pre class="rust"><code><span class="kw">pub mod </span>mainloop;
 <span class="kw">pub mod </span>realmexit;
 <span class="kw">pub mod </span>rsihandle;
@@ -207,10 +221,11 @@
         <span class="self">self</span>.cmd
     }
 
-    <span class="kw">pub fn </span>do_rmi&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, handler: F)
+    <span class="kw">pub fn </span>do_rmi&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, handler: F) -&gt; [usize; <span class="number">5</span>]
     <span class="kw">where
         </span>F: Fn(<span class="kw-2">&amp;</span>[usize], <span class="kw-2">&amp;mut </span>[usize]) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt;,
     {
+        <span class="kw">let </span><span class="kw-2">mut </span>result = [<span class="number">0</span>; <span class="number">5</span>];
         <span class="self">self</span>.ret[<span class="number">0</span>] = rmi::SUCCESS;
 
         <span class="attr">#[cfg(feature = <span class="string">&quot;stat&quot;</span>)]
@@ -242,6 +257,19 @@
 
         <span class="self">self</span>.arg.clear();
         <span class="self">self</span>.arg.extend_from_slice(<span class="kw-2">&amp;</span><span class="self">self</span>.ret[..]);
+
+        <span class="kw">let </span>ret_len = <span class="self">self</span>.ret.len();
+        <span class="attr">#[cfg(kani)]
+        </span><span class="comment">// the below is a proof helper
+        </span>{
+            <span class="attr">#[cfg(any(
+                feature = <span class="string">&quot;mc_rmi_granule_delegate&quot;</span>,
+                feature = <span class="string">&quot;mc_rmi_granule_undelegate&quot;
+            </span>))]
+            </span><span class="macro">assert!</span>(ret_len == <span class="number">1</span>);
+        }
+        result[..ret_len].copy_from_slice(<span class="kw-2">&amp;</span><span class="self">self</span>.ret[..]);
+        result
     }
 
     <span class="kw">pub fn </span>do_rsi&lt;F&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, <span class="kw-2">mut </span>handler: F)

@@ -134,6 +134,55 @@
 <a href="#134" id="134">134</a>
 <a href="#135" id="135">135</a>
 <a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
+<a href="#146" id="146">146</a>
+<a href="#147" id="147">147</a>
+<a href="#148" id="148">148</a>
+<a href="#149" id="149">149</a>
+<a href="#150" id="150">150</a>
+<a href="#151" id="151">151</a>
+<a href="#152" id="152">152</a>
+<a href="#153" id="153">153</a>
+<a href="#154" id="154">154</a>
+<a href="#155" id="155">155</a>
+<a href="#156" id="156">156</a>
+<a href="#157" id="157">157</a>
+<a href="#158" id="158">158</a>
+<a href="#159" id="159">159</a>
+<a href="#160" id="160">160</a>
+<a href="#161" id="161">161</a>
+<a href="#162" id="162">162</a>
+<a href="#163" id="163">163</a>
+<a href="#164" id="164">164</a>
+<a href="#165" id="165">165</a>
+<a href="#166" id="166">166</a>
+<a href="#167" id="167">167</a>
+<a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
 </pre></div><pre class="rust"><code><span class="kw">pub mod </span>entry;
 
 <span class="kw">use </span><span class="self">self</span>::entry::Entry;
@@ -145,19 +194,35 @@
 <span class="kw">pub const </span>GRANULE_MASK: usize = !((<span class="number">1 </span>&lt;&lt; GRANULE_SHIFT) - <span class="number">1</span>);
 
 <span class="comment">// TODO: move this FVP-specific address info
+</span><span class="attr">#[cfg(not(kani))]
 </span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const </span>FVP_DRAM0_REGION: core::ops::Range&lt;usize&gt; = core::ops::Range {
     start: <span class="number">0x8000_0000</span>,
     end: <span class="number">0x8000_0000 </span>+ <span class="number">0x7C00_0000</span>,
 };
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const </span>FVP_DRAM1_REGION: core::ops::Range&lt;usize&gt; = core::ops::Range {
+<span class="attr">#[cfg(not(kani))]
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const </span>FVP_DRAM1_REGION: core::ops::Range&lt;usize&gt; = core::ops::Range {
     start: <span class="number">0x8_8000_0000</span>,
     end: <span class="number">0x8_8000_0000 </span>+ <span class="number">0x8000_0000</span>,
 };
 
-<span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const </span>FVP_DRAM1_IDX: usize =
+<span class="attr">#[cfg(not(kani))]
+</span><span class="kw">pub</span>(<span class="kw">super</span>) <span class="kw">const </span>FVP_DRAM1_IDX: usize =
     (FVP_DRAM0_REGION.end - FVP_DRAM0_REGION.start) / GRANULE_SIZE;
 
-<span class="kw">pub fn </span>validate_addr(addr: usize) -&gt; bool {
+<span class="attr">#[cfg(kani)]
+</span><span class="kw">pub const </span>GRANULE_MEM_SIZE: usize = GRANULE_SIZE * GRANULE_STATUS_TABLE_SIZE;
+<span class="attr">#[cfg(kani)]
+</span><span class="comment">// We model the Host memory as a pre-allocated memory region which
+// can avoid a false positive related to invalid memory accesses
+// in model checking. Also, instead of using the same starting
+// address (e.g., 0x8000_0000), we use a mock region filled with
+// non-deterministic contents. It helps to address an issue related
+// to the backend CBMC&#39;s pointer encoding, as 0x8000_0000 cannot be
+// distinguished from null pointer in CBMC.
+</span><span class="kw">pub const </span>GRANULE_REGION: [u8; GRANULE_MEM_SIZE] = [<span class="number">0</span>; GRANULE_MEM_SIZE];
+
+<span class="attr">#[cfg(not(kani))]
+</span><span class="kw">pub fn </span>validate_addr(addr: usize) -&gt; bool {
     <span class="kw">if </span>addr % GRANULE_SIZE != <span class="number">0 </span>{
         <span class="comment">// if the address is out of range.
         </span><span class="macro">warn!</span>(<span class="string">&quot;address need to be aligned 0x{:X}&quot;</span>, addr);
@@ -170,13 +235,36 @@
     }
     <span class="bool-val">true
 </span>}
+<span class="attr">#[cfg(kani)]
+</span><span class="comment">// DIFF: check against GRANULE_REGION
+</span><span class="kw">pub fn </span>validate_addr(addr: usize) -&gt; bool {
+    <span class="kw">if </span>addr % GRANULE_SIZE != <span class="number">0 </span>{
+        <span class="comment">// if the address is out of range.
+        </span><span class="macro">warn!</span>(<span class="string">&quot;address need to be aligned 0x{:X}&quot;</span>, addr);
+        <span class="kw">return </span><span class="bool-val">false</span>;
+    }
+    <span class="kw">let </span>g_start = GRANULE_REGION.as_ptr() <span class="kw">as </span>usize;
+    <span class="kw">let </span>g_end = g_start + GRANULE_MEM_SIZE;
+    (addr &gt;= g_start &amp;&amp; addr &lt; g_end)
+}
 
-<span class="kw">pub fn </span>granule_addr_to_index(addr: usize) -&gt; usize {
+<span class="attr">#[cfg(not(kani))]
+</span><span class="kw">pub fn </span>granule_addr_to_index(addr: usize) -&gt; usize {
     <span class="kw">if </span>FVP_DRAM0_REGION.contains(<span class="kw-2">&amp;</span>addr) {
         <span class="kw">return </span>(addr - FVP_DRAM0_REGION.start) / GRANULE_SIZE;
     }
     <span class="kw">if </span>FVP_DRAM1_REGION.contains(<span class="kw-2">&amp;</span>addr) {
         <span class="kw">return </span>((addr - FVP_DRAM1_REGION.start) / GRANULE_SIZE) + FVP_DRAM1_IDX;
+    }
+    usize::MAX
+}
+<span class="attr">#[cfg(kani)]
+</span><span class="comment">// DIFF: calculate index using GRANULE_REGION
+</span><span class="kw">pub fn </span>granule_addr_to_index(addr: usize) -&gt; usize {
+    <span class="kw">let </span>g_start = GRANULE_REGION.as_ptr() <span class="kw">as </span>usize;
+    <span class="kw">let </span>g_end = g_start + GRANULE_MEM_SIZE;
+    <span class="kw">if </span>addr &gt;= g_start &amp;&amp; addr &lt; g_end {
+        <span class="kw">return </span>(addr - g_start) / GRANULE_SIZE;
     }
     usize::MAX
 }
@@ -213,9 +301,12 @@
     <span class="kw">pub static </span><span class="kw-2">ref </span>GRANULE_STATUS_TABLE: GranuleStatusTable = GranuleStatusTable::new();
 }
 
-<span class="kw">const </span>GRANULE_STATUS_TABLE_SIZE: usize = <span class="number">0xfc000</span>; <span class="comment">// == RMM_MAX_GRANULES
+<span class="attr">#[cfg(not(kani))]
+</span><span class="kw">pub const </span>GRANULE_STATUS_TABLE_SIZE: usize = <span class="number">0xfc000</span>; <span class="comment">// == RMM_MAX_GRANULES
+</span><span class="attr">#[cfg(kani)]
+</span><span class="kw">pub const </span>GRANULE_STATUS_TABLE_SIZE: usize = <span class="number">8</span>;
 
-</span><span class="kw">pub struct </span>GranuleStatusTable {
+<span class="kw">pub struct </span>GranuleStatusTable {
     <span class="kw">pub </span>entries: [Entry; GRANULE_STATUS_TABLE_SIZE],
 }
 
@@ -225,19 +316,26 @@
             entries: core::array::from_fn(|<span class="kw">_</span>| Entry::new()),
         }
     }
+
+    <span class="attr">#[cfg(kani)]
+    </span><span class="kw">pub fn </span>is_valid(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="self">self</span>.entries
+            .iter()
+            .fold(<span class="bool-val">true</span>, |acc, x| acc &amp;&amp; x.lock().unwrap().is_valid())
+    }
 }
 
 <span class="attr">#[macro_export]
 </span><span class="macro">macro_rules! </span>get_granule {
     (<span class="macro-nonterminal">$addr</span>:expr) =&gt; {{
-        <span class="kw">use </span><span class="kw">crate</span>::granule::array::GRANULE_STATUS_TABLE;
+        <span class="kw">use </span><span class="kw">crate</span>::granule::array::{GRANULE_STATUS_TABLE, GRANULE_STATUS_TABLE_SIZE};
         <span class="kw">use </span><span class="kw">crate</span>::granule::{granule_addr_to_index, validate_addr};
         <span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
         <span class="kw">if </span>!validate_addr(<span class="macro-nonterminal">$addr</span>) {
             <span class="prelude-val">Err</span>(Error::RmiErrorInput)
         } <span class="kw">else </span>{
             <span class="kw">let </span>idx = granule_addr_to_index(<span class="macro-nonterminal">$addr</span>);
-            <span class="kw">if </span>idx == usize::MAX {
+            <span class="kw">if </span>idx &gt;= GRANULE_STATUS_TABLE_SIZE {
                 <span class="prelude-val">Err</span>(Error::RmiErrorInput)
             } <span class="kw">else </span>{
                 <span class="kw">let </span>gst = <span class="kw-2">&amp;</span>GRANULE_STATUS_TABLE;

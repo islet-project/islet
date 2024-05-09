@@ -139,6 +139,7 @@
 <a href="#139" id="139">139</a>
 <a href="#140" id="140">140</a>
 <a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
 </pre></div><pre class="rust"><code><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>params;
 <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>rd;
 
@@ -150,17 +151,17 @@
 <span class="kw">use </span><span class="kw">crate</span>::event::Mainloop;
 <span class="kw">use </span><span class="kw">crate</span>::granule::GRANULE_SIZE;
 <span class="kw">use </span><span class="kw">crate</span>::granule::{set_granule, GranuleState};
-<span class="kw">use </span><span class="kw">crate</span>::host::pointer::Pointer <span class="kw">as </span>HostPointer;
+<span class="kw">use </span><span class="kw">crate</span>::host;
 <span class="kw">use </span><span class="kw">crate</span>::listen;
 <span class="kw">use </span><span class="kw">crate</span>::measurement::HashContext;
 <span class="kw">use </span><span class="kw">crate</span>::mm::translation::PageTable;
 <span class="kw">use </span><span class="kw">crate</span>::realm::mm::stage2_translation::Stage2Translation;
 <span class="kw">use </span><span class="kw">crate</span>::realm::mm::IPATranslation;
-<span class="kw">use </span><span class="kw">crate</span>::realm::registry::RMS;
+<span class="kw">use </span><span class="kw">crate</span>::realm::registry::VMID_SET;
 <span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::remove;
-<span class="kw">use </span><span class="kw">crate</span>::realm::Realm;
 <span class="kw">use </span><span class="kw">crate</span>::rmi;
 <span class="kw">use crate</span>::{get_granule, get_granule_if};
+
 <span class="kw">use </span>alloc::boxed::Box;
 <span class="kw">use </span>alloc::sync::Arc;
 <span class="kw">use </span>spin::mutex::Mutex;
@@ -192,38 +193,45 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>rd_granule = <span class="macro">get_granule_if!</span>(rd, GranuleState::Delegated)<span class="question-mark">?</span>;
         <span class="kw">let </span>rd_obj = rd_granule.content_mut::&lt;Rd&gt;();
-        rmm.page_table.map(rd, <span class="bool-val">true</span>);
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `page_table` is currently not reachable in model checking harnesses
+        </span>rmm.page_table.map(rd, <span class="bool-val">true</span>);
 
-        <span class="kw">let </span>params = <span class="macro">copy_from_host_or_ret!</span>(Params, params_ptr);
-        <span class="kw">if </span>params.rtt_base <span class="kw">as </span>usize == rd {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
-        }
-        <span class="kw">if </span>params.rtt_base <span class="kw">as </span>usize % GRANULE_SIZE != <span class="number">0 </span>{
-            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
-        }
+        <span class="kw">let </span>params = host::copy_from::&lt;Params&gt;(params_ptr).ok_or(Error::RmiErrorInput)<span class="question-mark">?</span>;
+        params.verify_compliance(rd)<span class="question-mark">?</span>;
+
         <span class="kw">let </span>rtt_granule = <span class="macro">get_granule_if!</span>(params.rtt_base <span class="kw">as </span>usize, GranuleState::Delegated)<span class="question-mark">?</span>;
         <span class="comment">// This is required to prevent from the deadlock in the below epilog
         // which acquires the same lock again
         </span>core::mem::drop(rtt_granule);
 
         <span class="comment">// revisit rmi.create_realm() (is it necessary?)
-        </span>create_realm(params.vmid, params.rtt_base <span class="kw">as </span>usize).map(|id| {
+        </span>create_realm(params.vmid <span class="kw">as </span>usize).map(|<span class="kw">_</span>| {
+            <span class="kw">let </span>s2_table = Arc::new(Mutex::new(Box::new(Stage2Translation::new(
+                params.rtt_base <span class="kw">as </span>usize,
+            )) <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>IPATranslation&gt;));
+
             rd_obj.init(
-                id,
+                params.vmid,
                 params.rtt_base <span class="kw">as </span>usize,
                 params.ipa_bits(),
                 params.rtt_level_start <span class="kw">as </span>isize,
+                s2_table,
             )
         })<span class="question-mark">?</span>;
 
-        <span class="kw">let </span>id = rd_obj.id();
         <span class="kw">let </span>rtt_base = rd_obj.rtt_base();
         <span class="comment">// The below is added to avoid a fault regarding the RTT entry
-        </span>PageTable::get_ref().map(rtt_base, <span class="bool-val">true</span>);
+        </span><span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..params.rtt_num_start <span class="kw">as </span>usize {
+            <span class="kw">let </span>rtt = rtt_base + i * GRANULE_SIZE;
+            PageTable::get_ref().map(rtt, <span class="bool-val">true</span>);
+        }
 
         rd_obj.set_hash_algo(params.hash_algo);
 
-        HashContext::new(rd_obj)<span class="question-mark">?</span>.measure_realm_create(<span class="kw-2">&amp;</span>params)<span class="question-mark">?</span>;
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `rsi` is currently not reachable in model checking harnesses
+        </span>HashContext::new(rd_obj)<span class="question-mark">?</span>.measure_realm_create(<span class="kw-2">&amp;</span>params)<span class="question-mark">?</span>;
 
         <span class="kw">let </span><span class="kw-2">mut </span>eplilog = <span class="kw">move </span>|| {
             <span class="kw">let </span><span class="kw-2">mut </span>rtt_granule = <span class="macro">get_granule_if!</span>(rtt_base, GranuleState::Delegated)<span class="question-mark">?</span>;
@@ -232,8 +240,10 @@
         };
 
         eplilog().map_err(|e| {
-            rmm.page_table.unmap(rd);
-            remove(id).expect(<span class="string">&quot;Realm should be created before.&quot;</span>);
+            <span class="attr">#[cfg(not(kani))]
+            </span><span class="comment">// `page_table` is currently not reachable in model checking harnesses
+            </span>rmm.page_table.unmap(rd);
+            remove(params.vmid <span class="kw">as </span>usize).expect(<span class="string">&quot;Realm should be created before.&quot;</span>);
             e
         })
     });
@@ -254,30 +264,22 @@
 
         <span class="comment">// change state when everything goes fine.
         </span>set_granule(<span class="kw-2">&amp;mut </span>rd_granule, GranuleState::Delegated)<span class="question-mark">?</span>;
-        rmm.page_table.unmap(arg[<span class="number">0</span>]);
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `page_table` is currently not reachable in model checking harnesses
+        </span>rmm.page_table.unmap(arg[<span class="number">0</span>]);
 
         <span class="prelude-val">Ok</span>(())
     });
 }
 
-<span class="kw">fn </span>create_realm(vmid: u16, rtt_base: usize) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
-    <span class="kw">let </span><span class="kw-2">mut </span>rms = RMS.lock();
+<span class="kw">fn </span>create_realm(vmid: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">let </span><span class="kw-2">mut </span>vmid_set = VMID_SET.lock();
+    <span class="kw">if </span>vmid_set.contains(<span class="kw-2">&amp;</span>vmid) {
+        <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
+    } <span class="kw">else </span>{
+        vmid_set.insert(vmid);
+    };
 
-    <span class="kw">for </span>realm <span class="kw">in </span>rms.<span class="number">1</span>.values() {
-        <span class="kw">if </span>vmid == realm.lock().vmid {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
-        }
-    }
-
-    <span class="kw">let </span>id = rms.<span class="number">0</span>;
-    <span class="kw">let </span>s2_table = Arc::new(Mutex::new(
-        Box::new(Stage2Translation::new(rtt_base)) <span class="kw">as </span>Box&lt;<span class="kw">dyn </span>IPATranslation&gt;
-    ));
-    <span class="kw">let </span>realm = Realm::new(id, vmid, s2_table);
-
-    rms.<span class="number">0 </span>+= <span class="number">1</span>;
-    rms.<span class="number">1</span>.insert(id, realm.clone());
-
-    <span class="prelude-val">Ok</span>(id)
+    <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div></section></main></body></html>

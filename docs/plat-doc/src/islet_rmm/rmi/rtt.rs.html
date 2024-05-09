@@ -328,6 +328,10 @@
 <a href="#328" id="328">328</a>
 <a href="#329" id="329">329</a>
 <a href="#330" id="330">330</a>
+<a href="#331" id="331">331</a>
+<a href="#332" id="332">332</a>
+<a href="#333" id="333">333</a>
+<a href="#334" id="334">334</a>
 </pre></div><pre class="rust"><code><span class="kw">extern crate </span>alloc;
 
 <span class="kw">use </span><span class="kw">super</span>::realm::{rd::State, Rd};
@@ -336,7 +340,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::granule::{
     is_granule_aligned, is_not_in_realm, set_granule, GranuleState, GRANULE_SHIFT, GRANULE_SIZE,
 };
-<span class="kw">use </span><span class="kw">crate</span>::host::pointer::Pointer <span class="kw">as </span>HostPointer;
+<span class="kw">use </span><span class="kw">crate</span>::host;
 <span class="kw">use </span><span class="kw">crate</span>::host::DataPage;
 <span class="kw">use </span><span class="kw">crate</span>::listen;
 <span class="kw">use </span><span class="kw">crate</span>::measurement::HashContext;
@@ -397,7 +401,7 @@
         <span class="kw">if </span>rtt_addr == arg[<span class="number">1</span>] {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
         }
-        <span class="kw">crate</span>::rtt::create(rd.id(), rtt_addr, ipa, level)<span class="question-mark">?</span>;
+        <span class="kw">crate</span>::rtt::create(rd, rtt_addr, ipa, level)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     });
 
@@ -416,8 +420,8 @@
     });
 
     <span class="macro">listen!</span>(mainloop, rmi::RTT_INIT_RIPAS, |arg, _ret, _rmm| {
-        <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(arg[<span class="number">0</span>], GranuleState::RD)<span class="question-mark">?</span>;
-        <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
+        <span class="kw">let </span><span class="kw-2">mut </span>rd_granule = <span class="macro">get_granule_if!</span>(arg[<span class="number">0</span>], GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content_mut::&lt;Rd&gt;();
         <span class="kw">let </span>ipa = arg[<span class="number">1</span>];
         <span class="kw">let </span>level = arg[<span class="number">2</span>];
 
@@ -427,9 +431,11 @@
         <span class="kw">if </span>!is_valid_rtt_cmd(ipa, level) {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
         }
-        <span class="kw">crate</span>::rtt::init_ripas(rd.id(), ipa, level)<span class="question-mark">?</span>;
+        <span class="kw">crate</span>::rtt::init_ripas(rd, ipa, level)<span class="question-mark">?</span>;
 
-        HashContext::new(rd)<span class="question-mark">?</span>.measure_ripas_granule(ipa, level <span class="kw">as </span>u8)<span class="question-mark">?</span>;
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `rsi` is currently not reachable in model checking harnesses
+        </span>HashContext::new(rd)<span class="question-mark">?</span>.measure_ripas_granule(ipa, level <span class="kw">as </span>u8)<span class="question-mark">?</span>;
 
         <span class="prelude-val">Ok</span>(())
     });
@@ -468,9 +474,9 @@
         }
 
         <span class="kw">if </span>ripas <span class="kw">as </span>u64 == RIPAS_EMPTY {
-            <span class="kw">crate</span>::rtt::make_shared(rd.id(), ipa, level)<span class="question-mark">?</span>;
+            <span class="kw">crate</span>::rtt::make_shared(rd, ipa, level)<span class="question-mark">?</span>;
         } <span class="kw">else if </span>ripas <span class="kw">as </span>u64 == RIPAS_RAM {
-            <span class="kw">crate</span>::rtt::make_exclusive(rd.id(), ipa, level)<span class="question-mark">?</span>;
+            <span class="kw">crate</span>::rtt::make_exclusive(rd, ipa, level)<span class="question-mark">?</span>;
         } <span class="kw">else </span>{
             <span class="macro">unreachable!</span>();
         }
@@ -487,7 +493,7 @@
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
         }
 
-        <span class="kw">let </span>res = <span class="kw">crate</span>::rtt::read_entry(rd.id(), ipa, level)<span class="question-mark">?</span>;
+        <span class="kw">let </span>res = <span class="kw">crate</span>::rtt::read_entry(rd, ipa, level)<span class="question-mark">?</span>;
         ret[<span class="number">1</span>..<span class="number">5</span>].copy_from_slice(<span class="kw-2">&amp;</span>res[<span class="number">0</span>..<span class="number">4</span>]);
 
         <span class="prelude-val">Ok</span>(())
@@ -506,9 +512,8 @@
         }
 
         <span class="comment">// rd granule lock
-        </span><span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rd, GranuleState::RD)<span class="question-mark">?</span>;
-        <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
-        <span class="kw">let </span>realm_id = rd.id();
+        </span><span class="kw">let </span><span class="kw-2">mut </span>rd_granule = <span class="macro">get_granule_if!</span>(rd, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content_mut::&lt;Rd&gt;();
 
         <span class="comment">// Make sure DATA_CREATE is only processed
         // when the realm is in its New state.
@@ -525,18 +530,22 @@
         <span class="comment">// data granule lock for the target page
         </span><span class="kw">let </span><span class="kw-2">mut </span>target_page_granule = <span class="macro">get_granule_if!</span>(target_pa, GranuleState::Delegated)<span class="question-mark">?</span>;
         <span class="kw">let </span>target_page = target_page_granule.content_mut::&lt;DataPage&gt;();
-        rmm.page_table.map(target_pa, <span class="bool-val">true</span>);
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `page_table` is currently not reachable in model checking harnesses
+        </span>rmm.page_table.map(target_pa, <span class="bool-val">true</span>);
 
         <span class="comment">// read src page
-        </span><span class="kw">let </span>src_page = <span class="macro">copy_from_host_or_ret!</span>(DataPage, src_pa);
+        </span><span class="kw">let </span>src_page = host::copy_from::&lt;DataPage&gt;(src_pa).ok_or(Error::RmiErrorInput)<span class="question-mark">?</span>;
 
-        HashContext::new(rd)<span class="question-mark">?</span>.measure_data_granule(<span class="kw-2">&amp;</span>src_page, ipa, flags)<span class="question-mark">?</span>;
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `rsi` is currently not reachable in model checking harnesses
+        </span>HashContext::new(rd)<span class="question-mark">?</span>.measure_data_granule(<span class="kw-2">&amp;</span>src_page, ipa, flags)<span class="question-mark">?</span>;
 
         <span class="comment">// 3. copy src to _data
         </span><span class="kw-2">*</span>target_page = src_page;
 
         <span class="comment">// 4. map ipa to taget_pa in S2 table
-        </span><span class="kw">crate</span>::rtt::data_create(realm_id, ipa, target_pa)<span class="question-mark">?</span>;
+        </span><span class="kw">crate</span>::rtt::data_create(rd, ipa, target_pa)<span class="question-mark">?</span>;
 
         set_granule(<span class="kw-2">&amp;mut </span>target_page_granule, GranuleState::Data)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
@@ -553,17 +562,18 @@
         <span class="comment">// rd granule lock
         </span><span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(arg[<span class="number">1</span>], GranuleState::RD)<span class="question-mark">?</span>;
         <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
-        <span class="kw">let </span>realm_id = rd.id();
 
         validate_ipa(ipa, rd.ipa_bits())<span class="question-mark">?</span>;
 
         <span class="comment">// 0. Make sure granule state can make a transition to DATA
         // data granule lock for the target page
         </span><span class="kw">let </span><span class="kw-2">mut </span>target_page_granule = <span class="macro">get_granule_if!</span>(target_pa, GranuleState::Delegated)<span class="question-mark">?</span>;
-        rmm.page_table.map(target_pa, <span class="bool-val">true</span>);
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `page_table` is currently not reachable in model checking harnesses
+        </span>rmm.page_table.map(target_pa, <span class="bool-val">true</span>);
 
         <span class="comment">// 1. map ipa to target_pa in S2 table
-        </span><span class="kw">crate</span>::rtt::data_create(realm_id, ipa, target_pa)<span class="question-mark">?</span>;
+        </span><span class="kw">crate</span>::rtt::data_create(rd, ipa, target_pa)<span class="question-mark">?</span>;
 
         <span class="comment">// TODO: 2. perform measure
         // L0czek - not needed here see: tf-rmm/runtime/rmi/rtt.c:883
@@ -575,10 +585,9 @@
         <span class="comment">// rd granule lock
         </span><span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(arg[<span class="number">0</span>], GranuleState::RD)<span class="question-mark">?</span>;
         <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
-        <span class="kw">let </span>realm_id = rd.id();
         <span class="kw">let </span>ipa = arg[<span class="number">1</span>];
 
-        <span class="kw">let </span>pa = <span class="kw">crate</span>::rtt::data_destroy(realm_id, ipa)<span class="question-mark">?</span>;
+        <span class="kw">let </span>pa = <span class="kw">crate</span>::rtt::data_destroy(rd, ipa)<span class="question-mark">?</span>;
 
         <span class="comment">// data granule lock and change state
         </span><span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]
@@ -618,13 +627,12 @@
 
         <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(arg[<span class="number">0</span>], GranuleState::RD)<span class="question-mark">?</span>;
         <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
-        <span class="kw">let </span>realm_id = rd.id();
 
         <span class="kw">let </span>level = arg[<span class="number">2</span>];
         <span class="kw">if </span>!is_valid_rtt_cmd(ipa, level) {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
         }
-        <span class="kw">crate</span>::rtt::unmap_unprotected(realm_id, ipa, level)<span class="question-mark">?</span>;
+        <span class="kw">crate</span>::rtt::unmap_unprotected(rd, ipa, level)<span class="question-mark">?</span>;
         <span class="prelude-val">Ok</span>(())
     });
 }

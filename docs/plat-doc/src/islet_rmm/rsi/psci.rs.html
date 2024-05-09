@@ -169,6 +169,14 @@
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
 <a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::event::RsiHandle;
 <span class="kw">use </span><span class="kw">crate</span>::granule::GranuleState;
 <span class="kw">use </span><span class="kw">crate</span>::listen;
@@ -247,8 +255,10 @@
         |_arg: <span class="kw-2">&amp;</span>[usize], ret: <span class="kw-2">&amp;mut </span>[usize], _rmm: <span class="kw-2">&amp;</span>Monitor, rec: <span class="kw-2">&amp;mut </span>Rec&lt;<span class="lifetime">&#39;_</span>&gt;, _run: <span class="kw-2">&amp;mut </span>Run| {
             <span class="kw">let </span>vcpuid = rec.vcpuid();
             <span class="kw">let </span>realmid = rec.realmid()<span class="question-mark">?</span>;
+            <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+            <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
 
-            <span class="kw">if </span>set_reg(realmid, vcpuid, <span class="number">0</span>, PsciReturn::SUCCESS).is_err() {
+            <span class="kw">if </span>set_reg(rd, vcpuid, <span class="number">0</span>, PsciReturn::SUCCESS).is_err() {
                 <span class="macro">warn!</span>(
                     <span class="string">&quot;Unable to set register 0. realmid: {:?} vcpuid: {:?}&quot;</span>,
                     realmid, vcpuid
@@ -261,8 +271,10 @@
     <span class="macro">listen!</span>(rsi, PSCI_VERSION, |_arg, ret, _rmm, rec, _run| {
         <span class="kw">let </span>vcpuid = rec.vcpuid();
         <span class="kw">let </span>realmid = rec.realmid()<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
 
-        <span class="kw">if </span>set_reg(realmid, vcpuid, <span class="number">0</span>, psci_version()).is_err() {
+        <span class="kw">if </span>set_reg(rd, vcpuid, <span class="number">0</span>, psci_version()).is_err() {
             <span class="macro">warn!</span>(
                 <span class="string">&quot;Unable to set register 0. realmid: {:?} vcpuid: {:?}&quot;</span>,
                 realmid, vcpuid
@@ -292,8 +304,10 @@
     <span class="macro">listen!</span>(rsi, SMC32::FEATURES, |_arg, ret, _rmm, rec, _run| {
         <span class="kw">let </span>vcpuid = rec.vcpuid();
         <span class="kw">let </span>realmid = rec.realmid()<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
 
-        <span class="kw">let </span>feature_id = get_reg(realmid, vcpuid, <span class="number">1</span>).unwrap_or(<span class="number">0x0</span>);
+        <span class="kw">let </span>feature_id = get_reg(rd, vcpuid, <span class="number">1</span>).unwrap_or(<span class="number">0x0</span>);
         <span class="kw">let </span>retval = <span class="kw">match </span>feature_id {
             SMC32::CPU_SUSPEND
             | SMC64::CPU_SUSPEND
@@ -308,7 +322,7 @@
             | SMCCC_VERSION =&gt; PsciReturn::SUCCESS,
             <span class="kw">_ </span>=&gt; PsciReturn::NOT_SUPPORTED,
         };
-        <span class="kw">if </span>set_reg(realmid, vcpuid, <span class="number">0</span>, retval).is_err() {
+        <span class="kw">if </span>set_reg(rd, vcpuid, <span class="number">0</span>, retval).is_err() {
             <span class="macro">warn!</span>(
                 <span class="string">&quot;Unable to set register 0. realmid: {:?} vcpuid: {:?}&quot;</span>,
                 realmid, vcpuid
@@ -321,8 +335,10 @@
     <span class="macro">listen!</span>(rsi, SMCCC_VERSION, |_arg, ret, _rmm, rec, _run| {
         <span class="kw">let </span>vcpuid = rec.vcpuid();
         <span class="kw">let </span>realmid = rec.realmid()<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd_granule = <span class="macro">get_granule_if!</span>(rec.owner()<span class="question-mark">?</span>, GranuleState::RD)<span class="question-mark">?</span>;
+        <span class="kw">let </span>rd = rd_granule.content::&lt;Rd&gt;();
 
-        <span class="kw">if </span>set_reg(realmid, vcpuid, <span class="number">0</span>, smccc_version()).is_err() {
+        <span class="kw">if </span>set_reg(rd, vcpuid, <span class="number">0</span>, smccc_version()).is_err() {
             <span class="macro">warn!</span>(
                 <span class="string">&quot;Unable to set register 0. realmid: {:?} vcpuid: {:?}&quot;</span>,
                 realmid, vcpuid

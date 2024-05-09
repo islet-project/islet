@@ -63,71 +63,69 @@
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
 <a href="#65" id="65">65</a>
-<a href="#66" id="66">66</a>
-</pre></div><pre class="rust"><code><span class="comment">//extern crate alloc;
-</span><span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::const_assert_eq;
+<span class="kw">use </span><span class="kw">crate</span>::granule::GRANULE_SIZE;
+<span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
+
+<span class="kw">pub const </span>HOST_CALL_NR_GPRS: usize = <span class="number">7</span>;
+<span class="kw">const </span>PADDING: [usize; <span class="number">2</span>] = [<span class="number">6</span>, <span class="number">4032</span>];
 
 <span class="attr">#[repr(C)]
 </span><span class="kw">pub struct </span>HostCall {
-    inner: Inner,
+    imm: u16,
+    padding0: [u8; PADDING[<span class="number">0</span>]],
+    gprs: [u64; HOST_CALL_NR_GPRS],
+    padding1: [u8; PADDING[<span class="number">1</span>]],
 }
 
+<span class="comment">// The width of the RsiHostCall structure is 4096 (0x1000) bytes in RMM Spec bet0.
+// The width is changed to 256 (0x100) bytes at RMM Spec eac5.
+</span><span class="macro">const_assert_eq!</span>(core::mem::size_of::&lt;HostCall&gt;(), GRANULE_SIZE);
+
 <span class="kw">impl </span>HostCall {
-    <span class="kw">pub unsafe fn </span>parse&lt;<span class="lifetime">&#39;a</span>&gt;(addr: usize) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="self">Self </span>{
-        <span class="kw-2">&amp;*</span>(addr <span class="kw">as </span><span class="kw-2">*const </span><span class="self">Self</span>)
-    }
-
-    <span class="kw">pub unsafe fn </span>parse_mut&lt;<span class="lifetime">&#39;a</span>&gt;(addr: usize) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span><span class="self">Self </span>{
-        <span class="kw-2">&amp;mut *</span>(addr <span class="kw">as </span><span class="kw-2">*mut </span><span class="self">Self</span>)
-    }
-
-    <span class="kw">pub unsafe fn </span>set_gpr(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: usize, val: u64) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">pub fn </span>set_gpr(<span class="kw-2">&amp;mut </span><span class="self">self</span>, idx: usize, val: u64) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
         <span class="kw">if </span>idx &gt;= HOST_CALL_NR_GPRS {
             <span class="macro">error!</span>(<span class="string">&quot;out of index: {}&quot;</span>, idx);
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
         }
-        (<span class="kw-2">*</span><span class="self">self</span>.inner.val).gprs[idx] = val;
+        <span class="self">self</span>.gprs[idx] = val;
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="comment">// Safety: union type should be initialized
-    // Check UB
-    </span><span class="kw">pub fn </span>imm(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
-        <span class="kw">unsafe </span>{ <span class="self">self</span>.inner.val.imm }
-    }
-}
-
-<span class="kw">impl </span>Drop <span class="kw">for </span>HostCall {
-    <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="kw">unsafe </span>{
-            core::mem::ManuallyDrop::drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>.inner.val);
-        }
+    <span class="kw">pub fn </span>imm(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; u16 {
+        <span class="self">self</span>.imm
     }
 }
 
 <span class="kw">impl </span>core::fmt::Debug <span class="kw">for </span>HostCall {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
-        <span class="comment">// Safety: union type should be initialized
-        </span><span class="kw">unsafe </span>{
-            f.debug_struct(<span class="string">&quot;rsi::HostCall&quot;</span>)
-                .field(<span class="string">&quot;imm&quot;</span>, <span class="kw-2">&amp;</span><span class="macro">format_args!</span>(<span class="string">&quot;{:#X}&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.inner.val.imm))
-                .field(<span class="string">&quot;gprs&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.inner.val.gprs)
-                .finish()
-        }
+        f.debug_struct(<span class="string">&quot;rsi::HostCall&quot;</span>)
+            .field(<span class="string">&quot;imm&quot;</span>, <span class="kw-2">&amp;</span><span class="macro">format_args!</span>(<span class="string">&quot;{:#X}&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.imm))
+            .field(<span class="string">&quot;gprs&quot;</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.gprs)
+            .finish()
     }
 }
 
-<span class="kw">pub const </span>HOST_CALL_NR_GPRS: usize = <span class="number">7</span>;
+<span class="kw">impl </span>safe_abstraction::raw_ptr::RawPtr <span class="kw">for </span>HostCall {}
 
-<span class="attr">#[repr(C)]
-</span><span class="kw">struct </span>_Inner {
-    imm: u16,
-    gprs: [u64; HOST_CALL_NR_GPRS],
-}
+<span class="kw">impl </span>safe_abstraction::raw_ptr::SafetyChecked <span class="kw">for </span>HostCall {}
 
-<span class="attr">#[repr(C)]
-</span><span class="kw">union </span>Inner {
-    val: core::mem::ManuallyDrop&lt;_Inner&gt;,
-    reserved: [u8; <span class="number">0x100</span>],
+<span class="kw">impl </span>safe_abstraction::raw_ptr::SafetyAssured <span class="kw">for </span>HostCall {
+    <span class="kw">fn </span>is_initialized(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="comment">// The initialization of this memory is guaranteed
+        // according to the RMM Specification A2.2.4 Granule Wiping.
+        // This instance belongs to a Data Granule and has been initialized.
+        </span><span class="bool-val">true
+    </span>}
+
+    <span class="kw">fn </span>verify_ownership(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="comment">// The instance&#39;s ownership is guaranteed while being processed by the RMM.
+        // While the Realm holds RW permissions for the instance,
+        // it cannot exercise these permissions from the moment an SMC request is made
+        // until the request is completed. Even in multi-core environments,
+        // the designated areas are protected by Stage 2 Table,
+        // ensuring that there are no adverse effects on RMM&#39;s memory safety.
+        </span><span class="bool-val">true
+    </span>}
 }
 </code></pre></div></section></main></body></html>

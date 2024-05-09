@@ -53,31 +53,25 @@
 <a href="#53" id="53">53</a>
 <a href="#54" id="54">54</a>
 <a href="#55" id="55">55</a>
-<a href="#56" id="56">56</a>
-<a href="#57" id="57">57</a>
-<a href="#58" id="58">58</a>
-<a href="#59" id="59">59</a>
-<a href="#60" id="60">60</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::context::Context;
-<span class="kw">use </span><span class="kw">crate</span>::realm::registry::get_realm;
-<span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::VCPU;
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::VCPU;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::InternalError::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rmi::realm::Rd;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rec::run::Run;
 
 <span class="kw">use </span>armv9a::regs::<span class="kw-2">*</span>;
 
-<span class="kw">pub fn </span>init_timer(vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;Context&gt;) {
+<span class="kw">pub fn </span>init_timer(vcpu: <span class="kw-2">&amp;mut </span>VCPU) {
     <span class="kw">let </span>timer = <span class="kw-2">&amp;mut </span>vcpu.context.timer;
     timer.cnthctl_el2 = S3_4_C14_C1_0::EL1PCTEN | S3_4_C14_C1_0::EL1PTEN;
 }
 
-<span class="kw">pub fn </span>set_cnthctl(vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;Context&gt;, val: u64) {
+<span class="kw">pub fn </span>set_cnthctl(vcpu: <span class="kw-2">&amp;mut </span>VCPU, val: u64) {
     <span class="kw">let </span>timer = <span class="kw-2">&amp;mut </span>vcpu.context.timer;
     timer.cnthctl_el2 = val;
 }
 
-<span class="kw">pub fn </span>restore_state(vcpu: <span class="kw-2">&amp;</span>VCPU&lt;Context&gt;) {
+<span class="kw">pub fn </span>restore_state(vcpu: <span class="kw-2">&amp;</span>VCPU) {
     <span class="kw">let </span>timer = <span class="kw-2">&amp;</span>vcpu.context.timer;
 
     <span class="kw">unsafe </span>{ CNTVOFF_EL2.set(timer.cntvoff_el2) };
@@ -89,7 +83,7 @@
     <span class="kw">unsafe </span>{ S3_4_C14_C1_0.set(timer.cnthctl_el2) }; <span class="comment">// CNTHCTL_EL2
 </span>}
 
-<span class="kw">pub fn </span>save_state(vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;Context&gt;) {
+<span class="kw">pub fn </span>save_state(vcpu: <span class="kw-2">&amp;mut </span>VCPU) {
     <span class="kw">let </span>timer = <span class="kw-2">&amp;mut </span>vcpu.context.timer;
 
     timer.cntvoff_el2 = <span class="kw">unsafe </span>{ CNTVOFF_EL2.get() };
@@ -101,21 +95,17 @@
     timer.cnthctl_el2 = <span class="kw">unsafe </span>{ S3_4_C14_C1_0.get() };
 }
 
-<span class="kw">pub fn </span>send_state_to_host(id: usize, vcpu: usize, run: <span class="kw-2">&amp;mut </span>Run) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-    <span class="kw">let </span>realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?</span>;
-    <span class="kw">let </span><span class="kw-2">mut </span>locked_realm = realm.lock();
-    <span class="kw">let </span>vcpu = locked_realm
+<span class="kw">pub fn </span>send_state_to_host(rd: <span class="kw-2">&amp;mut </span>Rd, vcpu: usize, run: <span class="kw-2">&amp;mut </span>Run) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">let </span>vcpu = rd
         .vcpus
         .get_mut(vcpu)
         .ok_or(Error::RmiErrorOthers(NotExistVCPU))<span class="question-mark">?</span>;
     <span class="kw">let </span>timer = <span class="kw-2">&amp;</span>vcpu.lock().context.timer;
 
-    <span class="kw">unsafe </span>{
-        run.set_cntv_ctl(timer.cntv_ctl_el0);
-        run.set_cntv_cval(timer.cntv_cval_el0 - timer.cntvoff_el2);
-        run.set_cntp_ctl(timer.cntp_ctl_el0);
-        run.set_cntp_cval(timer.cntp_cval_el0 - timer.cntpoff_el2);
-    }
+    run.set_cntv_ctl(timer.cntv_ctl_el0);
+    run.set_cntv_cval(timer.cntv_cval_el0 - timer.cntvoff_el2);
+    run.set_cntp_ctl(timer.cntp_ctl_el0);
+    run.set_cntp_cval(timer.cntp_cval_el0 - timer.cntpoff_el2);
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div></section></main></body></html>

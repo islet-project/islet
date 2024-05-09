@@ -132,52 +132,38 @@
 <a href="#132" id="132">132</a>
 <a href="#133" id="133">133</a>
 <a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::const_assert_eq;
 <span class="kw">use </span><span class="kw">crate</span>::granule::{GRANULE_SHIFT, GRANULE_SIZE};
-<span class="kw">use </span><span class="kw">crate</span>::host::Accessor <span class="kw">as </span>HostAccessor;
 <span class="kw">use </span><span class="kw">crate</span>::measurement::Hashable;
+<span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::features;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rtt::{RTT_PAGE_LEVEL, S2TTE_STRIDE};
 <span class="kw">use </span><span class="kw">crate</span>::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
 
-<span class="kw">const </span>PADDING: [usize; <span class="number">5</span>] = [<span class="number">248</span>, <span class="number">767</span>, <span class="number">960</span>, <span class="number">6</span>, <span class="number">2020</span>];
+<span class="kw">use </span>autopadding::<span class="kw-2">*</span>;
 
-<span class="attr">#[repr(C)]
-</span><span class="kw">pub struct </span>Params {
-    <span class="kw">pub </span>features_0: u64,
-    padding0: [u8; PADDING[<span class="number">0</span>]],
-    <span class="kw">pub </span>hash_algo: u8,
-    padding1: [u8; PADDING[<span class="number">1</span>]],
-    <span class="kw">pub </span>rpv: [u8; <span class="number">64</span>],
-    padding2: [u8; PADDING[<span class="number">2</span>]],
-    <span class="kw">pub </span>vmid: u16,
-    padding3: [u8; PADDING[<span class="number">3</span>]],
-    <span class="kw">pub </span>rtt_base: u64,
-    <span class="kw">pub </span>rtt_level_start: i64,
-    <span class="kw">pub </span>rtt_num_start: u32,
-    padding4: [u8; PADDING[<span class="number">4</span>]],
+<span class="macro">pad_struct_and_impl_default!</span>(
+<span class="kw">pub struct </span>Params {
+    <span class="number">0x0    </span><span class="kw">pub </span>features_0: u64,
+    <span class="number">0x100  </span><span class="kw">pub </span>hash_algo: u8,
+    <span class="number">0x400  </span><span class="kw">pub </span>rpv: [u8; <span class="number">64</span>],
+    <span class="number">0x800  </span><span class="kw">pub </span>vmid: u16,
+    <span class="number">0x808  </span><span class="kw">pub </span>rtt_base: u64,
+    <span class="number">0x810  </span><span class="kw">pub </span>rtt_level_start: i64,
+    <span class="number">0x818  </span><span class="kw">pub </span>rtt_num_start: u32,
+    <span class="number">0x1000 </span>=&gt; @END,
 }
+);
 
 <span class="macro">const_assert_eq!</span>(core::mem::size_of::&lt;Params&gt;(), GRANULE_SIZE);
-
-<span class="kw">impl </span>Default <span class="kw">for </span>Params {
-    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
-        <span class="self">Self </span>{
-            features_0: <span class="number">0</span>,
-            padding0: [<span class="number">0</span>; PADDING[<span class="number">0</span>]],
-            hash_algo: <span class="number">0</span>,
-            padding1: [<span class="number">0</span>; PADDING[<span class="number">1</span>]],
-            rpv: [<span class="number">0</span>; <span class="number">64</span>],
-            padding2: [<span class="number">0</span>; PADDING[<span class="number">2</span>]],
-            vmid: <span class="number">0</span>,
-            padding3: [<span class="number">0</span>; PADDING[<span class="number">3</span>]],
-            rtt_base: <span class="number">0</span>,
-            rtt_level_start: <span class="number">0</span>,
-            rtt_num_start: <span class="number">0</span>,
-            padding4: [<span class="number">0</span>; PADDING[<span class="number">4</span>]],
-        }
-    }
-}
 
 <span class="kw">impl </span>core::fmt::Debug <span class="kw">for </span>Params {
     <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>core::fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; core::fmt::Result {
@@ -201,26 +187,37 @@
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(), <span class="kw">crate</span>::measurement::MeasurementError&gt; {
         hasher.hash_fields_into(out, |alg| {
             alg.hash_u64(<span class="number">0</span>); <span class="comment">// features aren&#39;t used
-            </span>alg.hash(<span class="self">self</span>.padding0);
+            </span>alg.hash(<span class="self">self</span>._padfeatures_0);
             alg.hash_u8(<span class="self">self</span>.hash_algo);
-            alg.hash(<span class="self">self</span>.padding1);
+            alg.hash(<span class="self">self</span>._padhash_algo);
             alg.hash([<span class="number">0u8</span>; <span class="number">64</span>]); <span class="comment">// rpv is not used
-            </span>alg.hash(<span class="self">self</span>.padding2);
+            </span>alg.hash(<span class="self">self</span>._padrpv);
             alg.hash_u16(<span class="number">0</span>); <span class="comment">// vmid is not used
-            </span>alg.hash(<span class="self">self</span>.padding3);
+            </span>alg.hash(<span class="self">self</span>._padvmid);
             alg.hash_u64(<span class="number">0</span>); <span class="comment">// rtt_base is not used
             </span>alg.hash_u64(<span class="number">0</span>); <span class="comment">// rtt_level_start is not used
             </span>alg.hash_u32(<span class="number">0</span>); <span class="comment">// rtt_num_start is not used
-            </span>alg.hash(<span class="self">self</span>.padding4);
+            </span>alg.hash(<span class="self">self</span>._padrtt_num_start);
         })
     }
 }
 
-<span class="kw">impl </span>HostAccessor <span class="kw">for </span>Params {
-    <span class="kw">fn </span>validate(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        <span class="macro">trace!</span>(<span class="string">&quot;{:?}&quot;</span>, <span class="self">self</span>);
+<span class="kw">impl </span>Params {
+    <span class="kw">pub fn </span>ipa_bits(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
+        features::ipa_bits(<span class="self">self</span>.features_0 <span class="kw">as </span>usize)
+    }
+
+    <span class="kw">pub fn </span>verify_compliance(<span class="kw-2">&amp;</span><span class="self">self</span>, rd: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+        <span class="kw">if </span><span class="self">self</span>.rtt_base <span class="kw">as </span>usize == rd {
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
+        }
+
+        <span class="kw">if </span><span class="self">self</span>.rtt_base <span class="kw">as </span>usize % GRANULE_SIZE != <span class="number">0 </span>{
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
+        }
+
         <span class="kw">if </span>!features::validate(<span class="self">self</span>.features_0 <span class="kw">as </span>usize) {
-            <span class="kw">return </span><span class="bool-val">false</span>;
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
         }
 
         <span class="comment">// Check misconfigurations between IPA size and SL
@@ -232,20 +229,39 @@
         <span class="kw">let </span>max_ipa_bits = min_ipa_bits + (S2TTE_STRIDE - <span class="number">1</span>) + <span class="number">4</span>;
 
         <span class="kw">if </span>(ipa_bits &lt; min_ipa_bits) || (ipa_bits &gt; max_ipa_bits) {
-            <span class="kw">return </span><span class="bool-val">false</span>;
+            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
         }
 
         <span class="kw">match </span><span class="self">self</span>.hash_algo {
-            HASH_ALGO_SHA256 | HASH_ALGO_SHA512 =&gt; <span class="bool-val">true</span>,
-            <span class="kw">_ </span>=&gt; <span class="bool-val">false</span>,
+            HASH_ALGO_SHA256 | HASH_ALGO_SHA512 =&gt; <span class="prelude-val">Ok</span>(()),
+            <span class="kw">_ </span>=&gt; <span class="prelude-val">Err</span>(Error::RmiErrorInput),
         }
     }
 }
 
-<span class="kw">impl </span>Params {
-    <span class="kw">pub fn </span>ipa_bits(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-        features::ipa_bits(<span class="self">self</span>.features_0 <span class="kw">as </span>usize)
-    }
+<span class="kw">impl </span>safe_abstraction::raw_ptr::RawPtr <span class="kw">for </span>Params {}
+
+<span class="kw">impl </span>safe_abstraction::raw_ptr::SafetyChecked <span class="kw">for </span>Params {}
+
+<span class="kw">impl </span>safe_abstraction::raw_ptr::SafetyAssured <span class="kw">for </span>Params {
+    <span class="kw">fn </span>is_initialized(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="comment">// Given the fact that this memory is initialized by the Host,
+        // it&#39;s not possible to unequivocally guarantee
+        // that the values have been initialized from the perspective of the RMM.
+        // However, any values, whether correctly initialized or not, will undergo
+        // verification during the Measurement phase.
+        // Consequently, this function returns `true`.
+        </span><span class="bool-val">true
+    </span>}
+
+    <span class="kw">fn </span>verify_ownership(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+        <span class="comment">// This memory has permissions from the Host&#39;s perspective,
+        // which inherently implies that exclusive ownership cannot be guaranteed by the RMM alone.
+        // However, since the RMM only performs read operations and any incorrect values will be
+        // verified during the Measurement phase.
+        // Consequently, this function returns `true`.
+        </span><span class="bool-val">true
+    </span>}
 }
 
 <span class="attr">#[cfg(test)]

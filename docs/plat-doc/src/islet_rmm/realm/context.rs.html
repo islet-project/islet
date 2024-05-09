@@ -168,26 +168,13 @@
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
-<a href="#173" id="173">173</a>
-<a href="#174" id="174">174</a>
-<a href="#175" id="175">175</a>
-<a href="#176" id="176">176</a>
-<a href="#177" id="177">177</a>
-<a href="#178" id="178">178</a>
-<a href="#179" id="179">179</a>
-<a href="#180" id="180">180</a>
-<a href="#181" id="181">181</a>
-<a href="#182" id="182">182</a>
-<a href="#183" id="183">183</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::timer;
 <span class="kw">use </span><span class="kw">crate</span>::cpu::get_cpu_id;
 <span class="kw">use </span><span class="kw">crate</span>::gic;
-<span class="kw">use </span><span class="kw">crate</span>::realm::registry::get_realm;
 <span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::VCPU;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::InternalError::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rmi::realm::Rd;
 
 <span class="kw">use </span>armv9a::regs::<span class="kw-2">*</span>;
 
@@ -203,13 +190,10 @@
     <span class="kw">pub </span>fp_regs: [u128; <span class="number">32</span>],
 }
 
-<span class="kw">pub fn </span>set_reg(id: usize, vcpu: usize, register: usize, value: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+<span class="kw">pub fn </span>set_reg(rd: <span class="kw-2">&amp;</span>Rd, vcpu: usize, register: usize, value: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
     <span class="kw">match </span>register {
         <span class="number">0</span>..=<span class="number">30 </span>=&gt; {
-            get_realm(id)
-                .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-                </span>.lock()
-                .vcpus
+            rd.vcpus
                 .get(vcpu)
                 .ok_or(Error::RmiErrorOthers(NotExistVCPU))<span class="question-mark">?
                 </span>.lock()
@@ -218,10 +202,7 @@
             <span class="prelude-val">Ok</span>(())
         }
         <span class="number">31 </span>=&gt; {
-            get_realm(id)
-                .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-                </span>.lock()
-                .vcpus
+            rd.vcpus
                 .get(vcpu)
                 .ok_or(Error::RmiErrorOthers(NotExistVCPU))<span class="question-mark">?
                 </span>.lock()
@@ -230,10 +211,7 @@
             <span class="prelude-val">Ok</span>(())
         }
         <span class="number">32 </span>=&gt; {
-            get_realm(id)
-                .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-                </span>.lock()
-                .vcpus
+            rd.vcpus
                 .get(vcpu)
                 .ok_or(Error::RmiErrorOthers(NotExistVCPU))<span class="question-mark">?
                 </span>.lock()
@@ -246,12 +224,10 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub fn </span>get_reg(id: usize, vcpu: usize, register: usize) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
+<span class="kw">pub fn </span>get_reg(rd: <span class="kw-2">&amp;</span>Rd, vcpu: usize, register: usize) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
     <span class="kw">match </span>register {
         <span class="number">0</span>..=<span class="number">30 </span>=&gt; {
-            <span class="kw">let </span>value = get_realm(id)
-                .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-                </span>.lock()
+            <span class="kw">let </span>value = rd
                 .vcpus
                 .get(vcpu)
                 .ok_or(Error::RmiErrorOthers(NotExistVCPU))<span class="question-mark">?
@@ -261,9 +237,7 @@
             <span class="prelude-val">Ok</span>(value <span class="kw">as </span>usize)
         }
         <span class="number">31 </span>=&gt; {
-            <span class="kw">let </span>value = get_realm(id)
-                .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-                </span>.lock()
+            <span class="kw">let </span>value = rd
                 .vcpus
                 .get(vcpu)
                 .ok_or(Error::RmiErrorOthers(NotExistVCPU))<span class="question-mark">?
@@ -276,8 +250,8 @@
     }
 }
 
-<span class="kw">impl </span><span class="kw">crate</span>::realm::vcpu::Context <span class="kw">for </span>Context {
-    <span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
+<span class="kw">impl </span>Context {
+    <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="comment">// Set appropriate sys registers
         // TODO: enable floating point
         // CPTR_EL2, CPACR_EL1, update vectors.s, etc..
@@ -287,7 +261,7 @@
         }
     }
 
-    <span class="kw">unsafe fn </span>into_current(vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;<span class="self">Self</span>&gt;) {
+    <span class="kw">pub unsafe fn </span>into_current(vcpu: <span class="kw-2">&amp;mut </span>VCPU) {
         vcpu.pcpu = <span class="prelude-val">Some</span>(get_cpu_id());
         vcpu.context.sys_regs.vmpidr = vcpu.pcpu.unwrap() <span class="kw">as </span>u64;
         TPIDR_EL2.set(vcpu <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">_ as </span>u64);
@@ -295,7 +269,7 @@
         timer::restore_state(vcpu);
     }
 
-    <span class="kw">unsafe fn </span>from_current(vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;<span class="self">Self</span>&gt;) {
+    <span class="kw">pub unsafe fn </span>from_current(vcpu: <span class="kw-2">&amp;mut </span>VCPU) {
         gic::save_state(vcpu);
         timer::save_state(vcpu);
         vcpu.pcpu = <span class="prelude-val">None</span>;

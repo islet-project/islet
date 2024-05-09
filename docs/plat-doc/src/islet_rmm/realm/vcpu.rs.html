@@ -100,28 +100,12 @@
 <a href="#100" id="100">100</a>
 <a href="#101" id="101">101</a>
 <a href="#102" id="102">102</a>
-<a href="#103" id="103">103</a>
-<a href="#104" id="104">104</a>
-<a href="#105" id="105">105</a>
-<a href="#106" id="106">106</a>
-<a href="#107" id="107">107</a>
-<a href="#108" id="108">108</a>
-<a href="#109" id="109">109</a>
-<a href="#110" id="110">110</a>
-<a href="#111" id="111">111</a>
-<a href="#112" id="112">112</a>
-<a href="#113" id="113">113</a>
-<a href="#114" id="114">114</a>
-<a href="#115" id="115">115</a>
-<a href="#116" id="116">116</a>
-<a href="#117" id="117">117</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::Realm;
-
-<span class="kw">use </span><span class="kw">crate</span>::gic;
-<span class="kw">use </span><span class="kw">crate</span>::realm::registry::get_realm;
-<span class="kw">use </span><span class="kw">crate</span>::realm::registry::RMS;
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::gic;
+<span class="kw">use </span><span class="kw">crate</span>::realm::context::Context;
+<span class="kw">use </span><span class="kw">crate</span>::realm::registry::VMID_SET;
 <span class="kw">use </span><span class="kw">crate</span>::realm::timer;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
+<span class="kw">use </span><span class="kw">crate</span>::rmi::realm::Rd;
 <span class="kw">use </span>alloc::sync::{Arc, Weak};
 <span class="kw">use </span>armv9a::bits_in_reg;
 <span class="kw">use </span>armv9a::regs::<span class="kw-2">*</span>;
@@ -129,38 +113,22 @@
 
 <span class="kw">extern crate </span>alloc;
 
-<span class="kw">pub trait </span>Context {
-    <span class="kw">fn </span>new() -&gt; <span class="self">Self
-    </span><span class="kw">where
-        </span><span class="self">Self</span>: Sized;
-
-    <span class="kw">unsafe fn </span>into_current(vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;<span class="self">Self</span>&gt;)
-    <span class="kw">where
-        </span><span class="self">Self</span>: Sized;
-
-    <span class="kw">unsafe fn </span>from_current(vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;<span class="self">Self</span>&gt;)
-    <span class="kw">where
-        </span><span class="self">Self</span>: Sized;
-}
-
 <span class="attr">#[repr(C)]
 #[derive(Debug)]
-</span><span class="kw">pub struct </span>VCPU&lt;T: Context&gt; {
-    <span class="kw">pub </span>context: T,
+</span><span class="kw">pub struct </span>VCPU {
+    <span class="kw">pub </span>context: Context,
     <span class="kw">pub </span>state: State,
     <span class="kw">pub </span>pcpu: <span class="prelude-ty">Option</span>&lt;usize&gt;,
-    <span class="kw">pub </span>realm: Arc&lt;Mutex&lt;Realm&lt;T&gt;&gt;&gt;, <span class="comment">// Realm struct the VCPU belongs to
-    </span>me: Weak&lt;Mutex&lt;<span class="self">Self</span>&gt;&gt;,
+    me: Weak&lt;Mutex&lt;<span class="self">Self</span>&gt;&gt;,
 }
 
-<span class="kw">impl</span>&lt;T: Context + Default&gt; VCPU&lt;T&gt; {
-    <span class="kw">pub fn </span>new(realm: Arc&lt;Mutex&lt;Realm&lt;T&gt;&gt;&gt;) -&gt; Arc&lt;Mutex&lt;<span class="self">Self</span>&gt;&gt; {
+<span class="kw">impl </span>VCPU {
+    <span class="kw">pub fn </span>new() -&gt; Arc&lt;Mutex&lt;<span class="self">Self</span>&gt;&gt; {
         Arc::&lt;Mutex&lt;<span class="self">Self</span>&gt;&gt;::new_cyclic(|me| {
             Mutex::new(<span class="self">Self </span>{
-                realm,
                 me: me.clone(),
                 state: State::Ready,
-                context: T::new(),
+                context: Context::new(),
                 pcpu: <span class="prelude-val">None</span>,
             })
         })
@@ -168,7 +136,7 @@
 
     <span class="kw">pub fn </span>into_current(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">unsafe </span>{
-            T::into_current(<span class="self">self</span>);
+            Context::into_current(<span class="self">self</span>);
 
             core::mem::forget(<span class="self">self</span>.me.upgrade().unwrap());
         }
@@ -177,7 +145,7 @@
 
     <span class="kw">pub fn </span>from_current(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">unsafe </span>{
-            T::from_current(<span class="self">self</span>);
+            Context::from_current(<span class="self">self</span>);
 
             <span class="kw">let </span>ptr = Arc::into_raw(<span class="self">self</span>.me.upgrade().unwrap());
             Arc::decrement_strong_count(ptr);
@@ -187,11 +155,12 @@
     }
 
     <span class="kw">pub fn </span>is_realm_dead(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
-        Arc::strong_count(<span class="kw-2">&amp;</span><span class="self">self</span>.realm) == <span class="number">0
+        <span class="comment">// XXX: is this function necessary?
+        </span><span class="bool-val">false
     </span>}
 }
 
-<span class="kw">impl</span>&lt;T: Context&gt; Drop <span class="kw">for </span>VCPU&lt;T&gt; {
+<span class="kw">impl </span>Drop <span class="kw">for </span>VCPU {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="macro">info!</span>(<span class="string">&quot;VCPU dropeed!&quot;</span>);
     }
@@ -204,32 +173,33 @@
     Running = <span class="number">2</span>,
 }
 
-<span class="kw">pub unsafe fn </span>current() -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw-2">mut </span>VCPU&lt;<span class="kw">crate</span>::realm::context::Context&gt;&gt; {
+<span class="kw">pub unsafe fn </span>current() -&gt; <span class="prelude-ty">Option</span>&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span><span class="kw-2">mut </span>VCPU&gt; {
     <span class="kw">match </span>TPIDR_EL2.get() {
         <span class="number">0 </span>=&gt; <span class="prelude-val">None</span>,
-        current =&gt; <span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut *</span>(current <span class="kw">as </span><span class="kw-2">*mut </span>VCPU&lt;<span class="kw">crate</span>::realm::context::Context&gt;)),
+        current =&gt; <span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut *</span>(current <span class="kw">as </span><span class="kw-2">*mut </span>VCPU)),
     }
 }
 
-<span class="kw">pub fn </span>create_vcpu(id: usize) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
-    <span class="kw">let </span>realm = get_realm(id).ok_or(Error::RmiErrorInput)<span class="question-mark">?</span>;
+<span class="kw">pub fn </span>create_vcpu(rd: <span class="kw-2">&amp;mut </span>Rd) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
+    <span class="kw">let </span>page_table = rd.s2_table().lock().get_base_address();
+    <span class="kw">let </span>vttbr = bits_in_reg(VTTBR_EL2::VMID, rd.id() <span class="kw">as </span>u64)
+        | bits_in_reg(VTTBR_EL2::BADDR, page_table <span class="kw">as </span>u64);
 
-    <span class="kw">let </span>page_table = realm.lock().page_table.lock().get_base_address();
-    <span class="kw">let </span>vttbr =
-        bits_in_reg(VTTBR_EL2::VMID, id <span class="kw">as </span>u64) | bits_in_reg(VTTBR_EL2::BADDR, page_table <span class="kw">as </span>u64);
-
-    <span class="kw">let </span>vcpu = VCPU::new(realm.clone());
+    <span class="kw">let </span>vcpu = VCPU::new();
     vcpu.lock().context.sys_regs.vttbr = vttbr;
     timer::init_timer(<span class="kw-2">&amp;mut </span>vcpu.lock());
     gic::init_gic(<span class="kw-2">&amp;mut </span>vcpu.lock());
 
-    realm.lock().vcpus.push(vcpu);
-    <span class="kw">let </span>vcpuid = realm.lock().vcpus.len() - <span class="number">1</span>;
+    rd.vcpus.push(vcpu);
+    <span class="kw">let </span>vcpuid = rd.vcpus.len() - <span class="number">1</span>;
     <span class="prelude-val">Ok</span>(vcpuid)
 }
 
 <span class="kw">pub fn </span>remove(id: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-    RMS.lock().<span class="number">1</span>.remove(<span class="kw-2">&amp;</span>id).ok_or(Error::RmiErrorInput)<span class="question-mark">?</span>;
-    <span class="prelude-val">Ok</span>(())
+    VMID_SET
+        .lock()
+        .remove(<span class="kw-2">&amp;</span>id)
+        .then_some(())
+        .ok_or(Error::RmiErrorInput)
 }
 </code></pre></div></section></main></body></html>

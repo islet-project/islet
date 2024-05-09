@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["get_realm"],"static":["RMS"]};
+window.SIDEBAR_ITEMS = {"static":["VMID_SET"]};

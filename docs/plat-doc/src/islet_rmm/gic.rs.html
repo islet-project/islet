@@ -259,18 +259,10 @@
 <a href="#259" id="259">259</a>
 <a href="#260" id="260">260</a>
 <a href="#261" id="261">261</a>
-<a href="#262" id="262">262</a>
-<a href="#263" id="263">263</a>
-<a href="#264" id="264">264</a>
-<a href="#265" id="265">265</a>
-<a href="#266" id="266">266</a>
-<a href="#267" id="267">267</a>
-<a href="#268" id="268">268</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::realm::context::Context;
-<span class="kw">use </span><span class="kw">crate</span>::realm::registry::get_realm;
-<span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::VCPU;
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::VCPU;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::InternalError::<span class="kw-2">*</span>;
+<span class="kw">use </span><span class="kw">crate</span>::rmi::realm::Rd;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rec::run::Run;
 
 <span class="kw">use </span>armv9a::regs::<span class="kw-2">*</span>;
@@ -352,7 +344,7 @@
     };
 }
 
-<span class="kw">pub fn </span>init_gic(vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;Context&gt;) {
+<span class="kw">pub fn </span>init_gic(vcpu: <span class="kw-2">&amp;mut </span>VCPU) {
     <span class="kw">let </span>gic_state = <span class="kw-2">&amp;mut </span>vcpu.context.gic_state;
     gic_state.ich_hcr_el2 =
         ICH_HCR_EL2_EN_BIT | ICH_HCR_EL2_VSGIEEOICOUNT_BIT | ICH_HCR_EL2_DVIM_BIT
@@ -464,7 +456,7 @@
     }
 }
 
-<span class="kw">pub fn </span>restore_state(vcpu: <span class="kw-2">&amp;</span>VCPU&lt;Context&gt;) {
+<span class="kw">pub fn </span>restore_state(vcpu: <span class="kw-2">&amp;</span>VCPU) {
     <span class="kw">let </span>gic_state = <span class="kw-2">&amp;</span>vcpu.context.gic_state;
     <span class="kw">let </span>nr_lrs = GIC_FEATURES.nr_lrs;
     <span class="kw">let </span>nr_aprs = GIC_FEATURES.nr_aprs;
@@ -480,7 +472,7 @@
     <span class="kw">unsafe </span>{ ICH_HCR_EL2.set(gic_state.ich_hcr_el2) };
 }
 
-<span class="kw">pub fn </span>save_state(vcpu: <span class="kw-2">&amp;mut </span>VCPU&lt;Context&gt;) {
+<span class="kw">pub fn </span>save_state(vcpu: <span class="kw-2">&amp;mut </span>VCPU) {
     <span class="kw">let </span>gic_state = <span class="kw-2">&amp;mut </span>vcpu.context.gic_state;
     <span class="kw">let </span>nr_lrs = GIC_FEATURES.nr_lrs;
     <span class="kw">let </span>nr_aprs = GIC_FEATURES.nr_aprs;
@@ -500,38 +492,32 @@
     <span class="kw">unsafe </span>{ ICH_HCR_EL2.set(gic_state.ich_hcr_el2 &amp; !ICH_HCR_EL2_EN_BIT) };
 }
 
-<span class="kw">pub fn </span>receive_state_from_host(id: usize, vcpu: usize, run: <span class="kw-2">&amp;</span>Run) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-    <span class="kw">let </span>realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?</span>;
-    <span class="kw">let </span>locked_realm = realm.lock();
-    <span class="kw">let </span>vcpu = locked_realm
+<span class="kw">pub fn </span>receive_state_from_host(rd: <span class="kw-2">&amp;</span>Rd, vcpu: usize, run: <span class="kw-2">&amp;</span>Run) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">let </span>vcpu = rd
         .vcpus
         .get(vcpu)
         .ok_or(Error::RmiErrorOthers(NotExistVCPU))<span class="question-mark">?</span>;
     <span class="kw">let </span>gic_state = <span class="kw-2">&amp;mut </span>vcpu.lock().context.gic_state;
     <span class="kw">let </span>nr_lrs = GIC_FEATURES.nr_lrs;
 
-    gic_state.ich_lr_el2[..nr_lrs].copy_from_slice(<span class="kw-2">&amp;</span><span class="kw">unsafe </span>{ run.entry_gic_lrs() }[..nr_lrs]);
+    gic_state.ich_lr_el2[..nr_lrs].copy_from_slice(<span class="kw-2">&amp;</span>run.entry_gic_lrs()[..nr_lrs]);
     gic_state.ich_hcr_el2 &amp;= !ICH_HCR_EL2_NS_MASK;
-    gic_state.ich_hcr_el2 |= (<span class="kw">unsafe </span>{ run.entry_gic_hcr() } &amp; ICH_HCR_EL2_NS_MASK);
+    gic_state.ich_hcr_el2 |= run.entry_gic_hcr() &amp; ICH_HCR_EL2_NS_MASK;
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub fn </span>send_state_to_host(id: usize, vcpu: usize, run: <span class="kw-2">&amp;mut </span>Run) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-    <span class="kw">let </span>realm = get_realm(id).ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?</span>;
-    <span class="kw">let </span><span class="kw-2">mut </span>locked_realm = realm.lock();
-    <span class="kw">let </span>vcpu = locked_realm
+<span class="kw">pub fn </span>send_state_to_host(rd: <span class="kw-2">&amp;mut </span>Rd, vcpu: usize, run: <span class="kw-2">&amp;mut </span>Run) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">let </span>vcpu = rd
         .vcpus
         .get_mut(vcpu)
         .ok_or(Error::RmiErrorOthers(NotExistVCPU))<span class="question-mark">?</span>;
     <span class="kw">let </span>gic_state = <span class="kw-2">&amp;mut </span>vcpu.lock().context.gic_state;
     <span class="kw">let </span>nr_lrs = GIC_FEATURES.nr_lrs;
 
-    (<span class="kw">unsafe </span>{ run.exit_gic_lrs_mut() }[..nr_lrs]).copy_from_slice(<span class="kw-2">&amp;</span>gic_state.ich_lr_el2[..nr_lrs]);
-    <span class="kw">unsafe </span>{
-        run.set_gic_misr(gic_state.ich_misr_el2);
-        run.set_gic_vmcr(gic_state.ich_vmcr_el2);
-        run.set_gic_hcr(gic_state.ich_hcr_el2 &amp; (ICH_HCR_EL2_EOI_COUNT_MASK | ICH_HCR_EL2_NS_MASK));
-    }
+    run.exit_gic_lrs_mut()[..nr_lrs].copy_from_slice(<span class="kw-2">&amp;</span>gic_state.ich_lr_el2[..nr_lrs]);
+    run.set_gic_misr(gic_state.ich_misr_el2);
+    run.set_gic_vmcr(gic_state.ich_vmcr_el2);
+    run.set_gic_hcr(gic_state.ich_hcr_el2 &amp; (ICH_HCR_EL2_EOI_COUNT_MASK | ICH_HCR_EL2_NS_MASK));
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div></section></main></body></html>

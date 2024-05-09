@@ -62,6 +62,19 @@
 <a href="#62" id="62">62</a>
 <a href="#63" id="63">63</a>
 <a href="#64" id="64">64</a>
+<a href="#65" id="65">65</a>
+<a href="#66" id="66">66</a>
+<a href="#67" id="67">67</a>
+<a href="#68" id="68">68</a>
+<a href="#69" id="69">69</a>
+<a href="#70" id="70">70</a>
+<a href="#71" id="71">71</a>
+<a href="#72" id="72">72</a>
+<a href="#73" id="73">73</a>
+<a href="#74" id="74">74</a>
+<a href="#75" id="75">75</a>
+<a href="#76" id="76">76</a>
+<a href="#77" id="77">77</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::asm::{smc, SMC_SUCCESS};
 <span class="kw">use </span><span class="kw">crate</span>::event::Mainloop;
 <span class="kw">use </span><span class="kw">crate</span>::granule::{set_granule, GranuleState};
@@ -79,11 +92,12 @@
 <span class="kw">extern crate </span>alloc;
 
 <span class="comment">// defined in trusted-firmware-a/include/services/rmmd_svc.h
-</span><span class="kw">const </span>MARK_REALM: usize = <span class="number">0xc400_01b0</span>;
-<span class="kw">const </span>MARK_NONSECURE: usize = <span class="number">0xc400_01b1</span>;
+</span><span class="kw">pub const </span>MARK_REALM: usize = <span class="number">0xc400_01b0</span>;
+<span class="kw">pub const </span>MARK_NONSECURE: usize = <span class="number">0xc400_01b1</span>;
 
 <span class="kw">pub fn </span>set_event_handler(mainloop: <span class="kw-2">&amp;mut </span>Mainloop) {
-    <span class="macro">listen!</span>(mainloop, rmi::GRANULE_DELEGATE, |arg, <span class="kw">_</span>, rmm| {
+    <span class="attr">#[cfg(any(not(kani), feature = <span class="string">&quot;mc_rmi_granule_delegate&quot;</span>))]
+    </span><span class="macro">listen!</span>(mainloop, rmi::GRANULE_DELEGATE, |arg, <span class="kw">_</span>, rmm| {
         <span class="kw">let </span>addr = arg[<span class="number">0</span>];
         <span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]
         </span><span class="kw">let </span><span class="kw-2">mut </span>granule = <span class="kw">match </span><span class="macro">get_granule_if!</span>(addr, GranuleState::Undelegated) {
@@ -96,17 +110,23 @@
         <span class="kw">if </span>smc(MARK_REALM, <span class="kw-2">&amp;</span>[addr])[<span class="number">0</span>] != SMC_SUCCESS {
             <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
         }
-
-        rmm.page_table.map(addr, <span class="bool-val">true</span>);
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `page_table` is currently not reachable in model checking harnesses
+        </span>rmm.page_table.map(addr, <span class="bool-val">true</span>);
         set_granule(<span class="kw-2">&amp;mut </span>granule, GranuleState::Delegated).map_err(|e| {
-            rmm.page_table.unmap(addr);
+            <span class="attr">#[cfg(not(kani))]
+            </span><span class="comment">// `page_table` is currently not reachable in model checking harnesses
+            </span>rmm.page_table.unmap(addr);
             e
         })<span class="question-mark">?</span>;
-        rmm.page_table.unmap(addr);
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `page_table` is currently not reachable in model checking harnesses
+        </span>rmm.page_table.unmap(addr);
         <span class="prelude-val">Ok</span>(())
     });
 
-    <span class="macro">listen!</span>(mainloop, rmi::GRANULE_UNDELEGATE, |arg, <span class="kw">_</span>, rmm| {
+    <span class="attr">#[cfg(any(not(kani), feature = <span class="string">&quot;mc_rmi_granule_undelegate&quot;</span>))]
+    </span><span class="macro">listen!</span>(mainloop, rmi::GRANULE_UNDELEGATE, |arg, <span class="kw">_</span>, rmm| {
         <span class="kw">let </span>addr = arg[<span class="number">0</span>];
         <span class="kw">let </span><span class="kw-2">mut </span>granule = <span class="macro">get_granule_if!</span>(addr, GranuleState::Delegated)<span class="question-mark">?</span>;
 
@@ -117,12 +137,18 @@
             );
         }
 
-        rmm.page_table.map(addr, <span class="bool-val">false</span>);
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `page_table` is currently not reachable in model checking harnesses
+        </span>rmm.page_table.map(addr, <span class="bool-val">false</span>);
         set_granule(<span class="kw-2">&amp;mut </span>granule, GranuleState::Undelegated).map_err(|e| {
-            rmm.page_table.unmap(addr);
+            <span class="attr">#[cfg(not(kani))]
+            </span><span class="comment">// `page_table` is currently not reachable in model checking harnesses
+            </span>rmm.page_table.unmap(addr);
             e
         })<span class="question-mark">?</span>;
-        rmm.page_table.unmap(addr);
+        <span class="attr">#[cfg(not(kani))]
+        </span><span class="comment">// `page_table` is currently not reachable in model checking harnesses
+        </span>rmm.page_table.unmap(addr);
         <span class="prelude-val">Ok</span>(())
     });
 }

@@ -403,40 +403,6 @@
 <a href="#403" id="403">403</a>
 <a href="#404" id="404">404</a>
 <a href="#405" id="405">405</a>
-<a href="#406" id="406">406</a>
-<a href="#407" id="407">407</a>
-<a href="#408" id="408">408</a>
-<a href="#409" id="409">409</a>
-<a href="#410" id="410">410</a>
-<a href="#411" id="411">411</a>
-<a href="#412" id="412">412</a>
-<a href="#413" id="413">413</a>
-<a href="#414" id="414">414</a>
-<a href="#415" id="415">415</a>
-<a href="#416" id="416">416</a>
-<a href="#417" id="417">417</a>
-<a href="#418" id="418">418</a>
-<a href="#419" id="419">419</a>
-<a href="#420" id="420">420</a>
-<a href="#421" id="421">421</a>
-<a href="#422" id="422">422</a>
-<a href="#423" id="423">423</a>
-<a href="#424" id="424">424</a>
-<a href="#425" id="425">425</a>
-<a href="#426" id="426">426</a>
-<a href="#427" id="427">427</a>
-<a href="#428" id="428">428</a>
-<a href="#429" id="429">429</a>
-<a href="#430" id="430">430</a>
-<a href="#431" id="431">431</a>
-<a href="#432" id="432">432</a>
-<a href="#433" id="433">433</a>
-<a href="#434" id="434">434</a>
-<a href="#435" id="435">435</a>
-<a href="#436" id="436">436</a>
-<a href="#437" id="437">437</a>
-<a href="#438" id="438">438</a>
-<a href="#439" id="439">439</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::granule::GRANULE_SIZE;
 <span class="kw">use </span><span class="kw">crate</span>::granule::{set_granule, GranuleState};
 <span class="kw">use </span><span class="kw">crate</span>::mm::translation::PageTable;
@@ -445,9 +411,7 @@
 <span class="kw">use </span><span class="kw">crate</span>::realm::mm::page_table::pte::{permission, shareable};
 <span class="kw">use </span><span class="kw">crate</span>::realm::mm::stage2_tte::{desc_type, invalid_hipas, invalid_ripas};
 <span class="kw">use </span><span class="kw">crate</span>::realm::mm::stage2_tte::{RttPage, INVALID_UNPROTECTED, S2TTE};
-<span class="kw">use </span><span class="kw">crate</span>::realm::registry::get_realm;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
-<span class="kw">use </span><span class="kw">crate</span>::rmi::error::InternalError::<span class="kw-2">*</span>;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::realm::Rd;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rtt::RTT_PAGE_LEVEL;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rtt::S2TTE_STRIDE;
@@ -455,11 +419,11 @@
 <span class="kw">use crate</span>::{get_granule, get_granule_if};
 <span class="kw">use </span>armv9a::bits_in_reg;
 
-<span class="kw">pub fn </span>create(id: usize, rtt_addr: usize, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+<span class="kw">pub fn </span>create(rd: <span class="kw-2">&amp;</span>Rd, rtt_addr: usize, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
     <span class="kw">let </span><span class="kw-2">mut </span>rtt_granule = <span class="macro">get_granule_if!</span>(rtt_addr, GranuleState::Delegated)<span class="question-mark">?</span>;
     <span class="kw">let </span>s2tt = rtt_granule.content_mut::&lt;RttPage&gt;();
 
-    <span class="kw">let </span>(parent_s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level - <span class="number">1</span>, Error::RmiErrorInput)<span class="question-mark">?</span>;
+    <span class="kw">let </span>(parent_s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level - <span class="number">1</span>, Error::RmiErrorInput)<span class="question-mark">?</span>;
 
     <span class="kw">if </span>last_level != level - <span class="number">1 </span>{
         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorRtt(last_level));
@@ -527,10 +491,7 @@
     set_granule(<span class="kw-2">&amp;mut </span>rtt_granule, GranuleState::RTT)<span class="question-mark">?</span>;
 
     <span class="kw">let </span>parent_s2tte = rtt_addr <span class="kw">as </span>u64 | bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_TABLE);
-    get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-        </span>.lock()
-        .page_table
+    rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level - <span class="number">1</span>, parent_s2tte)<span class="question-mark">?</span>;
 
@@ -541,8 +502,7 @@
 }
 
 <span class="kw">pub fn </span>destroy(rd: <span class="kw-2">&amp;</span>Rd, rtt_addr: usize, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-    <span class="kw">let </span>id = rd.id();
-    <span class="kw">let </span>(parent_s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level - <span class="number">1</span>, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>(parent_s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level - <span class="number">1</span>, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
 
     <span class="kw">if </span>last_level != level - <span class="number">1 </span>{
         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorRtt(last_level));
@@ -569,10 +529,7 @@
         INVALID_UNPROTECTED
     };
 
-    get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-        </span>.lock()
-        .page_table
+    rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level - <span class="number">1</span>, parent_s2tte)<span class="question-mark">?</span>;
 
@@ -580,8 +537,8 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub fn </span>init_ripas(id: usize, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
+<span class="kw">pub fn </span>init_ripas(rd: <span class="kw-2">&amp;</span>Rd, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
 
     <span class="kw">if </span>level != last_level {
         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorRtt(last_level));
@@ -594,18 +551,15 @@
     <span class="kw">let </span><span class="kw-2">mut </span>new_s2tte = s2tte.get();
     new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::RAM);
 
-    get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-        </span>.lock()
-        .page_table
+    rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub fn </span>get_ripas(id: usize, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;u64, Error&gt; {
-    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
+<span class="kw">pub fn </span>get_ripas(rd: <span class="kw-2">&amp;</span>Rd, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;u64, Error&gt; {
+    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
 
     <span class="kw">if </span>level != last_level {
         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorRtt(last_level));
@@ -618,8 +572,8 @@
     <span class="prelude-val">Ok</span>(s2tte.get_ripas())
 }
 
-<span class="kw">pub fn </span>read_entry(id: usize, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;[usize; <span class="number">4</span>], Error&gt; {
-    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
+<span class="kw">pub fn </span>read_entry(rd: <span class="kw-2">&amp;</span>Rd, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;[usize; <span class="number">4</span>], Error&gt; {
+    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
 
     <span class="kw">let </span>r1 = last_level;
     <span class="kw">let </span>(<span class="kw-2">mut </span>r2, <span class="kw-2">mut </span>r3, <span class="kw-2">mut </span>r4) = (<span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);
@@ -673,8 +627,7 @@
         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
     }
 
-    <span class="kw">let </span>id = rd.id();
-    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
 
     <span class="kw">if </span>level != last_level {
         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorRtt(last_level));
@@ -697,18 +650,15 @@
             | bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_BLOCK);
     }
 
-    get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-        </span>.lock()
-        .page_table
+    rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub fn </span>unmap_unprotected(id: usize, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
+<span class="kw">pub fn </span>unmap_unprotected(rd: <span class="kw-2">&amp;</span>Rd, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
 
     <span class="kw">if </span>level != last_level {
         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorRtt(last_level));
@@ -720,10 +670,7 @@
 
     <span class="kw">let </span>new_s2tte: u64 = INVALID_UNPROTECTED;
 
-    get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-        </span>.lock()
-        .page_table
+    rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)<span class="question-mark">?</span>;
 
@@ -732,8 +679,8 @@
     </span><span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub fn </span>make_shared(id: usize, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
+<span class="kw">pub fn </span>make_shared(rd: <span class="kw-2">&amp;</span>Rd, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
 
     <span class="kw">if </span>level != last_level {
         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorRtt(last_level)); <span class="comment">//XXX: check this again
@@ -751,10 +698,7 @@
         flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
         <span class="kw">let </span>new_s2tte = pa <span class="kw">as </span>u64 | flags;
 
-        get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-            </span>.lock()
-            .page_table
+        rd.s2_table()
             .lock()
             .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)<span class="question-mark">?</span>;
     } <span class="kw">else if </span>s2tte.is_unassigned() || s2tte.is_assigned() {
@@ -762,10 +706,7 @@
         </span><span class="kw">let </span>flags = bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
         <span class="kw">let </span>new_s2tte = pa <span class="kw">as </span>u64 | flags;
 
-        get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-            </span>.lock()
-            .page_table
+        rd.s2_table()
             .lock()
             .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)<span class="question-mark">?</span>;
     }
@@ -773,8 +714,8 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub fn </span>make_exclusive(id: usize, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
+<span class="kw">pub fn </span>make_exclusive(rd: <span class="kw-2">&amp;</span>Rd, ipa: usize, level: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
 
     <span class="kw">if </span>level != last_level {
         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorRtt(last_level)); <span class="comment">//XXX: check this again
@@ -786,10 +727,7 @@
         <span class="kw">let </span>flags = bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::RAM);
         <span class="kw">let </span>new_s2tte = s2tte.get() | flags;
 
-        get_realm(id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-            </span>.lock()
-            .page_table
+        rd.s2_table()
             .lock()
             .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)<span class="question-mark">?</span>;
     } <span class="kw">else </span>{
@@ -799,9 +737,9 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub fn </span>data_create(id: usize, ipa: usize, target_pa: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+<span class="kw">pub fn </span>data_create(rd: <span class="kw-2">&amp;</span>Rd, ipa: usize, target_pa: usize) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
     <span class="kw">let </span>level = RTT_PAGE_LEVEL;
-    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
 
     <span class="kw">if </span>level != last_level {
         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorRtt(last_level));
@@ -831,19 +769,16 @@
         <span class="macro">panic!</span>(<span class="string">&quot;Unexpected ripas: {}&quot;</span>, ripas);
     }
 
-    get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-        </span>.lock()
-        .page_table
+    rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)<span class="question-mark">?</span>;
 
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub fn </span>data_destroy(id: usize, ipa: usize) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
+<span class="kw">pub fn </span>data_destroy(rd: <span class="kw-2">&amp;</span>Rd, ipa: usize) -&gt; <span class="prelude-ty">Result</span>&lt;usize, Error&gt; {
     <span class="kw">let </span>level = RTT_PAGE_LEVEL;
-    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
+    <span class="kw">let </span>(s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(<span class="number">0</span>))<span class="question-mark">?</span>;
 
     <span class="kw">if </span>last_level != level {
         <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorRtt(last_level));
@@ -867,10 +802,7 @@
         flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
     }
     <span class="kw">let </span>new_s2tte = flags;
-    get_realm(id)
-        .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-        </span>.lock()
-        .page_table
+    rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)<span class="question-mark">?</span>;
 

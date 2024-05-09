@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["set_event_handler"]};
+window.SIDEBAR_ITEMS = {"constant":["MARK_NONSECURE","MARK_REALM"],"fn":["set_event_handler"]};

@@ -91,7 +91,6 @@
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::event::Mainloop;
 <span class="kw">use </span><span class="kw">crate</span>::listen;
 <span class="kw">use </span><span class="kw">crate</span>::rmi;
-<span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
 
 <span class="kw">extern crate </span>alloc;
 
@@ -135,7 +134,8 @@
 <span class="kw">pub fn </span>set_event_handler(mainloop: <span class="kw-2">&amp;mut </span>Mainloop) {
     <span class="macro">listen!</span>(mainloop, rmi::FEATURES, |arg, ret, <span class="kw">_</span>| {
         <span class="kw">if </span>arg[<span class="number">0</span>] != FEATURE_REGISTER_0_INDEX {
-            <span class="kw">return </span><span class="prelude-val">Err</span>(Error::RmiErrorInput);
+            ret[<span class="number">1</span>] = <span class="number">0</span>;
+            <span class="kw">return </span><span class="prelude-val">Ok</span>(());
         }
 
         <span class="kw">let </span><span class="kw-2">mut </span>feat_reg0: usize = <span class="number">0</span>;

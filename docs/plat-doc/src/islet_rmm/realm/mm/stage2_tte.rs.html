@@ -168,16 +168,14 @@
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
-<a href="#171" id="171">171</a>
-<a href="#172" id="172">172</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span>core::mem::size_of;
 <span class="kw">use </span>vmsa::address::PhysAddr;
 
 <span class="kw">use </span><span class="kw">super</span>::address::GuestPhysAddr;
 <span class="kw">use </span><span class="kw">crate</span>::granule::GRANULE_SIZE;
 <span class="kw">use </span><span class="kw">crate</span>::realm::mm::page_table::pte::{attribute, shareable};
-<span class="kw">use </span><span class="kw">crate</span>::realm::registry::get_realm;
-<span class="kw">use </span><span class="kw">crate</span>::rmi::error::{Error, InternalError::NotExistRealm};
+<span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
+<span class="kw">use </span><span class="kw">crate</span>::rmi::realm::Rd;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rtt::{RTT_MIN_BLOCK_LEVEL, RTT_PAGE_LEVEL};
 <span class="kw">use </span>armv9a::{define_bitfield, define_bits, define_mask};
 <span class="kw">use </span>vmsa::guard::Content;
@@ -249,15 +247,13 @@
 
 <span class="kw">impl </span>S2TTE {
     <span class="kw">pub fn </span>get_s2tte(
-        realm_id: usize,
+        rd: <span class="kw-2">&amp;</span>Rd,
         ipa: usize,
         level: usize,
         error_code: Error,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;(S2TTE, usize), Error&gt; {
-        <span class="kw">let </span>(s2tte, last_level) = get_realm(realm_id)
-            .ok_or(Error::RmiErrorOthers(NotExistRealm))<span class="question-mark">?
-            </span>.lock()
-            .page_table
+        <span class="kw">let </span>(s2tte, last_level) = rd
+            .s2_table()
             .lock()
             .ipa_to_pte(GuestPhysAddr::from(ipa), level)
             .ok_or(error_code)<span class="question-mark">?</span>;

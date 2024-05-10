@@ -2,7 +2,6 @@ use super::mpidr::MPIDR;
 use super::params::Params;
 use super::run::{Run, REC_ENTRY_FLAG_TRAP_WFE, REC_ENTRY_FLAG_TRAP_WFI};
 use super::vtcr::{activate_stage2_mmu, prepare_vtcr};
-use super::Rec;
 use crate::event::Mainloop;
 #[cfg(feature = "gst_page_table")]
 use crate::granule::{set_granule, set_granule_with_parent, GranuleState};
@@ -14,10 +13,11 @@ use crate::measurement::HashContext;
 use crate::realm::context::set_reg;
 use crate::realm::rd::{Rd, State};
 use crate::realm::vcpu::create_vcpu;
+use crate::realm::vcpu::State as RecState;
+use crate::rec::Rec;
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmi::rec::exit::handle_realm_exit;
-use crate::rmi::rec::RecState;
 use crate::rsi::do_host_call;
 use crate::{get_granule, get_granule_if};
 
@@ -171,11 +171,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
             let rd = rd_granule.content::<Rd>();
             rec.set_state(RecState::Running);
-            crate::rmi::rec::run_prepare(rd, rec.vcpuid(), 0)?;
+            crate::rec::run_prepare(rd, rec.vcpuid(), 0)?;
             // XXX: we explicitly release Rd's lock here, because RSI calls
             //      would acquire the same lock again (deadlock).
             core::mem::drop(rd_granule);
-            match crate::rmi::rec::run() {
+            match crate::rec::run() {
                 Ok(realm_exit_res) => {
                     (ret_ns, ret[0]) = handle_realm_exit(realm_exit_res, rmm, rec, &mut run)?
                 }

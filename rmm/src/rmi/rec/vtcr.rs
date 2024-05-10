@@ -1,5 +1,5 @@
-use super::Rec;
 use crate::realm::rd::Rd;
+use crate::rec::Rec;
 use crate::rmi::error::Error;
 use armv9a::bits_in_reg;
 use armv9a::regs::*;

@@ -26,6 +26,7 @@ pub mod mmio;
 #[cfg(not(any(test, kani)))]
 pub mod panic;
 pub mod realm;
+pub mod rec;
 pub mod rmi;
 pub mod rsi;
 pub mod rtt;

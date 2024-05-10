@@ -3,9 +3,9 @@ use crate::granule::GranuleState;
 use crate::listen;
 use crate::realm::context::{get_reg, set_reg};
 use crate::realm::rd::{Rd, State};
+use crate::rec::Rec;
 use crate::rmi;
 use crate::rmi::rec::run::Run;
-use crate::rmi::rec::Rec;
 use crate::Monitor;
 use crate::{get_granule, get_granule_if};
 

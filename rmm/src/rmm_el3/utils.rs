@@ -7,7 +7,7 @@ pub(super) fn va_to_vec(ptr: usize, len: usize) -> Vec<u8> {
     unsafe { slice::from_raw_parts(ptr, len).to_vec() }
 }
 
-pub(super) fn vec_to_va(vec: &Vec<u8>, ptr: usize, len: usize) {
+pub(super) fn vec_to_va(vec: &[u8], ptr: usize, len: usize) {
     // safety check
     if vec.len() > len {
         panic!("Vector too long");

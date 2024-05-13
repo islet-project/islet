@@ -1,3 +1,5 @@
+use core::ptr::addr_of_mut;
+
 #[link_section = ".head.text"]
 #[no_mangle]
 unsafe extern "C" fn _entry() -> ! {
@@ -22,7 +24,7 @@ unsafe fn setup() {
         static mut __BSS_SIZE__: usize;
     }
 
-    clear_bss(&mut __BSS_START__, &mut __BSS_SIZE__);
+    clear_bss(addr_of_mut!(__BSS_START__), addr_of_mut!(__BSS_SIZE__));
 }
 
 unsafe fn clear_bss(mut sbss: *mut usize, ebss: *mut usize) {

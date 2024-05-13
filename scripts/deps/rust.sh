@@ -18,4 +18,6 @@ rustup component add rust-src rustfmt
 rustup target add aarch64-unknown-linux-gnu
 rustup component add clippy
 
+cargo install cargo-bloat cbindgen mdbook
+
 rustc --version --verbose

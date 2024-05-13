@@ -312,15 +312,31 @@ def prepare_nw_aosp(no_prebuilt_initrd):
 
 
 def prepare_kvmtool(lkvm="lkvm"):
+    # for kvmtool
     print("[!] Building kvmtool...")
     args = [
         "CROSS_COMPILE=%s" % KVMTOOL_CROSS_COMPILE,
         "ARCH=arm64",
+        "CLOAK_VM=no",
         "LIBFDT_DIR=%s/libfdt" % DTC,
         lkvm,
     ]
     make(KVMTOOL, args)
     run(["cp", "%s/%s" % (KVMTOOL, lkvm), OUT], cwd=ROOT)
+
+    # for vm
+    '''
+    print("[!] Building kvmtool vm...")
+    args = [
+        "CROSS_COMPILE=%s" % KVMTOOL_CROSS_COMPILE,
+        "ARCH=arm64",
+        "CLOAK_VM=yes",
+        "LIBFDT_DIR=%s/libfdt" % DTC,
+        "lkvm_vm",
+    ]
+    make(KVMTOOL, args)
+    run(["cp", "%s/%s" % (KVMTOOL, "lkvm_vm"), OUT], cwd=ROOT)
+    '''
 
 def prepare_kvm_unit_tests():
     print("[!] Building kvm-unit-tests...")

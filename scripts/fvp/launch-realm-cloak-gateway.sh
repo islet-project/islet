@@ -2,8 +2,6 @@
 
 cd /shared
 
-./configure-net.sh &
-
 ./lkvm run \
 	--debug \
 	--realm \
@@ -11,7 +9,6 @@ cd /shared
 	--disable-sve \
 	--console serial \
 	--irqchip=gicv3 \
-	--network virtio \
 	--9p /shared,FMR \
 	--vcpu-affinity 2-3 \
 	-m 256M \

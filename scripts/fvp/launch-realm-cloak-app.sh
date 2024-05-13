@@ -2,6 +2,8 @@
 
 cd /shared
 
+./configure-net.sh &
+
 ./lkvm run \
 	--debug \
 	--realm \
@@ -9,6 +11,8 @@ cd /shared
 	--disable-sve \
 	--console serial \
 	--irqchip=gicv3 \
+	--network virtio \
+	--9p /shared,FMR \
 	--realm-pv="no_shared_region" \
 	--vcpu-affinity 0-1 \
 	-m 256M \
@@ -16,3 +20,6 @@ cd /shared
 	-k linux.realm \
 	-i rootfs-realm.cpio.gz \
 	-p "earlycon=ttyS0 printk.devkmsg=on no_shared_region=on"
+
+#	--realm-pv="no_shared_region" \
+#  no_shared_region=on

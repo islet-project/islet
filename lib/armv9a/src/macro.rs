@@ -21,6 +21,7 @@ macro_rules! define_sys_register {
         pub mod $regname {
             pub struct Register;
             impl Register {
+                /// # Safety
                 #[inline(always)]
                 pub unsafe fn get(&self) -> u64 {
                     let rtn;
@@ -31,6 +32,7 @@ macro_rules! define_sys_register {
                     rtn
                 }
 
+                /// # Safety
                 #[inline(always)]
                 pub unsafe fn get_masked(&self, mask: u64) -> u64 {
                     let rtn: u64;
@@ -41,6 +43,7 @@ macro_rules! define_sys_register {
                     rtn & mask
                 }
 
+                /// # Safety
                 #[inline(always)]
                 pub unsafe fn get_masked_value(&self, mask: u64) -> u64 {
                     let rtn: u64;
@@ -51,6 +54,7 @@ macro_rules! define_sys_register {
                     (rtn & mask) >> (mask.trailing_zeros())
                 }
 
+                /// # Safety
                 #[inline(always)]
                 pub unsafe fn set(&self, val: u64) {
                     core::arch::asm! {
@@ -76,6 +80,7 @@ macro_rules! define_register {
         pub mod $regname {
             pub struct Register;
             impl Register {
+                /// # Safety
                 #[inline(always)]
                 pub unsafe fn get(&self) -> u64 {
                     let rtn;
@@ -86,6 +91,7 @@ macro_rules! define_register {
                     rtn
                 }
 
+                /// # Safety
                 #[inline(always)]
                 pub unsafe fn get_masked(&self, mask: u64) -> u64 {
                     let rtn: u64;
@@ -96,6 +102,7 @@ macro_rules! define_register {
                     rtn & mask
                 }
 
+                /// # Safety
                 #[inline(always)]
                 pub unsafe fn get_masked_value(&self, mask: u64) -> u64 {
                     let rtn: u64;
@@ -106,6 +113,7 @@ macro_rules! define_register {
                     (rtn & mask) >> (mask.trailing_zeros())
                 }
 
+                /// # Safety
                 #[inline(always)]
                 pub unsafe fn set(&self, val: u64) {
                     core::arch::asm! {

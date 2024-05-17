@@ -45,6 +45,7 @@ mod rmm_el3;
 
 extern crate alloc;
 
+#[cfg(not(feature = "gst_page_table"))]
 #[macro_use]
 extern crate lazy_static;
 

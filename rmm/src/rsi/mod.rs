@@ -131,7 +131,11 @@ pub fn do_host_call(
             }
             rec.set_host_call_pending(false);
         } else {
+            //info!("HOST_CALL imm: {}, gpr0: {}", host_call.imm(), host_call.gpr(0));
+
             run.set_imm(host_call.imm());
+            let _ = run.set_gpr(0, host_call.gpr(0));
+
             run.set_exit_reason(rmi::EXIT_HOST_CALL);
             rec.set_host_call_pending(true);
         }
@@ -610,7 +614,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let channel = LocalChannel::create(channel_id, realmid, ipa, size);
         LOCAL_CHANNEL_TABLE.lock().insert(channel_id, channel);
 
-        info!("[JB] CHANNEL_CREATE success! realmid: {}, ipa: {:x}, size: {:x}", realmid, ipa, size);
+        info!("[JB] CHANNEL_CREATE success! channel_id: {}, realmid: {}, ipa: {:x}, size: {:x}", channel_id, realmid, ipa, size);
         set_reg(realmid, vcpuid, 0, SUCCESS)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())

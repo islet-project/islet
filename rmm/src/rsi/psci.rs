@@ -150,8 +150,8 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
     });
 
     listen!(rsi, rsi::PSCI_AFFINITY_INFO, |_arg, ret, _rmm, rec, run| {
-        let rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd.content::<Rd>();
+        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
         let vcpuid = rec.vcpuid();
 
         let affinity = get_reg(rd, vcpuid, 1)? as u64;
@@ -166,7 +166,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let target_index = MPIDR::from(affinity).index();
         // check if target_index is in the range
         #[cfg(feature = "gst_page_table")]
-        if target_index >= rd.num_children() {
+        if target_index >= rd_granule.num_children() {
             set_reg(rd, vcpuid, 0, PsciReturn::INVALID_PARAMS)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());

@@ -10,8 +10,8 @@ use crate::measurement::HashContext;
 use crate::mm::translation::PageTable;
 use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::IPATranslation;
-use crate::realm::rd::Rd;
 use crate::realm::rd::State;
+use crate::realm::rd::{insert_rtt, Rd};
 use crate::realm::registry::VMID_SET;
 use crate::realm::vcpu::remove;
 use crate::rmi;
@@ -62,18 +62,19 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // revisit rmi.create_realm() (is it necessary?)
         create_realm(params.vmid as usize).map(|_| {
-            let s2_table = Arc::new(Mutex::new(Box::new(Stage2Translation::new(
+            let s2 = Box::new(Stage2Translation::new(
                 params.rtt_base as usize,
                 params.rtt_level_start as usize,
                 params.rtt_num_start as usize,
-            )) as Box<dyn IPATranslation>));
+            )) as Box<dyn IPATranslation>;
+
+            insert_rtt(params.vmid as usize, Arc::new(Mutex::new(s2)));
 
             rd_obj.init(
                 params.vmid,
                 params.rtt_base as usize,
                 params.ipa_bits(),
                 params.rtt_level_start as isize,
-                s2_table,
             )
         })?;
 

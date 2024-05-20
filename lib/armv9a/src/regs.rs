@@ -415,16 +415,15 @@ define_sys_register!(
     DFB[1 - 1],
     SRE[0 - 0]
 );
-//CNTHCTL_EL2: S3_4_C14_C1_0
-define_sys_register!(S3_4_C14_C1_0, EL1PCTEN[11 - 11], EL1PTEN[10 - 10]);
 
-define_sys_register!(CNTVOFF_EL2);
-define_sys_register!(CNTV_CVAL_EL0);
-define_sys_register!(CNTV_CTL_EL0);
-define_sys_register!(S3_4_C14_C0_6); // CNTPOFF_EL2
-define_sys_register!(CNTP_CVAL_EL0);
+define_sys_register!(CNTHCTL_EL2, EL1PCTEN[11 - 11], EL1PTEN[10 - 10]);
+define_sys_register!(CNTPOFF_EL2);
 define_sys_register!(CNTP_CTL_EL0);
+define_sys_register!(CNTP_CVAL_EL0);
 define_sys_register!(CNTVCT_EL0);
+define_sys_register!(CNTVOFF_EL2);
+define_sys_register!(CNTV_CTL_EL0);
+define_sys_register!(CNTV_CVAL_EL0);
 define_sys_register!(CNTV_TVAL_EL0);
 
 macro_rules! define_iss_id {

@@ -125,12 +125,11 @@ pub fn do_host_call(
 }
 
 fn get_token_part(
+    rd: &Rd,
     context: &mut Rec<'_>,
     size: usize,
 ) -> core::result::Result<(Vec<u8>, usize), Error> {
-    let rd_granule = get_granule_if!(context.owner()?, GranuleState::RD)?;
-    let rd = rd_granule.content::<Rd>();
-    let hash_algo = rd.hash_algo(); // Rd dropped
+    let hash_algo = rd.hash_algo();
     let measurements = rd.measurements;
 
     // FIXME: This should be stored instead of generating it for every call.
@@ -215,7 +214,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         #[cfg(not(kani))]
         // `rsi` is currently not reachable in model checking harnesses
         {
-            let (token_part, token_left) = get_token_part(rec, buffer_size)?;
+            let (token_part, token_left) = get_token_part(rd, rec, buffer_size)?;
 
             unsafe {
                 let pa_ptr = attest_pa as *mut u8;
@@ -320,8 +319,8 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, MEASUREMENT_EXTEND, |_arg, ret, _rmm, rec, _| {
         let vcpuid = rec.vcpuid();
-        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let mut rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content_mut::<Rd>();
 
         let index = get_reg(rd, vcpuid, 1)?;
         let size = get_reg(rd, vcpuid, 2)?;
@@ -342,8 +341,6 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             return Ok(());
         }
 
-        let mut rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd.content_mut::<Rd>();
         #[cfg(not(kani))]
         // `rsi` is currently not reachable in model checking harnesses
         HashContext::new(rd)?.extend_measurement(&buffer[0..size], index)?;

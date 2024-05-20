@@ -3,7 +3,6 @@ use crate::rmi::rtt::realm_par_size;
 use vmsa::guard::Content;
 
 use crate::measurement::{Measurement, MEASUREMENTS_SLOT_NR};
-use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::IPATranslation;
 use crate::realm::vcpu::VCPU;
 use alloc::boxed::Box;

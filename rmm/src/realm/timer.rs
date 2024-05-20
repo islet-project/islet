@@ -8,7 +8,7 @@ use armv9a::regs::*;
 
 pub fn init_timer(vcpu: &mut VCPU) {
     let timer = &mut vcpu.context.timer;
-    timer.cnthctl_el2 = S3_4_C14_C1_0::EL1PCTEN | S3_4_C14_C1_0::EL1PTEN;
+    timer.cnthctl_el2 = CNTHCTL_EL2::EL1PCTEN | CNTHCTL_EL2::EL1PTEN;
 }
 
 pub fn set_cnthctl(vcpu: &mut VCPU, val: u64) {
@@ -20,12 +20,12 @@ pub fn restore_state(vcpu: &VCPU) {
     let timer = &vcpu.context.timer;
 
     unsafe { CNTVOFF_EL2.set(timer.cntvoff_el2) };
-    unsafe { S3_4_C14_C0_6.set(timer.cntpoff_el2) }; // CNTPOFF_EL2
+    unsafe { CNTPOFF_EL2.set(timer.cntpoff_el2) };
     unsafe { CNTV_CVAL_EL0.set(timer.cntv_cval_el0) };
     unsafe { CNTV_CTL_EL0.set(timer.cntv_ctl_el0) };
     unsafe { CNTP_CVAL_EL0.set(timer.cntp_cval_el0) };
     unsafe { CNTP_CTL_EL0.set(timer.cntp_ctl_el0) };
-    unsafe { S3_4_C14_C1_0.set(timer.cnthctl_el2) }; // CNTHCTL_EL2
+    unsafe { CNTHCTL_EL2.set(timer.cnthctl_el2) };
 }
 
 pub fn save_state(vcpu: &mut VCPU) {
@@ -34,10 +34,10 @@ pub fn save_state(vcpu: &mut VCPU) {
     timer.cntvoff_el2 = unsafe { CNTVOFF_EL2.get() };
     timer.cntv_cval_el0 = unsafe { CNTV_CVAL_EL0.get() };
     timer.cntv_ctl_el0 = unsafe { CNTV_CTL_EL0.get() };
-    timer.cntpoff_el2 = unsafe { S3_4_C14_C0_6.get() }; // CNTPOFF_EL2
+    timer.cntpoff_el2 = unsafe { CNTPOFF_EL2.get() };
     timer.cntp_cval_el0 = unsafe { CNTP_CVAL_EL0.get() };
     timer.cntp_ctl_el0 = unsafe { CNTP_CTL_EL0.get() };
-    timer.cnthctl_el2 = unsafe { S3_4_C14_C1_0.get() };
+    timer.cnthctl_el2 = unsafe { CNTHCTL_EL2.get() };
 }
 
 pub fn send_state_to_host(rd: &mut Rd, vcpu: usize, run: &mut Run) -> Result<(), Error> {

@@ -8,7 +8,7 @@ use armv9a::regs::*;
 
 pub fn init_timer(vcpu: &mut VCPU) {
     let timer = &mut vcpu.context.timer;
-    timer.cnthctl_el2 = CNTHCTL_EL2::EL1PTEN | CNTHCTL_EL2::EL1PCEN;
+    timer.cnthctl_el2 = CNTHCTL_EL2::EL1PTEN | CNTHCTL_EL2::EL1PCEN | CNTHCTL_EL2::EL1PCTEN;
 }
 
 pub fn set_cnthctl(vcpu: &mut VCPU, val: u64) {

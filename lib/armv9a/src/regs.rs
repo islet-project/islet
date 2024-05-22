@@ -368,6 +368,8 @@ define_sys_register!(
     OFFSET[11 - 0]
 );
 
+define_sys_register!(FAR_EL1);
+
 define_sys_register!(CPTR_EL2, TAM[30 - 30]);
 
 // GIC-related
@@ -438,7 +440,12 @@ pub mod ich_lr_state {
     pub const PENDING_ACTIVE: u64 = 0b11;
 }
 
-define_sys_register!(CNTHCTL_EL2, EL1PTEN[11 - 11], EL1PCEN[1 - 1]);
+define_sys_register!(
+    CNTHCTL_EL2,
+    EL1PTEN[11 - 11],
+    EL1PCEN[1 - 1],
+    EL1PCTEN[0 - 0]
+);
 define_sys_register!(CNTPOFF_EL2);
 define_sys_register!(CNTP_CTL_EL0);
 define_sys_register!(CNTP_CVAL_EL0);

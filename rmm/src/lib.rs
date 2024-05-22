@@ -51,6 +51,7 @@ use crate::granule::create_granule_status_table as setup_gst;
 use crate::mm::translation::get_page_table;
 use crate::monitor::Monitor;
 use crate::rmm_el3::setup_el3_ifc;
+use core::ptr::addr_of;
 
 use armv9a::{bits_in_reg, regs::*};
 
@@ -86,7 +87,7 @@ unsafe fn setup_el2() {
             | HCR_EL2::FMO
             | HCR_EL2::VM,
     );
-    VBAR_EL2.set(&vectors as *const u64 as u64);
+    VBAR_EL2.set(addr_of!(vectors) as *const u64 as u64);
     SCTLR_EL2.set(SCTLR_EL2::C | SCTLR_EL2::I | SCTLR_EL2::M | SCTLR_EL2::EOS);
     CPTR_EL2.set(CPTR_EL2::TAM);
     ICC_SRE_EL2.set(ICC_SRE_EL2::ENABLE | ICC_SRE_EL2::DIB | ICC_SRE_EL2::DFB | ICC_SRE_EL2::SRE);

@@ -8,6 +8,7 @@ use vmsa::page::{Page, PageSize};
 use vmsa::page_table::{Level, PageTable, PageTableMethods};
 
 use alloc::collections::BTreeMap;
+use core::ptr::addr_of_mut;
 
 pub const DRAM_SIZE: usize = 0x7C00_0000 + 0x8000_0000;
 
@@ -66,7 +67,7 @@ impl PageSize for GranuleSize {
 pub static mut GRANULE_STATUS_TABLE: Option<GranuleStatusTable> = None;
 
 pub fn add_l1_table(index: usize) -> Result<usize, Error> {
-    if let Some(gst) = unsafe { &mut GRANULE_STATUS_TABLE } {
+    if let Some(gst) = unsafe { &mut *addr_of_mut!(GRANULE_STATUS_TABLE) } {
         gst.add_l1_table(index);
         if let Some(t) = gst.l1_tables.get(&index) {
             Ok(t as *const _ as usize)
@@ -79,7 +80,7 @@ pub fn add_l1_table(index: usize) -> Result<usize, Error> {
 }
 
 pub fn get_l1_table_addr(index: usize) -> Result<usize, Error> {
-    if let Some(gst) = unsafe { &mut GRANULE_STATUS_TABLE } {
+    if let Some(gst) = unsafe { &mut *addr_of_mut!(GRANULE_STATUS_TABLE) } {
         if let Some(t) = gst.l1_tables.get_mut(&index) {
             Ok(t as *mut _ as usize)
         } else {

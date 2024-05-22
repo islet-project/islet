@@ -1,3 +1,5 @@
+#![feature(saturating_int_impl)]
+
 mod comms;
 
 use islet_hes::{

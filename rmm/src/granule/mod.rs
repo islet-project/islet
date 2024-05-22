@@ -10,6 +10,7 @@ use crate::rmi::error::Error as RmiError;
 use vmsa::address::PhysAddr;
 use vmsa::error::Error;
 use vmsa::page_table::{HasSubtable, Level};
+use core::ptr::addr_of_mut;
 
 pub const GRANULE_SIZE: usize = 4096;
 pub const GRANULE_SHIFT: usize = 12;
@@ -103,11 +104,12 @@ macro_rules! get_granule {
             use vmsa::error::Error as MmError;
             use vmsa::page::Page;
             use vmsa::page_table::{self, PageTableMethods};
+            use core::ptr::addr_of_mut;
 
             if !validate_addr($addr) {
                 Err(MmError::MmInvalidAddr)
             } else {
-                if let Some(gst) = unsafe { &mut GRANULE_STATUS_TABLE } {
+                if let Some(gst) = unsafe { &mut *addr_of_mut!(GRANULE_STATUS_TABLE) } {
                     let pa =
                         Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from($addr));
                     match gst
@@ -198,7 +200,7 @@ pub fn check_granule_parent(parent: &Inner, child: &Inner) -> Result<(), RmiErro
 /// This is the only function that doesn't take `Inner` as input, instead it takes a raw address.
 /// Notice: do not directly call this function outside this file.
 pub fn set_granule_raw(addr: usize, state: u64) -> Result<(), Error> {
-    if let Some(gst) = unsafe { &mut GRANULE_STATUS_TABLE } {
+    if let Some(gst) = unsafe { &mut *addr_of_mut!(GRANULE_STATUS_TABLE) } {
         gst.set_granule(addr, state)
     } else {
         Err(Error::MmErrorOthers)

@@ -115,8 +115,7 @@ pub fn destroy(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(),
     let pa_table = parent_s2tte
         .address(RTT_PAGE_LEVEL)
         .ok_or(Error::RmiErrorInput)?
-        .try_into()
-        .or(Err(Error::RmiErrorInput))?;
+        .into();
     if rtt_addr != pa_table {
         return Err(Error::RmiErrorInput);
     }

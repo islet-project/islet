@@ -9,12 +9,11 @@ pub fn read(
 ) -> Result<(), crate::rsi::error::Error> {
     let realm_lock = get_realm(realmid).ok_or(Error::RealmDoesNotExists)?;
 
-    let mut realm = realm_lock.lock();
+    let realm = realm_lock.lock();
 
     let measurement = realm
         .measurements
-        .iter_mut()
-        .nth(index)
+        .get(index)
         .ok_or(Error::InvalidMeasurementIndex)?;
 
     out.as_mut_slice().copy_from_slice(measurement.as_slice());
@@ -32,8 +31,7 @@ pub fn write(
 
     let measurement = realm
         .measurements
-        .iter_mut()
-        .nth(index)
+        .get_mut(index)
         .ok_or(Error::InvalidMeasurementIndex)?;
 
     measurement.as_mut_slice().copy_from_slice(val.as_slice());

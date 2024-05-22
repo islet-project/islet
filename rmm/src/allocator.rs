@@ -1,5 +1,6 @@
 use core::mem::MaybeUninit;
 use linked_list_allocator::LockedHeap;
+use core::ptr::addr_of_mut;
 
 use crate::config::RMM_HEAP_SIZE;
 
@@ -8,7 +9,7 @@ static mut HEAP: [MaybeUninit<u8>; RMM_HEAP_SIZE] = [MaybeUninit::uninit(); RMM_
 static mut ALLOCATOR: LockedHeap = LockedHeap::empty();
 
 pub unsafe fn init() {
-    ALLOCATOR.lock().init_from_slice(&mut HEAP);
+    ALLOCATOR.lock().init_from_slice(&mut *addr_of_mut!(HEAP));
 }
 
 pub fn get_used_size() -> usize {

@@ -81,7 +81,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         {
             return Err(Error::RmiErrorInput);
         }
-        let (ipa, walk_top) = crate::rtt::destroy(rd, ipa, level)?;
+        let (ipa, walk_top) = crate::rtt::destroy(rd, ipa, level, |t| {
+            ret[2] = t;
+        })?;
         ret[1] = ipa;
         ret[2] = walk_top;
         Ok(())
@@ -263,7 +265,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        let (pa, top) = crate::rtt::data_destroy(rd, ipa)?;
+        let (pa, top) = crate::rtt::data_destroy(rd, ipa, |t| {
+            ret[2] = t;
+        })?;
 
         // data granule lock and change state
         #[cfg(feature = "gst_page_table")]
@@ -316,7 +320,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        let top = crate::rtt::unmap_unprotected(rd, ipa, level)?;
+        let top = crate::rtt::unmap_unprotected(rd, ipa, level, |t| {
+            ret[1] = t;
+        })?;
         ret[1] = top;
 
         Ok(())

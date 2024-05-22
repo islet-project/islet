@@ -138,10 +138,17 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
     Ok(())
 }
 
-pub fn destroy(rd: &Rd, ipa: usize, level: usize) -> Result<(usize, usize), Error> {
+pub fn destroy<F: FnMut(usize)>(
+    rd: &Rd,
+    ipa: usize,
+    level: usize,
+    mut f: F,
+) -> Result<(usize, usize), Error> {
     let (parent_s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level - 1, Error::RmiErrorRtt(0))?;
 
     if (last_level != level - 1) || !parent_s2tte.is_table(level - 1) {
+        let top_ipa = skip_non_live_entries(rd, ipa, level)?;
+        f(top_ipa);
         return Err(Error::RmiErrorRtt(last_level));
     }
 
@@ -331,7 +338,12 @@ pub fn map_unprotected(rd: &Rd, ipa: usize, level: usize, host_s2tte: usize) -> 
     Ok(())
 }
 
-pub fn unmap_unprotected(rd: &Rd, ipa: usize, level: usize) -> Result<usize, Error> {
+pub fn unmap_unprotected<F: FnMut(usize)>(
+    rd: &Rd,
+    ipa: usize,
+    level: usize,
+    mut f: F,
+) -> Result<usize, Error> {
     if rd.addr_in_par(ipa) {
         return Err(Error::RmiErrorInput);
     }
@@ -343,6 +355,8 @@ pub fn unmap_unprotected(rd: &Rd, ipa: usize, level: usize) -> Result<usize, Err
     }
 
     if !s2tte.is_assigned_ns(level) {
+        let top_ipa = skip_non_live_entries(rd, ipa, level)?;
+        f(top_ipa);
         return Err(Error::RmiErrorRtt(level));
     }
 
@@ -517,9 +531,13 @@ pub fn data_create(rd: &Rd, ipa: usize, target_pa: usize, unknown: bool) -> Resu
     Ok(())
 }
 
-pub fn data_destroy(rd: &Rd, ipa: usize) -> Result<(usize, usize), Error> {
+pub fn data_destroy<F: FnMut(usize)>(
+    rd: &Rd,
+    ipa: usize,
+    mut f: F,
+) -> Result<(usize, usize), Error> {
     let level = RTT_PAGE_LEVEL;
-    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(level))?;
 
     if last_level != level {
         return Err(Error::RmiErrorRtt(last_level));
@@ -527,12 +545,14 @@ pub fn data_destroy(rd: &Rd, ipa: usize) -> Result<(usize, usize), Error> {
 
     let valid = s2tte.is_valid(last_level, false);
     if !valid && !s2tte.is_assigned() {
-        return Err(Error::RmiErrorRtt(RTT_PAGE_LEVEL));
+        let top_ipa = skip_non_live_entries(rd, ipa, level)?;
+        f(top_ipa);
+        return Err(Error::RmiErrorRtt(last_level));
     }
 
     let pa = s2tte
         .address(last_level)
-        .ok_or(Error::RmiErrorRtt(0))?
+        .ok_or(Error::RmiErrorRtt(last_level))?
         .into(); //XXX: check this again
 
     let mut flags = 0;

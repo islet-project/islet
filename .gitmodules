@@ -39,8 +39,7 @@
 	branch = cca/rmm-v1.0-eac5
 [submodule "third-party/cca-rmm-acs"]
 	path = third-party/cca-rmm-acs
-	url = https://github.com/ARM-software/cca-rmm-acs.git
-	branch = main
+	url = https://github.com/islet-project/cca-rmm-acs.git
 [submodule "third-party/mbedtls"]
 	path = third-party/mbedtls
 	url = https://github.com/Mbed-TLS/mbedtls.git

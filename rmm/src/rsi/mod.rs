@@ -204,7 +204,8 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let pa_offset = get_reg(rd, vcpuid, 2)?;
         let buffer_size = get_reg(rd, vcpuid, 3)?;
 
-        if pa_offset + buffer_size < pa_offset || pa_offset + buffer_size > GRANULE_SIZE {
+        let (_, overflowed) = pa_offset.overflowing_add(buffer_size);
+        if overflowed || pa_offset + buffer_size > GRANULE_SIZE {
             warn!("Buffer addres region invalid");
             set_reg(rd, vcpuid, 0, ERROR_INPUT)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;

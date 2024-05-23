@@ -155,8 +155,7 @@ pub fn destroy<F: FnMut(usize)>(
     let rtt_addr = parent_s2tte
         .address(RTT_PAGE_LEVEL)
         .ok_or(Error::RmiErrorInput)?
-        .try_into()
-        .or(Err(Error::RmiErrorInput))?;
+        .into();
 
     let mut g_rtt = get_granule_if!(rtt_addr, GranuleState::RTT)?;
 

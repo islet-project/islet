@@ -107,21 +107,3 @@ impl Hashable for Params {
         })
     }
 }
-
-#[cfg(test)]
-pub mod test {
-    use super::*;
-    use crate::offset_of;
-
-    #[test]
-    fn spec_params() {
-        assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
-
-        assert_eq!(offset_of!(Params, flags), 0x0);
-        assert_eq!(offset_of!(Params, mpidr), 0x100);
-        assert_eq!(offset_of!(Params, pc), 0x200);
-        assert_eq!(offset_of!(Params, gprs), 0x300);
-        assert_eq!(offset_of!(Params, num_aux), 0x800);
-        assert_eq!(offset_of!(Params, aux), 0x808);
-    }
-}

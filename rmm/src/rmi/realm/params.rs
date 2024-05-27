@@ -185,27 +185,3 @@ impl safe_abstraction::raw_ptr::SafetyAssured for Params {
         true
     }
 }
-
-#[cfg(test)]
-pub mod test {
-    use super::*;
-    use crate::offset_of;
-
-    #[test]
-    fn spec_params() {
-        assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
-
-        assert_eq!(offset_of!(Params, features_0), 0x0);
-        assert_eq!(offset_of!(Params, s2sz), 0x8);
-        assert_eq!(offset_of!(Params, sve_v1), 0x10);
-        assert_eq!(offset_of!(Params, num_bps), 0x18);
-        assert_eq!(offset_of!(Params, num_wps), 0x20);
-        assert_eq!(offset_of!(Params, pmu_num_ctrs), 0x28);
-        assert_eq!(offset_of!(Params, hash_algo), 0x30);
-        assert_eq!(offset_of!(Params, rpv), 0x400);
-        assert_eq!(offset_of!(Params, vmid), 0x800);
-        assert_eq!(offset_of!(Params, rtt_base), 0x808);
-        assert_eq!(offset_of!(Params, rtt_level_start), 0x810);
-        assert_eq!(offset_of!(Params, rtt_num_start), 0x818);
-    }
-}

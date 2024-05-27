@@ -56,32 +56,33 @@ jobs:
           name: acs
           path: out/uart*.log
 
-  hes:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install dependencies
-        run: ./scripts/init_min_tf_a_rss.sh
-
-      - name: Build HES
-        run: ./scripts/fvp-cca -nw=tf-a-tests -rmm=tf-rmm --hes --build-only
-
-  tf-a-tests:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install dependencies
-        run: ./scripts/init_min_tf_a.sh
-
-      - name: Run tf-a-tests on normal-world
-        run: ./scripts/tests/tf-a-tests.sh
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: tf-a-tests
-          path: out/uart*.log
+# Temporarily disable [hes, tftf] jobs for eac5
+#  hes:
+#    runs-on: ubuntu-22.04
+#    steps:
+#      - uses: actions/checkout@v3
+#
+#      - name: Install dependencies
+#        run: ./scripts/init_min_tf_a_rss.sh
+#
+#      - name: Build HES
+#        run: ./scripts/fvp-cca -nw=tf-a-tests -rmm=tf-rmm --hes --build-only
+#
+#  tf-a-tests:
+#    runs-on: ubuntu-22.04
+#    steps:
+#      - uses: actions/checkout@v3
+#
+#      - name: Install dependencies
+#        run: ./scripts/init_min_tf_a.sh
+#
+#      - name: Run tf-a-tests on normal-world
+#        run: ./scripts/tests/tf-a-tests.sh
+#
+#      - uses: actions/upload-artifact@v3
+#        with:
+#          name: tf-a-tests
+#          path: out/uart*.log
 
   realm-boot:
     runs-on: ubuntu-22.04

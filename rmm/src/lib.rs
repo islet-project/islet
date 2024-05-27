@@ -78,25 +78,26 @@ pub unsafe fn start(cpu_id: usize) {
     Monitor::new().run();
 }
 
+use aarch64_cpu::registers::Writeable;
+use aarch64_cpu::registers::HCR_EL2;
 unsafe fn setup_el2() {
-    HCR_EL2.set(
-        HCR_EL2::FWB
-            | HCR_EL2::TEA
-            | HCR_EL2::TERR
-            | HCR_EL2::TLOR
-            | HCR_EL2::RW
-            | HCR_EL2::TSW
-            | HCR_EL2::TACR
-            | HCR_EL2::TIDCP
-            | HCR_EL2::TSC
-            | HCR_EL2::TID3
-            | (HCR_EL2::BSU & 0b01)
-    //        | HCR_EL2::TWI
-            | HCR_EL2::FB
-            | HCR_EL2::AMO
-            | HCR_EL2::IMO
-            | HCR_EL2::FMO
-            | HCR_EL2::VM,
+    HCR_EL2.write(
+        HCR_EL2::FWB::SET
+            + HCR_EL2::TEA::SET
+            + HCR_EL2::TERR::SET
+            + HCR_EL2::TLOR::SET
+            + HCR_EL2::RW::SET
+            + HCR_EL2::TSW::SET
+            + HCR_EL2::TACR::SET
+            + HCR_EL2::TIDCP::SET
+            + HCR_EL2::TSC::SET
+            + HCR_EL2::TID3::SET
+            + HCR_EL2::BSU::InnerShareable
+            + HCR_EL2::FB::SET
+            + HCR_EL2::AMO::SET
+            + HCR_EL2::IMO::SET
+            + HCR_EL2::FMO::SET
+            + HCR_EL2::VM::SET,
     );
     VBAR_EL2.set(addr_of!(vectors) as u64);
     SCTLR_EL2.set(SCTLR_EL2::C | SCTLR_EL2::I | SCTLR_EL2::M | SCTLR_EL2::EOS);

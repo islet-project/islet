@@ -1,0 +1,43 @@
+version: 2
+test:
+  - name: RUST_Testcase
+    testCaseLanguage: RUST
+    testFW: CARGO
+    testCaseFolder:
+      - ./
+      - excludes :
+        - ./realm/mm/page_table
+        - ./mm/page_table
+        - ./granule/page_table
+        - ./rmm_el3
+
+    testFile:
+      - extension: rs
+        any: true
+      - excludes :
+        - hostcall.rs
+        - stat.rs
+        - registry.rs
+        - stage2_tte.rs
+        - params.rs
+        - run.rs
+        - allocator.rs
+        - page.rs
+
+    testCase:
+      - condition:
+        - annotation:
+            match:
+              - '#[test]'
+
+    negativeTestCase:
+      - condition:
+        - testName:
+            contains:
+              - _N
+
+    positiveTestCase:
+      - condition:
+        - testName:
+            regex:
+              - ^[^N]*$

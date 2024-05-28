@@ -1,5 +1,7 @@
 //extern crate alloc;
 use crate::rmi::error::Error;
+use core::ffi::CStr;
+use crate::alloc::string::ToString;
 
 #[repr(C)]
 pub struct HostCall {
@@ -71,4 +73,41 @@ struct _Inner {
 union Inner {
     val: core::mem::ManuallyDrop<_Inner>,
     reserved: [u8; 0x100],
+}
+
+#[repr(C)]
+struct _PrintInner {
+    msg: [u8; 1024],
+    data1: usize,
+    data2: usize,
+}
+
+#[repr(C)]
+union PrintInner {
+    val: core::mem::ManuallyDrop<_PrintInner>,
+    reserved: [u8; 2048],
+}
+
+#[repr(C)]
+pub struct CloakPrintCall {
+    inner: PrintInner,
+}
+
+impl CloakPrintCall {
+    pub fn parse<'a>(addr: usize) -> &'a Self {
+        unsafe { &*(addr as *const Self) }
+    }
+
+    pub fn print(&self) {
+        let msg = unsafe { &self.inner.val.msg };
+        let data1 = unsafe { self.inner.val.data1 };
+        let data2 = unsafe { self.inner.val.data2 };
+
+        let msg_str = match CStr::from_bytes_until_nul(msg) {
+            Ok(v) => v.to_str().unwrap().to_string(),
+            Err(_) => { return; }
+        };
+
+        info!("[RealmMsg] {}, {}-{}, {:X?}-{:X?}", msg_str, data1, data2, data1, data2);
+    }
 }

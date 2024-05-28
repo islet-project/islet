@@ -233,8 +233,11 @@ pub fn map_unprotected(rd: &Rd, ipa: usize, level: usize, host_s2tte: usize) -> 
         //return Err(Error::RmiErrorInput);
     }
     if rd.addr_in_par(ipa) {
+        info!("addr_in_par error: {:X?}", ipa);
         return Err(Error::RmiErrorInput);
     }
+
+    //info!("map_unprotected start: {:X?}, {}, {:X?}", ipa, level, host_s2tte);
 
     let id = rd.id();
     let (s2tte, last_level) = S2TTE::get_s2tte(id, ipa, level, Error::RmiErrorRtt(0))?;
@@ -267,6 +270,7 @@ pub fn map_unprotected(rd: &Rd, ipa: usize, level: usize, host_s2tte: usize) -> 
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
 
+    //info!("map_unprotected end");
     Ok(())
 }
 

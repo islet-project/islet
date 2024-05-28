@@ -20,7 +20,7 @@ use crate::rmi::realm::Rd;
 use crate::rmi::rec::run::Run;
 use crate::rmi::rec::{Rec, RmmRecAttestState};
 use crate::rmi::rtt::{is_protected_ipa, validate_ipa, RTT_PAGE_LEVEL};
-use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
+use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS, CloakPrintCall};
 use crate::Monitor;
 
 // [JB] for Cloak
@@ -42,6 +42,7 @@ define_interface! {
         CHANNEL_CONNECT         = 0xc400_0201, // for Cloak
         CHANNEL_GEN_REPORT      = 0xc400_0202, // for Cloak
         CHANNEL_RESULT          = 0xc400_0203, // for Cloak
+        CLOAK_PRINT             = 0xc400_0204,
     }
 }
 
@@ -110,6 +111,8 @@ pub fn do_host_call(
     let realmid = rec.realmid()?;
 
     let ipa = get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
+
+    //info!("do_host_call start! {:X?}", ipa);
 
     let pa = crate::realm::registry::get_realm(realmid)
         .ok_or(Error::RmiErrorOthers(NotExistRealm))?
@@ -492,6 +495,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
+        info!("REC IPA BITS: {}", ipa_bits);
 
         realm_config(realmid, config_ipa, ipa_bits)?;
 
@@ -775,6 +779,32 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             },
         }
 
+        set_reg(realmid, vcpuid, 0, SUCCESS)?;
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
+    });
+
+    listen!(rsi, CLOAK_PRINT, |_arg, ret, _rmm, rec, _run| {
+        let vcpuid = rec.vcpuid();
+        let realmid = rec.realmid()?;
+
+        let ipa = get_reg(realmid, vcpuid, 1).unwrap_or(0x0);
+        //info!("CLOAK_PRINT start! {:X?}", ipa);
+
+        let pa = crate::realm::registry::get_realm(realmid)
+            .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+            .lock()
+            .page_table
+            .lock()
+            .ipa_to_pa(
+                crate::realm::mm::address::GuestPhysAddr::from(ipa),
+                RTT_PAGE_LEVEL,
+            )
+            .ok_or(Error::RmiErrorInput)?;
+
+        let print_call = CloakPrintCall::parse(pa.into());
+        print_call.print(); 
+        
         set_reg(realmid, vcpuid, 0, SUCCESS)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())

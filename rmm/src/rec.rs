@@ -1,6 +1,5 @@
 use crate::realm;
 use crate::realm::rd::Rd;
-use crate::realm::vcpu::State as RecState;
 use crate::realm::vcpu::VCPU;
 use crate::rmi::error::Error;
 use crate::rmi::error::InternalError::*;
@@ -14,6 +13,13 @@ use vmsa::guard::Content;
 pub enum RmmRecAttestState {
     AttestInProgress,
     NoAttestInProgress,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum State {
+    Null = 0,
+    Ready = 1,
+    Running = 2,
 }
 
 #[derive(Debug)]
@@ -40,7 +46,7 @@ pub struct Rec<'a> {
     vcpuid: usize,
     runnable: bool,
     psci_pending: bool,
-    state: RecState,
+    state: State,
     ripas: Ripas,
     vtcr: u64,
     host_call_pending: bool,
@@ -65,7 +71,7 @@ impl Rec<'_> {
         self.vcpuid = vcpuid;
         self.set_ripas(0, 0, 0, 0);
         self.set_runnable(flags);
-        self.set_state(RecState::Ready);
+        self.set_state(State::Ready);
 
         Ok(())
     }
@@ -151,11 +157,11 @@ impl Rec<'_> {
         }
     }
 
-    pub fn set_state(&mut self, state: RecState) {
+    pub fn set_state(&mut self, state: State) {
         self.state = state;
     }
 
-    pub fn get_state(&self) -> RecState {
+    pub fn get_state(&self) -> State {
         self.state
     }
 

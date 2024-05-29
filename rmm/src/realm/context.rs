@@ -117,7 +117,6 @@ impl Context {
     }
 
     pub unsafe fn into_current(vcpu: &mut VCPU) {
-        vcpu.pcpu = Some(get_cpu_id());
         TPIDR_EL2.set(vcpu as *const _ as u64);
         gic::restore_state(vcpu);
         timer::restore_state(vcpu);
@@ -126,7 +125,6 @@ impl Context {
     pub unsafe fn from_current(vcpu: &mut VCPU) {
         gic::save_state(vcpu);
         timer::save_state(vcpu);
-        vcpu.pcpu = None;
     }
 }
 

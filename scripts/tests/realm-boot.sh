@@ -3,6 +3,8 @@
 ROOT=$(git rev-parse --show-toplevel)
 UART=$ROOT/out/uart0.log
 
+TIMEOUT=90
+
 [ -e $UART ] && rm $UART
 
 check_result()
@@ -29,6 +31,17 @@ tar -xf $ROOT/assets/prebuilt/out.tar.bz2 -C $ROOT
 $ROOT/scripts/fvp-cca -bo -rmm=islet --use-prebuilt --rmm-log-level=error
 $ROOT/scripts/fvp-cca -ro -nw=linux --realm=linux -rmm=islet --no-telnet &
 
-sleep 640
+sleep 10
+
+echo "[!] Starting realm-booting test..."
+
+while inotifywait -q -t $TIMEOUT -e modify $UART >/dev/null 2>&1; do
+	echo -n "."
+	if grep -q "buildroot login:" "$UART"; then
+		break
+	fi
+done
+
+echo ""
 
 check_result

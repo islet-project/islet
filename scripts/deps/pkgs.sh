@@ -18,6 +18,7 @@ sudo apt-get install -y -qq --no-install-recommends --fix-missing \
 	srecord \
 	git wget make vim bc pkg-config \
 	bridge-utils \
+	inotify-tools \
 	pylint
 
 pip3 install toml

@@ -16,8 +16,6 @@ extern crate alloc;
 #[derive(Debug)]
 pub struct VCPU {
     pub context: Context,
-    pub state: State,
-    pub pcpu: Option<usize>,
     me: Weak<Mutex<Self>>,
 }
 
@@ -26,9 +24,7 @@ impl VCPU {
         Arc::<Mutex<Self>>::new_cyclic(|me| {
             Mutex::new(Self {
                 me: me.clone(),
-                state: State::Ready,
                 context: Context::new(),
-                pcpu: None,
             })
         })
     }
@@ -39,7 +35,6 @@ impl VCPU {
 
             core::mem::forget(self.me.upgrade().unwrap());
         }
-        self.state = State::Running;
     }
 
     pub fn from_current(&mut self) {
@@ -50,7 +45,6 @@ impl VCPU {
             Arc::decrement_strong_count(ptr);
             Arc::from_raw(ptr);
         }
-        self.state = State::Ready;
     }
 
     pub fn is_realm_dead(&self) -> bool {
@@ -63,13 +57,6 @@ impl Drop for VCPU {
     fn drop(&mut self) {
         info!("VCPU dropeed!");
     }
-}
-
-#[derive(Copy, Clone, Debug)]
-pub enum State {
-    Null = 0,
-    Ready = 1,
-    Running = 2,
 }
 
 pub unsafe fn current() -> Option<&'static mut VCPU> {

@@ -1,8 +1,6 @@
-use crate::gic;
-use crate::realm::context::Context;
 use crate::realm::rd::Rd;
 use crate::realm::registry::VMID_SET;
-use crate::realm::timer;
+use crate::rec::Rec;
 use crate::rmi::error::Error;
 
 use alloc::sync::{Arc, Weak};
@@ -15,41 +13,12 @@ extern crate alloc;
 #[repr(C)]
 #[derive(Debug)]
 pub struct VCPU {
-    pub context: Context,
     me: Weak<Mutex<Self>>,
 }
 
 impl VCPU {
     pub fn new() -> Arc<Mutex<Self>> {
-        Arc::<Mutex<Self>>::new_cyclic(|me| {
-            Mutex::new(Self {
-                me: me.clone(),
-                context: Context::new(),
-            })
-        })
-    }
-
-    pub fn into_current(&mut self) {
-        unsafe {
-            Context::into_current(self);
-
-            core::mem::forget(self.me.upgrade().unwrap());
-        }
-    }
-
-    pub fn from_current(&mut self) {
-        unsafe {
-            Context::from_current(self);
-
-            let ptr = Arc::into_raw(self.me.upgrade().unwrap());
-            Arc::decrement_strong_count(ptr);
-            Arc::from_raw(ptr);
-        }
-    }
-
-    pub fn is_realm_dead(&self) -> bool {
-        // XXX: is this function necessary?
-        false
+        Arc::<Mutex<Self>>::new_cyclic(|me| Mutex::new(Self { me: me.clone() }))
     }
 }
 
@@ -59,27 +28,25 @@ impl Drop for VCPU {
     }
 }
 
-pub unsafe fn current() -> Option<&'static mut VCPU> {
+// XXX: is using 'static okay here?
+pub unsafe fn current() -> Option<&'static mut Rec<'static>> {
     match TPIDR_EL2.get() {
         0 => None,
-        current => Some(&mut *(current as *mut VCPU)),
+        current => Some(&mut *(current as *mut Rec<'_>)),
     }
 }
 
-pub fn create_vcpu(rd: &mut Rd, mpidr: u64) -> Result<usize, Error> {
+pub fn create_vcpu(rd: &mut Rd, mpidr: u64) -> Result<(usize, u64, u64), Error> {
     let page_table = rd.s2_table().lock().get_base_address();
     let vttbr = bits_in_reg(VTTBR_EL2::VMID, rd.id() as u64)
         | bits_in_reg(VTTBR_EL2::BADDR, page_table as u64);
+    let vmpidr = mpidr | MPIDR_EL1::RES1;
 
     let vcpu = VCPU::new();
-    vcpu.lock().context.sys_regs.vttbr = vttbr;
-    vcpu.lock().context.sys_regs.vmpidr = mpidr | MPIDR_EL1::RES1;
-    timer::init_timer(&mut vcpu.lock());
-    gic::init_gic(&mut vcpu.lock());
 
     rd.vcpus.push(vcpu);
     let vcpuid = rd.vcpus.len() - 1;
-    Ok(vcpuid)
+    Ok((vcpuid, vttbr, vmpidr))
 }
 
 pub fn remove(id: usize) -> Result<(), Error> {

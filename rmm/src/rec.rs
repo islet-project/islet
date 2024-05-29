@@ -1,8 +1,9 @@
+use crate::gic;
 use crate::realm;
+use crate::realm::context::Context;
 use crate::realm::rd::Rd;
-use crate::realm::vcpu::VCPU;
+use crate::realm::timer;
 use crate::rmi::error::Error;
-use crate::rmi::error::InternalError::*;
 use crate::rmm_exit;
 use crate::rsi::attestation::MAX_CHALLENGE_SIZE;
 
@@ -31,8 +32,10 @@ struct Ripas {
     flags: u64,
 }
 
+#[repr(C)]
 #[derive(Debug)]
 pub struct Rec<'a> {
+    pub context: Context,
     attest_state: RmmRecAttestState,
     // TODO: Create consts for both numbers
     attest_challenge: [u8; MAX_CHALLENGE_SIZE],
@@ -53,7 +56,14 @@ pub struct Rec<'a> {
 }
 
 impl Rec<'_> {
-    pub fn init(&mut self, owner: usize, vcpuid: usize, flags: u64) -> Result<(), Error> {
+    pub fn init(
+        &mut self,
+        owner: usize,
+        vcpuid: usize,
+        flags: u64,
+        vttbr: u64,
+        vmpidr: u64,
+    ) -> Result<(), Error> {
         if owner == 0 {
             error!("owner should be non-zero");
             return Err(Error::RmiErrorInput);
@@ -72,6 +82,11 @@ impl Rec<'_> {
         self.set_ripas(0, 0, 0, 0);
         self.set_runnable(flags);
         self.set_state(State::Ready);
+        self.context = Context::new();
+        self.context.sys_regs.vttbr = vttbr;
+        self.context.sys_regs.vmpidr = vmpidr;
+        timer::init_timer(self);
+        gic::init_gic(self);
 
         Ok(())
     }
@@ -202,19 +217,27 @@ impl Rec<'_> {
         let owner = self.get_owner()?;
         Ok(owner.ipa_bits())
     }
+
+    pub fn from_current(&mut self) {
+        unsafe {
+            Context::from_current(self);
+        }
+    }
+
+    pub fn into_current(&self) {
+        unsafe {
+            Context::into_current(self);
+        }
+    }
 }
 
 impl Content for Rec<'_> {}
 
 fn enter() -> [usize; 4] {
     unsafe {
-        if let Some(vcpu) = realm::vcpu::current() {
-            if vcpu.is_realm_dead() {
-                vcpu.from_current();
-            } else {
-                // TODO: add code equivalent to the previous clean()
-                return rmm_exit([0; 4]);
-            }
+        if let Some(_rec) = realm::vcpu::current() {
+            // TODO: add code equivalent to the previous clean()
+            return rmm_exit([0; 4]);
         }
         [0, 0, 0, 0]
     }
@@ -222,32 +245,21 @@ fn enter() -> [usize; 4] {
 
 fn exit() {
     unsafe {
-        if let Some(vcpu) = realm::vcpu::current() {
-            vcpu.from_current();
+        if let Some(rec) = realm::vcpu::current() {
+            rec.from_current();
         }
     }
 }
 
-pub fn run_prepare(rd: &Rd, vcpu: usize, incr_pc: usize) -> Result<(), Error> {
+// TODO: check the below again
+pub fn run_prepare(rd: &Rd, vcpu: usize, rec: &mut Rec<'_>, incr_pc: usize) -> Result<(), Error> {
     if incr_pc == 1 {
-        rd.vcpus
-            .get(vcpu)
-            .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
-            .lock()
-            .context
-            .elr += 4;
+        rec.context.elr += 4;
     }
-    debug!(
-        "resuming: {:#x}",
-        rd.vcpus
-            .get(vcpu)
-            .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
-            .lock()
-            .context
-            .elr
-    );
-    if let Some(vcpu) = rd.vcpus.get(vcpu) {
-        VCPU::into_current(&mut *vcpu.lock())
+    debug!("resuming: {:#x}", rec.context.elr);
+    // TODO: check the below again
+    if let Some(_vcpu) = rd.vcpus.get(vcpu) {
+        rec.into_current();
     }
 
     trace!("Switched to VCPU {} on Realm {}", vcpu, rd.id());

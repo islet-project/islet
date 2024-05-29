@@ -1,15 +1,10 @@
-use crate::realm::rd::Rd;
+use crate::rec::Rec;
 use crate::rmi::error::Error;
-use crate::rmi::error::InternalError::*;
 use crate::rmi::rec::run::{Run, REC_ENTRY_FLAG_EMUL_MMIO};
 use armv9a::regs::*;
 
-pub fn emulate_mmio(rd: &mut Rd, vcpu: usize, run: &Run) -> Result<(), Error> {
-    let vcpu = rd
-        .vcpus
-        .get_mut(vcpu)
-        .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
-    let context = &mut vcpu.lock().context;
+pub fn emulate_mmio(rec: &mut Rec<'_>, run: &Run) -> Result<(), Error> {
+    let context = &mut rec.context;
 
     let flags = run.entry_flags();
 

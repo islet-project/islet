@@ -56,19 +56,19 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rec = rec_granule.content_mut::<Rec<'_>>();
 
         match create_vcpu(rd, params.mpidr) {
-            Ok(vcpuid) => {
+            Ok((vcpuid, vttbr, vmpidr)) => {
                 ret[1] = vcpuid;
-                rec.init(owner, vcpuid, params.flags)?;
+                rec.init(owner, vcpuid, params.flags, vttbr, vmpidr)?;
             }
             Err(_) => return Err(Error::RmiErrorInput),
         }
 
         for (idx, gpr) in params.gprs.iter().enumerate() {
-            if set_reg(rd, rec.vcpuid(), idx, *gpr as usize).is_err() {
+            if set_reg(rec, idx, *gpr as usize).is_err() {
                 return Err(Error::RmiErrorInput);
             }
         }
-        if set_reg(rd, rec.vcpuid(), RegOffset::PC, params.pc as usize).is_err() {
+        if set_reg(rec, RegOffset::PC, params.pc as usize).is_err() {
             return Err(Error::RmiErrorInput);
         }
         rec.set_vtcr(prepare_vtcr(rd)?);
@@ -151,13 +151,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             do_host_call(arg, ret, rmm, rec, &mut run)?;
         }
 
-        let mut rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd_granule.content_mut::<Rd>();
-        crate::gic::receive_state_from_host(rd, rec.vcpuid(), &run)?;
-        crate::mmio::emulate_mmio(rd, rec.vcpuid(), &run)?;
-
-        // XXX: we explicitly release Rd's lock here to avoid a deadlock
-        core::mem::drop(rd_granule);
+        crate::gic::receive_state_from_host(rec, &run)?;
+        crate::mmio::emulate_mmio(rec, &run)?;
 
         crate::rsi::ripas::complete_ripas(rec, &run)?;
 
@@ -177,7 +172,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
             let rd = rd_granule.content::<Rd>();
             rec.set_state(RecState::Running);
-            crate::rec::run_prepare(rd, rec.vcpuid(), 0)?;
+            crate::rec::run_prepare(rd, rec.vcpuid(), rec, 0)?;
             // XXX: we explicitly release Rd's lock here, because RSI calls
             //      would acquire the same lock again (deadlock).
             core::mem::drop(rd_granule);
@@ -193,10 +188,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 break;
             }
         }
-        let mut rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd_granule.content_mut::<Rd>();
-        crate::gic::send_state_to_host(rd, rec.vcpuid(), &mut run)?;
-        crate::realm::timer::send_state_to_host(rd, rec.vcpuid(), &mut run)?;
+        crate::gic::send_state_to_host(rec, &mut run)?;
+        crate::realm::timer::send_state_to_host(rec, &mut run)?;
 
         // NOTICE: do not modify `run` after copy_to_host_or_ret!(). it won't have any effect.
         host::copy_to::<Run>(&run, run_pa).ok_or(Error::RmiErrorInput)

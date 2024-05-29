@@ -8,7 +8,7 @@ use super::lower::synchronous;
 use crate::cpu;
 use crate::event::realmexit::{ExitSyncType, RecExitReason};
 use crate::mm::translation::PageTable;
-use crate::realm::vcpu::VCPU;
+use crate::rec::Rec;
 
 use armv9a::regs::*;
 
@@ -131,28 +131,28 @@ pub const RET_TO_RMM: u64 = 1;
 /// bits) of the exception.
 /// The `esr` has the value of a syndrome register (ESR_ELx) holding the cause
 /// of the Synchronous and SError exception.
-/// The `vcpu` has the VCPU context.
+/// The `rec` has the Rec context.
 /// The `tf` has the TrapFrame of current context.
 ///
-/// Do not write sys_regs of VCPU here. (ref. HANDLE_LOWER in vectors.s)
+/// Do not write sys_regs of Rec here. (ref. HANDLE_LOWER in vectors.s)
 #[no_mangle]
 #[allow(unused_variables)]
 pub extern "C" fn handle_lower_exception(
     info: Info,
     esr: u32,
-    vcpu: &mut VCPU,
+    rec: &mut Rec<'_>,
     tf: &mut TrapFrame,
 ) -> u64 {
     match info.kind {
         // TODO: adjust elr according to the decision that kvm made
         Kind::Synchronous => match Syndrome::from(esr) {
             Syndrome::HVC => {
-                debug!("Synchronous: HVC: {:#X}", vcpu.context.gp_regs[0]);
+                debug!("Synchronous: HVC: {:#X}", rec.context.gp_regs[0]);
 
                 // Inject undefined exception to the realm
                 unsafe {
-                    SPSR_EL1.set(vcpu.context.spsr);
-                    ELR_EL1.set(vcpu.context.elr);
+                    SPSR_EL1.set(rec.context.spsr);
+                    ELR_EL1.set(rec.context.elr);
 
                     let esr = EsrEl1::new(0)
                         .set_masked_value(EsrEl1::EC, ESR_EL1_EC_UNKNOWN)
@@ -163,9 +163,9 @@ pub extern "C" fn handle_lower_exception(
                 }
 
                 // Return to realm's exception handler
-                let vbar = vcpu.context.sys_regs.vbar;
+                let vbar = rec.context.sys_regs.vbar;
                 const SPSR_EL2_MODE_EL1H_OFFSET: u64 = 0x200;
-                vcpu.context.elr = vbar + SPSR_EL2_MODE_EL1H_OFFSET;
+                rec.context.elr = vbar + SPSR_EL2_MODE_EL1H_OFFSET;
 
                 tf.regs[0] = RecExitReason::Sync(ExitSyncType::Undefined).into();
                 tf.regs[1] = esr as u64;
@@ -175,8 +175,8 @@ pub extern "C" fn handle_lower_exception(
             }
             Syndrome::SMC => {
                 tf.regs[0] = RecExitReason::Sync(ExitSyncType::RSI).into();
-                tf.regs[1] = vcpu.context.gp_regs[0]; // RSI command
-                advance_pc(vcpu);
+                tf.regs[1] = rec.context.gp_regs[0]; // RSI command
+                advance_pc(rec);
                 RET_TO_RMM
             }
             Syndrome::InstructionAbort(_) | Syndrome::DataAbort(_) => {
@@ -196,8 +196,8 @@ pub extern "C" fn handle_lower_exception(
             }
             Syndrome::SysRegInst => {
                 debug!("Synchronous: MRS, MSR System Register Instruction");
-                let ret = synchronous::sys_reg::handle(vcpu, esr as u64);
-                advance_pc(vcpu);
+                let ret = synchronous::sys_reg::handle(rec, esr as u64);
+                advance_pc(rec);
                 ret
             }
             Syndrome::WFX => {
@@ -206,7 +206,7 @@ pub extern "C" fn handle_lower_exception(
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = unsafe { HPFAR_EL2.get() };
                 tf.regs[3] = unsafe { FAR_EL2.get() };
-                advance_pc(vcpu);
+                advance_pc(rec);
                 RET_TO_RMM
             }
             undefined => {
@@ -240,6 +240,6 @@ pub extern "C" fn handle_lower_exception(
 }
 
 #[inline(always)]
-fn advance_pc(vcpu: &mut VCPU) {
-    vcpu.context.elr += 4;
+fn advance_pc(rec: &mut Rec<'_>) {
+    rec.context.elr += 4;
 }

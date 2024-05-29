@@ -58,7 +58,7 @@ use crate::mm::translation::get_page_table;
 use crate::monitor::Monitor;
 use crate::rmm_el3::setup_el3_ifc;
 
-use armv9a::{bits_in_reg, regs::*};
+use aarch64_cpu::registers::*;
 use core::ptr::addr_of;
 
 #[cfg(not(kani))]
@@ -78,8 +78,19 @@ pub unsafe fn start(cpu_id: usize) {
     Monitor::new().run();
 }
 
-use aarch64_cpu::registers::Writeable;
-use aarch64_cpu::registers::HCR_EL2;
+/// # Safety
+///
+/// This function performs several operations that involve writing to system control registers
+/// at the EL2.
+///
+/// The caller must ensure that:
+/// - The function is called at EL2 with the required privileges.
+/// - The `vectors` variable points to a valid exception vector table in memory.
+/// - The system is in a state where modifying these control registers is safe and will not
+///   interfere with other critical operations.
+///
+/// Failing to meet these requirements can result in system crashes, security vulnerabilities,
+/// or other undefined behavior.
 unsafe fn setup_el2() {
     HCR_EL2.write(
         HCR_EL2::FWB::SET
@@ -100,18 +111,37 @@ unsafe fn setup_el2() {
             + HCR_EL2::VM::SET,
     );
     VBAR_EL2.set(addr_of!(vectors) as u64);
-    SCTLR_EL2.set(SCTLR_EL2::C | SCTLR_EL2::I | SCTLR_EL2::M | SCTLR_EL2::EOS);
-    CPTR_EL2.set(CPTR_EL2::TAM);
-    ICC_SRE_EL2.set(ICC_SRE_EL2::ENABLE | ICC_SRE_EL2::DIB | ICC_SRE_EL2::DFB | ICC_SRE_EL2::SRE);
+    SCTLR_EL2
+        .write(SCTLR_EL2::C::SET + SCTLR_EL2::I::SET + SCTLR_EL2::M::SET + SCTLR_EL2::EOS::SET);
+    CPTR_EL2.write(CPTR_EL2::TAM::SET);
+    ICC_SRE_EL2.write(
+        ICC_SRE_EL2::ENABLE::SET
+            + ICC_SRE_EL2::DIB::SET
+            + ICC_SRE_EL2::DFB::SET
+            + ICC_SRE_EL2::SRE::SET,
+    );
 }
 
+/// # Safety
+///
+/// This function configures the Memory Management Unit (MMU) at the EL2.
+///
+/// The caller must ensure:
+/// - The function is called at EL2 with the appropriate privileges.
+/// - The translation table base address (`ttlb_base`) is valid and correctly initialized.
+/// - Modifying these registers and executing these assembly instructions will not interfere
+///   with other critical operations.
+///
+/// Failing to meet these requirements can result in system crashes, memory corruption, security
+/// vulnerabilities, or other undefined behavior.
 unsafe fn setup_mmu_cfg() {
     core::arch::asm!("tlbi alle2is", "dsb ish", "isb",);
 
     // /* Set attributes in the right indices of the MAIR. */
-    let mair_el2 = bits_in_reg(MAIR_EL2::Attr0, mair_attr::NORMAL)
-        | bits_in_reg(MAIR_EL2::Attr1, mair_attr::DEVICE_NGNRNE)
-        | bits_in_reg(MAIR_EL2::Attr2, mair_attr::DEVICE_NGNRE);
+    let mair_el2 = MAIR_EL2::Attr0_Normal_Outer::WriteBack_NonTransient_ReadWriteAlloc
+        + MAIR_EL2::Attr0_Normal_Inner::WriteBack_NonTransient_ReadWriteAlloc
+        + MAIR_EL2::Attr1_Device::nonGathering_nonReordering_noEarlyWriteAck
+        + MAIR_EL2::Attr2_Device::nonGathering_nonReordering_EarlyWriteAck;
 
     /*
      * The size of the virtual address space is configured as 64 – T0SZ.
@@ -120,14 +150,12 @@ unsafe fn setup_mmu_cfg() {
      * space is covered by a single L1 table.
      * Therefore, our starting level of translation is level 1.
      */
-    let mut tcr_el2 = bits_in_reg(TCR_EL2::T0SZ, 0x19);
-
-    // configure the tcr_el2 attributes
-    tcr_el2 |= bits_in_reg(TCR_EL2::PS, tcr_paddr_size::PS_1T)
-        | bits_in_reg(TCR_EL2::TG0, tcr_granule::G_4K)
-        | bits_in_reg(TCR_EL2::SH0, tcr_shareable::INNER)
-        | bits_in_reg(TCR_EL2::ORGN0, tcr_cacheable::WBWA)
-        | bits_in_reg(TCR_EL2::IRGN0, tcr_cacheable::WBWA);
+    let tcr_el2 = TCR_EL2::T0SZ.val(0x19)
+        + TCR_EL2::PS::Bits_40
+        + TCR_EL2::TG0::KiB_4
+        + TCR_EL2::SH0::Inner
+        + TCR_EL2::ORGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
+        + TCR_EL2::IRGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable;
 
     // set the ttlb base address, this is where the memory address translation
     // table walk starts
@@ -135,8 +163,8 @@ unsafe fn setup_mmu_cfg() {
 
     // Invalidate the local I-cache so that any instructions fetched
     // speculatively are discarded.
-    MAIR_EL2.set(mair_el2);
-    TCR_EL2.set(tcr_el2);
+    MAIR_EL2.write(mair_el2);
+    TCR_EL2.write(tcr_el2);
     TTBR0_EL2.set(ttlb_base);
     core::arch::asm!("dsb ish", "isb",);
 }

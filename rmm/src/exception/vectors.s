@@ -1,6 +1,6 @@
-.equ VCPU_GP_REGS, 0
-.equ VCPU_SYS_REGS, 264
-.equ VCPU_FP_REGS, 472
+.equ REC_GP_REGS, 0
+.equ REC_SYS_REGS, 264
+.equ REC_FP_REGS, 472
 
 .macro save_volatile_to_stack
 	stp x29, x30, [SP, #-16]!
@@ -21,44 +21,44 @@
 	stp xzr, x18, [SP, #-16]!
 .endm
 
-.macro save_volatile_to_vcpu
+.macro save_volatile_to_rec
 	/* Save all general purpose registers */
 
 	str x18, [sp, #-16]!
 
 	mrs x18, tpidr_el2
-	stp x0, x1, [x18, #VCPU_GP_REGS + 8 * 0]
-	stp x2, x3, [x18, #VCPU_GP_REGS + 8 * 2]
-	stp x4, x5, [x18, #VCPU_GP_REGS + 8 * 4]
-	stp x6, x7, [x18, #VCPU_GP_REGS + 8 * 6]
-	stp x8, x9, [x18, #VCPU_GP_REGS + 8 * 8]
-	stp x10, x11, [x18, #VCPU_GP_REGS + 8 * 10]
-	stp x12, x13, [x18, #VCPU_GP_REGS + 8 * 12]
-	stp x14, x15, [x18, #VCPU_GP_REGS + 8 * 14]
-	stp x16, x17, [x18, #VCPU_GP_REGS + 8 * 16]
-	stp x19, x20, [x18, #VCPU_GP_REGS + 8 * 19]
-	stp x21, x22, [x18, #VCPU_GP_REGS + 8 * 21]
-	stp x23, x24, [x18, #VCPU_GP_REGS + 8 * 23]
-	stp x25, x26, [x18, #VCPU_GP_REGS + 8 * 25]
-	stp x27, x28, [x18, #VCPU_GP_REGS + 8 * 27]
-	stp x29, x30, [x18, #VCPU_GP_REGS + 8 * 29]
+	stp x0, x1, [x18, #REC_GP_REGS + 8 * 0]
+	stp x2, x3, [x18, #REC_GP_REGS + 8 * 2]
+	stp x4, x5, [x18, #REC_GP_REGS + 8 * 4]
+	stp x6, x7, [x18, #REC_GP_REGS + 8 * 6]
+	stp x8, x9, [x18, #REC_GP_REGS + 8 * 8]
+	stp x10, x11, [x18, #REC_GP_REGS + 8 * 10]
+	stp x12, x13, [x18, #REC_GP_REGS + 8 * 12]
+	stp x14, x15, [x18, #REC_GP_REGS + 8 * 14]
+	stp x16, x17, [x18, #REC_GP_REGS + 8 * 16]
+	stp x19, x20, [x18, #REC_GP_REGS + 8 * 19]
+	stp x21, x22, [x18, #REC_GP_REGS + 8 * 21]
+	stp x23, x24, [x18, #REC_GP_REGS + 8 * 23]
+	stp x25, x26, [x18, #REC_GP_REGS + 8 * 25]
+	stp x27, x28, [x18, #REC_GP_REGS + 8 * 27]
+	stp x29, x30, [x18, #REC_GP_REGS + 8 * 29]
 
 	ldr x0, [sp], #16
-	str x0, [x18, #VCPU_GP_REGS + 8 * 18]
+	str x0, [x18, #REC_GP_REGS + 8 * 18]
 
 	/* Save return address & mode */
 	mrs x1, elr_el2
 	mrs x2, spsr_el2
-	stp x1, x2, [x18, #VCPU_GP_REGS + 8 * 31]
+	stp x1, x2, [x18, #REC_GP_REGS + 8 * 31]
 .endm
 
-.global restore_all_from_vcpu_and_run
-restore_all_from_vcpu_and_run:
+.global restore_all_from_rec_and_run
+restore_all_from_rec_and_run:
 	mrs x0, tpidr_el2
 
 	/* Restore system registers */
 	/* Use x28 as the base */
-	add x28, x0, #VCPU_SYS_REGS
+	add x28, x0, #REC_SYS_REGS
 
 	ldr x3, [x28], #8
 	/* msr sctlr_el2, x2 */
@@ -117,34 +117,34 @@ restore_all_from_vcpu_and_run:
 	/* TODO: invalidate TLB */
 
 	/* Intentional fallthrough */
-.global restore_nonvolatile_from_vcpu_and_run
-restore_nonvolatile_from_vcpu_and_run:
+.global restore_nonvolatile_from_rec_and_run
+restore_nonvolatile_from_rec_and_run:
 	/* Restore non-volatile registers. */
-	ldp x19, x20, [x0, #VCPU_GP_REGS + 8 * 19]
-	ldp x21, x22, [x0, #VCPU_GP_REGS + 8 * 21]
-	ldp x23, x24, [x0, #VCPU_GP_REGS + 8 * 23]
-	ldp x25, x26, [x0, #VCPU_GP_REGS + 8 * 25]
-	ldp x27, x28, [x0, #VCPU_GP_REGS + 8 * 27]
+	ldp x19, x20, [x0, #REC_GP_REGS + 8 * 19]
+	ldp x21, x22, [x0, #REC_GP_REGS + 8 * 21]
+	ldp x23, x24, [x0, #REC_GP_REGS + 8 * 23]
+	ldp x25, x26, [x0, #REC_GP_REGS + 8 * 25]
+	ldp x27, x28, [x0, #REC_GP_REGS + 8 * 27]
 
 	/* Intentional fallthrough */
-.global restore_volatile_from_vcpu_and_run
-restore_volatile_from_vcpu_and_run:
-	ldp x4, x5, [x0, #VCPU_GP_REGS + 8 * 4]
-	ldp x6, x7, [x0, #VCPU_GP_REGS + 8 * 6]
-	ldp x8, x9, [x0, #VCPU_GP_REGS + 8 * 8]
-	ldp x10, x11, [x0, #VCPU_GP_REGS + 8 * 10]
-	ldp x12, x13, [x0, #VCPU_GP_REGS + 8 * 12]
-	ldp x14, x15, [x0, #VCPU_GP_REGS + 8 * 14]
-	ldp x16, x17, [x0, #VCPU_GP_REGS + 8 * 16]
-	ldr x18, [x0, #VCPU_GP_REGS + 8 * 18]
-	ldp x29, x30, [x0, #VCPU_GP_REGS + 8 * 29]
+.global restore_volatile_from_rec_and_run
+restore_volatile_from_rec_and_run:
+	ldp x4, x5, [x0, #REC_GP_REGS + 8 * 4]
+	ldp x6, x7, [x0, #REC_GP_REGS + 8 * 6]
+	ldp x8, x9, [x0, #REC_GP_REGS + 8 * 8]
+	ldp x10, x11, [x0, #REC_GP_REGS + 8 * 10]
+	ldp x12, x13, [x0, #REC_GP_REGS + 8 * 12]
+	ldp x14, x15, [x0, #REC_GP_REGS + 8 * 14]
+	ldp x16, x17, [x0, #REC_GP_REGS + 8 * 16]
+	ldr x18, [x0, #REC_GP_REGS + 8 * 18]
+	ldp x29, x30, [x0, #REC_GP_REGS + 8 * 29]
 
-	ldp x1, x2, [x0, #VCPU_GP_REGS + 8 * 31]
+	ldp x1, x2, [x0, #REC_GP_REGS + 8 * 31]
 	msr elr_el2, x1
 	msr spsr_el2, x2
 
-	ldp x2, x3, [x0, #VCPU_GP_REGS + 8 * 2]
-	ldp x0, x1, [x0, #VCPU_GP_REGS + 8 * 0]
+	ldp x2, x3, [x0, #REC_GP_REGS + 8 * 2]
+	ldp x0, x1, [x0, #REC_GP_REGS + 8 * 0]
 	eret
 	dsb nsh
 	isb
@@ -184,7 +184,7 @@ restore_volatile_from_stack_and_return:
 
 .macro HANDLER_LOWER source, kind
 	.align 7
-	save_volatile_to_vcpu
+	save_volatile_to_rec
 
 	/* Setup arguments to exception handler */
 	mov x0, \source
@@ -196,26 +196,26 @@ restore_volatile_from_stack_and_return:
 	bl handle_lower_exception
 
 	/* Enter to rmm */
-	/* vcpu will be switched by rmm if needed */
+	/* rec will be switched by rmm if needed */
 	cbnz x0, rmm_enter
 
 	mrs x0, tpidr_el2
-	b restore_nonvolatile_from_vcpu_and_run
+	b restore_nonvolatile_from_rec_and_run
 .endm
 
 .global rmm_enter
 rmm_enter:
 	/* Save non-volatile registers */
 	mrs x1, tpidr_el2
-	stp x19, x20, [x1, #VCPU_GP_REGS + 8 * 19]
-	stp x21, x22, [x1, #VCPU_GP_REGS + 8 * 21]
-	stp x23, x24, [x1, #VCPU_GP_REGS + 8 * 23]
-	stp x25, x26, [x1, #VCPU_GP_REGS + 8 * 25]
-	stp x27, x28, [x1, #VCPU_GP_REGS + 8 * 27]
+	stp x19, x20, [x1, #REC_GP_REGS + 8 * 19]
+	stp x21, x22, [x1, #REC_GP_REGS + 8 * 21]
+	stp x23, x24, [x1, #REC_GP_REGS + 8 * 23]
+	stp x25, x26, [x1, #REC_GP_REGS + 8 * 25]
+	stp x27, x28, [x1, #REC_GP_REGS + 8 * 27]
 
 	/* Save system registers */
 	/* Use x28 as the base */
-	add x28, x1, #VCPU_SYS_REGS
+	add x28, x1, #REC_SYS_REGS
 
 	/* mrs x2, sctlr_el2 */
 	mrs x3, sp_el1
@@ -319,7 +319,7 @@ rmm_exit:
 	str xzr, [SP, #-8]!
 	str xzr, [SP, #-8]!
 
-	b restore_all_from_vcpu_and_run
+	b restore_all_from_rec_and_run
 
 .align 11
 .global vectors

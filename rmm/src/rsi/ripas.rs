@@ -19,19 +19,14 @@ pub fn get_ripas_state(
     rec: &mut Rec<'_>,
     _run: &mut Run,
 ) -> core::result::Result<(), Error> {
-    let vcpuid = rec.vcpuid();
     let ipa_bits = rec.ipa_bits()?;
-    let realmid = rec.realmid()?;
     let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
     let rd = rd_granule.content::<Rd>();
 
-    let ipa_page = get_reg(rd, vcpuid, 1)?;
+    let ipa_page = get_reg(rec, 1)?;
     if validate_ipa(ipa_page, ipa_bits).is_err() {
-        if set_reg(rd, vcpuid, 0, rsi::ERROR_INPUT).is_err() {
-            warn!(
-                "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
-                realmid, vcpuid
-            );
+        if set_reg(rec, 0, rsi::ERROR_INPUT).is_err() {
+            warn!("Unable to set register 0. rec: {:?}", rec);
         }
         ret[0] = rmi::SUCCESS_REC_ENTER;
         return Ok(());
@@ -44,18 +39,12 @@ pub fn get_ripas_state(
         ipa_page, ripas
     );
 
-    if set_reg(rd, vcpuid, 0, rsi::SUCCESS).is_err() {
-        warn!(
-            "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
-            realmid, vcpuid
-        );
+    if set_reg(rec, 0, rsi::SUCCESS).is_err() {
+        warn!("Unable to set register 0. rec: {:?}", rec);
     }
 
-    if set_reg(rd, vcpuid, 1, ripas).is_err() {
-        warn!(
-            "Unable to set register 1. realmid: {:?} vcpuid: {:?}",
-            realmid, vcpuid
-        );
+    if set_reg(rec, 1, ripas).is_err() {
+        warn!("Unable to set register 1. rec: {:?}", rec);
     }
 
     ret[0] = rmi::SUCCESS_REC_ENTER;
@@ -69,18 +58,15 @@ pub fn set_ripas_state(
     rec: &mut Rec<'_>,
     run: &mut Run,
 ) -> core::result::Result<(), Error> {
-    let vcpuid = rec.vcpuid();
     let ipa_bits = rec.ipa_bits()?;
-    let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-    let rd = rd_granule.content::<Rd>();
 
-    let ipa_start = get_reg(rd, vcpuid, 1)?;
-    let ipa_end = get_reg(rd, vcpuid, 2)?;
-    let ipa_state = get_reg(rd, vcpuid, 3)? as u8;
-    let flags = get_reg(rd, vcpuid, 4)? as u64;
+    let ipa_start = get_reg(rec, 1)?;
+    let ipa_end = get_reg(rec, 2)?;
+    let ipa_state = get_reg(rec, 3)? as u8;
+    let flags = get_reg(rec, 4)? as u64;
 
     if ipa_end <= ipa_start {
-        set_reg(rd, vcpuid, 0, rsi::ERROR_INPUT)?;
+        set_reg(rec, 0, rsi::ERROR_INPUT)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;
         return Ok(());
         //return Err(Error::RmiErrorInput); // integer overflows or size is zero
@@ -93,7 +79,7 @@ pub fn set_ripas_state(
         || !is_protected_ipa(ipa_start, ipa_bits)
         || !is_protected_ipa(ipa_end - 1, ipa_bits)
     {
-        set_reg(rd, vcpuid, 0, rsi::ERROR_INPUT)?;
+        set_reg(rec, 0, rsi::ERROR_INPUT)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;
         return Ok(());
     }
@@ -119,16 +105,14 @@ fn is_ripas_valid(ripas: u8) -> bool {
 
 pub fn complete_ripas(rec: &mut Rec<'_>, run: &Run) -> Result<(), Error> {
     let ripas_addr = rec.ripas_addr() as usize;
-    let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-    let rd = rd_granule.content::<Rd>();
     if rec.ripas_end() as usize > 0 {
-        set_reg(rd, rec.vcpuid(), 0, rsi::SUCCESS)?; // RSI_SUCCESS
-        set_reg(rd, rec.vcpuid(), 1, ripas_addr)?;
+        set_reg(rec, 0, rsi::SUCCESS)?; // RSI_SUCCESS
+        set_reg(rec, 1, ripas_addr)?;
         let flags = run.entry_flags();
         if flags & REC_ENTRY_FLAG_RIPAS_RESPONSE != 0 {
-            set_reg(rd, rec.vcpuid(), 2, 1)?; // REJECT
+            set_reg(rec, 2, 1)?; // REJECT
         } else {
-            set_reg(rd, rec.vcpuid(), 2, 0)?; // ACCEPT
+            set_reg(rec, 2, 0)?; // ACCEPT
         }
         rec.set_ripas(0, 0, 0, 0);
     }

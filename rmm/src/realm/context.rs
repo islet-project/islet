@@ -1,10 +1,7 @@
 use super::timer;
-use crate::cpu::get_cpu_id;
 use crate::gic;
-use crate::realm::rd::Rd;
-use crate::realm::vcpu::VCPU;
+use crate::rec::Rec;
 use crate::rmi::error::Error;
-use crate::rmi::error::InternalError::*;
 
 use armv9a::regs::*;
 
@@ -27,33 +24,18 @@ impl RegOffset {
     pub const SCTLR: usize = 40;
 }
 
-pub fn set_reg(rd: &Rd, vcpu: usize, register: usize, value: usize) -> Result<(), Error> {
+pub fn set_reg(rec: &mut Rec<'_>, register: usize, value: usize) -> Result<(), Error> {
     match register {
         0..=30 => {
-            rd.vcpus
-                .get(vcpu)
-                .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
-                .lock()
-                .context
-                .gp_regs[register] = value as u64;
+            rec.context.gp_regs[register] = value as u64;
             Ok(())
         }
         RegOffset::PC => {
-            rd.vcpus
-                .get(vcpu)
-                .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
-                .lock()
-                .context
-                .elr = value as u64;
+            rec.context.elr = value as u64;
             Ok(())
         }
         RegOffset::PSTATE => {
-            rd.vcpus
-                .get(vcpu)
-                .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
-                .lock()
-                .context
-                .spsr = value as u64;
+            rec.context.spsr = value as u64;
             Ok(())
         }
         _ => Err(Error::RmiErrorInput),
@@ -61,47 +43,25 @@ pub fn set_reg(rd: &Rd, vcpu: usize, register: usize, value: usize) -> Result<()
     Ok(())
 }
 
-pub fn get_reg(rd: &Rd, vcpu: usize, register: usize) -> Result<usize, Error> {
+pub fn get_reg(rec: &Rec<'_>, register: usize) -> Result<usize, Error> {
     match register {
         0..=30 => {
-            let value = rd
-                .vcpus
-                .get(vcpu)
-                .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
-                .lock()
-                .context
-                .gp_regs[register];
+            let value = rec.context.gp_regs[register];
             Ok(value as usize)
         }
         RegOffset::PC => {
-            let value = rd
-                .vcpus
-                .get(vcpu)
-                .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
-                .lock()
-                .context
-                .elr;
+            let value = rec.context.elr;
             Ok(value as usize)
         }
         _ => Err(Error::RmiErrorInput),
     }
 }
 
-pub fn reset_vcpu(rd: &Rd, vcpu: usize) -> Result<(), Error> {
-    rd.vcpus
-        .get(vcpu)
-        .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
-        .lock()
-        .context
-        .spsr = SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M & 0b0101);
+pub fn reset_vcpu(rec: &mut Rec<'_>) -> Result<(), Error> {
+    rec.context.spsr =
+        SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M & 0b0101);
 
-    rd.vcpus
-        .get(vcpu)
-        .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
-        .lock()
-        .context
-        .sys_regs
-        .sctlr = 0;
+    rec.context.sys_regs.sctlr = 0;
     Ok(())
 }
 
@@ -116,15 +76,15 @@ impl Context {
         }
     }
 
-    pub unsafe fn into_current(vcpu: &mut VCPU) {
-        TPIDR_EL2.set(vcpu as *const _ as u64);
-        gic::restore_state(vcpu);
-        timer::restore_state(vcpu);
+    pub unsafe fn into_current(rec: &Rec<'_>) {
+        TPIDR_EL2.set(rec as *const _ as u64);
+        gic::restore_state(rec);
+        timer::restore_state(rec);
     }
 
-    pub unsafe fn from_current(vcpu: &mut VCPU) {
-        gic::save_state(vcpu);
-        timer::save_state(vcpu);
+    pub unsafe fn from_current(rec: &mut Rec<'_>) {
+        gic::save_state(rec);
+        timer::save_state(rec);
     }
 }
 

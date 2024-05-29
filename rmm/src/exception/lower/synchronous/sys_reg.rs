@@ -1,5 +1,5 @@
 use crate::exception::trap;
-use crate::realm::vcpu::VCPU;
+use crate::rec::Rec;
 
 use armv9a::regs::*;
 
@@ -8,16 +8,16 @@ fn check_sysreg_id_access(esr: u64) -> bool {
     (esr.get_masked(ISS::Op0) | esr.get_masked(ISS::Op1) | esr.get_masked(ISS::CRn)) == ISS::Op0
 }
 
-pub fn handle(vcpu: &mut VCPU, esr: u64) -> u64 {
+pub fn handle(rec: &mut Rec<'_>, esr: u64) -> u64 {
     if check_sysreg_id_access(esr) {
-        handle_sysreg_id(vcpu, esr);
+        handle_sysreg_id(rec, esr);
     } else {
         warn!("Unhandled MSR/MRS instruction");
     }
     trap::RET_TO_REC
 }
 
-fn handle_sysreg_id(vcpu: &mut VCPU, esr: u64) -> u64 {
+fn handle_sysreg_id(rec: &mut Rec<'_>, esr: u64) -> u64 {
     let esr = ISS::new(esr);
     let il = esr.get_masked_value(ISS::IL);
     let rt = esr.get_masked_value(ISS::Rt) as usize;
@@ -63,7 +63,7 @@ fn handle_sysreg_id(vcpu: &mut VCPU, esr: u64) -> u64 {
     };
     mask = !mask;
 
-    vcpu.context.gp_regs[rt] = match idreg as u32 {
+    rec.context.gp_regs[rt] = match idreg as u32 {
         ISS_ID_AA64PFR0_EL1 => unsafe { ID_AA64PFR0_EL1.get() & mask },
         ISS_ID_AA64PFR1_EL1 => unsafe { ID_AA64PFR1_EL1.get() & mask },
         //ISS_ID_AA64ZFR0_EL1 => unsafe { ID_AA64ZFR0_EL1.get()  & mask },

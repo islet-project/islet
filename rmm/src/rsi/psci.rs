@@ -36,43 +36,34 @@ extern crate alloc;
 
 pub fn set_event_handler(rsi: &mut RsiHandle) {
     listen!(rsi, rsi::PSCI_VERSION, |_arg, ret, _rmm, rec, _run| {
-        let vcpuid = rec.vcpuid();
-        let realmid = rec.realmid()?;
-        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
-
-        if set_reg(rd, vcpuid, 0, psci_version()).is_err() {
-            warn!(
-                "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
-                realmid, vcpuid
-            );
+        if set_reg(rec, 0, psci_version()).is_err() {
+            warn!("Unable to set register 0. rec: {:?}", rec);
         }
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
     });
 
     listen!(rsi, rsi::PSCI_CPU_ON, |_arg, ret, _rmm, rec, run| {
-        let vcpuid = rec.vcpuid();
         let mut rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
         let rd = rd.content_mut::<Rd>();
 
-        let target_mpidr = get_reg(rd, vcpuid, 1)? as u64;
-        let entry_addr = get_reg(rd, vcpuid, 2)?;
+        let target_mpidr = get_reg(rec, 1)? as u64;
+        let entry_addr = get_reg(rec, 2)?;
 
         if !rd.addr_in_par(entry_addr) {
-            set_reg(rd, vcpuid, 0, PsciReturn::INVALID_ADDRESS)?;
+            set_reg(rec, 0, PsciReturn::INVALID_ADDRESS)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
 
         let target_index = MPIDR::from(target_mpidr).index();
         if target_index >= rd.rec_index() {
-            set_reg(rd, vcpuid, 0, PsciReturn::INVALID_PARAMS)?;
+            set_reg(rec, 0, PsciReturn::INVALID_PARAMS)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
         if target_index == rec.vcpuid() {
-            set_reg(rd, vcpuid, 0, PsciReturn::ALREADY_ON)?;
+            set_reg(rec, 0, PsciReturn::ALREADY_ON)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
@@ -105,13 +96,9 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
     });
 
     listen!(rsi, rsi::PSCI_CPU_SUSPEND, |_arg, ret, _rmm, rec, run| {
-        let rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd.content::<Rd>();
-        let vcpuid = rec.vcpuid();
-
-        let _power_state = get_reg(rd, vcpuid, 1)? as u64;
-        let _entry_addr = get_reg(rd, vcpuid, 2)?;
-        let _context_id = get_reg(rd, vcpuid, 3)?;
+        let _power_state = get_reg(rec, 1)? as u64;
+        let _entry_addr = get_reg(rec, 2)?;
+        let _context_id = get_reg(rec, 3)?;
 
         run.set_exit_reason(rmi::EXIT_PSCI);
         run.set_gpr(0, rsi::PSCI_CPU_SUSPEND as u64)?;
@@ -131,15 +118,14 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
     });
 
     listen!(rsi, rsi::PSCI_AFFINITY_INFO, |_arg, ret, _rmm, rec, run| {
+        #[cfg(feature = "gst_page_table")]
         let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
-        let vcpuid = rec.vcpuid();
 
-        let affinity = get_reg(rd, vcpuid, 1)? as u64;
-        let lowest_level = get_reg(rd, vcpuid, 2)?;
+        let affinity = get_reg(rec, 1)? as u64;
+        let lowest_level = get_reg(rec, 2)?;
 
         if lowest_level != 0 {
-            set_reg(rd, vcpuid, 0, PsciReturn::INVALID_PARAMS)?;
+            set_reg(rec, 0, PsciReturn::INVALID_PARAMS)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
@@ -148,13 +134,13 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         // check if target_index is in the range
         #[cfg(feature = "gst_page_table")]
         if target_index >= rd_granule.num_children() {
-            set_reg(rd, vcpuid, 0, PsciReturn::INVALID_PARAMS)?;
+            set_reg(rec, 0, PsciReturn::INVALID_PARAMS)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
 
         if target_index == rec.vcpuid() {
-            set_reg(rd, vcpuid, 0, PsciReturn::SUCCESS)?;
+            set_reg(rec, 0, PsciReturn::SUCCESS)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());
         }
@@ -169,12 +155,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
     });
 
     listen!(rsi, rsi::PSCI_FEATURES, |_arg, ret, _rmm, rec, _run| {
-        let vcpuid = rec.vcpuid();
-        let realmid = rec.realmid()?;
-        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
-
-        let feature_id = get_reg(rd, vcpuid, 1)?;
+        let feature_id = get_reg(rec, 1)?;
         let retval = match feature_id {
             rsi::PSCI_CPU_SUSPEND
             | rsi::PSCI_CPU_OFF
@@ -186,27 +167,16 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             | rsi::PSCI_VERSION => PsciReturn::SUCCESS,
             _ => PsciReturn::NOT_SUPPORTED,
         };
-        if set_reg(rd, vcpuid, 0, retval).is_err() {
-            warn!(
-                "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
-                realmid, vcpuid
-            );
+        if set_reg(rec, 0, retval).is_err() {
+            warn!("Unable to set register 0. rec: {:?}", rec);
         }
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
     });
 
     listen!(rsi, rsi::SMCCC_VERSION, |_arg, ret, _rmm, rec, _run| {
-        let vcpuid = rec.vcpuid();
-        let realmid = rec.realmid()?;
-        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
-
-        if set_reg(rd, vcpuid, 0, smccc_version()).is_err() {
-            warn!(
-                "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
-                realmid, vcpuid
-            );
+        if set_reg(rec, 0, smccc_version()).is_err() {
+            warn!("Unable to set register 0. rec: {:?}", rec);
         }
         ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
@@ -226,17 +196,15 @@ pub fn complete_psci(
     target: &mut Rec<'_>,
     status: usize,
 ) -> Result<(), Error> {
-    let rd_granule = get_granule_if!(caller.owner()?, GranuleState::RD)?;
-    let rd = rd_granule.content::<Rd>();
-    let caller_vcpuid = caller.vcpuid();
     let target_vcpuid = target.vcpuid();
 
-    let target_mpidr = get_reg(rd, caller_vcpuid, 1)? as u64;
+    let target_mpidr = get_reg(caller, 1)? as u64;
+    // TODO: check the below again
     if MPIDR::from(target_mpidr).index() != target_vcpuid {
         return Err(Error::RmiErrorInput);
     }
 
-    let command = get_reg(rd, caller_vcpuid, 0)?;
+    let command = get_reg(caller, 0)?;
     match command {
         rsi::PSCI_CPU_ON => {
             if status != PsciReturn::SUCCESS && status != PsciReturn::DENIED {
@@ -255,11 +223,11 @@ pub fn complete_psci(
         rsi::PSCI_CPU_ON if target.runnable() => PsciReturn::ALREADY_ON,
         rsi::PSCI_CPU_ON if status == PsciReturn::DENIED => PsciReturn::DENIED,
         rsi::PSCI_CPU_ON => {
-            let entry_point = get_reg(rd, caller_vcpuid, 2)?;
-            let context_id = get_reg(rd, caller_vcpuid, 3)?;
-            reset_vcpu(rd, target_vcpuid)?;
-            set_reg(rd, target_vcpuid, 0, context_id)?;
-            set_reg(rd, target_vcpuid, RegOffset::PC, entry_point)?;
+            let entry_point = get_reg(caller, 2)?;
+            let context_id = get_reg(caller, 3)?;
+            reset_vcpu(target)?;
+            set_reg(target, 0, context_id)?;
+            set_reg(target, RegOffset::PC, entry_point)?;
             target.set_runnable(1);
             PsciReturn::SUCCESS
         }
@@ -275,10 +243,10 @@ pub fn complete_psci(
         return Err(Error::RmiErrorInput);
     }
 
-    set_reg(rd, caller_vcpuid, 0, psci_ret)?;
-    set_reg(rd, caller_vcpuid, 1, 0)?;
-    set_reg(rd, caller_vcpuid, 2, 0)?;
-    set_reg(rd, caller_vcpuid, 3, 0)?;
+    set_reg(caller, 0, psci_ret)?;
+    set_reg(caller, 1, 0)?;
+    set_reg(caller, 2, 0)?;
+    set_reg(caller, 3, 0)?;
     caller.set_psci_pending(false);
     Ok(())
 }

@@ -1,23 +1,21 @@
-use crate::realm::rd::Rd;
-use crate::realm::vcpu::VCPU;
+use crate::rec::Rec;
 use crate::rmi::error::Error;
-use crate::rmi::error::InternalError::*;
 use crate::rmi::rec::run::Run;
 
 use armv9a::regs::*;
 
-pub fn init_timer(vcpu: &mut VCPU) {
-    let timer = &mut vcpu.context.timer;
+pub fn init_timer(rec: &mut Rec<'_>) {
+    let timer = &mut rec.context.timer;
     timer.cnthctl_el2 = CNTHCTL_EL2::EL1PTEN | CNTHCTL_EL2::EL1PCEN | CNTHCTL_EL2::EL1PCTEN;
 }
 
-pub fn set_cnthctl(vcpu: &mut VCPU, val: u64) {
-    let timer = &mut vcpu.context.timer;
+pub fn set_cnthctl(rec: &mut Rec<'_>, val: u64) {
+    let timer = &mut rec.context.timer;
     timer.cnthctl_el2 = val;
 }
 
-pub fn restore_state(vcpu: &VCPU) {
-    let timer = &vcpu.context.timer;
+pub fn restore_state(rec: &Rec<'_>) {
+    let timer = &rec.context.timer;
 
     unsafe { CNTVOFF_EL2.set(timer.cntvoff_el2) };
     unsafe { CNTPOFF_EL2.set(timer.cntpoff_el2) };
@@ -28,8 +26,8 @@ pub fn restore_state(vcpu: &VCPU) {
     unsafe { CNTHCTL_EL2.set(timer.cnthctl_el2) };
 }
 
-pub fn save_state(vcpu: &mut VCPU) {
-    let timer = &mut vcpu.context.timer;
+pub fn save_state(rec: &mut Rec<'_>) {
+    let timer = &mut rec.context.timer;
 
     timer.cntvoff_el2 = unsafe { CNTVOFF_EL2.get() };
     timer.cntv_cval_el0 = unsafe { CNTV_CVAL_EL0.get() };
@@ -40,12 +38,8 @@ pub fn save_state(vcpu: &mut VCPU) {
     timer.cnthctl_el2 = unsafe { CNTHCTL_EL2.get() };
 }
 
-pub fn send_state_to_host(rd: &mut Rd, vcpu: usize, run: &mut Run) -> Result<(), Error> {
-    let vcpu = rd
-        .vcpus
-        .get_mut(vcpu)
-        .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
-    let timer = &vcpu.lock().context.timer;
+pub fn send_state_to_host(rec: &Rec<'_>, run: &mut Run) -> Result<(), Error> {
+    let timer = &rec.context.timer;
 
     run.set_cntv_ctl(timer.cntv_ctl_el0);
     run.set_cntv_cval(timer.cntv_cval_el0 - timer.cntvoff_el2);

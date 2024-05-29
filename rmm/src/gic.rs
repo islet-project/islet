@@ -1,7 +1,5 @@
-use crate::realm::rd::Rd;
-use crate::realm::vcpu::VCPU;
+use crate::rec::Rec;
 use crate::rmi::error::Error;
-use crate::rmi::error::InternalError::*;
 use crate::rmi::rec::run::Run;
 
 use armv9a::regs::*;
@@ -97,8 +95,8 @@ lazy_static! {
     };
 }
 
-pub fn init_gic(vcpu: &mut VCPU) {
-    let gic_state = &mut vcpu.context.gic_state;
+pub fn init_gic(rec: &mut Rec<'_>) {
+    let gic_state = &mut rec.context.gic_state;
     gic_state.ich_hcr_el2 =
         ICH_HCR_EL2_EN_BIT | ICH_HCR_EL2_VSGIEEOICOUNT_BIT | ICH_HCR_EL2_DVIM_BIT
 }
@@ -209,8 +207,8 @@ fn get_ap1r(i: usize) -> u64 {
     }
 }
 
-pub fn restore_state(vcpu: &VCPU) {
-    let gic_state = &vcpu.context.gic_state;
+pub fn restore_state(rec: &Rec<'_>) {
+    let gic_state = &rec.context.gic_state;
     let nr_lrs = GIC_FEATURES.nr_lrs;
     let nr_aprs = GIC_FEATURES.nr_aprs;
 
@@ -225,8 +223,8 @@ pub fn restore_state(vcpu: &VCPU) {
     unsafe { ICH_HCR_EL2.set(gic_state.ich_hcr_el2) };
 }
 
-pub fn save_state(vcpu: &mut VCPU) {
-    let gic_state = &mut vcpu.context.gic_state;
+pub fn save_state(rec: &mut Rec<'_>) {
+    let gic_state = &mut rec.context.gic_state;
     let nr_lrs = GIC_FEATURES.nr_lrs;
     let nr_aprs = GIC_FEATURES.nr_aprs;
 
@@ -245,12 +243,8 @@ pub fn save_state(vcpu: &mut VCPU) {
     unsafe { ICH_HCR_EL2.set(gic_state.ich_hcr_el2 & !ICH_HCR_EL2_EN_BIT) };
 }
 
-pub fn receive_state_from_host(rd: &Rd, vcpu: usize, run: &Run) -> Result<(), Error> {
-    let vcpu = rd
-        .vcpus
-        .get(vcpu)
-        .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
-    let gic_state = &mut vcpu.lock().context.gic_state;
+pub fn receive_state_from_host(rec: &mut Rec<'_>, run: &Run) -> Result<(), Error> {
+    let gic_state = &mut rec.context.gic_state;
     let nr_lrs = GIC_FEATURES.nr_lrs;
 
     gic_state.ich_lr_el2[..nr_lrs].copy_from_slice(&run.entry_gic_lrs()[..nr_lrs]);
@@ -259,12 +253,8 @@ pub fn receive_state_from_host(rd: &Rd, vcpu: usize, run: &Run) -> Result<(), Er
     Ok(())
 }
 
-pub fn send_state_to_host(rd: &mut Rd, vcpu: usize, run: &mut Run) -> Result<(), Error> {
-    let vcpu = rd
-        .vcpus
-        .get_mut(vcpu)
-        .ok_or(Error::RmiErrorOthers(NotExistVCPU))?;
-    let gic_state = &mut vcpu.lock().context.gic_state;
+pub fn send_state_to_host(rec: &Rec<'_>, run: &mut Run) -> Result<(), Error> {
+    let gic_state = &rec.context.gic_state;
     let nr_lrs = GIC_FEATURES.nr_lrs;
 
     run.exit_gic_lrs_mut()[..nr_lrs].copy_from_slice(&gic_state.ich_lr_el2[..nr_lrs]);

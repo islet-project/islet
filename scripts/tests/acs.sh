@@ -4,7 +4,7 @@ set -e
 
 # Control these variables
 EXPECTED=76
-TIMEOUT=4000
+TIMEOUT=30
 
 ROOT=$(git rev-parse --show-toplevel)
 UART=$ROOT/out/uart2.log
@@ -14,20 +14,18 @@ UART=$ROOT/out/uart2.log
 $ROOT/scripts/fvp-cca -bo -nw=acs --rmm-log-level=error --excluded-tests=skipped-tests.txt
 $ROOT/scripts/fvp-cca -ro -nw=acs --no-telnet &
 
-sleep 30
-elapsed=30
+sleep 10
 
-while ! grep -q "REGRESSION REPORT:" "$UART"; do
-	sleep 5
-	elapsed=$((elapsed + 5))
+echo "[!] Starting ACS test..."
 
-	if [ ${elapsed} -gt ${TIMEOUT} ]; then
-		echo "[!] Timeout occured."
+while inotifywait -q -t $TIMEOUT -e modify $UART >/dev/null 2>&1; do
+	echo -n "."
+	if grep -q "REGRESSION REPORT:" "$UART"; then
 		break
 	fi
-
-	echo -n "."
 done
+
+echo ""
 
 # Cleanup
 ps -ef | grep fvp-cca | grep -v grep | awk '{print $2}' | xargs kill

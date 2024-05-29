@@ -13,6 +13,7 @@ sudo apt install -y -qq --no-install-recommends \
 	jq lcov \
 	flex bison \
 	bzip2 \
+	inotify-tools \
 	srecord
 
 pip3 install toml

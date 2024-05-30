@@ -12,8 +12,7 @@ use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::IPATranslation;
 use crate::realm::rd::State;
 use crate::realm::rd::{insert_rtt, Rd};
-use crate::realm::registry::VMID_SET;
-use crate::realm::vcpu::remove;
+use crate::realm::registry::{remove, VMID_SET};
 use crate::rmi;
 use crate::{get_granule, get_granule_if};
 

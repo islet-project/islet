@@ -57,14 +57,6 @@ pub fn get_reg(rec: &Rec<'_>, register: usize) -> Result<usize, Error> {
     }
 }
 
-pub fn reset_vcpu(rec: &mut Rec<'_>) -> Result<(), Error> {
-    rec.context.spsr =
-        SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M & 0b0101);
-
-    rec.context.sys_regs.sctlr = 0;
-    Ok(())
-}
-
 impl Context {
     pub fn new() -> Self {
         // Set appropriate sys registers

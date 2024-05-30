@@ -4,11 +4,9 @@ use vmsa::guard::Content;
 
 use crate::measurement::{Measurement, MEASUREMENTS_SLOT_NR};
 use crate::realm::mm::IPATranslation;
-use crate::realm::vcpu::VCPU;
 use alloc::boxed::Box;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::sync::Arc;
-use alloc::vec::Vec;
 use spin::mutex::Mutex;
 
 lazy_static! {
@@ -32,7 +30,7 @@ pub struct Rd {
     s2_starting_level: isize,
     hash_algo: u8,
     pub measurements: [Measurement; MEASUREMENTS_SLOT_NR],
-    pub vcpus: Vec<Arc<Mutex<VCPU>>>,
+    pub vcpu_index: usize,
 }
 
 impl Rd {
@@ -44,7 +42,7 @@ impl Rd {
         self.rec_index = 0;
         self.s2_starting_level = s2_starting_level;
         self.measurements = [Measurement::empty(); MEASUREMENTS_SLOT_NR];
-        self.vcpus = Vec::new();
+        self.vcpu_index = 0;
     }
 
     pub fn id(&self) -> usize {

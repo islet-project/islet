@@ -1,11 +1,11 @@
 use crate::gic;
-use crate::realm;
 use crate::realm::context::Context;
 use crate::realm::rd::Rd;
 use crate::realm::timer;
 use crate::rmi::error::Error;
 use crate::rmm_exit;
 use crate::rsi::attestation::MAX_CHALLENGE_SIZE;
+use armv9a::regs::*;
 
 use core::cell::OnceCell;
 use vmsa::guard::Content;
@@ -229,13 +229,28 @@ impl Rec<'_> {
             Context::into_current(self);
         }
     }
+
+    pub fn reset_ctx(&mut self) {
+        self.context.spsr =
+            SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M & 0b0101);
+
+        self.context.sys_regs.sctlr = 0;
+    }
 }
 
 impl Content for Rec<'_> {}
 
+// XXX: is using 'static okay here?
+unsafe fn current() -> Option<&'static mut Rec<'static>> {
+    match TPIDR_EL2.get() {
+        0 => None,
+        current => Some(&mut *(current as *mut Rec<'_>)),
+    }
+}
+
 fn enter() -> [usize; 4] {
     unsafe {
-        if let Some(_rec) = realm::vcpu::current() {
+        if let Some(_rec) = current() {
             // TODO: add code equivalent to the previous clean()
             return rmm_exit([0; 4]);
         }
@@ -245,7 +260,7 @@ fn enter() -> [usize; 4] {
 
 fn exit() {
     unsafe {
-        if let Some(rec) = realm::vcpu::current() {
+        if let Some(rec) = current() {
             rec.from_current();
         }
     }
@@ -257,10 +272,7 @@ pub fn run_prepare(rd: &Rd, vcpu: usize, rec: &mut Rec<'_>, incr_pc: usize) -> R
         rec.context.elr += 4;
     }
     debug!("resuming: {:#x}", rec.context.elr);
-    // TODO: check the below again
-    if let Some(_vcpu) = rd.vcpus.get(vcpu) {
-        rec.into_current();
-    }
+    rec.into_current();
 
     trace!("Switched to VCPU {} on Realm {}", vcpu, rd.id());
     Ok(())

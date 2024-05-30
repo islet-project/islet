@@ -1,7 +1,7 @@
 use crate::event::RsiHandle;
 use crate::granule::GranuleState;
 use crate::listen;
-use crate::realm::context::{get_reg, reset_vcpu, set_reg, RegOffset};
+use crate::realm::context::{get_reg, set_reg, RegOffset};
 use crate::realm::rd::{Rd, State};
 use crate::rec::Rec;
 use crate::rmi;
@@ -225,7 +225,7 @@ pub fn complete_psci(
         rsi::PSCI_CPU_ON => {
             let entry_point = get_reg(caller, 2)?;
             let context_id = get_reg(caller, 3)?;
-            reset_vcpu(target)?;
+            target.reset_ctx();
             set_reg(target, 0, context_id)?;
             set_reg(target, RegOffset::PC, entry_point)?;
             target.set_runnable(1);

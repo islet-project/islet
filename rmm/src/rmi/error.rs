@@ -19,7 +19,6 @@ pub enum Error {
 #[derive(Debug)]
 pub enum InternalError {
     NotExistRealm,
-    NotExistVCPU,
     MeasurementError,
     InvalidMeasurementIndex,
 }

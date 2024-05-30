@@ -12,7 +12,6 @@ use crate::listen;
 use crate::measurement::HashContext;
 use crate::realm::context::{set_reg, RegOffset};
 use crate::realm::rd::{Rd, State};
-use crate::realm::vcpu::create_vcpu;
 use crate::rec::Rec;
 use crate::rec::State as RecState;
 use crate::rmi;
@@ -21,8 +20,21 @@ use crate::rmi::rec::exit::handle_realm_exit;
 use crate::rsi::do_host_call;
 use crate::rsi::psci::complete_psci;
 use crate::{get_granule, get_granule_if};
+use armv9a::bits_in_reg;
+use armv9a::regs::*;
 
 extern crate alloc;
+
+fn prepare_args(rd: &mut Rd, mpidr: u64) -> Result<(usize, u64, u64), Error> {
+    let page_table = rd.s2_table().lock().get_base_address();
+    let vttbr = bits_in_reg(VTTBR_EL2::VMID, rd.id() as u64)
+        | bits_in_reg(VTTBR_EL2::BADDR, page_table as u64);
+    let vmpidr = mpidr | MPIDR_EL1::RES1;
+
+    let vcpuid = rd.vcpu_index;
+    rd.vcpu_index += 1;
+    Ok((vcpuid, vttbr, vmpidr))
+}
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_CREATE, |arg, ret, rmm| {
@@ -55,7 +67,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rmm.page_table.map(rec, true);
         let rec = rec_granule.content_mut::<Rec<'_>>();
 
-        match create_vcpu(rd, params.mpidr) {
+        match prepare_args(rd, params.mpidr) {
             Ok((vcpuid, vttbr, vmpidr)) => {
                 ret[1] = vcpuid;
                 rec.init(owner, vcpuid, params.flags, vttbr, vmpidr)?;

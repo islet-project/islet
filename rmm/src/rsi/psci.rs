@@ -35,25 +35,6 @@ const PSCI_MINOR_VERSION: usize = 1;
 extern crate alloc;
 
 pub fn set_event_handler(rsi: &mut RsiHandle) {
-    /*
-    let dummy =
-        |_arg: &[usize], ret: &mut [usize], _rmm: &Monitor, rec: &mut Rec<'_>, _run: &mut Run| {
-            let vcpuid = rec.vcpuid();
-            let realmid = rec.realmid()?;
-            let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-            let rd = rd_granule.content::<Rd>();
-
-            if set_reg(rd, vcpuid, 0, PsciReturn::SUCCESS).is_err() {
-                warn!(
-                    "Unable to set register 0. realmid: {:?} vcpuid: {:?}",
-                    realmid, vcpuid
-                );
-            }
-            ret[0] = rmi::SUCCESS_REC_ENTER;
-            Ok(())
-        };
-    */
-
     listen!(rsi, rsi::PSCI_VERSION, |_arg, ret, _rmm, rec, _run| {
         let vcpuid = rec.vcpuid();
         let realmid = rec.realmid()?;

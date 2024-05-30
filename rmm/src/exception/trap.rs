@@ -10,7 +10,7 @@ use crate::event::realmexit::{ExitSyncType, RecExitReason};
 use crate::mm::translation::PageTable;
 use crate::rec::Rec;
 
-use armv9a::regs::*;
+use aarch64_cpu::registers::*;
 
 #[repr(u16)]
 #[derive(Debug, Copy, Clone)]
@@ -57,7 +57,7 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
                 debug!("PCAlignmentFault");
             }
             Syndrome::DataAbort(fault) => {
-                let far = unsafe { FAR_EL2.get() };
+                let far = FAR_EL2.get();
                 debug!("Data Abort (higher), far:{:X}", far);
                 match fault {
                     Fault::AddressSize { level } => {
@@ -150,17 +150,9 @@ pub extern "C" fn handle_lower_exception(
                 debug!("Synchronous: HVC: {:#X}", rec.context.gp_regs[0]);
 
                 // Inject undefined exception to the realm
-                unsafe {
-                    SPSR_EL1.set(rec.context.spsr);
-                    ELR_EL1.set(rec.context.elr);
-
-                    let esr = EsrEl1::new(0)
-                        .set_masked_value(EsrEl1::EC, ESR_EL1_EC_UNKNOWN)
-                        .set_bits(EsrEl1::IL)
-                        .get();
-
-                    ESR_EL1.set(esr);
-                }
+                SPSR_EL1.set(rec.context.spsr);
+                ELR_EL1.set(rec.context.elr);
+                ESR_EL1.write(ESR_EL1::EC::Unknown + ESR_EL1::IL::SET);
 
                 // Return to realm's exception handler
                 let vbar = rec.context.sys_regs.vbar;
@@ -170,7 +162,7 @@ pub extern "C" fn handle_lower_exception(
                 tf.regs[0] = RecExitReason::Sync(ExitSyncType::Undefined).into();
                 tf.regs[1] = esr as u64;
                 tf.regs[2] = 0;
-                tf.regs[3] = unsafe { FAR_EL2.get() };
+                tf.regs[3] = FAR_EL2.get();
                 RET_TO_REC
             }
             Syndrome::SMC => {
@@ -187,9 +179,9 @@ pub extern "C" fn handle_lower_exception(
                     tf.regs[0] = RecExitReason::Sync(ExitSyncType::DataAbort).into();
                 }
                 tf.regs[1] = esr as u64;
-                tf.regs[2] = unsafe { HPFAR_EL2.get() };
-                tf.regs[3] = unsafe { FAR_EL2.get() };
-                let fipa = unsafe { HPFAR_EL2.get_masked(HPFAR_EL2::FIPA) } << 8;
+                tf.regs[2] = HPFAR_EL2.get();
+                tf.regs[3] = FAR_EL2.get();
+                let fipa = HPFAR_EL2.read(HPFAR_EL2::FIPA) << 8;
                 debug!("fipa: {:X}", fipa);
                 debug!("esr_el2: {:X}", esr);
                 RET_TO_RMM
@@ -204,8 +196,8 @@ pub extern "C" fn handle_lower_exception(
                 debug!("Synchronous: WFx");
                 tf.regs[0] = RecExitReason::Sync(ExitSyncType::Undefined).into();
                 tf.regs[1] = esr as u64;
-                tf.regs[2] = unsafe { HPFAR_EL2.get() };
-                tf.regs[3] = unsafe { FAR_EL2.get() };
+                tf.regs[2] = HPFAR_EL2.get();
+                tf.regs[3] = FAR_EL2.get();
                 advance_pc(rec);
                 RET_TO_RMM
             }
@@ -213,8 +205,8 @@ pub extern "C" fn handle_lower_exception(
                 debug!("Synchronous: Other");
                 tf.regs[0] = RecExitReason::Sync(ExitSyncType::Undefined).into();
                 tf.regs[1] = esr as u64;
-                tf.regs[2] = unsafe { HPFAR_EL2.get() };
-                tf.regs[3] = unsafe { FAR_EL2.get() };
+                tf.regs[2] = HPFAR_EL2.get();
+                tf.regs[3] = FAR_EL2.get();
                 RET_TO_RMM
             }
         },

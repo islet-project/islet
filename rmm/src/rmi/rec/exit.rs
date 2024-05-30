@@ -14,7 +14,9 @@ use crate::rmi::rtt::is_protected_ipa;
 use crate::rmi::rtt::RTT_PAGE_LEVEL;
 use crate::Monitor;
 use crate::{rmi, rsi};
-use armv9a::{EsrEl2, EMULATABLE_ABORT_MASK, HPFAR_EL2, NON_EMULATABLE_ABORT_MASK};
+use armv9a::{EsrEl2, EMULATABLE_ABORT_MASK, NON_EMULATABLE_ABORT_MASK};
+
+use aarch64_cpu::registers::HPFAR_EL2;
 
 pub fn handle_realm_exit(
     realm_exit_res: [usize; 4],
@@ -114,7 +116,8 @@ fn handle_data_abort(
     run.set_exit_reason(rmi::EXIT_SYNC);
     run.set_hpfar(hpfar_el2);
 
-    let fault_ipa = ((HPFAR_EL2::FIPA & hpfar_el2) << 8) as usize;
+    let fault_ipa = hpfar_el2 & (HPFAR_EL2::FIPA.mask << HPFAR_EL2::FIPA.shift);
+    let fault_ipa = (fault_ipa << 8) as usize;
 
     let (exit_esr, exit_far) = match is_non_emulatable_data_abort(rd, ipa_bits, fault_ipa, esr_el2)?
     {

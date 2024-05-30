@@ -1,6 +1,7 @@
 use crate::exception::trap;
 use crate::rec::Rec;
 
+use aarch64_cpu::registers::*;
 use armv9a::regs::*;
 
 fn check_sysreg_id_access(esr: u64) -> bool {
@@ -43,45 +44,53 @@ fn handle_sysreg_id(rec: &mut Rec<'_>, esr: u64) -> u64 {
         | esr.get_masked(ISS::Op2);
 
     let mut mask: u64 = match idreg as u32 {
-        ISS_ID_AA64ISAR1_EL1 => AA64ISAR1::GPI | AA64ISAR1::GPA | AA64ISAR1::APA | AA64ISAR1::API,
-        ISS_ID_AA64PFR0_EL1 => AA64PFR0::AMU | AA64PFR0::SVE,
-        ISS_ID_AA64PFR1_EL1 => AA64PFR1::MTE,
+        ISS_ID_AA64ISAR1_EL1 => {
+            (ID_AA64ISAR1_EL1::GPI.mask << ID_AA64ISAR1_EL1::GPI.shift)
+                + (ID_AA64ISAR1_EL1::GPA.mask << ID_AA64ISAR1_EL1::GPA.shift)
+                + (ID_AA64ISAR1_EL1::API.mask << ID_AA64ISAR1_EL1::API.shift)
+                + (ID_AA64ISAR1_EL1::APA.mask << ID_AA64ISAR1_EL1::APA.shift)
+        }
+        ISS_ID_AA64PFR0_EL1 => {
+            (ID_AA64PFR0_EL1::AMU.mask << ID_AA64PFR0_EL1::AMU.shift)
+                + (ID_AA64PFR0_EL1::SVE.mask << ID_AA64PFR0_EL1::SVE.shift)
+        }
+        ISS_ID_AA64PFR1_EL1 => ID_AA64PFR1_EL1::MTE.mask << ID_AA64PFR1_EL1::MTE.shift,
         ISS_ID_AA64DFR0_EL1 => {
-            AA64DFR0::BRBE
-                | AA64DFR0::MTPMU
-                | AA64DFR0::TraceBuffer
-                | AA64DFR0::TraceFilt
-                | AA64DFR0::PMSVer
-                | AA64DFR0::CTX_CMPs
-                | AA64DFR0::WRPs
-                | AA64DFR0::BRPs
-                | AA64DFR0::PMUVer
-                | AA64DFR0::TraceVer
-                | AA64DFR0::DebugVer
+            (ID_AA64DFR0_EL1::BRBE.mask << ID_AA64DFR0_EL1::BRBE.shift)
+                + (ID_AA64DFR0_EL1::MTPMU.mask << ID_AA64DFR0_EL1::MTPMU.shift)
+                + (ID_AA64DFR0_EL1::TraceBuffer.mask << ID_AA64DFR0_EL1::TraceBuffer.shift)
+                + (ID_AA64DFR0_EL1::TraceFilt.mask << ID_AA64DFR0_EL1::TraceFilt.shift)
+                + (ID_AA64DFR0_EL1::PMSVer.mask << ID_AA64DFR0_EL1::PMSVer.shift)
+                + (ID_AA64DFR0_EL1::CTX_CMPs.mask << ID_AA64DFR0_EL1::CTX_CMPs.shift)
+                + (ID_AA64DFR0_EL1::WRPs.mask << ID_AA64DFR0_EL1::WRPs.shift)
+                + (ID_AA64DFR0_EL1::BRPs.mask << ID_AA64DFR0_EL1::BRPs.shift)
+                + (ID_AA64DFR0_EL1::PMUVer.mask << ID_AA64DFR0_EL1::PMUVer.shift)
+                + (ID_AA64DFR0_EL1::TraceVer.mask << ID_AA64DFR0_EL1::TraceVer.shift)
+                + (ID_AA64DFR0_EL1::DebugVer.mask << ID_AA64DFR0_EL1::DebugVer.shift)
         }
         _ => 0,
     };
     mask = !mask;
 
     rec.context.gp_regs[rt] = match idreg as u32 {
-        ISS_ID_AA64PFR0_EL1 => unsafe { ID_AA64PFR0_EL1.get() & mask },
-        ISS_ID_AA64PFR1_EL1 => unsafe { ID_AA64PFR1_EL1.get() & mask },
+        ISS_ID_AA64PFR0_EL1 => ID_AA64PFR0_EL1.get() & mask,
+        ISS_ID_AA64PFR1_EL1 => ID_AA64PFR1_EL1.get() & mask,
         //ISS_ID_AA64ZFR0_EL1 => unsafe { ID_AA64ZFR0_EL1.get()  & mask },
-        ISS_ID_AA64DFR0_EL1 => unsafe {
-            let mut dfr0_set = AA64DFR0(0);
-            dfr0_set.set_masked_value(AA64DFR0::DebugVer, 6);
-            dfr0_set.set_masked_value(AA64DFR0::BRPs, 1);
-            dfr0_set.set_masked_value(AA64DFR0::WRPs, 1);
-            ID_AA64DFR0_EL1.get() & mask | dfr0_set.get()
-        },
-        ISS_ID_AA64DFR1_EL1 => unsafe { ID_AA64DFR1_EL1.get() & mask },
-        ISS_ID_AA64AFR0_EL1 => unsafe { ID_AA64AFR0_EL1.get() & mask },
-        ISS_ID_AA64AFR1_EL1 => unsafe { ID_AA64AFR1_EL1.get() & mask },
-        ISS_ID_AA64ISAR0_EL1 => unsafe { ID_AA64ISAR0_EL1.get() & mask },
-        ISS_ID_AA64ISAR1_EL1 => unsafe { ID_AA64ISAR1_EL1.get() & mask },
-        ISS_ID_AA64MMFR0_EL1 => unsafe { ID_AA64MMFR0_EL1.get() & mask },
-        ISS_ID_AA64MMFR1_EL1 => unsafe { ID_AA64MMFR1_EL1.get() & mask },
-        ISS_ID_AA64MMFR2_EL1 => unsafe { ID_AA64MMFR2_EL1.get() & mask }, //0x10211122,
+        ISS_ID_AA64DFR0_EL1 => {
+            let mut dfr0_set = 0u64;
+            dfr0_set &= 6 << ID_AA64DFR0_EL1::DebugVer.shift;
+            dfr0_set &= 1 << ID_AA64DFR0_EL1::BRPs.shift;
+            dfr0_set &= 1 << ID_AA64DFR0_EL1::WRPs.shift;
+            ID_AA64DFR0_EL1.get() & mask | dfr0_set
+        }
+        ISS_ID_AA64DFR1_EL1 => ID_AA64DFR1_EL1.get() & mask,
+        ISS_ID_AA64AFR0_EL1 => ID_AA64AFR0_EL1.get(),
+        ISS_ID_AA64AFR1_EL1 => ID_AA64AFR1_EL1.get(),
+        ISS_ID_AA64ISAR0_EL1 => ID_AA64ISAR0_EL1.get(),
+        ISS_ID_AA64ISAR1_EL1 => ID_AA64ISAR1_EL1.get() & mask,
+        ISS_ID_AA64MMFR0_EL1 => ID_AA64MMFR0_EL1.get(),
+        ISS_ID_AA64MMFR1_EL1 => ID_AA64MMFR1_EL1.get(),
+        ISS_ID_AA64MMFR2_EL1 => ID_AA64MMFR2_EL1.get(), //0x10211122,
         _ => 0x0,
     };
     trap::RET_TO_REC

@@ -1,11 +1,14 @@
 use crate::realm::rd::Rd;
 use crate::rec::Rec;
 use crate::rmi::error::Error;
+
+use aarch64_cpu::registers::Readable;
+use aarch64_cpu::registers::ID_AA64MMFR1_EL1;
 use armv9a::bits_in_reg;
 use armv9a::regs::*;
 
 fn is_feat_vmid16_present() -> bool {
-    unsafe { ID_AA64MMFR1_EL1.get_masked_value(ID_AA64MMFR1_EL1::VMID) == mmfr1_vmid::VMIDBITS_16 }
+    ID_AA64MMFR1_EL1.read(ID_AA64MMFR1_EL1::VMIDBits) == ID_AA64MMFR1_EL1::VMIDBits::Bits16.into()
 }
 
 pub fn prepare_vtcr(rd: &Rd) -> Result<u64, Error> {

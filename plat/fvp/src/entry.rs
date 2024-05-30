@@ -1,7 +1,7 @@
 use crate::allocator;
 use crate::log::LevelFilter;
 
-use armv9a::regs::*;
+use aarch64_cpu::registers::*;
 use core::ptr::{addr_of, addr_of_mut};
 use islet_rmm::config::{NUM_OF_CPU, RMM_STACK_SIZE};
 use islet_rmm::io::stdout;
@@ -60,14 +60,14 @@ fn init_console() {
 unsafe fn init_mm() {
     // Assert 4KB granules are supported.
     assert_eq!(
-        ID_AA64MMFR0_EL1.get_masked_value(ID_AA64MMFR0_EL1::TGran4),
+        ID_AA64MMFR0_EL1.read(ID_AA64MMFR0_EL1::TGran4),
         0,
         "4KB granules are not supported"
     );
 
     // Assert ID_AA64MMFR0_EL1::PARange
     let pa_bits_table = [32, 36, 40, 42, 44, 48, 52];
-    let pa = ID_AA64MMFR0_EL1.get_masked_value(ID_AA64MMFR0_EL1::PARange) as usize;
+    let pa = ID_AA64MMFR0_EL1.read(ID_AA64MMFR0_EL1::PARange) as usize;
     let pa_range = pa_bits_table[pa]; // Panic if pa > 6
     info!("pa range is {}", pa_range);
 }

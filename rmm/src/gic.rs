@@ -2,49 +2,24 @@ use crate::rec::Rec;
 use crate::rmi::error::Error;
 use crate::rmi::rec::run::Run;
 
-use armv9a::regs::*;
+use aarch64_cpu::registers::*;
 use lazy_static::lazy_static;
 
 // Interrupt Controller List Registers (ICH_LR)
 const ICH_LR_PRIORITY_WIDTH: u64 = 8;
 
-// Interrupt Controller Hyp Control Register (ICH_HCR)
-// Global enable bit for the virtual CPU interface.
-const ICH_HCR_EL2_EN_BIT: u64 = 1 << 0;
-// Underflow Interrupt Enable
-const ICH_HCR_EL2_UIE_BIT: u64 = 1 << 1;
-// List Register Entry Not Present Interrupt Enable
-const ICH_HCR_EL2_LRENPIE_BIT: u64 = 1 << 2;
-// No Pending Interrupt Enable
-const ICH_HCR_EL2_NPIE_BIT: u64 = 1 << 3;
-// VM Group 0 Enabled Interrupt Enable
-const ICH_HCR_EL2_VGRP0EIE_BIT: u64 = 1 << 4;
-// VM Group 0 Disabled Interrupt Enable
-const ICH_HCR_EL2_VGRP0DIE_BIT: u64 = 1 << 5;
-// VM Group 1 Enabled Interrupt Enable
-const ICH_HCR_EL2_VGRP1EIE_BIT: u64 = 1 << 6;
-// VM Group 1 Disabled Interrupt Enable
-const ICH_HCR_EL2_VGRP1DIE_BIT: u64 = 1 << 7;
-// Deactivation of virtual SGIs can increment ICH_HCR_EL2.EOIcount
-const ICH_HCR_EL2_VSGIEEOICOUNT_BIT: u64 = 1 << 8;
-// When FEAT_GICv3_TDIR is implemented, Trap EL1 writes to ICC_DIR_EL1 and ICV_DIR_EL1.
-const ICH_HCR_EL2_TDIR_BIT: u64 = 1 << 14;
-// ICH_HCR_EL2_DVIM_BIT
-const ICH_HCR_EL2_DVIM_BIT: u64 = 1 << 15;
+const ICH_HCR_EL2_NS_MASK: u64 = (ICH_HCR_EL2::UIE.mask << ICH_HCR_EL2::UIE.shift)
+    | (ICH_HCR_EL2::LRENPIE.mask << ICH_HCR_EL2::LRENPIE.shift)
+    | (ICH_HCR_EL2::NPIE.mask << ICH_HCR_EL2::NPIE.shift)
+    | (ICH_HCR_EL2::VGrp1DIE.mask << ICH_HCR_EL2::VGrp1DIE.shift)
+    | (ICH_HCR_EL2::VGrp1EIE.mask << ICH_HCR_EL2::VGrp1EIE.shift)
+    | (ICH_HCR_EL2::VGrp0DIE.mask << ICH_HCR_EL2::VGrp0DIE.shift)
+    | (ICH_HCR_EL2::VGrp0EIE.mask << ICH_HCR_EL2::VGrp0EIE.shift)
+    | (ICH_HCR_EL2::TDIR.mask << ICH_HCR_EL2::TDIR.shift);
 
-pub const ICH_HCR_EL2_NS_MASK: u64 = ICH_HCR_EL2_UIE_BIT
-    | ICH_HCR_EL2_LRENPIE_BIT
-    | ICH_HCR_EL2_NPIE_BIT
-    | ICH_HCR_EL2_VGRP0EIE_BIT
-    | ICH_HCR_EL2_VGRP0DIE_BIT
-    | ICH_HCR_EL2_VGRP1EIE_BIT
-    | ICH_HCR_EL2_VGRP1DIE_BIT
-    | ICH_HCR_EL2_TDIR_BIT;
-
-const ICH_HCR_EL2_EOI_COUNT_SHIFT: usize = 27;
 const ICH_HCR_EL2_EOI_COUNT_WIDTH: usize = 5;
-pub const ICH_HCR_EL2_EOI_COUNT_MASK: u64 =
-    ((!0u64) >> (64 - ICH_HCR_EL2_EOI_COUNT_WIDTH)) << ICH_HCR_EL2_EOI_COUNT_SHIFT;
+const ICH_HCR_EL2_EOI_COUNT_MASK: u64 =
+    ((!0u64) >> (64 - ICH_HCR_EL2_EOI_COUNT_WIDTH)) << ICH_HCR_EL2::EOIcount.shift;
 
 const MAX_SPI_ID: u64 = 1019;
 
@@ -68,22 +43,22 @@ pub struct GicFeatures {
 lazy_static! {
     pub static ref GIC_FEATURES: GicFeatures = {
         trace!("read gic features");
-        let nr_lrs = unsafe { ICH_VTR_EL2.get_masked_value(ICH_VTR_EL2::LIST) } as usize;
+        let nr_lrs = ICH_VTR_EL2.read(ICH_VTR_EL2::ListRegs) as usize;
         trace!("nr_lrs (LIST) {}", nr_lrs);
-        let id = unsafe { ICH_VTR_EL2.get_masked_value(ICH_VTR_EL2::ID) };
+        let id = ICH_VTR_EL2.read(ICH_VTR_EL2::IDbits);
         let max_vintid = if id == 0 {
             (1u64 << 16) - 1
         } else {
             (1u64 << 24) - 1
         };
         trace!("id {} max_vintid {}", id, max_vintid);
-        let pre = unsafe { ICH_VTR_EL2.get_masked_value(ICH_VTR_EL2::PRE) } + 1;
+        let pre = ICH_VTR_EL2.read(ICH_VTR_EL2::PREbits) + 1;
         let nr_aprs = (1 << (pre - 5)) - 1;
         trace!("pre {}, nr_aprs {}", pre, nr_aprs);
-        let pri = unsafe { ICH_VTR_EL2.get_masked_value(ICH_VTR_EL2::PRI) } + 1;
+        let pri = ICH_VTR_EL2.read(ICH_VTR_EL2::PRIbits) + 1;
         let pri_res0_mask = (1u64 << (ICH_LR_PRIORITY_WIDTH - pri)) - 1;
         trace!("pri {} pri_res0_mask {}", pri, pri_res0_mask);
-        let ext_range = unsafe { ICC_CTLR_EL1.get_masked_value(ICC_CTLR_EL1::EXT_RANGE) != 0 };
+        let ext_range = ICC_CTLR_EL1.read(ICC_CTLR_EL1::ExtRange) != 0;
         trace!("icc_ctlr ext_range {}", ext_range);
         GicFeatures {
             nr_lrs,
@@ -97,113 +72,92 @@ lazy_static! {
 
 pub fn init_gic(rec: &mut Rec<'_>) {
     let gic_state = &mut rec.context.gic_state;
-    gic_state.ich_hcr_el2 =
-        ICH_HCR_EL2_EN_BIT | ICH_HCR_EL2_VSGIEEOICOUNT_BIT | ICH_HCR_EL2_DVIM_BIT
+    gic_state.ich_hcr_el2 = (ICH_HCR_EL2::En.mask << ICH_HCR_EL2::En.shift)
+        + (ICH_HCR_EL2::vSGIEOICount.mask << ICH_HCR_EL2::vSGIEOICount.shift)
+        + (ICH_HCR_EL2::DVIM.mask << ICH_HCR_EL2::DVIM.shift)
 }
 
 fn set_lr(i: usize, val: u64) {
     match i {
-        0 => unsafe { ICH_LR0_EL2.set(val) },
-        1 => unsafe { ICH_LR1_EL2.set(val) },
-        2 => unsafe { ICH_LR2_EL2.set(val) },
-        3 => unsafe { ICH_LR3_EL2.set(val) },
-        4 => unsafe { ICH_LR4_EL2.set(val) },
-        5 => unsafe { ICH_LR5_EL2.set(val) },
-        6 => unsafe { ICH_LR6_EL2.set(val) },
-        7 => unsafe { ICH_LR7_EL2.set(val) },
-        8 => unsafe { ICH_LR8_EL2.set(val) },
-        9 => unsafe { ICH_LR9_EL2.set(val) },
-        10 => unsafe { ICH_LR10_EL2.set(val) },
-        11 => unsafe { ICH_LR11_EL2.set(val) },
-        12 => unsafe { ICH_LR12_EL2.set(val) },
-        13 => unsafe { ICH_LR13_EL2.set(val) },
-        14 => unsafe { ICH_LR14_EL2.set(val) },
-        15 => unsafe { ICH_LR15_EL2.set(val) },
+        0 => ICH_LR0_EL2.set(val),
+        1 => ICH_LR1_EL2.set(val),
+        2 => ICH_LR2_EL2.set(val),
+        3 => ICH_LR3_EL2.set(val),
+        4 => ICH_LR4_EL2.set(val),
+        5 => ICH_LR5_EL2.set(val),
+        6 => ICH_LR6_EL2.set(val),
+        7 => ICH_LR7_EL2.set(val),
+        8 => ICH_LR8_EL2.set(val),
+        9 => ICH_LR9_EL2.set(val),
+        10 => ICH_LR10_EL2.set(val),
+        11 => ICH_LR11_EL2.set(val),
+        12 => ICH_LR12_EL2.set(val),
+        13 => ICH_LR13_EL2.set(val),
+        14 => ICH_LR14_EL2.set(val),
+        15 => ICH_LR15_EL2.set(val),
         _ => {}
     }
 }
 
 fn set_ap0r(i: usize, val: u64) {
     match i {
-        0 => unsafe {
-            ICH_AP0R0_EL2.set(val);
-        },
-        1 => unsafe {
-            ICH_AP0R1_EL2.set(val);
-        },
-        2 => unsafe {
-            ICH_AP0R2_EL2.set(val);
-        },
-        3 => unsafe {
-            ICH_AP0R3_EL2.set(val);
-        },
+        0 => ICH_AP0R0_EL2.set(val),
+        1 => ICH_AP0R1_EL2.set(val),
+        2 => ICH_AP0R2_EL2.set(val),
+        3 => ICH_AP0R3_EL2.set(val),
         _ => {}
     }
 }
 
 fn set_ap1r(i: usize, val: u64) {
     match i {
-        0 => unsafe {
-            ICH_AP1R0_EL2.set(val);
-        },
-        1 => unsafe {
-            ICH_AP1R1_EL2.set(val);
-        },
-        2 => unsafe {
-            ICH_AP1R2_EL2.set(val);
-        },
-        3 => unsafe {
-            ICH_AP1R3_EL2.set(val);
-        },
+        0 => ICH_AP1R0_EL2.set(val),
+        1 => ICH_AP1R1_EL2.set(val),
+        2 => ICH_AP1R2_EL2.set(val),
+        3 => ICH_AP1R3_EL2.set(val),
         _ => {}
     }
 }
 
 fn get_lr(i: usize) -> u64 {
     match i {
-        0 => unsafe { ICH_LR0_EL2.get() },
-        1 => unsafe { ICH_LR1_EL2.get() },
-        2 => unsafe { ICH_LR2_EL2.get() },
-        3 => unsafe { ICH_LR3_EL2.get() },
-        4 => unsafe { ICH_LR4_EL2.get() },
-        5 => unsafe { ICH_LR5_EL2.get() },
-        6 => unsafe { ICH_LR6_EL2.get() },
-        7 => unsafe { ICH_LR7_EL2.get() },
-        8 => unsafe { ICH_LR8_EL2.get() },
-        9 => unsafe { ICH_LR9_EL2.get() },
-        10 => unsafe { ICH_LR10_EL2.get() },
-        11 => unsafe { ICH_LR11_EL2.get() },
-        12 => unsafe { ICH_LR12_EL2.get() },
-        13 => unsafe { ICH_LR13_EL2.get() },
-        14 => unsafe { ICH_LR14_EL2.get() },
-        15 => unsafe { ICH_LR15_EL2.get() },
-        _ => {
-            unreachable!();
-        }
+        0 => ICH_LR0_EL2.get(),
+        1 => ICH_LR1_EL2.get(),
+        2 => ICH_LR2_EL2.get(),
+        3 => ICH_LR3_EL2.get(),
+        4 => ICH_LR4_EL2.get(),
+        5 => ICH_LR5_EL2.get(),
+        6 => ICH_LR6_EL2.get(),
+        7 => ICH_LR7_EL2.get(),
+        8 => ICH_LR8_EL2.get(),
+        9 => ICH_LR9_EL2.get(),
+        10 => ICH_LR10_EL2.get(),
+        11 => ICH_LR11_EL2.get(),
+        12 => ICH_LR12_EL2.get(),
+        13 => ICH_LR13_EL2.get(),
+        14 => ICH_LR14_EL2.get(),
+        15 => ICH_LR15_EL2.get(),
+        _ => unreachable!(),
     }
 }
 
 fn get_ap0r(i: usize) -> u64 {
     match i {
-        0 => unsafe { ICH_AP0R0_EL2.get() },
-        1 => unsafe { ICH_AP0R1_EL2.get() },
-        2 => unsafe { ICH_AP0R2_EL2.get() },
-        3 => unsafe { ICH_AP0R3_EL2.get() },
-        _ => {
-            unreachable!();
-        }
+        0 => ICH_AP0R0_EL2.get(),
+        1 => ICH_AP0R1_EL2.get(),
+        2 => ICH_AP0R2_EL2.get(),
+        3 => ICH_AP0R3_EL2.get(),
+        _ => unreachable!(),
     }
 }
 
 fn get_ap1r(i: usize) -> u64 {
     match i {
-        0 => unsafe { ICH_AP1R0_EL2.get() },
-        1 => unsafe { ICH_AP1R1_EL2.get() },
-        2 => unsafe { ICH_AP1R2_EL2.get() },
-        3 => unsafe { ICH_AP1R3_EL2.get() },
-        _ => {
-            unreachable!();
-        }
+        0 => ICH_AP1R0_EL2.get(),
+        1 => ICH_AP1R1_EL2.get(),
+        2 => ICH_AP1R2_EL2.get(),
+        3 => ICH_AP1R3_EL2.get(),
+        _ => unreachable!(),
     }
 }
 
@@ -219,8 +173,8 @@ pub fn restore_state(rec: &Rec<'_>) {
         set_ap0r(i, gic_state.ich_ap0r_el2[i]);
         set_ap1r(i, gic_state.ich_ap1r_el2[i]);
     }
-    unsafe { ICH_VMCR_EL2.set(gic_state.ich_vmcr_el2) };
-    unsafe { ICH_HCR_EL2.set(gic_state.ich_hcr_el2) };
+    ICH_VMCR_EL2.set(gic_state.ich_vmcr_el2);
+    ICH_HCR_EL2.set(gic_state.ich_hcr_el2);
 }
 
 pub fn save_state(rec: &mut Rec<'_>) {
@@ -236,11 +190,11 @@ pub fn save_state(rec: &mut Rec<'_>) {
         gic_state.ich_ap1r_el2[i] = get_ap1r(i);
     }
 
-    gic_state.ich_vmcr_el2 = unsafe { ICH_VMCR_EL2.get() };
-    gic_state.ich_hcr_el2 = unsafe { ICH_HCR_EL2.get() };
-    gic_state.ich_misr_el2 = unsafe { ICH_MISR_EL2.get() };
+    gic_state.ich_vmcr_el2 = ICH_VMCR_EL2.get();
+    gic_state.ich_hcr_el2 = ICH_HCR_EL2.get();
+    gic_state.ich_misr_el2 = ICH_MISR_EL2.get();
 
-    unsafe { ICH_HCR_EL2.set(gic_state.ich_hcr_el2 & !ICH_HCR_EL2_EN_BIT) };
+    ICH_HCR_EL2.set(gic_state.ich_hcr_el2 & !(ICH_HCR_EL2::En.mask << ICH_HCR_EL2::En.shift));
 }
 
 pub fn receive_state_from_host(rec: &mut Rec<'_>, run: &Run) -> Result<(), Error> {
@@ -292,19 +246,28 @@ pub fn validate_state(run: &Run) -> bool {
 
     for i in 0..GIC_FEATURES.nr_lrs {
         let lrs = run.entry_gic_lrs();
-        let lr = ICH_LR::new(lrs[i]);
-        let vintid = lr.get_masked_value(ICH_LR::VINTID);
+        let lr = lrs[i];
 
-        if lr.get_masked_value(ICH_LR::STATE) == ich_lr_state::INVALID {
+        let state = (lr >> ICH_LR0_EL2::State.shift) & ICH_LR0_EL2::State.mask;
+        let vintid = (lr >> ICH_LR0_EL2::vINTID.shift) & ICH_LR0_EL2::vINTID.mask;
+        let priority = (lr >> ICH_LR0_EL2::Priority.shift) & ICH_LR0_EL2::Priority.mask;
+
+        let pintid_mask = ICH_LR0_EL2::pINTID.mask << ICH_LR0_EL2::pINTID.shift;
+        let eoi_mask = ICH_LR0_EL2::EOI.mask << ICH_LR0_EL2::EOI.shift;
+        let only_eoi = pintid_mask & !eoi_mask;
+
+        let hw = (lr >> ICH_LR0_EL2::HW.shift) & ICH_LR0_EL2::HW.mask;
+
+        if state == ICH_LR0_EL2::State::Invalid.into() {
             continue;
         }
 
         /* The RMM Specification imposes the constraint that HW == '0' */
-        if lr.get_masked(ICH_LR::HW) != 0
+        if hw != 0
             /* Check RES0 bits in the Priority field */
-            || lr.get_masked_value(ICH_LR::PRIORITY) & GIC_FEATURES.pri_res0_mask != 0
+            || priority & GIC_FEATURES.pri_res0_mask != 0
             /* Only the EOI bit in the pINTID is allowed to be set */
-            || lr.get_masked(ICH_LR::PINTID & !ICH_LR::EOI) != 0
+            || lr & only_eoi != 0
             /* Check if vINTID is in the valid range */
             || !valid_vintid(vintid)
         {
@@ -317,11 +280,12 @@ pub fn validate_state(run: &Run) -> bool {
          */
         for j in i + 1..=GIC_FEATURES.nr_lrs {
             let lrs = run.entry_gic_lrs();
-            let lr = ICH_LR::new(lrs[j]);
+            let lr = lrs[j];
 
-            let vintid_2 = lr.get_masked_value(ICH_LR::VINTID);
+            let vintid_2 = (lr >> ICH_LR0_EL2::vINTID.shift) & ICH_LR0_EL2::vINTID.mask;
+            let state = (lr >> ICH_LR0_EL2::State.shift) & ICH_LR0_EL2::State.mask;
 
-            if lr.get_masked_value(ICH_LR::STATE) == ich_lr_state::INVALID {
+            if state == ICH_LR0_EL2::State::Invalid.into() {
                 continue;
             }
 

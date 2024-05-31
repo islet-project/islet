@@ -10,6 +10,7 @@ extern crate log;
 
 mod entry;
 
+use aarch64_cpu::registers::*;
 use islet_rmm::allocator;
 use islet_rmm::cpu;
 
@@ -18,7 +19,7 @@ pub unsafe fn main() -> ! {
     info!(
         "booted on core {:2} with EL{}!",
         cpu::get_cpu_id(),
-        armv9a::regs::current_el()
+        CurrentEL.read(CurrentEL::EL) as u8
     );
 
     islet_rmm::start(cpu::get_cpu_id());

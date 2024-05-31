@@ -3,7 +3,7 @@ use crate::gic;
 use crate::rec::Rec;
 use crate::rmi::error::Error;
 
-use armv9a::regs::*;
+use aarch64_cpu::registers::*;
 
 #[repr(C)]
 #[derive(Default, Debug)]
@@ -63,7 +63,11 @@ impl Context {
         // TODO: enable floating point
         // CPTR_EL2, CPACR_EL1, update vectors.s, etc..
         Self {
-            spsr: SPSR_EL2::D | SPSR_EL2::A | SPSR_EL2::I | SPSR_EL2::F | (SPSR_EL2::M & 0b0101),
+            spsr: (SPSR_EL2::D.mask << SPSR_EL2::D.shift)
+                | (SPSR_EL2::A.mask << SPSR_EL2::A.shift)
+                | (SPSR_EL2::I.mask << SPSR_EL2::I.shift)
+                | (SPSR_EL2::F.mask << SPSR_EL2::F.shift)
+                | (SPSR_EL2::M.mask & u64::from(SPSR_EL2::M::EL1h)) << SPSR_EL2::M.shift,
             ..Default::default()
         }
     }

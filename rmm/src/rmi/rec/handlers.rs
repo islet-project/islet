@@ -20,17 +20,22 @@ use crate::rmi::rec::exit::handle_realm_exit;
 use crate::rsi::do_host_call;
 use crate::rsi::psci::complete_psci;
 use crate::{get_granule, get_granule_if};
+
+use aarch64_cpu::registers::*;
 use armv9a::bits_in_reg;
-use armv9a::regs::*;
 
 extern crate alloc;
 
 fn prepare_args(rd: &mut Rd, mpidr: u64) -> Result<(usize, u64, u64), Error> {
-    let page_table = rd.s2_table().lock().get_base_address();
-    let vttbr = bits_in_reg(VTTBR_EL2::VMID, rd.id() as u64)
-        | bits_in_reg(VTTBR_EL2::BADDR, page_table as u64);
-    let vmpidr = mpidr | MPIDR_EL1::RES1;
-
+    let page_table = rd.s2_table().lock().get_base_address() as u64;
+    let vttbr = bits_in_reg(
+        VTTBR_EL2::VMID.mask << VTTBR_EL2::VMID.shift,
+        rd.id() as u64,
+    ) | bits_in_reg(
+        VTTBR_EL2::BADDR.mask << VTTBR_EL2::BADDR.shift,
+        page_table >> 1,
+    );
+    let vmpidr = mpidr | (MPIDR_EL1::RES1.mask << MPIDR_EL1::RES1.shift);
     let vcpuid = rd.vcpu_index;
     rd.vcpu_index += 1;
     Ok((vcpuid, vttbr, vmpidr))

@@ -10,6 +10,9 @@ if [ $# -gt 0 ]; then
 	esac
 fi
 
+#./eventfd_manager
+#sleep 1
+
 ./lkvm run \
 	--debug \
 	--realm \

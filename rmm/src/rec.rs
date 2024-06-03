@@ -233,10 +233,10 @@ impl Rec<'_> {
 
     pub fn reset_ctx(&mut self) {
         self.context.spsr = (SPSR_EL2::D.mask << SPSR_EL2::D.shift)
-        | (SPSR_EL2::A.mask << SPSR_EL2::A.shift)
-        | (SPSR_EL2::I.mask << SPSR_EL2::I.shift)
-        | (SPSR_EL2::F.mask << SPSR_EL2::F.shift)
-        | (SPSR_EL2::M.mask & u64::from(SPSR_EL2::M::EL1h)) << SPSR_EL2::M.shift;
+            | (SPSR_EL2::A.mask << SPSR_EL2::A.shift)
+            | (SPSR_EL2::I.mask << SPSR_EL2::I.shift)
+            | (SPSR_EL2::F.mask << SPSR_EL2::F.shift)
+            | (SPSR_EL2::M.mask & u64::from(SPSR_EL2::M::EL1h)) << SPSR_EL2::M.shift;
 
         self.context.sys_regs.sctlr = 0;
     }

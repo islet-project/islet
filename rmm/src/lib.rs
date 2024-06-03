@@ -109,6 +109,7 @@ unsafe fn setup_el2() {
             + HCR_EL2::IMO::SET
             + HCR_EL2::FMO::SET
             + HCR_EL2::VM::SET,
+        // HCR_EL2::TWI::SET,
     );
     VBAR_EL2.set(addr_of!(vectors) as u64);
     SCTLR_EL2

@@ -42,6 +42,7 @@ struct Exit {
     0x500 ripas_base: u64,
     0x508 ripas_size: u64,
     0x510 ripas_value: u8,
+    0x518 ripas_dest_vmid: u64,
     0x600 imm: u16,
     0x700 pmu_ovf: u64,
     0x708 pmu_intr_en: u64,
@@ -104,10 +105,11 @@ impl Run {
         Ok(())
     }
 
-    pub fn set_ripas(&mut self, base: u64, size: u64, state: u8) {
+    pub fn set_ripas(&mut self, base: u64, size: u64, state: u8, dest_vmid: u64) {
         self.exit.ripas_base = base;
         self.exit.ripas_size = size;
         self.exit.ripas_value = state;
+        self.exit.ripas_dest_vmid = dest_vmid;
     }
 
     pub fn set_gic_lrs(&mut self, src: &[u64], len: usize) {

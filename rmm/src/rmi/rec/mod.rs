@@ -29,7 +29,6 @@ struct Ripas {
     end: u64,
     addr: u64,
     state: u8,
-    dest_vmid: u64,
 }
 
 #[derive(Debug)]
@@ -118,12 +117,11 @@ impl Rec<'_> {
         self.host_call_pending = val;
     }
 
-    pub fn set_ripas(&mut self, start: u64, end: u64, addr: u64, state: u8, dest_vmid: u64) {
+    pub fn set_ripas(&mut self, start: u64, end: u64, addr: u64, state: u8) {
         self.ripas.start = start;
         self.ripas.end = end;
         self.ripas.addr = addr;
         self.ripas.state = state;
-        self.ripas.dest_vmid = dest_vmid;
     }
 
     pub fn set_vtcr(&mut self, vtcr: u64) {

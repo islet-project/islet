@@ -337,8 +337,6 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let ipa_state = get_reg(rd, vcpuid, 3)? as u8;
         let ipa_end = ipa_start + ipa_size;
 
-        let dest_vmid = get_reg(rd, vcpuid, 4)?;
-
         if ipa_end <= ipa_start {
             return Err(Error::RmiErrorInput); // integer overflows or size is zero
         }
@@ -356,20 +354,18 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
         // TODO: check ipa_state value, ipa address granularity
         run.set_exit_reason(rmi::EXIT_RIPAS_CHANGE);
-        run.set_ripas(ipa_start as u64, ipa_size as u64, ipa_state, dest_vmid);
+        run.set_ripas(ipa_start as u64, ipa_size as u64, ipa_state);
         rec.set_ripas(
             ipa_start as u64,
             ipa_end as u64,
             ipa_start as u64,
             ipa_state,
-            dest_vmid as u64,
         );
         ret[0] = rmi::SUCCESS;
         debug!(
-            "RSI_IPA_STATE_SET: {:X} ~ {:X} dest_vmid: {:X} {:X}",
+            "RSI_IPA_STATE_SET: {:X} ~ {:X} {:X}",
             ipa_start,
             ipa_start + ipa_size,
-            dest_vmid,
             ipa_state
         );
         super::rmi::dummy();

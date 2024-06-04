@@ -24,7 +24,6 @@ pub const S2TTE_STRIDE: usize = GRANULE_SHIFT - 3;
 
 const RIPAS_EMPTY: u64 = 0;
 const RIPAS_RAM: u64 = 1;
-const RIPAS_SHARED: u64 = 3;
 
 fn level_to_size(level: usize) -> u64 {
     // TODO: get the translation granule from src/armv9
@@ -111,7 +110,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let ipa = arg[2];
         let level = arg[3];
         let ripas = arg[4];
-        let dest_vmid = arg[5];
 
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
@@ -122,7 +120,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         match ripas as u64 {
             RIPAS_EMPTY => prot.set_bit(rmi::MapProt::NS_PAS),
             RIPAS_RAM => { /* do nothing: ripas ram by default */ }
-            RIPAS_SHARED => {}
             _ => {
                 warn!("Unknown RIPAS:{}", ripas);
                 return Err(Error::RmiErrorInput); //XXX: check this again

@@ -8,6 +8,7 @@ members = [
     "lib/vmsa",
     "lib/rsi-el0",
     "lib/uart",
+    "lib/io",
     "plat/fvp",
     "realm/rsi-test",
     "rmm/",

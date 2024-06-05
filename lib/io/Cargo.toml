@@ -1,13 +1,8 @@
 [package]
-name = "uart"
+name = "io"
 version = "0.0.1"
 authors = ["Islet Contributors"]
 edition = "2021"
 
-[lib]
-name = "uart"
-path = "src/lib.rs"
-
 [dependencies]
-io = { path = "../io" }
 spinning_top = "0.2.4"

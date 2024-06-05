@@ -18,7 +18,7 @@ macro_rules! define_interface {
 macro_rules! print {
     ($($arg:tt)*) => {
         let buffer = alloc::format!($($arg)*);
-        let _ = crate::io::stdout().write_all(buffer.as_bytes());
+        let _ = io::stdout().write_all(buffer.as_bytes());
     };
 }
 
@@ -33,11 +33,11 @@ macro_rules! println {
 macro_rules! eprint {
     ($fmt:expr) => {
         let buffer = concat!("\x1b[0;31m", $fmt, "\x1b[0m");
-        let _ = crate::io::stdout().write_all(buffer.as_bytes());
+        let _ = io::stdout().write_all(buffer.as_bytes());
     };
     ($fmt:expr, $($arg:tt)*) => {{
         let buffer = alloc::format!(concat!("\x1b[0;31m", $fmt, "\x1b[0m"), $($arg)*);
-        let _ = crate::io::stdout().write_all(buffer.as_bytes());
+        let _ = io::stdout().write_all(buffer.as_bytes());
     }};
 }
 

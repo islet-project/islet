@@ -1,9 +1,12 @@
+#![no_std]
+#![warn(rust_2018_idioms)]
+
 extern crate alloc;
 
+pub mod error;
 use alloc::boxed::Box;
+pub use error::{Error, ErrorKind};
 use spinning_top::{Spinlock, SpinlockGuard};
-
-pub use crate::error::{Error, ErrorKind};
 
 pub type Result<T> = core::result::Result<T, Error>;
 

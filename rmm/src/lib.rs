@@ -11,7 +11,6 @@ pub mod allocator;
 pub mod asm;
 pub mod config;
 pub mod cpu;
-pub mod error;
 pub mod event;
 pub mod exception;
 pub mod gic;
@@ -19,7 +18,6 @@ pub mod gic;
 pub mod granule;
 #[macro_use]
 pub mod host;
-pub mod io;
 pub mod logger;
 pub mod mm;
 pub mod mmio;

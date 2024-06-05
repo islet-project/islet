@@ -1,4 +1,4 @@
-use crate::io::Write;
+use io::Write;
 use log::{Level, LevelFilter, Metadata, Record};
 
 struct SimpleLogger;

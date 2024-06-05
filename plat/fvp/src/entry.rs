@@ -3,8 +3,8 @@ use crate::log::LevelFilter;
 
 use aarch64_cpu::registers::*;
 use core::ptr::{addr_of, addr_of_mut};
+use io::stdout;
 use islet_rmm::config::{NUM_OF_CPU, RMM_STACK_SIZE};
-use islet_rmm::io::stdout;
 use islet_rmm::logger;
 
 #[no_mangle]

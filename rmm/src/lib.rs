@@ -127,7 +127,7 @@ unsafe fn setup_el2() {
 ///
 /// The caller must ensure:
 /// - The function is called at EL2 with the appropriate privileges.
-/// - The translation table base address (`ttlb_base`) is valid and correctly initialized.
+/// - The translation table base address (`ttbl_base`) is valid and correctly initialized.
 /// - Modifying these registers and executing these assembly instructions will not interfere
 ///   with other critical operations.
 ///
@@ -156,15 +156,15 @@ unsafe fn setup_mmu_cfg() {
         + TCR_EL2::ORGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
         + TCR_EL2::IRGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable;
 
-    // set the ttlb base address, this is where the memory address translation
+    // set the ttbl base address, this is where the memory address translation
     // table walk starts
-    let ttlb_base = get_page_table();
+    let ttbl_base = get_page_table();
 
     // Invalidate the local I-cache so that any instructions fetched
     // speculatively are discarded.
     MAIR_EL2.write(mair_el2);
     TCR_EL2.write(tcr_el2);
-    TTBR0_EL2.set(ttlb_base);
+    TTBR0_EL2.set(ttbl_base);
     core::arch::asm!("dsb ish", "isb",);
 }
 

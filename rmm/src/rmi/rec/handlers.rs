@@ -57,7 +57,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         let rec_index = MPIDR::from(params.mpidr).index();
         let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
-        let rd = rd_granule.content_mut::<Rd>();
+        let mut rd = rd_granule.content_mut::<Rd>()?;
         if !rd.at_state(State::New) {
             return Err(Error::RmiErrorRealm(0));
         }
@@ -70,9 +70,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         #[cfg(not(kani))]
         // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.map(rec, true);
-        let rec = rec_granule.content_mut::<Rec<'_>>();
+        let mut rec = rec_granule.content_mut::<Rec<'_>>()?;
 
-        match prepare_args(rd, params.mpidr) {
+        match prepare_args(&mut rd, params.mpidr) {
             Ok((vcpuid, vttbr, vmpidr)) => {
                 ret[1] = vcpuid;
                 rec.init(owner, vcpuid, params.flags, vttbr, vmpidr)?;
@@ -81,19 +81,19 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         for (idx, gpr) in params.gprs.iter().enumerate() {
-            if set_reg(rec, idx, *gpr as usize).is_err() {
+            if set_reg(&mut rec, idx, *gpr as usize).is_err() {
                 return Err(Error::RmiErrorInput);
             }
         }
-        if set_reg(rec, RegOffset::PC, params.pc as usize).is_err() {
+        if set_reg(&mut rec, RegOffset::PC, params.pc as usize).is_err() {
             return Err(Error::RmiErrorInput);
         }
-        rec.set_vtcr(prepare_vtcr(rd)?);
+        rec.set_vtcr(prepare_vtcr(&rd)?);
 
         rd.inc_rec_index();
         #[cfg(not(kani))]
         // `rsi` is currently not reachable in model checking harnesses
-        HashContext::new(rd)?.measure_rec_params(&params)?;
+        HashContext::new(&mut rd)?.measure_rec_params(&params)?;
 
         #[cfg(feature = "gst_page_table")]
         return set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec);
@@ -121,7 +121,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // grab the lock for Rec
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
-        let rec = rec_granule.content_mut::<Rec<'_>>();
+        let mut rec = rec_granule.content_mut::<Rec<'_>>()?;
 
         // read Run
         let mut run = host::copy_from::<Run>(run_pa).ok_or(Error::RmiErrorInput)?;
@@ -129,7 +129,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         trace!("{:?}", run);
 
         let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let rd = rd_granule.content::<Rd>()?;
         match rd.state() {
             State::Active => {}
             State::New => {
@@ -151,7 +151,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         if let RecState::Running = rec.get_state() {
-            error!("Rec is already running: {:?}", rec);
+            error!("Rec is already running: {:?}", *rec);
             return Err(Error::RmiErrorRec);
         }
 
@@ -165,13 +165,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         if rec.host_call_pending() {
             // The below should be called without holding rd's lock
-            do_host_call(arg, ret, rmm, rec, &mut run)?;
+            do_host_call(arg, ret, rmm, &mut rec, &mut run)?;
         }
 
-        crate::gic::receive_state_from_host(rec, &run)?;
-        crate::mmio::emulate_mmio(rec, &run)?;
+        crate::gic::receive_state_from_host(&mut rec, &run)?;
+        crate::mmio::emulate_mmio(&mut rec, &run)?;
 
-        crate::rsi::ripas::complete_ripas(rec, &run)?;
+        crate::rsi::ripas::complete_ripas(&mut rec, &run)?;
 
         let wfx_flag = run.entry_flags();
         if wfx_flag & (REC_ENTRY_FLAG_TRAP_WFI | REC_ENTRY_FLAG_TRAP_WFE) != 0 {
@@ -179,7 +179,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             warn!("TWI(E) in HCR_EL2 is currently fixed to 'no trap'");
         }
 
-        activate_stage2_mmu(rec);
+        activate_stage2_mmu(&rec);
 
         let mut ret_ns;
         loop {
@@ -187,15 +187,15 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             run.set_imm(0);
 
             let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-            let rd = rd_granule.content::<Rd>();
+            let rd = rd_granule.content::<Rd>()?;
             rec.set_state(RecState::Running);
-            crate::rec::run_prepare(rd, rec.vcpuid(), rec, 0)?;
+            crate::rec::run_prepare(&rd, rec.vcpuid(), &mut rec, 0)?;
             // XXX: we explicitly release Rd's lock here, because RSI calls
             //      would acquire the same lock again (deadlock).
             core::mem::drop(rd_granule);
             match crate::rec::run() {
                 Ok(realm_exit_res) => {
-                    (ret_ns, ret[0]) = handle_realm_exit(realm_exit_res, rmm, rec, &mut run)?
+                    (ret_ns, ret[0]) = handle_realm_exit(realm_exit_res, rmm, &mut rec, &mut run)?
                 }
                 Err(_) => ret[0] = rmi::ERROR_REC,
             }
@@ -205,8 +205,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 break;
             }
         }
-        crate::gic::send_state_to_host(rec, &mut run)?;
-        crate::realm::timer::send_state_to_host(rec, &mut run)?;
+        crate::gic::send_state_to_host(&rec, &mut run)?;
+        crate::realm::timer::send_state_to_host(&rec, &mut run)?;
 
         // NOTICE: do not modify `run` after copy_to_host_or_ret!(). it won't have any effect.
         host::copy_to::<Run>(&run, run_pa).ok_or(Error::RmiErrorInput)
@@ -220,10 +220,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
         let mut caller_granule = get_granule_if!(caller_pa, GranuleState::Rec)?;
-        let caller = caller_granule.content_mut::<Rec<'_>>();
+        let mut caller = caller_granule.content_mut::<Rec<'_>>()?;
 
         let mut target_granule = get_granule_if!(target_pa, GranuleState::Rec)?;
-        let target = target_granule.content_mut::<Rec<'_>>();
+        let mut target = target_granule.content_mut::<Rec<'_>>()?;
 
         let status = arg[2];
 
@@ -235,6 +235,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        complete_psci(caller, target, status)
+        complete_psci(&mut caller, &mut target, status)
     });
 }

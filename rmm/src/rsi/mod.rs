@@ -73,7 +73,7 @@ pub fn do_host_call(
     run: &mut Run,
 ) -> core::result::Result<(), Error> {
     let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-    let rd = rd_granule.content::<Rd>();
+    let rd = rd_granule.content::<Rd>()?;
 
     let ipa = get_reg(rec, 1).unwrap_or(0x0);
     let ipa_bits = rec.ipa_bits()?;
@@ -170,7 +170,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let ipa_bits = rec.ipa_bits()?;
 
         let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let rd = rd_granule.content::<Rd>()?;
 
         if rec.attest_state() != RmmRecAttestState::AttestInProgress {
             warn!("Calling attest token continue without init");
@@ -208,7 +208,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         #[cfg(not(kani))]
         // `rsi` is currently not reachable in model checking harnesses
         {
-            let (token_part, token_left) = get_token_part(rd, rec, buffer_size)?;
+            let (token_part, token_left) = get_token_part(&rd, rec, buffer_size)?;
 
             unsafe {
                 let pa_ptr = attest_pa as *mut u8;
@@ -274,7 +274,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, MEASUREMENT_READ, |_arg, ret, _rmm, rec, _| {
         let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let rd = rd_granule.content::<Rd>()?;
         let mut measurement = Measurement::empty();
         let index = get_reg(rec, 1)?;
 
@@ -287,7 +287,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
         #[cfg(not(kani))]
         // `rsi` is currently not reachable in model checking harnesses
-        crate::rsi::measurement::read(rd, index, &mut measurement)?;
+        crate::rsi::measurement::read(&rd, index, &mut measurement)?;
         set_reg(rec, 0, SUCCESS)?;
         for (ind, chunk) in measurement
             .as_slice()
@@ -304,7 +304,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, MEASUREMENT_EXTEND, |_arg, ret, _rmm, rec, _| {
         let mut rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd_granule.content_mut::<Rd>();
+        let mut rd = rd_granule.content_mut::<Rd>()?;
 
         let index = get_reg(rec, 1)?;
         let size = get_reg(rec, 2)?;
@@ -326,7 +326,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
         #[cfg(not(kani))]
         // `rsi` is currently not reachable in model checking harnesses
-        HashContext::new(rd)?.extend_measurement(&buffer[0..size], index)?;
+        HashContext::new(&mut rd)?.extend_measurement(&buffer[0..size], index)?;
 
         set_reg(rec, 0, SUCCESS)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;
@@ -336,7 +336,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
     listen!(rsi, REALM_CONFIG, |_arg, ret, _rmm, rec, _| {
         let ipa_bits = rec.ipa_bits()?;
         let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let rd = rd_granule.content::<Rd>()?;
 
         let config_ipa = get_reg(rec, 1)?;
         if validate_ipa(config_ipa, ipa_bits).is_err() {
@@ -345,7 +345,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             return Ok(());
         }
 
-        realm_config(rd, config_ipa, ipa_bits)?;
+        realm_config(&rd, config_ipa, ipa_bits)?;
 
         if set_reg(rec, 0, SUCCESS).is_err() {
             warn!("Unable to set register 0. rec: {:?}", rec);

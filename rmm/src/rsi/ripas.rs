@@ -21,7 +21,7 @@ pub fn get_ripas_state(
 ) -> core::result::Result<(), Error> {
     let ipa_bits = rec.ipa_bits()?;
     let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-    let rd = rd_granule.content::<Rd>();
+    let rd = rd_granule.content::<Rd>()?;
 
     let ipa_page = get_reg(rec, 1)?;
     if validate_ipa(ipa_page, ipa_bits).is_err() {
@@ -32,7 +32,7 @@ pub fn get_ripas_state(
         return Ok(());
     }
 
-    let ripas = crate::rtt::get_ripas(rd, ipa_page, RTT_PAGE_LEVEL)? as usize;
+    let ripas = crate::rtt::get_ripas(&rd, ipa_page, RTT_PAGE_LEVEL)? as usize;
 
     debug!(
         "RSI_IPA_STATE_GET: ipa_page: {:X} ripas: {:X}",

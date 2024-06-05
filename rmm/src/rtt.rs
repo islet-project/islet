@@ -44,7 +44,7 @@ fn level_map_size(level: usize) -> usize {
 pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), Error> {
     let mut rtt_granule = get_granule_if!(rtt_addr, GranuleState::Delegated)?;
 
-    let s2tt = rtt_granule.content_mut::<RttPage>();
+    let mut s2tt = rtt_granule.content_mut::<RttPage>()?;
 
     let (parent_s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level - 1, Error::RmiErrorInput)?;
 

@@ -27,7 +27,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd = arg[0];
 
         let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
-        let rd = rd_granule.content_mut::<Rd>();
+        let mut rd = rd_granule.content_mut::<Rd>()?;
 
         if !rd.at_state(State::New) {
             return Err(Error::RmiErrorRealm(0));
@@ -46,7 +46,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         let mut rd_granule = get_granule_if!(rd, GranuleState::Delegated)?;
-        let rd_obj = rd_granule.content_mut::<Rd>();
+        let mut rd_obj = rd_granule.content_mut::<Rd>()?;
         #[cfg(not(kani))]
         // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.map(rd, true);
@@ -88,7 +88,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         #[cfg(not(kani))]
         // `rsi` is currently not reachable in model checking harnesses
-        HashContext::new(rd_obj)?.measure_realm_create(&params)?;
+        HashContext::new(&mut rd_obj)?.measure_realm_create(&params)?;
 
         let mut eplilog = move || {
             let mut rtt_granule = get_granule_if!(rtt_base, GranuleState::Delegated)?;
@@ -118,7 +118,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if rd_granule.num_children() > 0 {
             return Err(Error::RmiErrorRealm(0));
         }
-        let rd = rd_granule.content::<Rd>();
+        let rd = rd_granule.content::<Rd>()?;
         let vmid = rd.id();
 
         let mut rtt_granule = get_granule_if!(rd.rtt_base(), GranuleState::RTT)?;

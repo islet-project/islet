@@ -2,6 +2,7 @@ use crate::granule::array::GRANULE_STATUS_TABLE;
 use crate::rmi::error::Error;
 
 use super::{GranuleState, GRANULE_SIZE};
+use safe_abstraction::raw_ptr;
 use spinning_top::{Spinlock, SpinlockGuard};
 use vmsa::guard::Content;
 
@@ -89,14 +90,20 @@ impl Granule {
         Ok(())
     }
 
-    pub fn content_mut<T: Content>(&mut self) -> &mut T {
+    pub fn content_mut<T>(&mut self) -> Result<raw_ptr::SafetyAssumed<T>, Error>
+    where
+        T: Content + raw_ptr::SafetyChecked + raw_ptr::SafetyAssured,
+    {
         let addr = self.index_to_addr();
-        unsafe { &mut *(addr as *mut T) }
+        Ok(raw_ptr::assume_safe::<T>(addr)?)
     }
 
-    pub fn content<T: Content>(&self) -> &T {
+    pub fn content<T>(&self) -> Result<raw_ptr::SafetyAssumed<T>, Error>
+    where
+        T: Content + raw_ptr::SafetyChecked + raw_ptr::SafetyAssured,
+    {
         let addr = self.index_to_addr();
-        unsafe { &*(addr as *const T) }
+        Ok(raw_ptr::assume_safe::<T>(addr)?)
     }
 
     fn index(&self) -> usize {

@@ -44,8 +44,8 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
     });
 
     listen!(rsi, rsi::PSCI_CPU_ON, |_arg, ret, _rmm, rec, run| {
-        let mut rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd.content_mut::<Rd>();
+        let rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd.content::<Rd>()?;
 
         let target_mpidr = get_reg(rec, 1)? as u64;
         let entry_addr = get_reg(rec, 2)?;
@@ -87,7 +87,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, rsi::PSCI_SYSTEM_OFF, |_arg, ret, _rmm, rec, run| {
         let mut rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd.content_mut::<Rd>();
+        let mut rd = rd.content_mut::<Rd>()?;
         rd.set_state(State::SystemOff);
         run.set_exit_reason(rmi::EXIT_PSCI);
         run.set_gpr(0, rsi::PSCI_SYSTEM_OFF as u64)?;
@@ -109,7 +109,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, rsi::PSCI_SYSTEM_RESET, |_arg, ret, _rmm, rec, run| {
         let mut rd = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-        let rd = rd.content_mut::<Rd>();
+        let mut rd = rd.content_mut::<Rd>()?;
         rd.set_state(State::SystemOff);
         run.set_exit_reason(rmi::EXIT_PSCI);
         run.set_gpr(0, rsi::PSCI_SYSTEM_RESET as u64)?;

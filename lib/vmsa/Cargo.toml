@@ -6,4 +6,5 @@ edition = "2021"
 
 [dependencies]
 armv9a = { path = "../armv9a" }
+safe_abstraction = { path = "../safe-abstraction" }
 spinning_top = "0.2.4"

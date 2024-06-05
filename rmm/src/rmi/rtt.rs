@@ -48,7 +48,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::RTT_CREATE, |arg, _ret, _rmm| {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rtt_addr = arg[1];
-        let rd = rd_granule.content::<Rd>();
+        let rd = rd_granule.content::<Rd>()?;
         let ipa = arg[2];
         let level = arg[3];
 
@@ -63,13 +63,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if rtt_addr == arg[0] {
             return Err(Error::RmiErrorInput);
         }
-        crate::rtt::create(rd, rtt_addr, ipa, level)?;
+        crate::rtt::create(&rd, rtt_addr, ipa, level)?;
         Ok(())
     });
 
     listen!(mainloop, rmi::RTT_DESTROY, |arg, ret, _rmm| {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let rd = rd_granule.content::<Rd>()?;
         let ipa = arg[1];
         let level = arg[2];
 
@@ -81,7 +81,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         {
             return Err(Error::RmiErrorInput);
         }
-        let (ipa, walk_top) = crate::rtt::destroy(rd, ipa, level, |t| {
+        let (ipa, walk_top) = crate::rtt::destroy(&rd, ipa, level, |t| {
             ret[2] = t;
         })?;
         ret[1] = ipa;
@@ -91,7 +91,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
     listen!(mainloop, rmi::RTT_INIT_RIPAS, |arg, ret, _rmm| {
         let mut rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
-        let rd = rd_granule.content_mut::<Rd>();
+        let mut rd = rd_granule.content_mut::<Rd>()?;
         let base = arg[1];
         let top = arg[2];
 
@@ -111,13 +111,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        let out_top = crate::rtt::init_ripas(rd, base, top)?;
+        let out_top = crate::rtt::init_ripas(&rd, base, top)?;
         ret[1] = out_top; //This is walk_top
 
         //TODO: Update the function according to the changes from eac5
         #[cfg(not(kani))]
         // `rsi` is currently not reachable in model checking harnesses
-        HashContext::new(rd)?.measure_ripas_granule(base, RTT_PAGE_LEVEL as u8)?;
+        HashContext::new(&mut rd)?.measure_ripas_granule(base, RTT_PAGE_LEVEL as u8)?;
         Ok(())
     });
 
@@ -130,9 +130,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let rd = rd_granule.content::<Rd>()?;
         let mut rec_granule = get_granule_if!(arg[1], GranuleState::Rec)?;
-        let rec = rec_granule.content_mut::<Rec<'_>>();
+        let mut rec = rec_granule.content_mut::<Rec<'_>>()?;
         if rec.realmid()? != rd.id() {
             warn!("RD:{:X} doesn't own REC:{:X}", arg[0], arg[1]);
             return Err(Error::RmiErrorRec);
@@ -150,7 +150,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        let out_top = crate::rtt::set_ripas(rd, base, top, rec.ripas_state(), rec.ripas_flags())?;
+        let out_top = crate::rtt::set_ripas(&rd, base, top, rec.ripas_state(), rec.ripas_flags())?;
         ret[1] = out_top;
         rec.set_ripas_addr(out_top as u64);
         Ok(())
@@ -158,14 +158,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
     listen!(mainloop, rmi::RTT_READ_ENTRY, |arg, ret, _rmm| {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let rd = rd_granule.content::<Rd>()?;
         let ipa = arg[1];
         let level = arg[2];
         if !is_valid_rtt_cmd(ipa, level, rd.ipa_bits()) {
             return Err(Error::RmiErrorInput);
         }
 
-        let res = crate::rtt::read_entry(rd, ipa, level)?;
+        let res = crate::rtt::read_entry(&rd, ipa, level)?;
         ret[1..5].copy_from_slice(&res[0..4]);
 
         Ok(())
@@ -185,7 +185,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // rd granule lock
         let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
-        let rd = rd_granule.content_mut::<Rd>();
+        let mut rd = rd_granule.content_mut::<Rd>()?;
 
         // Make sure DATA_CREATE is only processed
         // when the realm is in its New state.
@@ -201,7 +201,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // data granule lock for the target page
         let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
-        let target_page = target_page_granule.content_mut::<DataPage>();
+        let mut target_page = target_page_granule.content_mut::<DataPage>()?;
         #[cfg(not(kani))]
         // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.map(target_pa, true);
@@ -211,13 +211,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         #[cfg(not(kani))]
         // `rsi` is currently not reachable in model checking harnesses
-        HashContext::new(rd)?.measure_data_granule(&src_page, ipa, flags)?;
+        HashContext::new(&mut rd)?.measure_data_granule(&src_page, ipa, flags)?;
 
         // 3. copy src to _data
         *target_page = src_page;
 
         // 4. map ipa to taget_pa in S2 table
-        crate::rtt::data_create(rd, ipa, target_pa, false)?;
+        crate::rtt::data_create(&rd, ipa, target_pa, false)?;
 
         set_granule(&mut target_page_granule, GranuleState::Data)?;
         Ok(())
@@ -226,7 +226,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::DATA_CREATE_UNKNOWN, |arg, _ret, rmm| {
         // rd granule lock
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let rd = rd_granule.content::<Rd>()?;
 
         // target_phys: location where realm data is created.
         let target_pa = arg[1];
@@ -245,7 +245,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rmm.page_table.map(target_pa, true);
 
         // 1. map ipa to target_pa in S2 table
-        crate::rtt::data_create(rd, ipa, target_pa, true)?;
+        crate::rtt::data_create(&rd, ipa, target_pa, true)?;
 
         // TODO: 2. perform measure
         // L0czek - not needed here see: tf-rmm/runtime/rmi/rtt.c:883
@@ -256,7 +256,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::DATA_DESTROY, |arg, ret, _rmm| {
         // rd granule lock
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let rd = rd_granule.content::<Rd>()?;
         let ipa = arg[1];
 
         if !is_protected_ipa(ipa, rd.ipa_bits())
@@ -265,7 +265,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        let (pa, top) = crate::rtt::data_destroy(rd, ipa, |t| {
+        let (pa, top) = crate::rtt::data_destroy(&rd, ipa, |t| {
             ret[2] = t;
         })?;
 
@@ -296,19 +296,19 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         // rd granule lock
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let rd = rd_granule.content::<Rd>()?;
 
         if !is_valid_rtt_cmd(ipa, level, rd.ipa_bits()) {
             return Err(Error::RmiErrorInput);
         }
-        crate::rtt::map_unprotected(rd, ipa, level, host_s2tte)?;
+        crate::rtt::map_unprotected(&rd, ipa, level, host_s2tte)?;
         Ok(())
     });
 
     // Unmap a non-secure PA at an unprotected IPA
     listen!(mainloop, rmi::RTT_UNMAP_UNPROTECTED, |arg, ret, _rmm| {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
+        let rd = rd_granule.content::<Rd>()?;
 
         let ipa = arg[1];
 
@@ -320,7 +320,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        let top = crate::rtt::unmap_unprotected(rd, ipa, level, |t| {
+        let top = crate::rtt::unmap_unprotected(&rd, ipa, level, |t| {
             ret[1] = t;
         })?;
         ret[1] = top;

@@ -332,6 +332,74 @@ pub fn make_exclusive(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn make_shared_ripas(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error> {
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
+    let new_s2tte = s2tte.get();
+    let mut flags = 0;
+
+    let ripas = s2tte.get_ripas();
+    match ripas {
+        invalid_ripas::RAM => {}
+        invalid_ripas::EMPTY => {
+            flags |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
+            flags |= bits_in_reg(S2TTE::MEMATTR, attribute::NORMAL_FWB);
+            flags |= bits_in_reg(S2TTE::AP, permission::RW);
+            flags |= bits_in_reg(S2TTE::SH, shareable::INNER);
+            flags |= bits_in_reg(S2TTE::AF, 1);
+        }
+        _ => panic!("Unexpected ripas: {} for ipa: {:x}", ripas, ipa),
+    }
+
+    rd.s2_table()
+        .lock()
+        .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte | flags)?;
+
+    Ok(())
+}
+
+pub fn make_shared_as_readonly(rd: &Rd, ipa: usize, target_pa: usize) -> Result<(), Error> {
+    let level = RTT_PAGE_LEVEL;
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
+
+    if level != last_level {
+        return Err(Error::RmiErrorRtt(last_level));
+    }
+
+    if !s2tte.is_unassigned() {
+        return Err(Error::RmiErrorRtt(RTT_PAGE_LEVEL));
+    }
+
+    let mut new_s2tte = target_pa as u64;
+    if s2tte.is_invalid_ripas() {
+        panic!("invalid ripas");
+    }
+
+    let ripas = s2tte.get_ripas();
+    match ripas {
+        invalid_ripas::EMPTY => {
+            new_s2tte |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
+            new_s2tte |= bits_in_reg(S2TTE::MEMATTR, attribute::NORMAL_FWB);
+            new_s2tte |= bits_in_reg(S2TTE::AP, permission::RO);
+            new_s2tte |= bits_in_reg(S2TTE::SH, shareable::INNER);
+            new_s2tte |= bits_in_reg(S2TTE::AF, 1);
+            warn!(
+                "ripas is empty as we expected ! new_s2tte: 0x{:x}",
+                new_s2tte
+            );
+        }
+        _ => panic!(
+            "Unexpected ripas: {} for ipa: {:x} and target_pa: {:x}",
+            ripas, ipa, target_pa
+        ),
+    }
+
+    rd.s2_table()
+        .lock()
+        .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
+
+    Ok(())
+}
+
 pub fn data_create(rd: &Rd, ipa: usize, target_pa: usize) -> Result<(), Error> {
     let level = RTT_PAGE_LEVEL;
     let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;

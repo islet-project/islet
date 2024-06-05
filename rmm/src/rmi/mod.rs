@@ -33,6 +33,7 @@ define_interface! {
          REC_AUX_COUNT          = 0xc400_0167,
          RTT_INIT_RIPAS         = 0xc400_0168,
          RTT_SET_RIPAS          = 0xc400_0169,
+         MAP_SHARED_MEM_AS_RO   = 0xc400_016a,
     }
 }
 

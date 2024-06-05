@@ -47,6 +47,7 @@ fn pick(cmd: Command) -> Option<Constraint> {
         rmi::RTT_DESTROY => Constraint::new(rmi::RTT_DESTROY, 5, 1),
         rmi::RTT_INIT_RIPAS => Constraint::new(rmi::RTT_INIT_RIPAS, 4, 2),
         rmi::RTT_SET_RIPAS => Constraint::new(rmi::RTT_SET_RIPAS, 6, 2),
+        rmi::MAP_SHARED_MEM_AS_RO => Constraint::new(rmi::MAP_SHARED_MEM_AS_RO, 4, 1),
         rmi::REQ_COMPLETE => Constraint::new(rmi::REQ_COMPLETE, 4, 2),
         _ => return None,
     };

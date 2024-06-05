@@ -375,7 +375,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
 fn is_ripas_valid(ripas: u8) -> bool {
     match ripas as u64 {
-        invalid_ripas::EMPTY | invalid_ripas::RAM => true,
+        invalid_ripas::EMPTY | invalid_ripas::RAM | invalid_ripas::SHARED => true,
         _ => false,
     }
 }

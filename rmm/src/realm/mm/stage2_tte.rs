@@ -21,6 +21,7 @@ pub mod invalid_hipas {
 pub mod invalid_ripas {
     pub const EMPTY: u64 = 0b0;
     pub const RAM: u64 = 0b1;
+    pub const SHARED: u64 = 0b11;
 }
 
 pub mod desc_type {

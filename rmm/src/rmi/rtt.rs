@@ -24,6 +24,7 @@ pub const S2TTE_STRIDE: usize = GRANULE_SHIFT - 3;
 
 const RIPAS_EMPTY: u64 = 0;
 const RIPAS_RAM: u64 = 1;
+const RIPAS_SHARED: u64 = 3;
 
 fn level_to_size(level: usize) -> u64 {
     // TODO: get the translation granule from src/armv9
@@ -120,6 +121,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         match ripas as u64 {
             RIPAS_EMPTY => prot.set_bit(rmi::MapProt::NS_PAS),
             RIPAS_RAM => { /* do nothing: ripas ram by default */ }
+            RIPAS_SHARED => {
+                /* do nothing */
+                warn!("ripas shared is called!");
+            }
             _ => {
                 warn!("Unknown RIPAS:{}", ripas);
                 return Err(Error::RmiErrorInput); //XXX: check this again
@@ -127,15 +132,27 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         if rec.ripas_state() != ripas as u8 {
+            warn!(
+                "ripas_state() {} != ripas {}, ipa: {:x}",
+                rec.ripas_state(),
+                ripas,
+                ipa
+            );
             return Err(Error::RmiErrorInput);
         }
 
         if rec.ripas_addr() != ipa as u64 {
+            warn!("ripas_addr() {:x} != ipa {:x}", rec.ripas_addr(), ipa);
             return Err(Error::RmiErrorInput);
         }
 
         let map_size = level_to_size(level);
         if ipa as u64 + map_size > rec.ripas_end() {
+            warn!(
+                "ipa + map_size () {:x} > rec.ripas_end(){:x}",
+                ipa as u64 + map_size,
+                rec.ripas_end()
+            );
             return Err(Error::RmiErrorInput);
         }
 
@@ -143,6 +160,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             crate::rtt::make_shared(rd, ipa, level)?;
         } else if ripas as u64 == RIPAS_RAM {
             crate::rtt::make_exclusive(rd, ipa, level)?;
+        } else if ripas as u64 == RIPAS_SHARED {
+            let ret = crate::rtt::make_shared_ripas(rd, ipa, level);
+            if let Err(e) = &ret {
+                warn!("make_shared_as_readonly failed with {:?}", e);
+                return ret;
+            }
         } else {
             unreachable!();
         }
@@ -299,6 +322,39 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
         crate::rtt::unmap_unprotected(rd, ipa, level)?;
+        Ok(())
+    });
+
+    listen!(mainloop, rmi::MAP_SHARED_MEM_AS_RO, |arg, _ret, rmm| {
+        // target_phys: location where realm data is created.
+        let target_pa = arg[0];
+        let ipa = arg[2];
+        if target_pa == arg[1] {
+            return Err(Error::RmiErrorInput);
+        }
+
+        warn!(
+            "RMI::MAP_SHARED_MEM_AS_RO called with target_pa: {:x}, ipa: {:x}",
+            target_pa, ipa
+        );
+
+        // rd granule lock
+        let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
+
+        validate_ipa(ipa, rd.ipa_bits())?;
+
+        warn!("check the target_pa is data granule");
+        get_granule_if!(target_pa, GranuleState::Data)?;
+
+        warn!("call rtt::map_shared_mem_as_ro");
+        let ret = crate::rtt::make_shared_as_readonly(rd, ipa, target_pa);
+        if let Err(e) = &ret {
+            warn!("rtt::map_shared_mem_as_ro return error: {:?}", e);
+            return ret;
+        }
+
+        warn!("RMI::MAP_SHARED_MEM_AS_RO done!");
         Ok(())
     });
 }

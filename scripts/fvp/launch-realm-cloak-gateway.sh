@@ -9,10 +9,10 @@ cd /shared
 	--disable-sve \
 	--console serial \
 	--irqchip=gicv3 \
-	--9p /shared,FMR \
+	--realm-pv="gateway" \
 	--vcpu-affinity 2-3 \
 	-m 256M \
 	-c 1 \
-	-k linux.realm \
+	-k acs_realm.bin \
 	-i rootfs-realm.cpio.gz \
 	-p "earlycon=ttyS0 printk.devkmsg=on"

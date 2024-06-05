@@ -101,6 +101,32 @@ impl Rd {
 
 impl Content for Rd {}
 
+impl safe_abstraction::raw_ptr::RawPtr for Rd {}
+
+impl safe_abstraction::raw_ptr::SafetyChecked for Rd {}
+
+impl safe_abstraction::raw_ptr::SafetyAssured for Rd {
+    fn is_initialized(&self) -> bool {
+        // The initialization of this memory is guaranteed
+        // according to the RMM Specification A2.2.4 Granule Wiping.
+        // This instance belongs to a RD Granule and has been initialized.
+        true
+    }
+
+    fn verify_ownership(&self) -> bool {
+        // The ownership of this instance is exclusively ensured by the RMM.
+        // under the following conditions:
+        //
+        // 1. A lock on the given address is obtained using the `get_granule*` macros.
+        // 2. The instance is converted from a raw pointer through the `content*` functions.
+        // 3. The instance is accessed only within the lock scope.
+        //
+        // Ownership verification is guaranteed because these criteria are satisfied
+        // in all cases where this object is accessed.
+        true
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum State {
     Null,

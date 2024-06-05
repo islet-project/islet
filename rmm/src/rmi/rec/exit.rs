@@ -107,7 +107,7 @@ fn handle_data_abort(
 ) -> Result<usize, Error> {
     let ipa_bits = rec.ipa_bits()?;
     let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-    let rd = rd_granule.content::<Rd>();
+    let rd = rd_granule.content::<Rd>()?;
 
     let esr_el2 = realm_exit_res[1] as u64;
     let hpfar_el2 = realm_exit_res[2] as u64;
@@ -119,20 +119,20 @@ fn handle_data_abort(
     let fault_ipa = hpfar_el2 & (HPFAR_EL2::FIPA.mask << HPFAR_EL2::FIPA.shift);
     let fault_ipa = (fault_ipa << 8) as usize;
 
-    let (exit_esr, exit_far) = match is_non_emulatable_data_abort(rd, ipa_bits, fault_ipa, esr_el2)?
-    {
-        true => (esr_el2 & NON_EMULATABLE_ABORT_MASK, 0),
-        false => {
-            if esr_el2 & EsrEl2::WNR != 0 {
-                let write_val = get_write_val(rec, esr_el2)?;
-                run.set_gpr(0, write_val)?;
+    let (exit_esr, exit_far) =
+        match is_non_emulatable_data_abort(&rd, ipa_bits, fault_ipa, esr_el2)? {
+            true => (esr_el2 & NON_EMULATABLE_ABORT_MASK, 0),
+            false => {
+                if esr_el2 & EsrEl2::WNR != 0 {
+                    let write_val = get_write_val(rec, esr_el2)?;
+                    run.set_gpr(0, write_val)?;
+                }
+                (
+                    esr_el2 & EMULATABLE_ABORT_MASK,
+                    (far_el2 & !(GRANULE_MASK as u64)),
+                )
             }
-            (
-                esr_el2 & EMULATABLE_ABORT_MASK,
-                (far_el2 & !(GRANULE_MASK as u64)),
-            )
-        }
-    };
+        };
 
     run.set_esr(exit_esr);
     run.set_far(exit_far);

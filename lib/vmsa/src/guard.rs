@@ -1,6 +1,9 @@
 use core::ops::{Deref, DerefMut};
 use spinning_top::SpinlockGuard;
 
+use super::error::Error;
+use safe_abstraction::raw_ptr;
+
 /// EntryGuard provides a secure interface to access Entry while holding the corresponding lock.
 /// Also, it is used as a means of accessing "content" placed at the address of Entry under the lock.
 pub struct EntryGuard<'a, E> {
@@ -21,15 +24,21 @@ impl<'a, E> EntryGuard<'a, E> {
     /// content placed at the `addr`. (e.g., Rec, DataPage, ...)
     /// access to this content is protected under the entry-level lock that "inner" holds.
     /// T is a target struct that `addr` maps to.
-    pub fn content<T: Content>(&self) -> &T {
+    pub fn content<T>(&self) -> Result<raw_ptr::SafetyAssumed<T>, Error>
+    where
+        T: Content + raw_ptr::SafetyChecked + raw_ptr::SafetyAssured,
+    {
         // Note: flag can be used here for validation checks.
         //  e.g., `if T::FLAGS != self.flags { error }`
         //        for example of Granule, T::FLAGS is Rd while self.flags at run-time is not Rd.
-        unsafe { &*(self.addr as *const T) }
+        raw_ptr::assume_safe::<T>(self.addr).or(Err(Error::MmErrorOthers))
     }
 
-    pub fn content_mut<T: Content>(&mut self) -> &mut T {
-        unsafe { &mut *(self.addr as *mut T) }
+    pub fn content_mut<T>(&mut self) -> Result<raw_ptr::SafetyAssumed<T>, Error>
+    where
+        T: Content + raw_ptr::SafetyChecked + raw_ptr::SafetyAssured,
+    {
+        raw_ptr::assume_safe::<T>(self.addr).or(Err(Error::MmErrorOthers))
     }
 }
 

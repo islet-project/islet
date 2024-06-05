@@ -1235,6 +1235,7 @@ name = "vmsa"
 version = "0.0.1"
 dependencies = [
  "armv9a",
+ "safe_abstraction",
  "spinning_top",
 ]
 

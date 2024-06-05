@@ -74,12 +74,57 @@ macro_rules! const_assert_size {
 
 #[cfg(test)]
 mod test {
-    use crate::io::test::MockDevice;
-    use crate::io::{stdout, Write as IoWrite};
+    extern crate alloc;
+
     use crate::{eprintln, println};
     use alloc::boxed::Box;
+    use alloc::string::String;
+    use alloc::vec::Vec;
+    use core::cell::RefCell;
+    use io::{stdout, Write as IoWrite};
+    use io::{ConsoleWriter, Device, Result, Write};
 
-    extern crate alloc;
+    pub struct MockDevice {
+        buffer: RefCell<Vec<u8>>,
+        ready: bool,
+    }
+
+    impl MockDevice {
+        pub const fn new() -> Self {
+            MockDevice {
+                buffer: RefCell::new(Vec::new()),
+                ready: false,
+            }
+        }
+
+        pub fn output(&self) -> String {
+            String::from_utf8(self.buffer.borrow().to_vec()).unwrap()
+        }
+
+        pub fn clear(&mut self) {
+            self.buffer.borrow_mut().clear()
+        }
+    }
+
+    impl Device for MockDevice {
+        fn initialize(&mut self) -> Result<()> {
+            self.ready = true;
+            Ok(())
+        }
+
+        fn initialized(&self) -> bool {
+            self.ready
+        }
+    }
+
+    impl Write for MockDevice {
+        fn write_all(&mut self, buf: &[u8]) -> Result<()> {
+            self.buffer.borrow_mut().extend_from_slice(buf);
+            Ok(())
+        }
+    }
+
+    impl ConsoleWriter for MockDevice {}
 
     #[test]
     fn println_without_arg() {

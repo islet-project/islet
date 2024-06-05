@@ -55,7 +55,7 @@ pub fn stdout() -> SpinlockGuard<'static, Stdout> {
 #[cfg(test)]
 pub mod test {
     extern crate alloc;
-    use crate::io::{ConsoleWriter, Device, Result, Stdout, Write};
+    use super::{ConsoleWriter, Device, Result, Stdout, Write};
     use alloc::boxed::Box;
     use alloc::string::String;
     use alloc::vec::Vec;

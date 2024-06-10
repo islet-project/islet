@@ -17,7 +17,7 @@ pub mod gic;
 #[macro_use]
 pub mod granule;
 #[macro_use]
-pub mod host;
+pub(crate) mod host;
 pub mod logger;
 pub mod mm;
 pub mod mmio;

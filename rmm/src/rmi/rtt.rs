@@ -206,17 +206,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.map(target_pa, true);
 
-        // read src page
-        let src_page = host::copy_from::<DataPage>(src_pa).ok_or(Error::RmiErrorInput)?;
+        // copy src to target
+        host::copy_to_obj::<DataPage>(src_pa, &mut target_page).ok_or(Error::RmiErrorInput)?;
 
         #[cfg(not(kani))]
         // `rsi` is currently not reachable in model checking harnesses
-        HashContext::new(&mut rd)?.measure_data_granule(&src_page, ipa, flags)?;
+        HashContext::new(&mut rd)?.measure_data_granule(&target_page, ipa, flags)?;
 
-        // 3. copy src to _data
-        *target_page = src_page;
-
-        // 4. map ipa to taget_pa in S2 table
+        // map ipa to taget_pa in S2 table
         crate::rtt::data_create(&rd, ipa, target_pa, false)?;
 
         set_granule(&mut target_page_granule, GranuleState::Data)?;

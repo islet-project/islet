@@ -208,8 +208,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         crate::gic::send_state_to_host(&rec, &mut run)?;
         crate::realm::timer::send_state_to_host(&rec, &mut run)?;
 
-        // NOTICE: do not modify `run` after copy_to_host_or_ret!(). it won't have any effect.
-        host::copy_to::<Run>(&run, run_pa).ok_or(Error::RmiErrorInput)
+        // NOTICE: do not modify `run` after copy_to_ptr(). it won't have any effect.
+        host::copy_to_ptr::<Run>(&run, run_pa).ok_or(Error::RmiErrorInput)
     });
 
     listen!(mainloop, rmi::PSCI_COMPLETE, |arg, _ret, _rmm| {

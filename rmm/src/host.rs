@@ -33,7 +33,30 @@ pub fn copy_from<T: SafetyChecked + SafetyAssured + Copy>(addr: usize) -> Option
     }
 }
 
-pub fn copy_to<T: SafetyChecked + SafetyAssured + Copy>(src: &T, dst: usize) -> Option<()> {
+pub fn copy_to_obj<T: SafetyChecked + SafetyAssured + Copy>(src: usize, dst: &mut T) -> Option<()> {
+    #[cfg(feature = "gst_page_table")]
+    if !validate_addr(src) || !is_not_in_realm(src) {
+        return None;
+    }
+    #[cfg(not(feature = "gst_page_table"))]
+    if !validate_addr(src) || get_granule_if!(src, GranuleState::Undelegated).is_err() {
+        return None;
+    }
+
+    PageTable::get_ref().map(src, false);
+    let ret = assume_safe::<T>(src).map(|safety_assumed| *dst = *safety_assumed);
+    PageTable::get_ref().unmap(src);
+
+    match ret {
+        Ok(_) => Some(()),
+        Err(err) => {
+            error!("Failed to convert a raw pointer to the struct. {:?}", err);
+            None
+        }
+    }
+}
+
+pub fn copy_to_ptr<T: SafetyChecked + SafetyAssured + Copy>(src: &T, dst: usize) -> Option<()> {
     #[cfg(feature = "gst_page_table")]
     if !validate_addr(dst) || !is_not_in_realm(dst) {
         return None;

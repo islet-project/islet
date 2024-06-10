@@ -10,19 +10,6 @@ define_bits!(
     ISS[24 - 0]
 );
 
-define_sys_register!(
-    ESR_EL2,
-    // Exception Class.
-    EC[31 - 26],
-    // Instruction Length for synchronous exceptions.
-    IL[25 - 25],
-    // Instruction Specific Syndrome.
-    ISS[24 - 0],
-    ISS_BRK_CMT[15 - 0],
-    S1PTW[7 - 7],
-    DFSC[5 - 0]
-);
-
 define_bits!(
     EsrEl2,
     // Exception Class.

@@ -1,4 +1,4 @@
-use armv9a::regs::ESR_EL2;
+use aarch64_cpu::registers::*;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Fault {
@@ -11,18 +11,21 @@ pub enum Fault {
     Other(u8),
 }
 
+const DFSC_MASK: u8 = 0x3f;
+const ISS_BRK_CMT_MASK: u16 = 0xffff;
+
 impl From<u32> for Fault {
     fn from(origin: u32) -> Self {
         let level = (origin & 0b11) as u8;
-
-        match (origin & ESR_EL2::DFSC as u32) >> 2 {
+        let origin = origin as u8;
+        match (origin & DFSC_MASK) >> 2 {
             0b0000 => Fault::AddressSize { level },
             0b0001 => Fault::Translation { level },
             0b0010 => Fault::AccessFlag { level },
             0b0011 => Fault::Permission { level },
             0b1000 => Fault::Alignment,
             0b1100 => Fault::TLBConflict,
-            _ => Fault::Other((origin & ESR_EL2::DFSC as u32) as u8),
+            _ => Fault::Other(origin & DFSC_MASK),
         }
     }
 }
@@ -44,7 +47,7 @@ pub enum Syndrome {
 
 impl From<u32> for Syndrome {
     fn from(origin: u32) -> Self {
-        match (origin & ESR_EL2::EC as u32) >> ESR_EL2::EC.trailing_zeros() {
+        match (origin >> ESR_EL2::EC.shift) & ESR_EL2::EC.mask as u32 {
             0b00_0000 => Syndrome::Unknown,
             0b00_0001 => Syndrome::WFX,
             0b01_0010 => Syndrome::HVC,
@@ -70,7 +73,7 @@ impl From<u32> for Syndrome {
                 Syndrome::DataAbort(Fault::from(origin))
             }
             0b10_0110 => Syndrome::SPAlignmentFault,
-            0b11_1100 => Syndrome::Brk((origin & ESR_EL2::ISS_BRK_CMT as u32) as u16),
+            0b11_1100 => Syndrome::Brk(origin as u16 & ISS_BRK_CMT_MASK),
             ec => Syndrome::Other(ec),
         }
     }
@@ -80,7 +83,7 @@ impl Into<u64> for Syndrome {
     fn into(self) -> u64 {
         match self {
             Syndrome::DataAbort(fault) => {
-                let ec: u64 = 0b10_0100 << ESR_EL2::EC.trailing_zeros();
+                let ec: u64 = 0b10_0100 << ESR_EL2::EC.shift;
                 let iss: u64 = fault.into();
                 ec | iss
             }

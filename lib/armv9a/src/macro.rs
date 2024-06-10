@@ -14,65 +14,6 @@ macro_rules! define_bitfield {
 }
 
 #[macro_export]
-macro_rules! define_sys_register {
-    ($regname:ident) => { define_sys_register!($regname, ); };
-    ($regname:ident, $($field:ident $bits:tt),*) => {
-        #[allow(non_snake_case)]
-        pub mod $regname {
-            pub struct Register;
-            impl Register {
-                /// # Safety
-                #[inline(always)]
-                pub unsafe fn get(&self) -> u64 {
-                    let rtn;
-                    core::arch::asm! {
-                        concat!("mrs {}, ", stringify!($regname)),
-                        out(reg) rtn
-                    }
-                    rtn
-                }
-
-                /// # Safety
-                #[inline(always)]
-                pub unsafe fn get_masked(&self, mask: u64) -> u64 {
-                    let rtn: u64;
-                    core::arch::asm! {
-                        concat!("mrs {}, ", stringify!($regname)),
-                        out(reg) rtn
-                    }
-                    rtn & mask
-                }
-
-                /// # Safety
-                #[inline(always)]
-                pub unsafe fn get_masked_value(&self, mask: u64) -> u64 {
-                    let rtn: u64;
-                    core::arch::asm! {
-                        concat!("mrs {}, ", stringify!($regname)),
-                        out(reg) rtn
-                    }
-                    (rtn & mask) >> (mask.trailing_zeros())
-                }
-
-                /// # Safety
-                #[inline(always)]
-                pub unsafe fn set(&self, val: u64) {
-                    core::arch::asm! {
-                        concat!("msr ", stringify!($regname), ", {}"),
-                        in(reg) val
-                    }
-                }
-            }
-
-            $( define_bitfield!($field, $bits); )*
-        }
-
-        #[allow(non_upper_case_globals)]
-        pub static $regname: $regname::Register = $regname::Register {};
-    };
-}
-
-#[macro_export]
 macro_rules! define_register {
     ($regname:ident) => { define_register!($regname, ); };
     ($regname:ident, $($field:ident $bits:tt),*) => {

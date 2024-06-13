@@ -113,6 +113,35 @@ impl page_table::Entry for Entry {
         }
     }
 
+    fn index_with_level(addr: usize, level: usize, is_root: bool) -> usize {
+        match level {
+            0 => RawGPA::from(addr).get_masked_value(RawGPA::L0Index) as usize,
+            1 => {
+                if is_root {
+                    // We know that refering one direct parent table is enough
+                    // because concatenation of the initial lookup table is upto 16.
+                    let l0 = RawGPA::from(addr).get_masked_value(RawGPA::L0Index) as usize;
+                    let l1 = RawGPA::from(addr).get_masked_value(RawGPA::L1Index) as usize;
+                    // assuming L3Table is a single page-sized
+                    l0 * L3Table::NUM_ENTRIES + l1
+                } else {
+                    RawGPA::from(addr).get_masked_value(RawGPA::L1Index) as usize
+                }
+            }
+            2 => {
+                if is_root {
+                    let l1 = RawGPA::from(addr).get_masked_value(RawGPA::L1Index) as usize;
+                    let l2 = RawGPA::from(addr).get_masked_value(RawGPA::L2Index) as usize;
+                    l1 * L3Table::NUM_ENTRIES + l2
+                } else {
+                    RawGPA::from(addr).get_masked_value(RawGPA::L2Index) as usize
+                }
+            }
+            3 => RawGPA::from(addr).get_masked_value(RawGPA::L3Index) as usize,
+            _ => panic!(),
+        }
+    }
+
     fn points_to_table_or_page(&self) -> bool {
         match self.is_valid() {
             true => match self.0.get_masked_value(RawPTE::TYPE) {

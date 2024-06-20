@@ -86,6 +86,7 @@ impl Rec<'_> {
         self.context = Context::new();
         self.context.sys_regs.vttbr = vttbr;
         self.context.sys_regs.vmpidr = vmpidr;
+        self.attest_state = RmmRecAttestState::NoAttestInProgress;
         timer::init_timer(self);
         gic::init_gic(self);
 

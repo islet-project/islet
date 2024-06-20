@@ -29,12 +29,20 @@ pub struct Rd {
     rec_index: usize,
     s2_starting_level: isize,
     hash_algo: u8,
+    rpv: [u8; 64],
     pub measurements: [Measurement; MEASUREMENTS_SLOT_NR],
     pub vcpu_index: usize,
 }
 
 impl Rd {
-    pub fn init(&mut self, vmid: u16, rtt_base: usize, ipa_bits: usize, s2_starting_level: isize) {
+    pub fn init(
+        &mut self,
+        vmid: u16,
+        rtt_base: usize,
+        ipa_bits: usize,
+        s2_starting_level: isize,
+        rpv: [u8; 64],
+    ) {
         self.vmid = vmid;
         self.state = State::New;
         self.rtt_base = rtt_base;
@@ -43,6 +51,7 @@ impl Rd {
         self.s2_starting_level = s2_starting_level;
         self.measurements = [Measurement::empty(); MEASUREMENTS_SLOT_NR];
         self.vcpu_index = 0;
+        self.rpv.copy_from_slice(rpv.as_slice());
     }
 
     pub fn id(&self) -> usize {
@@ -96,6 +105,10 @@ impl Rd {
 
     pub fn set_hash_algo(&mut self, alg: u8) {
         self.hash_algo = alg;
+    }
+
+    pub fn personalization_value(&self) -> &[u8] {
+        self.rpv.as_slice()
     }
 }
 

@@ -22,8 +22,6 @@ pub const MAX_CCA_TOKEN_SIZE: usize = 4096;
 pub const MAX_PLATFORM_TOKEN_SIZE: usize = 2048;
 pub const MAX_CHALLENGE_SIZE: usize = 64;
 
-const DUMMY_PERSONALIZATION_VALUE: [u8; 64] = [0; 64];
-
 const CCA_TOKEN_COLLECTION: u64 = 399;
 const CCA_PLATFORM_TOKEN: u64 = 44234;
 const CCA_REALM_DELEGATED_TOKEN: u64 = 44241;
@@ -62,11 +60,13 @@ impl Attestation {
         &self,
         challenge: &[u8],
         measurements: &[Measurement],
+        personalization_value: &[u8],
         hash_algo: u8,
     ) -> Vec<u8> {
         let mut cca_token = Vec::new();
 
-        let realm_token = self.create_realm_token(challenge, measurements, hash_algo);
+        let realm_token =
+            self.create_realm_token(challenge, measurements, personalization_value, hash_algo);
 
         let realm_token_entry = (
             Value::Integer(CCA_REALM_DELEGATED_TOKEN.into()),
@@ -93,6 +93,7 @@ impl Attestation {
         &self,
         challenge: &[u8],
         measurements: &[Measurement],
+        personalization_value: &[u8],
         hash_algo: u8,
     ) -> Vec<u8> {
         let hash_algo_id = match hash_algo {
@@ -108,7 +109,7 @@ impl Attestation {
 
         let claims = RealmClaims::init(
             challenge,
-            &DUMMY_PERSONALIZATION_VALUE,
+            personalization_value,
             measurements,
             hash_algo_id,
             &public_key,
@@ -156,12 +157,18 @@ impl Attestation {
     }
 }
 
-pub fn get_token(challenge: &[u8], measurements: &[Measurement], hash_algo: u8) -> Vec<u8> {
+pub fn get_token(
+    challenge: &[u8],
+    measurements: &[Measurement],
+    personalization_value: &[u8],
+    hash_algo: u8,
+) -> Vec<u8> {
     // TODO: consider storing attestation object somewhere,
     // as RAK and token do not change during rmm lifetime.
     Attestation::new(&plat_token(), &realm_attest_key()).create_attestation_token(
         challenge,
         measurements,
+        personalization_value,
         hash_algo,
     )
 }

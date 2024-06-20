@@ -5,7 +5,7 @@ authors = ["Islet Contributors"]
 edition = "2021"
 
 [dependencies]
-aarch64-cpu = { git = "https://github.com/islet-project/aarch64-cpu", branch = "armv9" }
+aarch64-cpu = { git = "https://github.com/islet-project/aarch64-cpu", branch = "main" }
 armv9a = { path = "../lib/armv9a" }
 ciborium = { version = "*", default-features = false, path = "../third-party/ciborium/ciborium" }
 coset = { version = "*", path = "../third-party/coset" }

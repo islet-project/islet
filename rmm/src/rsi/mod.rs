@@ -133,7 +133,7 @@ fn get_token_part(
 
     // FIXME: This should be stored instead of generating it for every call.
     let token =
-        crate::rsi::attestation::get_token(context.attest_challenge(), &measurements, hash_algo);
+        crate::rsi::attestation::get_token(context.attest_challenge(), &measurements, rd.personalization_value(), hash_algo);
 
     let offset = context.attest_token_offset();
     let part_size = core::cmp::min(size, token.len() - offset);
@@ -149,7 +149,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let mut challenge: [u8; 64] = [0; 64];
 
         for i in 0..8 {
-            let challenge_part = get_reg(rec, i + 2)?;
+            let challenge_part = get_reg(rec, i + 1)?;
             let start_idx = i * 8;
             let end_idx = start_idx + 8;
             challenge[start_idx..end_idx].copy_from_slice(&challenge_part.to_le_bytes());

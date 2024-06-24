@@ -506,8 +506,8 @@ def run_fvp_acs(debug, trace, trace_toggle, no_telnet):
         print("[!] Enabling debug...")
         args += ["--debug"]
     if trace_toggle:
-        print("[!] Trace toggling not supported yet")
-        sys.exit(1)
+        print("[!] Enabling trace with toggle...")
+        args += ["--trace-toggle"]
     elif trace:
         print("[!] Enabling trace...")
         args += ["--trace"]

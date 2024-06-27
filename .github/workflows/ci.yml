@@ -250,6 +250,9 @@ jobs:
     - name: Run unsafe analyzer
       run: ./scripts/unsafe-analyzer
 
+    - name: Run MIRI test
+      run: ./scripts/tests/miri.sh
+
     - uses: actions/upload-artifact@v3
       with:
         name: tools

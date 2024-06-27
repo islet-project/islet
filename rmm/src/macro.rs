@@ -100,10 +100,6 @@ mod test {
         pub fn output(&self) -> String {
             String::from_utf8(self.buffer.borrow().to_vec()).unwrap()
         }
-
-        pub fn clear(&mut self) {
-            self.buffer.borrow_mut().clear()
-        }
     }
 
     impl Device for MockDevice {

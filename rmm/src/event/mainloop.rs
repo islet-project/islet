@@ -27,7 +27,7 @@ impl Mainloop {
     }
 
     #[cfg(not(kani))]
-    fn add_event_handlers(&mut self) {
+    pub fn add_event_handlers(&mut self) {
         rmi::features::set_event_handler(self);
         rmi::gpt::set_event_handler(self);
         rmi::realm::set_event_handler(self);

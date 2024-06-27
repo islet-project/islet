@@ -88,3 +88,23 @@ pub fn validate(feat_reg0: usize) -> bool {
 
     true
 }
+
+#[cfg(test)]
+mod test {
+    use crate::rmi::{FEATURES, SUCCESS};
+    use crate::test_utils::*;
+
+    // Source: https://github.com/ARM-software/cca-rmm-acs
+    // Test Case: cmd_rmi_features_host
+    #[test]
+    fn rmi_features() {
+        let ret = rmi::<FEATURES>(&[0]);
+
+        assert_eq!(ret[0], SUCCESS);
+        assert_eq!(extract_bits(ret[1], 30, 63), 0);
+
+        let ret = rmi::<FEATURES>(&[1]);
+        assert_eq!(ret[0], SUCCESS);
+        assert_eq!(ret[1], 0);
+    }
+}

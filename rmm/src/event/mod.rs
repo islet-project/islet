@@ -18,14 +18,12 @@ macro_rules! listen {
 }
 
 pub type Command = usize;
-pub type Argument = [usize; 8];
-pub type Return = [usize; 8];
 
 #[derive(Clone)]
 pub struct Context {
-    cmd: Command,
-    arg: Vec<usize>,
-    ret: Vec<usize>,
+    pub cmd: Command,
+    pub arg: Vec<usize>,
+    pub ret: Vec<usize>,
 }
 
 impl Context {

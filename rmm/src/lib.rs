@@ -11,7 +11,7 @@ pub mod allocator;
 pub mod asm;
 pub mod config;
 pub mod cpu;
-pub mod event;
+pub(crate) mod event;
 pub mod exception;
 pub mod gic;
 #[macro_use]
@@ -30,6 +30,8 @@ pub mod rsi;
 pub mod rtt;
 #[cfg(feature = "stat")]
 pub mod stat;
+#[cfg(test)]
+pub(crate) mod test_utils;
 #[macro_use]
 pub mod r#macro;
 mod measurement;

@@ -98,6 +98,15 @@ impl Context {
             &self.ret
         );
 
+        if (self.ret[0] != rmi::SUCCESS) {
+            warn!(
+                "RMI: {0: <20} {1:X?} > {2:X?}",
+                rmi::to_str(self.cmd),
+                &self.arg,
+                &self.ret
+            );
+        }
+
         self.arg.clear();
         self.arg.extend_from_slice(&self.ret[..]);
 

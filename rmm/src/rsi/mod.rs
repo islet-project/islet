@@ -8,6 +8,7 @@ pub mod ripas;
 pub mod version;
 
 use alloc::vec::Vec;
+use armv9a::is_irq_pending;
 
 use crate::define_interface;
 use crate::event::RsiHandle;
@@ -133,7 +134,7 @@ fn get_token_part(
 
     // FIXME: This should be stored instead of generating it for every call.
     let token =
-        crate::rsi::attestation::get_token(context.attest_challenge(), &measurements, hash_algo);
+        crate::rsi::attestation::get_token(context.attest_challenge(), &measurements, rd.personalization_value(), hash_algo);
 
     let offset = context.attest_token_offset();
     let part_size = core::cmp::min(size, token.len() - offset);
@@ -149,7 +150,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let mut challenge: [u8; 64] = [0; 64];
 
         for i in 0..8 {
-            let challenge_part = get_reg(rec, i + 2)?;
+            let challenge_part = get_reg(rec, i + 1)?;
             let start_idx = i * 8;
             let end_idx = start_idx + 8;
             challenge[start_idx..end_idx].copy_from_slice(&challenge_part.to_le_bytes());
@@ -209,6 +210,14 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         // `rsi` is currently not reachable in model checking harnesses
         {
             let (token_part, token_left) = get_token_part(&rd, rec, buffer_size)?;
+
+            if is_irq_pending() {
+                error!("IRQ is pending while fetching token");
+                set_reg(rec, 0, INCOMPLETE)?;
+                set_reg(rec, 1, 0)?;
+                ret[0] = rmi::SUCCESS_REC_ENTER;
+                return Ok(());
+            }
 
             unsafe {
                 let pa_ptr = attest_pa as *mut u8;

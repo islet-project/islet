@@ -55,14 +55,18 @@ macro_rules! init_table {
             RootTable<$level, $pages>,
             entry::Entry,
             { <RootTable<$level, $pages> as Level>::NUM_ENTRIES },
-        >::new_with_base($base)
+        >::new_init_in(&RttAllocator { base: $base }, |entries| {
+            for e in entries.iter_mut() {
+                *e = Entry::new();
+            }
+        })
         .unwrap()
     };
 }
 
 pub struct Stage2Translation<'a> {
     // We will set the translation granule with 4KB.
-    root_pgtlb: Root<'a>,
+    root_pgtbl: Root<'a>,
     //root_level: usize,
     //root_pages: usize,
     dirty: bool,
@@ -73,7 +77,7 @@ impl<'a> Stage2Translation<'a> {
         // Concatenated translation tables
         // For stage 2 address translations, for the initial lookup,
         // up to 16 translation tables can be concatenated.
-        let root_pgtlb = match root_level {
+        let root_pgtbl = match root_level {
             0 => unsafe {
                 match root_pages {
                     1 => Root::L0N1(init_table!(0, 1, rtt_base)),
@@ -100,7 +104,7 @@ impl<'a> Stage2Translation<'a> {
             _ => todo!(),
         };
         Self {
-            root_pgtlb,
+            root_pgtbl,
             //root_level,
             //root_pages,
             dirty: false,
@@ -131,25 +135,19 @@ impl<'a> Stage2Translation<'a> {
     }
 }
 
-impl<'a> MemAlloc for Stage2Translation<'a> {
-    unsafe fn alloc(layout: Layout) -> *mut u8 {
-        error!("alloc for Stage2Translation is not allowed. {:?}", layout);
-        // Safety: the caller must do proper error handling with this null pointer.
-        core::ptr::null_mut()
+struct RttAllocator {
+    base: usize,
+}
+
+impl MemAlloc for RttAllocator {
+    unsafe fn allocate(&self, _layout: Layout) -> *mut u8 {
+        //TODO: check alignment
+        self.base as *mut u8
     }
 
-    unsafe fn alloc_zeroed(layout: Layout) -> *mut u8 {
+    unsafe fn deallocate(&self, ptr: *mut u8, layout: Layout) {
         error!(
-            "alloc_zeroed for Stage2Translation is not allowed. {:?}",
-            layout
-        );
-        // Safety: the caller must do proper error handling with this null pointer.
-        core::ptr::null_mut()
-    }
-
-    unsafe fn dealloc(ptr: *mut u8, layout: Layout) {
-        error!(
-            "dealloc for Stage2Translation is not allowed. {:?}, {:?}",
+            "dealloc for RttAllocator will do nothing. {:?}, {:?}",
             ptr, layout
         );
     }
@@ -189,7 +187,7 @@ macro_rules! set_pte {
 
 impl<'a> IPATranslation for Stage2Translation<'a> {
     fn get_base_address(&self) -> *const c_void {
-        match &self.root_pgtlb {
+        match &self.root_pgtbl {
             Root::L2N8(c) => *c as *const _ as *const c_void, // most likely first, for linux-realm
             Root::L0N1(a) => *a as *const _ as *const c_void,
             Root::L0N16(a) => *a as *const _ as *const c_void,
@@ -216,7 +214,7 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
         let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
         let mut pa = None;
 
-        let res = match &mut self.root_pgtlb {
+        let res = match &mut self.root_pgtbl {
             Root::L2N8(root) => to_pa!(root, guest, level, pa), // most likely first, for linux-realm
             Root::L0N1(root) => to_pa!(root, guest, level, pa),
             Root::L0N16(root) => to_pa!(root, guest, level, pa),
@@ -247,7 +245,7 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
     fn ipa_to_pte(&mut self, guest: GuestPhysAddr, level: usize) -> Option<(u64, usize)> {
         let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
         let mut pte = 0;
-        let res = match &mut self.root_pgtlb {
+        let res = match &mut self.root_pgtbl {
             Root::L2N8(root) => to_pte!(root, guest, level, pte), // most likely first, for linux-realm
             Root::L0N1(root) => to_pte!(root, guest, level, pte),
             Root::L0N16(root) => to_pte!(root, guest, level, pte),
@@ -271,7 +269,7 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
         val: u64,
     ) -> Result<(), Error> {
         let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
-        let res = match &mut self.root_pgtlb {
+        let res = match &mut self.root_pgtbl {
             Root::L2N8(root) => set_pte!(root, guest, level, val),
             Root::L0N1(root) => set_pte!(root, guest, level, val),
             Root::L0N16(root) => set_pte!(root, guest, level, val),

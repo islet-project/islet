@@ -8,7 +8,7 @@ use core::ptr::addr_of_mut;
 use vmsa::address::PhysAddr;
 use vmsa::error::Error;
 use vmsa::page::{Page, PageSize};
-use vmsa::page_table::{Level, PageTable, PageTableMethods};
+use vmsa::page_table::{DefaultMemAlloc, Level, PageTable, PageTableMethods};
 
 pub const DRAM_SIZE: usize = 0x7C00_0000 + 0x8000_0000;
 
@@ -26,24 +26,25 @@ type L0PageTable = PageTable<PhysAddr, L0Table, entry::Entry, { <L0Table as Leve
 pub type L1PageTable =
     PageTable<PhysAddr, L1Table, entry::Entry, { <L1Table as Level>::NUM_ENTRIES }>;
 
-pub struct GranuleStatusTable {
-    pub root_pgtlb: L0PageTable,
-    l1_tables: BTreeMap<usize, L1PageTable>,
+pub struct GranuleStatusTable<'a, 'b> {
+    pub root_pgtbl: &'a mut L0PageTable,
+    l1_tables: BTreeMap<usize, &'b mut L1PageTable>,
     // TODO: replace this BTreeMap with a more efficient structure.
     //    to do so, we need to do refactoring on how we manage entries in PageTable.
     //    e.g., moving storage (`entries: [E; N]`) out of PageTable, and each impl (GST, RMM, RTT) is in charge of handling that.
 }
 
-impl GranuleStatusTable {
+impl GranuleStatusTable<'_, '_> {
     pub fn new() -> Self {
         Self {
-            root_pgtlb: L0PageTable::new(),
+            root_pgtbl: L0PageTable::new_in(&DefaultMemAlloc {}).unwrap(),
             l1_tables: BTreeMap::new(),
         }
     }
 
-    fn add_l1_table(&mut self, index: usize) {
-        self.l1_tables.insert(index, L1PageTable::new());
+    fn add_l1_table(&mut self, index: usize, addr: usize) {
+        self.l1_tables
+            .insert(index, unsafe { &mut *(addr as *mut L1PageTable) });
     }
 
     pub fn set_granule(&mut self, addr: usize, state: u64) -> Result<(), Error> {
@@ -52,7 +53,7 @@ impl GranuleStatusTable {
         }
         let pa1 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
         let pa2 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
-        self.root_pgtlb.set_page(pa1, pa2, state, false)
+        self.root_pgtbl.set_page(pa1, pa2, state, false)
     }
 }
 
@@ -64,11 +65,11 @@ impl PageSize for GranuleSize {
     const MAP_EXTRA_FLAG: u64 = GranuleState::Undelegated;
 }
 
-pub static mut GRANULE_STATUS_TABLE: Option<GranuleStatusTable> = None;
+pub static mut GRANULE_STATUS_TABLE: Option<GranuleStatusTable<'_, '_>> = None;
 
-pub fn add_l1_table(index: usize) -> Result<usize, Error> {
+pub fn add_l1_table(index: usize, addr: usize) -> Result<usize, Error> {
     if let Some(gst) = unsafe { &mut *addr_of_mut!(GRANULE_STATUS_TABLE) } {
-        gst.add_l1_table(index);
+        gst.add_l1_table(index, addr);
         if let Some(t) = gst.l1_tables.get(&index) {
             Ok(t as *const _ as usize)
         } else {
@@ -82,7 +83,7 @@ pub fn add_l1_table(index: usize) -> Result<usize, Error> {
 pub fn get_l1_table_addr(index: usize) -> Result<usize, Error> {
     if let Some(gst) = unsafe { &mut *addr_of_mut!(GRANULE_STATUS_TABLE) } {
         if let Some(t) = gst.l1_tables.get_mut(&index) {
-            Ok(t as *mut _ as usize)
+            Ok(*t as *mut _ as usize)
         } else {
             Err(Error::MmErrorOthers)
         }

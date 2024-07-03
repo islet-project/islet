@@ -75,7 +75,7 @@ impl page_table::Entry for Entry {
         Ok(())
     }
 
-    fn set_with_page_table_flags(&mut self, addr: PhysAddr) -> Result<(), Error> {
+    fn point_to_subtable(&mut self, _index: usize, addr: PhysAddr) -> Result<(), Error> {
         self.set(
             addr,
             bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL_FWB)

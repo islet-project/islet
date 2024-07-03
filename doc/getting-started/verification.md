@@ -25,3 +25,5 @@ rmi_granule_undelegate
 # Choose one among the list in `Available RMI targets` for the value of `RMI_TARGET`
 $ RMI_TARGET=rmi_granule_undelegate make verify
 ```
+
+For more about Islet's model-checking, please refer to [here](../islet-model-checking.md).

@@ -13,6 +13,7 @@ sudo apt install -y -qq --no-install-recommends \
 	jq lcov \
 	flex bison \
 	bzip2 \
-	srecord
+	srecord \
+	wget make
 
 pip3 install toml

@@ -13,8 +13,7 @@ pub fn read(
 
     let measurement = realm
         .measurements
-        .iter_mut()
-        .nth(index)
+        .get(index)
         .ok_or(Error::InvalidMeasurementIndex)?;
 
     out.as_mut_slice().copy_from_slice(measurement.as_slice());
@@ -32,8 +31,7 @@ pub fn extend(
 
     let measurement = realm
         .measurements
-        .iter_mut()
-        .nth(index)
+        .get_mut(index)
         .ok_or(Error::InvalidMeasurementIndex)?;
 
     f(measurement)?;

@@ -1,4 +1,5 @@
 use core::arch::asm;
+use core::ptr::addr_of;
 
 // TODO:
 //   Detach rmm-spec(data structures & commands) to newly crate.
@@ -38,7 +39,7 @@ pub unsafe fn get_ns_buffer() {
     HOST_CALL.padding = 0;
     HOST_CALL.imm = CMD_GET_SHARED_BUF;
     let arg = [
-        &HOST_CALL as *const _ as usize,
+        addr_of!(HOST_CALL) as *const _ as usize,
         HOST_CALL.imm as usize,
         0,
         0,
@@ -49,7 +50,7 @@ pub unsafe fn get_ns_buffer() {
 pub unsafe fn exit_to_host() {
     HOST_CALL.imm = CMD_SUCCESS;
     let arg = [
-        &HOST_CALL as *const _ as usize,
+        addr_of!(HOST_CALL) as *const _ as usize,
         HOST_CALL.imm as usize,
         0,
         0,

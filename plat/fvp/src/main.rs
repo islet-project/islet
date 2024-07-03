@@ -3,7 +3,6 @@
 #![feature(asm_const)]
 #![feature(naked_functions)]
 #![warn(rust_2018_idioms)]
-#![deny(warnings)]
 
 #[macro_use]
 extern crate log;

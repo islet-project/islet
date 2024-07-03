@@ -157,6 +157,7 @@ impl Inner {
         )?;
         self.table = false;
         self.valid = true;
+
         Ok(())
     }
 
@@ -181,8 +182,8 @@ impl Inner {
         Rc::strong_count(&self.granule) - 1
     }
 
-    fn set_state_for_table(&mut self, index: usize) -> Result<(), Error> {
-        match add_l1_table(index) {
+    fn set_state_for_table(&mut self, index: usize, addr: usize) -> Result<(), Error> {
+        match add_l1_table(index, addr) {
             Ok(addr) => {
                 Rc::get_mut(&mut self.granule).map_or_else(
                     || Err(Error::MmRefcountError),
@@ -247,23 +248,10 @@ impl page_table::Entry for Entry {
         self.0.lock().set_state(addr, flags)
     }
 
-    fn set_with_page_table_flags(&mut self, _addr: PhysAddr) -> Result<(), Error> {
-        // Note: this function is not used. To enable entry-level locking,
-        // it needs to be forced to use `set_with_page_table_flags_via_alloc()`.
-        Err(Error::MmErrorOthers)
-    }
-
-    fn set_with_page_table_flags_via_alloc<T: FnMut() -> usize>(
-        &mut self,
-        index: usize,
-        _alloc: T,
-    ) -> Result<(), Error>
-    where
-        T: FnMut() -> usize,
-    {
+    fn point_to_subtable(&mut self, index: usize, addr: PhysAddr) -> Result<(), Error> {
         let mut inner = self.0.lock();
         if !inner.valid() {
-            inner.set_state_for_table(index)
+            inner.set_state_for_table(index, addr.into())
         } else {
             Ok(())
         }
@@ -280,7 +268,7 @@ impl page_table::Entry for Entry {
         }
     }
 
-    fn subtable(&self, index: usize, _level: usize) -> Result<usize, Error> {
+    fn as_subtable(&self, index: usize, _level: usize) -> Result<usize, Error> {
         get_l1_table_addr(index)
     }
 

@@ -114,7 +114,7 @@ macro_rules! get_granule {
                     let pa =
                         Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from($addr));
                     match gst
-                        .root_pgtlb
+                        .root_pgtbl
                         .entry(pa, 1, false, |e| page_table::Entry::lock(e))
                     {
                         Ok(guard) => match guard {

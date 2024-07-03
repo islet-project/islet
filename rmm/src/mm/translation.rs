@@ -7,7 +7,7 @@ use crate::mm::page_table::entry::PTDesc;
 use vmsa::address::{PhysAddr, VirtAddr};
 use vmsa::page::Page;
 use vmsa::page_table::PageTable as RootPageTable;
-use vmsa::page_table::{Level, PageTableMethods};
+use vmsa::page_table::{DefaultMemAlloc, Level, PageTableMethods};
 
 use armv9a::bits_in_reg;
 use core::ffi::c_void;
@@ -51,30 +51,24 @@ pub fn get_page_table() -> u64 {
     page_table.get_base_address() as u64
 }
 
-// initial lookup starts at level 1 with 2 page tables concatenated
-pub const NUM_ROOT_PAGE: usize = 1;
-pub const ALIGN_ROOT_PAGE: usize = 2;
-
 struct Inner<'a> {
     // We will set the translation granule with 4KB.
     // To reduce the level of page lookup, initial lookup will start from L1.
-    root_pgtlb:
+    root_pgtbl:
         &'a mut RootPageTable<VirtAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>,
     dirty: bool,
 }
 
 impl<'a> Inner<'a> {
     pub fn new() -> Self {
-        let root_pgtlb = unsafe {
-            &mut *RootPageTable::<VirtAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>::new_with_align(
-                NUM_ROOT_PAGE,
-                ALIGN_ROOT_PAGE,
+        let root_pgtbl =
+            RootPageTable::<VirtAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>::new_in(
+                &DefaultMemAlloc {},
             )
-            .unwrap()
-        };
+            .unwrap();
 
         Self {
-            root_pgtlb,
+            root_pgtbl,
             dirty: false,
         }
     }
@@ -112,7 +106,7 @@ impl<'a> Inner<'a> {
             self.set_pages(
                 VirtAddr::from(uart_phys),
                 PhysAddr::from(uart_phys),
-                1,
+                PAGE_SIZE,
                 rw_flags | device_flags,
             );
             self.set_pages(
@@ -127,7 +121,7 @@ impl<'a> Inner<'a> {
     }
 
     fn get_base_address(&self) -> *const c_void {
-        self.root_pgtlb as *const _ as *const c_void
+        self.root_pgtbl as *const _ as *const c_void
     }
 
     fn set_pages(&mut self, va: VirtAddr, phys: PhysAddr, size: usize, flags: u64) {
@@ -135,7 +129,7 @@ impl<'a> Inner<'a> {
         let phyaddr = Page::<BasePageSize, PhysAddr>::range_with_size(phys, size);
 
         if self
-            .root_pgtlb
+            .root_pgtbl
             .set_pages(virtaddr, phyaddr, flags, false)
             .is_err()
         {
@@ -146,7 +140,7 @@ impl<'a> Inner<'a> {
     fn unset_page(&mut self, addr: usize) {
         let va = VirtAddr::from(addr);
         let page = Page::<BasePageSize, VirtAddr>::including_address(va);
-        self.root_pgtlb.unset_page(page);
+        self.root_pgtbl.unset_page(page);
     }
 
     fn set_pages_for_rmi(&mut self, addr: usize, secure: bool) -> bool {
@@ -195,6 +189,6 @@ impl<'a> fmt::Debug for Inner<'a> {
 impl<'a> Drop for Inner<'a> {
     fn drop(&mut self) {
         info!("drop PageTable");
-        self.root_pgtlb.drop();
+        self.root_pgtbl.drop();
     }
 }

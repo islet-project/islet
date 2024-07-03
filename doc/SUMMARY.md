@@ -8,6 +8,7 @@
   - [Platform Developer](./getting-started/plat-dev.md)
     - [Network Configuration](./network.md)
   - [Verification](./getting-started/verification.md)
+    - [Model Checking](./islet-model-checking.md)
 - [Components](./components/index.md)
   - [CCA platform architecture](./components/cca_design.md)
   - [Realm Management Monitor](./components/rmm.md)

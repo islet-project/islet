@@ -218,8 +218,30 @@ pub mod raw_ptr {
 
         Ok(SafetyAssumed {
             addr,
+            assume_init: false,
             _phantom: core::marker::PhantomData,
         })
+    }
+
+    pub fn assume_safe_uninit_with<T: SafetyChecked + SafetyAssured>(
+        addr: usize,
+        value: T,
+    ) -> Result<SafetyAssumed<T>, Error> {
+        let ptr = addr as *const T;
+        // Safety: This cast from a raw pointer to a reference is considered safe
+        //         because it is used solely for the purpose of verifying alignment and range,
+        //         without actually dereferencing the pointer.
+        let ref_ = unsafe { &*(ptr) };
+
+        if !ref_.is_not_null() || !ref_.is_aligned() {
+            return Err(Error::SafetyCheckFailed);
+        }
+
+        if !ref_.verify_ownership() {
+            return Err(Error::AssuranceCheckFailed);
+        }
+
+        Ok(SafetyAssumed::new_maybe_uninit_with(addr, value))
     }
 
     /// Represents a target instance that has passed all necessary safety checks.
@@ -239,7 +261,28 @@ pub mod raw_ptr {
     ///                and ensure that the Rust compiler accounts for `T` in its type checking.
     pub struct SafetyAssumed<T: SafetyChecked + SafetyAssured> {
         addr: usize,
+        assume_init: bool,
         _phantom: core::marker::PhantomData<T>,
+    }
+
+    impl<T> SafetyAssumed<T>
+    where
+        T: SafetyChecked + SafetyAssured,
+    {
+        pub fn new_maybe_uninit_with(addr: usize, value: T) -> Self {
+            unsafe {
+                let src: core::mem::MaybeUninit<T> = core::mem::MaybeUninit::new(value);
+                let src = &src as *const core::mem::MaybeUninit<T>;
+                let dst = addr as *mut core::mem::MaybeUninit<T>;
+                core::ptr::copy_nonoverlapping(src, dst, 1);
+            }
+
+            Self {
+                addr,
+                assume_init: true,
+                _phantom: core::marker::PhantomData,
+            }
+        }
     }
 
     impl<T> AsRef<T> for SafetyAssumed<T>
@@ -253,7 +296,14 @@ pub mod raw_ptr {
         /// are in place. Mutable access is granted under the presumption of exclusive ownership
         /// and proper synchronization when accessed in multi-threaded contexts.
         fn as_ref(&self) -> &T {
-            unsafe { T::as_ref(self.addr) }
+            unsafe {
+                if self.assume_init {
+                    let ptr = self.addr as *mut core::mem::MaybeUninit<T>;
+                    (*ptr).assume_init_ref()
+                } else {
+                    T::as_ref(self.addr)
+                }
+            }
         }
     }
 
@@ -268,7 +318,14 @@ pub mod raw_ptr {
         /// are in place. Mutable access is granted under the presumption of exclusive ownership
         /// and proper synchronization when accessed in multi-threaded contexts.
         fn as_mut(&mut self) -> &mut T {
-            unsafe { T::as_mut(self.addr) }
+            unsafe {
+                if self.assume_init {
+                    let ptr = self.addr as *mut core::mem::MaybeUninit<T>;
+                    (*ptr).assume_init_mut()
+                } else {
+                    T::as_mut(self.addr)
+                }
+            }
         }
     }
 

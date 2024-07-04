@@ -57,6 +57,29 @@ pub struct Rec<'a> {
 }
 
 impl Rec<'_> {
+    pub fn new() -> Self {
+        Self {
+            context: Context::new(),
+            attest_state: RmmRecAttestState::NoAttestInProgress,
+            attest_challenge: [0; MAX_CHALLENGE_SIZE],
+            attest_token_offset: 0,
+            owner: OnceCell::new(),
+            vcpuid: 0,
+            runnable: false,
+            psci_pending: false,
+            state: State::Ready,
+            ripas: Ripas {
+                start: 0,
+                end: 0,
+                addr: 0,
+                state: 0,
+                flags: 0,
+            },
+            vtcr: 0,
+            host_call_pending: false,
+        }
+    }
+
     pub fn init(
         &mut self,
         owner: usize,
@@ -80,13 +103,9 @@ impl Rec<'_> {
         }
 
         self.vcpuid = vcpuid;
-        self.set_ripas(0, 0, 0, 0);
         self.set_runnable(flags);
-        self.set_state(State::Ready);
-        self.context = Context::new();
         self.context.sys_regs.vttbr = vttbr;
         self.context.sys_regs.vmpidr = vmpidr;
-        self.attest_state = RmmRecAttestState::NoAttestInProgress;
         timer::init_timer(self);
         gic::init_gic(self);
 

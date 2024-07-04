@@ -40,6 +40,13 @@ impl<'a, E> EntryGuard<'a, E> {
     {
         raw_ptr::assume_safe::<T>(self.addr).or(Err(Error::MmErrorOthers))
     }
+
+    pub fn new_uninit_with<T>(&mut self, value: T) -> Result<raw_ptr::SafetyAssumed<T>, Error>
+    where
+        T: Content + raw_ptr::SafetyChecked + raw_ptr::SafetyAssured,
+    {
+        raw_ptr::assume_safe_uninit_with::<T>(self.addr, value).or(Err(Error::MmErrorOthers))
+    }
 }
 
 impl<'a, E> Deref for EntryGuard<'a, E> {

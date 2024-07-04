@@ -70,8 +70,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         #[cfg(not(kani))]
         // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.map(rec, true);
-        let mut rec = rec_granule.content_mut::<Rec<'_>>()?;
-
+        let mut rec = rec_granule.new_uninit_with::<Rec<'_>>(Rec::new())?;
         match prepare_args(&mut rd, params.mpidr) {
             Ok((vcpuid, vttbr, vmpidr)) => {
                 ret[1] = vcpuid;

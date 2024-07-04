@@ -98,6 +98,14 @@ impl Granule {
         Ok(raw_ptr::assume_safe::<T>(addr)?)
     }
 
+    pub fn new_uninit_with<T>(&mut self, value: T) -> Result<raw_ptr::SafetyAssumed<T>, Error>
+    where
+        T: Content + raw_ptr::SafetyChecked + raw_ptr::SafetyAssured,
+    {
+        let addr = self.index_to_addr();
+        Ok(raw_ptr::assume_safe_uninit_with::<T>(addr, value)?)
+    }
+
     pub fn content<T>(&self) -> Result<raw_ptr::SafetyAssumed<T>, Error>
     where
         T: Content + raw_ptr::SafetyChecked + raw_ptr::SafetyAssured,

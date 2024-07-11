@@ -13,7 +13,7 @@ members = [
     "realm/rsi-test",
     "rmm/",
     "sdk",
-    "model-checking",
+    "model-checking", "lib/spinlock",
 ]
 
 [profile.dev]

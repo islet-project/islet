@@ -1,0 +1,14 @@
+[package]
+name = "spinlock"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lazy_static = "1.4.0"
+spin = "0.9"
+armv9a = { path = "../armv9a" }
+
+[features]
+#default = []
+deadlock_test = []
+p_deadlock_test = []

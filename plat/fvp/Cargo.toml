@@ -17,9 +17,12 @@ max_level_debug = ["log/max_level_debug", "islet_rmm/max_level_debug"]
 max_level_trace = ["log/max_level_trace", "islet_rmm/max_level_trace"]
 stat = ["islet_rmm/stat"]
 realm_linux = ["islet_rmm/realm_linux"]
+deadlock_test = ["spinlock/deadlock_test", "islet_rmm/deadlock_test"]
+p_deadlock_test = ["spinlock/p_deadlock_test", "islet_rmm/p_deadlock_test"]
 gst_page_table = ["islet_rmm/gst_page_table"]
 
 [dependencies]
+spinlock = { path = "../../lib/spinlock" }
 aarch64-cpu = { git = "https://github.com/islet-project/aarch64-cpu", branch = "main" }
 bitflags = "1.3"
 islet_rmm = { path = "../../rmm" }

@@ -239,6 +239,13 @@ def get_rmm_features(args):
         if args.normal_world == "acs":
             features += ["--features", "gst_page_table"]
 
+        if args.deadlock_test == True:
+            features += ["--features", "deadlock_test"]
+
+        if args.p_deadlock_test == True:
+            features += ["--features", "p_deadlock_test"]
+
+
     if features:
         print("[!] Setting", args.rmm, "features:", features)
     return features
@@ -646,6 +653,9 @@ if __name__ == "__main__":
     parser.add_argument("--selected-tests", "-st", help="Select the first and end test name separated by ';'", default="")
     parser.add_argument("--excluded-tests", "-et", help="File name which contains the list of ACS tests to be excluded", default="")
 
+    parser.add_argument("--deadlock-test", help="deadlock test enabled", action="store_true")
+    parser.add_argument("--p-deadlock-test", help="potential deadlock test enabled", action="store_true")
+    
     args = parser.parse_args()
 
     if args.clean != "":

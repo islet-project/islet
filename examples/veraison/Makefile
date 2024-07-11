@@ -25,5 +25,14 @@ bin/reliant-party: reliant-party reliant-party/src
 ${OUT}/bin/realm-application: realm-application realm-application/src
 	cargo install --profile release --path realm-application --root "${OUT}" --target ${TARGET_ARM}
 
-${OUT}/root-ca.crt:
+${OUT}/root-ca.crt: realm-application/root-ca.crt
 	cp realm-application/root-ca.crt ${OUT}
+
+clean:
+	cargo clean --profile release --manifest-path "${ROCLI}"/Cargo.toml --target ${TARGET_X86}
+	cargo clean --profile release --manifest-path "${RSICTL}"/Cargo.toml --target ${TARGET_ARM}
+	cargo clean --profile release --manifest-path reliant-party/Cargo.toml --target ${TARGET_X86}
+	cargo clean --profile release --manifest-path realm-application/Cargo.toml --target ${TARGET_ARM}
+	rm -rf bin
+	rm -rf "${OUT}"/bin
+	rm -f "${OUT}"/root-ca.crt

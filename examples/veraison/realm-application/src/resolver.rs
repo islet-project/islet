@@ -1,5 +1,6 @@
 use ratls::{InternalTokenResolver, RaTlsError};
 
+#[derive(Debug)]
 pub struct IoctlTokenResolver();
 
 impl InternalTokenResolver for IoctlTokenResolver

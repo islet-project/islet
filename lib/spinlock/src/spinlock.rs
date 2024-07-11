@@ -266,6 +266,16 @@ impl RawSpinlock {
         tlock_.add(get_pcpu_id(),ind);
         core::mem::drop(tlock_);
         }
+        
+        #[cfg(feature="p_deadlock_test")]
+        {
+        let graph_temp = Arc::clone(&elgraph);
+        let graph_ = graph_temp.lock();
+        if graph_.check_deadlock() {
+           return Err("POTENTIAL DEADLOCK DETECTED, ABORTING THE EXECUTION!!");
+        }
+        core::mem::drop(graph_);
+        }
 
         Ok(())
     }
@@ -323,22 +333,24 @@ impl RawSpinlock {
            }
         }
       };
-    #[cfg(feature="p_deadlock_test")]
+
+    #[cfg(feature="deadlock_test")]
     {
       let tlock_temp = Arc::clone(&tlocklist);
       let mut tlock_ = tlock_temp.lock();
       let ind = self.id();
       tlock_.add(IID,ind);
       core::mem::drop(tlock_);
-      
-      let graph_temp = Arc::clone(&elgraph);
-      let graph_ = graph_temp.lock();
-      if graph_.check_deadlock() {
-         return Err("POTENTIAL DEADLOCK DETECTED, ABORTING THE EXECUTION!!");
-      }
-     
-      core::mem::drop(graph_);
-
+    }
+    
+    #[cfg(feature="p_deadlock_test")]
+    {
+    let graph_temp = Arc::clone(&elgraph);
+    let graph_ = graph_temp.lock();
+    if graph_.check_deadlock() {
+       return Err("POTENTIAL DEADLOCK DETECTED, ABORTING THE EXECUTION!!");
+    }
+    core::mem::drop(graph_);
     }
 
       Ok(())

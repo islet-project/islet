@@ -280,6 +280,17 @@ impl page_table::Entry for Entry {
         }
     }
 
+    fn index_with_level(addr: usize, level: usize, _is_root: bool, _root_n: usize) -> usize {
+        match addr_to_idx(addr) {
+            Ok(idx) => match level {
+                0 => (idx * GRANULE_SIZE) / L0_TABLE_ENTRY_SIZE_RANGE,
+                1 => ((idx * GRANULE_SIZE) % L0_TABLE_ENTRY_SIZE_RANGE) / GRANULE_SIZE,
+                _ => panic!(),
+            },
+            Err(_) => panic!(),
+        }
+    }
+
     fn subtable(&self, index: usize, _level: usize) -> Result<usize, Error> {
         get_l1_table_addr(index)
     }

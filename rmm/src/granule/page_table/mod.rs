@@ -113,10 +113,15 @@ macro_rules! get_granule {
                 if let Some(gst) = unsafe { &mut *addr_of_mut!(GRANULE_STATUS_TABLE) } {
                     let pa =
                         Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from($addr));
-                    match gst
-                        .root_pgtlb
-                        .entry(pa, 1, false, |e| page_table::Entry::lock(e))
-                    {
+                    match gst.root_pgtlb.entry(
+                        0,
+                        pa,
+                        1,
+                        false,
+                        |e| page_table::Entry::lock(e),
+                        true,
+                        1,
+                    ) {
                         Ok(guard) => match guard {
                             (Some(g), _level) => Ok(g),
                             _ => Err(MmError::MmNoEntry),

@@ -1,14 +1,12 @@
-use core::mem::size_of;
 use vmsa::address::PhysAddr;
 
 use super::address::GuestPhysAddr;
-use crate::granule::GRANULE_SIZE;
 use crate::realm::mm::page_table::pte::{attribute, shareable};
+use crate::realm::mm::rtt::{RTT_MIN_BLOCK_LEVEL, RTT_PAGE_LEVEL};
 use crate::realm::rd::Rd;
 use crate::rmi::error::Error;
-use crate::rmi::rtt::{RTT_MIN_BLOCK_LEVEL, RTT_PAGE_LEVEL};
 use armv9a::{define_bitfield, define_bits, define_mask};
-use vmsa::guard::Content;
+//use vmsa::guard::Content;
 
 pub const INVALID_UNPROTECTED: u64 = 0x0;
 
@@ -29,52 +27,6 @@ pub mod desc_type {
     pub const L012_BLOCK: u64 = 0x1;
     pub const L3_PAGE: u64 = 0x3;
     pub const LX_INVALID: u64 = 0x0;
-}
-
-#[repr(C)]
-#[derive(Copy, Clone)]
-pub struct RttPage([u64; GRANULE_SIZE / size_of::<u64>()]);
-
-impl Content for RttPage {}
-
-impl safe_abstraction::raw_ptr::RawPtr for RttPage {}
-
-impl safe_abstraction::raw_ptr::SafetyChecked for RttPage {}
-
-impl safe_abstraction::raw_ptr::SafetyAssured for RttPage {
-    fn is_initialized(&self) -> bool {
-        // The initialization of this memory is guaranteed
-        // according to the RMM Specification A2.2.4 Granule Wiping.
-        // This instance belongs to a RTT Granule and has been initialized.
-        true
-    }
-
-    fn verify_ownership(&self) -> bool {
-        // The ownership of this instance is exclusively ensured by the RMM.
-        // under the following conditions:
-        //
-        // 1. A lock on the given address is obtained using the `get_granule*` macros.
-        // 2. The instance is converted from a raw pointer through the `content*` functions.
-        // 3. The instance is accessed only within the lock scope.
-        //
-        // Ownership verification is guaranteed because these criteria are satisfied
-        // in all cases where this object is accessed.
-        true
-    }
-}
-
-impl RttPage {
-    pub fn len(&self) -> usize {
-        self.0.len()
-    }
-
-    pub fn get(&self, index: usize) -> Option<&u64> {
-        self.0.get(index)
-    }
-
-    pub fn get_mut(&mut self, index: usize) -> Option<&mut u64> {
-        self.0.get_mut(index)
-    }
 }
 
 define_bits!(

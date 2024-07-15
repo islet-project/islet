@@ -2,12 +2,14 @@ extern crate alloc;
 
 use crate::event::Mainloop;
 use crate::granule::{
-    is_granule_aligned, is_not_in_realm, set_granule, GranuleState, GRANULE_SHIFT, GRANULE_SIZE,
+    is_granule_aligned, is_not_in_realm, set_granule, GranuleState, GRANULE_SIZE,
 };
 use crate::host;
 use crate::host::DataPage;
 use crate::listen;
 use crate::measurement::HashContext;
+use crate::realm::mm::rtt;
+use crate::realm::mm::rtt::{RTT_MIN_BLOCK_LEVEL, RTT_PAGE_LEVEL};
 use crate::realm::mm::stage2_tte::S2TTE;
 use crate::realm::rd::{Rd, State};
 use crate::rec::Rec;
@@ -17,11 +19,6 @@ use crate::rmi::error::Error;
 use crate::{get_granule, get_granule_if};
 #[cfg(feature = "gst_page_table")]
 use crate::{get_granule, get_granule_if, set_state_and_get_granule};
-
-pub const RTT_MIN_BLOCK_LEVEL: usize = 2;
-pub const RTT_PAGE_LEVEL: usize = 3;
-pub const S2TTE_STRIDE: usize = GRANULE_SHIFT - 3;
-//pub const S2TTES_PER_S2TT: usize = 1 << S2TTE_STRIDE;
 
 fn is_valid_rtt_cmd(ipa: usize, level: usize, ipa_bits: usize) -> bool {
     if level > RTT_PAGE_LEVEL {
@@ -63,7 +60,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if rtt_addr == arg[0] {
             return Err(Error::RmiErrorInput);
         }
-        crate::rtt::create(&rd, rtt_addr, ipa, level)?;
+        rtt::create(&rd, rtt_addr, ipa, level)?;
         Ok(())
     });
 
@@ -81,7 +78,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         {
             return Err(Error::RmiErrorInput);
         }
-        let (ipa, walk_top) = crate::rtt::destroy(&rd, ipa, level, |t| {
+        let (ipa, walk_top) = rtt::destroy(&rd, ipa, level, |t| {
             ret[2] = t;
         })?;
         ret[1] = ipa;
@@ -111,7 +108,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        let out_top = crate::rtt::init_ripas(&rd, base, top)?;
+        let out_top = rtt::init_ripas(&rd, base, top)?;
         ret[1] = out_top; //This is walk_top
 
         //TODO: Update the function according to the changes from eac5
@@ -150,7 +147,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        let out_top = crate::rtt::set_ripas(&rd, base, top, rec.ripas_state(), rec.ripas_flags())?;
+        let out_top = rtt::set_ripas(&rd, base, top, rec.ripas_state(), rec.ripas_flags())?;
         ret[1] = out_top;
         rec.set_ripas_addr(out_top as u64);
         Ok(())
@@ -165,7 +162,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        let res = crate::rtt::read_entry(&rd, ipa, level)?;
+        let res = rtt::read_entry(&rd, ipa, level)?;
         ret[1..5].copy_from_slice(&res[0..4]);
 
         Ok(())
@@ -214,7 +211,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         HashContext::new(&mut rd)?.measure_data_granule(&target_page, ipa, flags)?;
 
         // map ipa to taget_pa in S2 table
-        crate::rtt::data_create(&rd, ipa, target_pa, false)?;
+        rtt::data_create(&rd, ipa, target_pa, false)?;
 
         set_granule(&mut target_page_granule, GranuleState::Data)?;
         Ok(())
@@ -242,7 +239,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rmm.page_table.map(target_pa, true);
 
         // 1. map ipa to target_pa in S2 table
-        crate::rtt::data_create(&rd, ipa, target_pa, true)?;
+        rtt::data_create(&rd, ipa, target_pa, true)?;
 
         // TODO: 2. perform measure
         // L0czek - not needed here see: tf-rmm/runtime/rmi/rtt.c:883
@@ -262,7 +259,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        let (pa, top) = crate::rtt::data_destroy(&rd, ipa, |t| {
+        let (pa, top) = rtt::data_destroy(&rd, ipa, |t| {
             ret[2] = t;
         })?;
 
@@ -298,7 +295,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if !is_valid_rtt_cmd(ipa, level, rd.ipa_bits()) {
             return Err(Error::RmiErrorInput);
         }
-        crate::rtt::map_unprotected(&rd, ipa, level, host_s2tte)?;
+        rtt::map_unprotected(&rd, ipa, level, host_s2tte)?;
         Ok(())
     });
 
@@ -317,7 +314,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        let top = crate::rtt::unmap_unprotected(&rd, ipa, level, |t| {
+        let top = rtt::unmap_unprotected(&rd, ipa, level, |t| {
             ret[1] = t;
         })?;
         ret[1] = top;

@@ -27,7 +27,6 @@ pub mod realm;
 pub mod rec;
 pub mod rmi;
 pub mod rsi;
-pub mod rtt;
 #[cfg(feature = "stat")]
 pub mod stat;
 #[cfg(test)]

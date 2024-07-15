@@ -1,13 +1,14 @@
 use crate::granule::is_granule_aligned;
 use crate::granule::GranuleState;
 use crate::realm::context::{get_reg, set_reg};
+use crate::realm::mm::rtt::RTT_PAGE_LEVEL;
 use crate::realm::mm::stage2_tte::invalid_ripas;
 use crate::realm::rd::Rd;
 use crate::rec::Rec;
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmi::rec::run::{Run, REC_ENTRY_FLAG_RIPAS_RESPONSE};
-use crate::rmi::rtt::{is_protected_ipa, validate_ipa, RTT_PAGE_LEVEL};
+use crate::rmi::rtt::{is_protected_ipa, validate_ipa};
 use crate::rsi;
 use crate::Monitor;
 use crate::{get_granule, get_granule_if};
@@ -32,7 +33,7 @@ pub fn get_ripas_state(
         return Ok(());
     }
 
-    let ripas = crate::rtt::get_ripas(&rd, ipa_page, RTT_PAGE_LEVEL)? as usize;
+    let ripas = crate::realm::mm::rtt::get_ripas(&rd, ipa_page, RTT_PAGE_LEVEL)? as usize;
 
     debug!(
         "RSI_IPA_STATE_GET: ipa_page: {:X} ripas: {:X}",

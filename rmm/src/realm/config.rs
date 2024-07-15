@@ -1,7 +1,7 @@
 use crate::realm::mm::address::GuestPhysAddr;
+use crate::realm::mm::rtt::RTT_PAGE_LEVEL;
 use crate::realm::rd::Rd;
 use crate::rmi::error::Error;
-use crate::rmi::rtt::RTT_PAGE_LEVEL;
 
 use safe_abstraction::raw_ptr::assume_safe;
 

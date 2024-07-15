@@ -18,12 +18,13 @@ use crate::measurement::{HashContext, Measurement, MEASUREMENTS_SLOT_NR, MEASURE
 use crate::realm::config::realm_config;
 use crate::realm::context::{get_reg, set_reg};
 use crate::realm::mm::address::GuestPhysAddr;
+use crate::realm::mm::rtt::RTT_PAGE_LEVEL;
 use crate::realm::rd::Rd;
 use crate::rec::{Rec, RmmRecAttestState};
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmi::rec::run::Run;
-use crate::rmi::rtt::{is_protected_ipa, validate_ipa, RTT_PAGE_LEVEL};
+use crate::rmi::rtt::{is_protected_ipa, validate_ipa};
 use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 use crate::rsi::ripas::{get_ripas_state, set_ripas_state};
 use crate::Monitor;

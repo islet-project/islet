@@ -1,6 +1,7 @@
 pub mod address;
 pub mod page;
 pub mod page_table;
+pub mod rtt;
 pub mod stage2_translation;
 pub mod stage2_tte;
 pub mod translation_granule_4k;
@@ -19,4 +20,5 @@ pub trait IPATranslation: Debug + Send + Sync {
     fn ipa_to_pte_set(&mut self, guest: GuestPhysAddr, level: usize, val: u64)
         -> Result<(), Error>;
     fn clean(&mut self);
+    fn space_size(&self, level: usize) -> usize;
 }

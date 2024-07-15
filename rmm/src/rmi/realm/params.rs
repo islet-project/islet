@@ -1,9 +1,9 @@
 use crate::const_assert_eq;
 use crate::granule::{GRANULE_SHIFT, GRANULE_SIZE};
 use crate::measurement::Hashable;
+use crate::realm::mm::rtt::{RTT_PAGE_LEVEL, S2TTE_STRIDE};
 use crate::rmi::error::Error;
 use crate::rmi::features;
-use crate::rmi::rtt::{RTT_PAGE_LEVEL, S2TTE_STRIDE};
 use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
 
 use armv9a::{define_bitfield, define_bits, define_mask};

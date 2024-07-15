@@ -5,7 +5,7 @@ use core::ffi::c_void;
 use core::fmt;
 
 use crate::realm::mm::address::GuestPhysAddr;
-use crate::realm::mm::translation_granule_4k::RawPTE;
+use crate::realm::mm::translation_granule_4k::{mapping_size, RawPTE};
 use crate::realm::mm::IPATranslation;
 use crate::rmi::error::Error;
 use alloc::alloc::Layout;
@@ -67,8 +67,8 @@ macro_rules! init_table {
 pub struct Stage2Translation<'a> {
     // We will set the translation granule with 4KB.
     root_pgtbl: Root<'a>,
-    //root_level: usize,
-    //root_pages: usize,
+    root_level: usize,
+    root_pages: usize,
     dirty: bool,
 }
 
@@ -105,8 +105,8 @@ impl<'a> Stage2Translation<'a> {
         };
         Self {
             root_pgtbl,
-            //root_level,
-            //root_pages,
+            root_level,
+            root_pages,
             dirty: false,
         }
     }
@@ -135,8 +135,8 @@ impl<'a> Stage2Translation<'a> {
     }
 }
 
-struct RttAllocator {
-    base: usize,
+pub struct RttAllocator {
+    pub base: usize,
 }
 
 impl MemAlloc for RttAllocator {
@@ -164,7 +164,7 @@ macro_rules! to_pa {
     };
 }
 
-// ipa_to_pa closure
+// ipa_to_pte closure
 macro_rules! to_pte {
     ($root:expr, $guest:expr, $level:expr, $pte:expr) => {
         $root.entry($guest, $level, true, |entry| {
@@ -303,6 +303,16 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
 
             self.dirty = false;
         }
+    }
+
+    fn space_size(&self, level: usize) -> usize {
+        let count = if level == self.root_level {
+            self.root_pages
+        } else {
+            1
+        };
+        let default = mapping_size(level - 1);
+        default * count
     }
 }
 

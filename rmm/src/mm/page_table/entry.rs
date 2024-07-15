@@ -108,6 +108,16 @@ impl page_table::Entry for Entry {
         }
     }
 
+    fn index_with_level(addr: usize, level: usize, _is_root: bool, _root_n: usize) -> usize {
+        match level {
+            0 => RawGPA::from(addr).get_masked_value(RawGPA::L0Index) as usize,
+            1 => RawGPA::from(addr).get_masked_value(RawGPA::L1Index) as usize,
+            2 => RawGPA::from(addr).get_masked_value(RawGPA::L2Index) as usize,
+            3 => RawGPA::from(addr).get_masked_value(RawGPA::L3Index) as usize,
+            _ => panic!(),
+        }
+    }
+
     fn points_to_table_or_page(&self) -> bool {
         match self.is_valid() {
             true => match self.0.get_masked_value(PTDesc::TYPE) {

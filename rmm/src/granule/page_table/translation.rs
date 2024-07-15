@@ -22,9 +22,8 @@ const_assert_eq!(
     true
 );
 
-type L0PageTable = PageTable<PhysAddr, L0Table, entry::Entry, { <L0Table as Level>::NUM_ENTRIES }>;
-pub type L1PageTable =
-    PageTable<PhysAddr, L1Table, entry::Entry, { <L1Table as Level>::NUM_ENTRIES }>;
+type L0PageTable = PageTable<PhysAddr, entry::Entry, { <L0Table as Level>::NUM_ENTRIES }>;
+pub type L1PageTable = PageTable<PhysAddr, entry::Entry, { <L1Table as Level>::NUM_ENTRIES }>;
 
 pub struct GranuleStatusTable {
     pub root_pgtlb: L0PageTable,
@@ -52,7 +51,7 @@ impl GranuleStatusTable {
         }
         let pa1 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
         let pa2 = Page::<GranuleSize, PhysAddr>::including_address(PhysAddr::from(addr));
-        self.root_pgtlb.set_page(pa1, pa2, state, false)
+        self.root_pgtlb.set_page(0, pa1, pa2, state, false, true, 1)
     }
 }
 

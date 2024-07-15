@@ -19,4 +19,5 @@ cargo clippy --lib -p islet_rmm -- \
 	-A clippy::redundant_pattern_matching \
 	-A clippy::type_complexity \
 	-A clippy::upper-case-acronyms \
+	-A clippy::too_many_arguments \
 	--deny "warnings"

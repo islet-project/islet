@@ -1,7 +1,4 @@
 #![no_std]
-#![allow(incomplete_features)]
-#![feature(specialization)]
-#![feature(generic_const_exprs)]
 #![warn(rust_2018_idioms)]
 
 pub mod address;

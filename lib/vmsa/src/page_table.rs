@@ -254,7 +254,7 @@ impl<A: Address, E: Entry, const N: usize> PageTableMethods<A, E, N> for PageTab
                 } as *mut PageTable<A, E, NUM_ENTRIES>;
 
                 if subtable as usize != 0 {
-                    let subtable_ptr = subtable as *mut PageTable<A, E, NUM_ENTRIES>;
+                    let subtable_ptr = subtable;
                     unsafe {
                         let arr: [E; NUM_ENTRIES] = core::array::from_fn(|_| E::new());
                         (*subtable_ptr).entries = arr;

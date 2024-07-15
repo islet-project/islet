@@ -108,7 +108,7 @@ impl page_table::Entry for Entry {
         }
     }
 
-    fn index_with_level(addr: usize, level: usize, _is_root: bool) -> usize {
+    fn index_with_level(addr: usize, level: usize, _is_root: bool, _root_n: usize) -> usize {
         match level {
             0 => RawGPA::from(addr).get_masked_value(RawGPA::L0Index) as usize,
             1 => RawGPA::from(addr).get_masked_value(RawGPA::L1Index) as usize,

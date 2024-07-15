@@ -39,14 +39,14 @@ type RootTBL<'a, const L: usize, const N: usize, const E: usize> =
     &'a mut PageTable<GuestPhysAddr, entry::Entry, { E }>;
 
 pub enum Root<'a> {
-    L0N1(RootTBL<'a, 0, 1, ENTR1>, usize),
-    L0N16(RootTBL<'a, 0, 16, ENTR16>, usize),
-    L1N1(RootTBL<'a, 1, 1, ENTR1>, usize),
-    L1N2(RootTBL<'a, 1, 2, ENTR2>, usize),
-    L1N8(RootTBL<'a, 1, 8, ENTR8>, usize),
-    L2N4(RootTBL<'a, 2, 4, ENTR4>, usize),
-    L2N8(RootTBL<'a, 2, 8, ENTR8>, usize),
-    L2N16(RootTBL<'a, 2, 16, ENTR16>, usize),
+    L0N1(RootTBL<'a, 0, 1, ENTR1>, usize, usize),
+    L0N16(RootTBL<'a, 0, 16, ENTR16>, usize, usize),
+    L1N1(RootTBL<'a, 1, 1, ENTR1>, usize, usize),
+    L1N2(RootTBL<'a, 1, 2, ENTR2>, usize, usize),
+    L1N8(RootTBL<'a, 1, 8, ENTR8>, usize, usize),
+    L2N4(RootTBL<'a, 2, 4, ENTR4>, usize, usize),
+    L2N8(RootTBL<'a, 2, 8, ENTR8>, usize, usize),
+    L2N16(RootTBL<'a, 2, 16, ENTR16>, usize, usize),
 }
 
 #[macro_export]
@@ -75,24 +75,24 @@ impl<'a> Stage2Translation<'a> {
         let root_pgtlb = match root_level {
             0 => unsafe {
                 match root_pages {
-                    1 => Root::L0N1(init_table!(0, 1, rtt_base), 0),
-                    16 => Root::L0N16(init_table!(0, 16, rtt_base), 0),
+                    1 => Root::L0N1(init_table!(0, 1, rtt_base), 0, 1),
+                    16 => Root::L0N16(init_table!(0, 16, rtt_base), 0, 16),
                     _ => todo!(),
                 }
             },
             1 => unsafe {
                 match root_pages {
-                    1 => Root::L1N1(init_table!(1, 1, rtt_base), 1),
-                    2 => Root::L1N2(init_table!(1, 2, rtt_base), 1),
-                    8 => Root::L1N8(init_table!(1, 8, rtt_base), 1),
+                    1 => Root::L1N1(init_table!(1, 1, rtt_base), 1, 1),
+                    2 => Root::L1N2(init_table!(1, 2, rtt_base), 1, 2),
+                    8 => Root::L1N8(init_table!(1, 8, rtt_base), 1, 8),
                     _ => todo!(),
                 }
             },
             2 => unsafe {
                 match root_pages {
-                    4 => Root::L2N4(init_table!(2, 4, rtt_base), 2),
-                    8 => Root::L2N8(init_table!(2, 8, rtt_base), 2),
-                    16 => Root::L2N16(init_table!(2, 16, rtt_base), 2),
+                    4 => Root::L2N4(init_table!(2, 4, rtt_base), 2, 4),
+                    8 => Root::L2N8(init_table!(2, 8, rtt_base), 2, 8),
+                    16 => Root::L2N16(init_table!(2, 16, rtt_base), 2, 16),
                     _ => todo!(),
                 }
             },
@@ -157,7 +157,7 @@ impl<'a> MemAlloc for Stage2Translation<'a> {
 #[macro_export]
 // ipa_to_pa closure
 macro_rules! to_pa {
-    ($root:expr, $guest:expr, $level:expr, $pa:expr, $root_level:expr) => {
+    ($root:expr, $guest:expr, $level:expr, $pa:expr, $root_level:expr, $root_n:expr) => {
         $root.entry(
             $root_level,
             $guest,
@@ -168,13 +168,14 @@ macro_rules! to_pa {
                 Ok(None)
             },
             true,
+            $root_n,
         )
     };
 }
 
 // ipa_to_pa closure
 macro_rules! to_pte {
-    ($root:expr, $guest:expr, $level:expr, $pte:expr, $root_level:expr) => {
+    ($root:expr, $guest:expr, $level:expr, $pte:expr, $root_level:expr, $root_n:expr) => {
         $root.entry(
             $root_level,
             $guest,
@@ -185,13 +186,14 @@ macro_rules! to_pte {
                 Ok(None)
             },
             true,
+            $root_n,
         )
     };
 }
 
 // ipa_to_pte_set clousre
 macro_rules! set_pte {
-    ($root:expr, $guest:expr, $level:expr, $val:expr, $root_level:expr) => {
+    ($root:expr, $guest:expr, $level:expr, $val:expr, $root_level:expr, $root_n:expr) => {
         $root.entry(
             $root_level,
             $guest,
@@ -203,6 +205,7 @@ macro_rules! set_pte {
                 Ok(None)
             },
             true,
+            $root_n,
         )
     };
 }
@@ -210,14 +213,14 @@ macro_rules! set_pte {
 impl<'a> IPATranslation for Stage2Translation<'a> {
     fn get_base_address(&self) -> *const c_void {
         match &self.root_pgtlb {
-            Root::L2N8(c, _) => *c as *const _ as *const c_void, // most likely first, for linux-realm
-            Root::L0N1(a, _) => *a as *const _ as *const c_void,
-            Root::L0N16(a, _) => *a as *const _ as *const c_void,
-            Root::L1N1(b, _) => *b as *const _ as *const c_void,
-            Root::L1N2(b, _) => *b as *const _ as *const c_void,
-            Root::L1N8(b, _) => *b as *const _ as *const c_void,
-            Root::L2N4(c, _) => *c as *const _ as *const c_void,
-            Root::L2N16(c, _) => *c as *const _ as *const c_void,
+            Root::L2N8(c, _, _) => *c as *const _ as *const c_void, // most likely first, for linux-realm
+            Root::L0N1(a, _, _) => *a as *const _ as *const c_void,
+            Root::L0N16(a, _, _) => *a as *const _ as *const c_void,
+            Root::L1N1(b, _, _) => *b as *const _ as *const c_void,
+            Root::L1N2(b, _, _) => *b as *const _ as *const c_void,
+            Root::L1N8(b, _, _) => *b as *const _ as *const c_void,
+            Root::L2N4(c, _, _) => *c as *const _ as *const c_void,
+            Root::L2N16(c, _, _) => *c as *const _ as *const c_void,
         }
     }
 
@@ -237,14 +240,30 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
         let mut pa = None;
 
         let res = match &mut self.root_pgtlb {
-            Root::L2N8(root, root_level) => to_pa!(root, guest, level, pa, *root_level), // most likely first, for linux-realm
-            Root::L0N1(root, root_level) => to_pa!(root, guest, level, pa, *root_level),
-            Root::L0N16(root, root_level) => to_pa!(root, guest, level, pa, *root_level),
-            Root::L1N1(root, root_level) => to_pa!(root, guest, level, pa, *root_level),
-            Root::L1N2(root, root_level) => to_pa!(root, guest, level, pa, *root_level),
-            Root::L1N8(root, root_level) => to_pa!(root, guest, level, pa, *root_level),
-            Root::L2N4(root, root_level) => to_pa!(root, guest, level, pa, *root_level),
-            Root::L2N16(root, root_level) => to_pa!(root, guest, level, pa, *root_level),
+            Root::L2N8(root, root_level, root_n) => {
+                to_pa!(root, guest, level, pa, *root_level, *root_n)
+            } // most likely first, for linux-realm
+            Root::L0N1(root, root_level, root_n) => {
+                to_pa!(root, guest, level, pa, *root_level, *root_n)
+            }
+            Root::L0N16(root, root_level, root_n) => {
+                to_pa!(root, guest, level, pa, *root_level, *root_n)
+            }
+            Root::L1N1(root, root_level, root_n) => {
+                to_pa!(root, guest, level, pa, *root_level, *root_n)
+            }
+            Root::L1N2(root, root_level, root_n) => {
+                to_pa!(root, guest, level, pa, *root_level, *root_n)
+            }
+            Root::L1N8(root, root_level, root_n) => {
+                to_pa!(root, guest, level, pa, *root_level, *root_n)
+            }
+            Root::L2N4(root, root_level, root_n) => {
+                to_pa!(root, guest, level, pa, *root_level, *root_n)
+            }
+            Root::L2N16(root, root_level, root_n) => {
+                to_pa!(root, guest, level, pa, *root_level, *root_n)
+            }
         };
         if res.is_ok() {
             pa
@@ -268,14 +287,30 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
         let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
         let mut pte = 0;
         let res = match &mut self.root_pgtlb {
-            Root::L2N8(root, root_level) => to_pte!(root, guest, level, pte, *root_level), // most likely first, for linux-realm
-            Root::L0N1(root, root_level) => to_pte!(root, guest, level, pte, *root_level),
-            Root::L0N16(root, root_level) => to_pte!(root, guest, level, pte, *root_level),
-            Root::L1N1(root, root_level) => to_pte!(root, guest, level, pte, *root_level),
-            Root::L1N2(root, root_level) => to_pte!(root, guest, level, pte, *root_level),
-            Root::L1N8(root, root_level) => to_pte!(root, guest, level, pte, *root_level),
-            Root::L2N4(root, root_level) => to_pte!(root, guest, level, pte, *root_level),
-            Root::L2N16(root, root_level) => to_pte!(root, guest, level, pte, *root_level),
+            Root::L2N8(root, root_level, root_n) => {
+                to_pte!(root, guest, level, pte, *root_level, *root_n)
+            } // most likely first, for linux-realm
+            Root::L0N1(root, root_level, root_n) => {
+                to_pte!(root, guest, level, pte, *root_level, *root_n)
+            }
+            Root::L0N16(root, root_level, root_n) => {
+                to_pte!(root, guest, level, pte, *root_level, *root_n)
+            }
+            Root::L1N1(root, root_level, root_n) => {
+                to_pte!(root, guest, level, pte, *root_level, *root_n)
+            }
+            Root::L1N2(root, root_level, root_n) => {
+                to_pte!(root, guest, level, pte, *root_level, *root_n)
+            }
+            Root::L1N8(root, root_level, root_n) => {
+                to_pte!(root, guest, level, pte, *root_level, *root_n)
+            }
+            Root::L2N4(root, root_level, root_n) => {
+                to_pte!(root, guest, level, pte, *root_level, *root_n)
+            }
+            Root::L2N16(root, root_level, root_n) => {
+                to_pte!(root, guest, level, pte, *root_level, *root_n)
+            }
         };
         if let Ok(x) = res {
             Some((pte, x.1))
@@ -292,14 +327,30 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
     ) -> Result<(), Error> {
         let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
         let res = match &mut self.root_pgtlb {
-            Root::L2N8(root, root_level) => set_pte!(root, guest, level, val, *root_level),
-            Root::L0N1(root, root_level) => set_pte!(root, guest, level, val, *root_level),
-            Root::L0N16(root, root_level) => set_pte!(root, guest, level, val, *root_level),
-            Root::L1N1(root, root_level) => set_pte!(root, guest, level, val, *root_level),
-            Root::L1N2(root, root_level) => set_pte!(root, guest, level, val, *root_level),
-            Root::L1N8(root, root_level) => set_pte!(root, guest, level, val, *root_level),
-            Root::L2N4(root, root_level) => set_pte!(root, guest, level, val, *root_level),
-            Root::L2N16(root, root_level) => set_pte!(root, guest, level, val, *root_level),
+            Root::L2N8(root, root_level, root_n) => {
+                set_pte!(root, guest, level, val, *root_level, *root_n)
+            }
+            Root::L0N1(root, root_level, root_n) => {
+                set_pte!(root, guest, level, val, *root_level, *root_n)
+            }
+            Root::L0N16(root, root_level, root_n) => {
+                set_pte!(root, guest, level, val, *root_level, *root_n)
+            }
+            Root::L1N1(root, root_level, root_n) => {
+                set_pte!(root, guest, level, val, *root_level, *root_n)
+            }
+            Root::L1N2(root, root_level, root_n) => {
+                set_pte!(root, guest, level, val, *root_level, *root_n)
+            }
+            Root::L1N8(root, root_level, root_n) => {
+                set_pte!(root, guest, level, val, *root_level, *root_n)
+            }
+            Root::L2N4(root, root_level, root_n) => {
+                set_pte!(root, guest, level, val, *root_level, *root_n)
+            }
+            Root::L2N16(root, root_level, root_n) => {
+                set_pte!(root, guest, level, val, *root_level, *root_n)
+            }
         };
         if let Ok(_x) = res {
             Ok(())

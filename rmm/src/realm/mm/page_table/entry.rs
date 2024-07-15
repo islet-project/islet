@@ -113,11 +113,11 @@ impl page_table::Entry for Entry {
         }
     }
 
-    fn index_with_level(addr: usize, level: usize, is_root: bool) -> usize {
+    fn index_with_level(addr: usize, level: usize, is_root: bool, root_n: usize) -> usize {
         match level {
             0 => RawGPA::from(addr).get_masked_value(RawGPA::L0Index) as usize,
             1 => {
-                if is_root {
+                if is_root && root_n > 1 {
                     // We know that refering one direct parent table is enough
                     // because concatenation of the initial lookup table is upto 16.
                     let l0 = RawGPA::from(addr).get_masked_value(RawGPA::L0Index) as usize;
@@ -129,7 +129,7 @@ impl page_table::Entry for Entry {
                 }
             }
             2 => {
-                if is_root {
+                if is_root && root_n > 1 {
                     let l1 = RawGPA::from(addr).get_masked_value(RawGPA::L1Index) as usize;
                     let l2 = RawGPA::from(addr).get_masked_value(RawGPA::L2Index) as usize;
                     l1 * L3Table::NUM_ENTRIES + l2

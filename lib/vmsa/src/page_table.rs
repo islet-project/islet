@@ -154,6 +154,7 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTable<A, L, E, N> {
                 // the (uninitialized) previous contents of `entry`,
                 // though for the simple Entry with u64 would have worked using
                 // (*entry) = E::new();
+                // See https://github.com/zakarumych/allocator-api2/blob/main/src/stable/boxed.rs#L905
                 let e = E::new();
                 core::ptr::copy_nonoverlapping(&e, entry, 1);
                 core::mem::forget(e);

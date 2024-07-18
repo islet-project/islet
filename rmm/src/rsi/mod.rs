@@ -8,7 +8,6 @@ pub mod ripas;
 pub mod version;
 
 use alloc::vec::Vec;
-use armv9a::is_irq_pending;
 
 use crate::define_interface;
 use crate::event::RsiHandle;
@@ -214,14 +213,6 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         // `rsi` is currently not reachable in model checking harnesses
         {
             let (token_part, token_left) = get_token_part(&rd, rec, buffer_size)?;
-
-            if is_irq_pending() {
-                error!("IRQ is pending while fetching token");
-                set_reg(rec, 0, INCOMPLETE)?;
-                set_reg(rec, 1, 0)?;
-                ret[0] = rmi::SUCCESS_REC_ENTER;
-                return Ok(());
-            }
 
             unsafe {
                 let pa_ptr = attest_pa as *mut u8;

@@ -234,8 +234,6 @@ def get_rmm_features(args):
 
         if args.stat == True:
             features += ["--features", "stat"]
-        if args.realm == "linux" or args.realm == "aosp" or args.use_prebuilt == True:
-            features += ["--features", "realm_linux"]
         if args.normal_world == "acs":
             features += ["--features", "gst_page_table"]
 

@@ -5,6 +5,7 @@ authors = ["Islet Contributors"]
 edition = "2021"
 
 [dependencies]
+spinlock = { path = "../lib/spinlock" }
 aarch64-cpu = { git = "https://github.com/islet-project/aarch64-cpu", branch = "main" }
 armv9a = { path = "../lib/armv9a" }
 ciborium = { version = "*", default-features = false, path = "../third-party/ciborium/ciborium" }
@@ -38,6 +39,8 @@ max_level_trace = ["log/max_level_trace"]
 realm_linux = []
 stat = []
 gst_page_table = []
+deadlock_test = ["spinlock/deadlock_test"]
+p_deadlock_test = ["spinlock/p_deadlock_test"]
 
 # The below are features relevant for model checking
 mc_rmi_features = []

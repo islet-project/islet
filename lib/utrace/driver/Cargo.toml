@@ -1,0 +1,10 @@
+[package]
+name = "utrace_driver"
+version = "0.0.1"
+authors = ["Islet Contributors"]
+edition = "2021"
+
+build = "../build.rs"
+
+[dependencies]
+utrace_common = { path = "../common" }

@@ -1,14 +1,9 @@
 use crate::const_assert_size;
 use crate::realm::mm::address::GuestPhysAddr;
+use crate::realm::mm::entry::Entry;
 use vmsa::page_table::{HasSubtable, Level, PageTable};
 
 use crate::config::PAGE_SIZE;
-use entry::Entry;
-
-pub mod entry;
-pub mod pte;
-
-pub const STRIDE: usize = 9;
 
 /// Root Table
 pub enum RootTable<const L: usize, const N: usize> {}

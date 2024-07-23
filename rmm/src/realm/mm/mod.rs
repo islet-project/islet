@@ -1,10 +1,11 @@
 pub mod address;
+pub mod attribute;
+pub mod entry;
 pub mod page;
-pub mod page_table;
 pub mod rtt;
 pub mod stage2_translation;
 pub mod stage2_tte;
-pub mod translation_granule_4k;
+pub mod table_level;
 
 use crate::rmi::error::Error;
 use core::ffi::c_void;

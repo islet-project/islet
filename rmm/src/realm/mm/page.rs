@@ -1,5 +1,5 @@
-use super::page_table::pte;
-use super::translation_granule_4k::RawPTE;
+use super::attribute::page_type;
+use super::stage2_tte::S2TTE;
 use crate::config::{HUGE_PAGE_SIZE, LARGE_PAGE_SIZE, PAGE_SIZE};
 use vmsa::page::PageSize;
 
@@ -11,7 +11,7 @@ pub enum BasePageSize {}
 impl PageSize for BasePageSize {
     const SIZE: usize = PAGE_SIZE;
     const MAP_TABLE_LEVEL: usize = 3;
-    const MAP_EXTRA_FLAG: u64 = bits_in_reg(RawPTE::TYPE, pte::page_type::TABLE_OR_PAGE);
+    const MAP_EXTRA_FLAG: u64 = bits_in_reg(S2TTE::TYPE, page_type::TABLE_OR_PAGE);
 }
 
 #[derive(Clone, Copy)]

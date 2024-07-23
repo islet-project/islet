@@ -1,7 +1,7 @@
 use crate::const_assert_eq;
 use crate::granule::{GRANULE_SHIFT, GRANULE_SIZE};
 use crate::measurement::Hashable;
-use crate::realm::mm::rtt::{RTT_PAGE_LEVEL, S2TTE_STRIDE};
+use crate::realm::mm::rtt::{RTT_PAGE_LEVEL, RTT_STRIDE};
 use crate::rmi::error::Error;
 use crate::rmi::features;
 use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
@@ -123,9 +123,9 @@ impl Params {
         let rtt_slvl = self.rtt_level_start as usize;
 
         let level = RTT_PAGE_LEVEL - rtt_slvl;
-        let min_ipa_bits = level * S2TTE_STRIDE + GRANULE_SHIFT + 1;
-        let max_ipa_bits = min_ipa_bits + (S2TTE_STRIDE - 1) + 4;
-        let sl_ipa_bits = (level * S2TTE_STRIDE) + GRANULE_SHIFT + S2TTE_STRIDE;
+        let min_ipa_bits = level * RTT_STRIDE + GRANULE_SHIFT + 1;
+        let max_ipa_bits = min_ipa_bits + (RTT_STRIDE - 1) + 4;
+        let sl_ipa_bits = (level * RTT_STRIDE) + GRANULE_SHIFT + RTT_STRIDE;
 
         if (ipa_bits < min_ipa_bits) || (ipa_bits > max_ipa_bits) {
             return Err(Error::RmiErrorInput);

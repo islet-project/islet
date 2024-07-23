@@ -1,13 +1,12 @@
 use crate::granule::GRANULE_SHIFT;
 use crate::granule::{set_granule, GranuleState};
 use crate::realm::mm::address::GuestPhysAddr;
-use crate::realm::mm::page_table;
-use crate::realm::mm::page_table::entry;
-use crate::realm::mm::page_table::pte::{attribute, permission, shareable};
+use crate::realm::mm::attribute::{desc_type, memattr, permission, shareable};
+use crate::realm::mm::entry;
 use crate::realm::mm::stage2_translation::RttAllocator;
-use crate::realm::mm::stage2_tte::{desc_type, invalid_hipas, invalid_ripas};
-use crate::realm::mm::stage2_tte::{INVALID_UNPROTECTED, S2TTE};
-use crate::realm::mm::translation_granule_4k::mapping_size;
+use crate::realm::mm::stage2_tte::{invalid_hipas, invalid_ripas, mapping_size, S2TTE};
+use crate::realm::mm::stage2_tte::{level_mask, INVALID_UNPROTECTED};
+use crate::realm::mm::table_level;
 use crate::realm::rd::Rd;
 use crate::rmi::error::Error;
 use crate::rmi::rtt_entry_state;
@@ -16,9 +15,10 @@ use armv9a::bits_in_reg;
 use vmsa::address::PhysAddr;
 use vmsa::page_table::{Entry, Level, PageTable};
 
-pub const RTT_MIN_BLOCK_LEVEL: usize = 2;
-pub const RTT_PAGE_LEVEL: usize = 3;
-pub const S2TTE_STRIDE: usize = GRANULE_SHIFT - 3;
+pub const RTT_MIN_BLOCK_LEVEL: usize = table_level::L2Table::THIS_LEVEL;
+pub const RTT_PAGE_LEVEL: usize = table_level::L3Table::THIS_LEVEL;
+pub const RTT_STRIDE: usize = GRANULE_SHIFT - 3;
+
 const CHANGE_DESTROYED: u64 = 0x1;
 
 fn level_space_size(rd: &Rd, level: usize) -> usize {
@@ -31,9 +31,9 @@ fn create_pgtbl_at(rtt_addr: usize, flags: u64, mut pa: usize, map_size: usize) 
 
     let _ = PageTable::<
         GuestPhysAddr,
-        page_table::L3Table, //Table Level is not meaninful here
+        table_level::L3Table, //Table Level is not meaninful here
         entry::Entry,
-        { page_table::L3Table::NUM_ENTRIES },
+        { table_level::L3Table::NUM_ENTRIES },
     >::new_init_in(&alloc, |entries| {
         for e in entries.iter_mut() {
             let _ = (*e).set(PhysAddr::from(pa), new_s2tte, true);
@@ -79,7 +79,7 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
         }
 
         let pa: usize = parent_s2tte
-            .address(level - 1)
+            .addr_as_block(level - 1)
             .ok_or(Error::RmiErrorRtt(0))?
             .into(); //XXX: check this again
 
@@ -93,7 +93,7 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
         }
 
         let pa: usize = parent_s2tte
-            .address(level - 1)
+            .addr_as_block(level - 1)
             .ok_or(Error::RmiErrorRtt(0))?
             .into(); //XXX: check this again
 
@@ -134,7 +134,7 @@ pub fn destroy<F: FnMut(usize)>(
     }
 
     let rtt_addr = parent_s2tte
-        .address(RTT_PAGE_LEVEL)
+        .addr_as_block(RTT_PAGE_LEVEL)
         .ok_or(Error::RmiErrorInput)?
         .into();
 
@@ -242,7 +242,7 @@ pub fn read_entry(rd: &Rd, ipa: usize, level: usize) -> Result<[usize; 4], Error
     } else if s2tte.is_assigned_empty() {
         r2 = rtt_entry_state::RMI_ASSIGNED;
         r3 = s2tte
-            .address(last_level)
+            .addr_as_block(last_level)
             .ok_or(Error::RmiErrorRtt(0))?
             .into(); //XXX: check this again
         r4 = invalid_ripas::EMPTY as usize;
@@ -252,27 +252,20 @@ pub fn read_entry(rd: &Rd, ipa: usize, level: usize) -> Result<[usize; 4], Error
     } else if s2tte.is_assigned_ram(last_level) {
         r2 = rtt_entry_state::RMI_ASSIGNED;
         r3 = s2tte
-            .address(last_level)
+            .addr_as_block(last_level)
             .ok_or(Error::RmiErrorRtt(0))?
             .into(); //XXX: check this again
         r4 = invalid_ripas::RAM as usize;
     } else if s2tte.is_assigned_ns(last_level) {
         r2 = rtt_entry_state::RMI_ASSIGNED;
-        let addr_mask = match level {
-            1 => S2TTE::ADDR_L1_PAGE,
-            2 => S2TTE::ADDR_L2_PAGE,
-            3 => S2TTE::ADDR_L3_PAGE,
-            _ => {
-                return Err(Error::RmiErrorRtt(0)); //XXX: check this again
-            }
-        };
-        let mask = addr_mask | S2TTE::MEMATTR | S2TTE::AP | S2TTE::SH;
-        r3 = (s2tte.get() & mask) as usize;
+        let addr_mask: u64 = level_mask(level).ok_or(Error::RmiErrorRtt(0))?;
+        let mask = addr_mask | S2TTE::MEMATTR | S2TTE::S2AP | S2TTE::SH;
+        r3 = s2tte.get_masked(mask) as usize;
         r4 = invalid_ripas::EMPTY as usize;
     } else if s2tte.is_table(last_level) {
         r2 = rtt_entry_state::RMI_TABLE;
         r3 = s2tte
-            .address(RTT_PAGE_LEVEL)
+            .addr_as_block(RTT_PAGE_LEVEL)
             .ok_or(Error::RmiErrorRtt(0))?
             .into(); //XXX: check this again
         r4 = invalid_ripas::EMPTY as usize;
@@ -394,7 +387,7 @@ pub fn set_ripas(rd: &Rd, base: usize, top: usize, ripas: u8, flags: u64) -> Res
             break;
         }
         let pa: usize = s2tte
-            .address(last_level)
+            .addr_as_block(last_level)
             .ok_or(Error::RmiErrorRtt(0))?
             .into(); //XXX: check this again
         if ripas as u64 == invalid_ripas::EMPTY {
@@ -498,8 +491,8 @@ pub fn data_create(rd: &Rd, ipa: usize, target_pa: usize, unknown: bool) -> Resu
         // S2TTE_PAGE  : S2TTE_ATTRS | S2TTE_L3_PAGE
         new_s2tte |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
         // S2TTE_ATTRS : S2TTE_MEMATTR_FWB_NORMAL_WB | S2TTE_AP_RW | S2TTE_SH_IS | S2TTE_AF
-        new_s2tte |= bits_in_reg(S2TTE::MEMATTR, attribute::NORMAL_FWB);
-        new_s2tte |= bits_in_reg(S2TTE::AP, permission::RW);
+        new_s2tte |= bits_in_reg(S2TTE::MEMATTR, memattr::NORMAL_FWB);
+        new_s2tte |= bits_in_reg(S2TTE::S2AP, permission::RW);
         new_s2tte |= bits_in_reg(S2TTE::SH, shareable::INNER);
         new_s2tte |= bits_in_reg(S2TTE::AF, 1);
     }
@@ -531,7 +524,7 @@ pub fn data_destroy<F: FnMut(usize)>(
     }
 
     let pa = s2tte
-        .address(last_level)
+        .addr_as_block(last_level)
         .ok_or(Error::RmiErrorRtt(last_level))?
         .into(); //XXX: check this again
 

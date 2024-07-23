@@ -25,7 +25,7 @@ pub mod permission {
 //      0b01 - Device-nGnRE
 //      0b10 - Device-nGRE
 //      0b11 - Device-GRE
-pub mod attribute {
+pub mod memattr {
     pub const NORMAL_FWB: u64 = 0b0110;
     pub const NORMAL: u64 = 0b0111;
     pub const NORMAL_NC: u64 = 0b0101;
@@ -36,4 +36,11 @@ pub mod attribute {
 pub mod page_type {
     pub const BLOCK: u64 = 0b0;
     pub const TABLE_OR_PAGE: u64 = 0b1;
+}
+
+pub mod desc_type {
+    pub const L012_TABLE: u64 = 0x3;
+    pub const L012_BLOCK: u64 = 0x1;
+    pub const L3_PAGE: u64 = 0x3;
+    pub const LX_INVALID: u64 = 0x0;
 }

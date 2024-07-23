@@ -1,12 +1,11 @@
+use armv9a::{define_bitfield, define_bits, define_mask};
 use vmsa::address::PhysAddr;
 
-use super::address::GuestPhysAddr;
-use crate::realm::mm::page_table::pte::{attribute, shareable};
+use crate::realm::mm::address::GuestPhysAddr;
+use crate::realm::mm::attribute::{desc_type, memattr, shareable};
 use crate::realm::mm::rtt::{RTT_MIN_BLOCK_LEVEL, RTT_PAGE_LEVEL};
 use crate::realm::rd::Rd;
 use crate::rmi::error::Error;
-use armv9a::{define_bitfield, define_bits, define_mask};
-//use vmsa::guard::Content;
 
 pub const INVALID_UNPROTECTED: u64 = 0x0;
 
@@ -22,37 +21,47 @@ pub mod invalid_ripas {
     pub const DESTROYED: u64 = 0b10;
 }
 
-pub mod desc_type {
-    pub const L012_TABLE: u64 = 0x3;
-    pub const L012_BLOCK: u64 = 0x1;
-    pub const L3_PAGE: u64 = 0x3;
-    pub const LX_INVALID: u64 = 0x0;
+pub fn mapping_size(level: usize) -> usize {
+    match level {
+        3 => 1 << S2TTE::ADDR_BLK_L3.trailing_zeros(), // 4096
+        2 => 1 << S2TTE::ADDR_BLK_L2.trailing_zeros(),
+        1 => 1 << S2TTE::ADDR_BLK_L1.trailing_zeros(),
+        0 => 1 << S2TTE::ADDR_BLK_L0.trailing_zeros(),
+        _ => unreachable!(),
+    }
+}
+
+pub fn level_mask(level: usize) -> Option<u64> {
+    match level {
+        3 => Some(S2TTE::ADDR_BLK_L3),
+        2 => Some(S2TTE::ADDR_BLK_L2),
+        1 => Some(S2TTE::ADDR_BLK_L1),
+        0 => Some(S2TTE::ADDR_BLK_L0),
+        _ => None,
+    }
 }
 
 define_bits!(
     S2TTE,
-    NS[55 - 55],
+    NS[55 - 55], // DDI0615A: For a Block or Page descriptor fetched for stage 2 in the Realm Security state, bit 55 is the NS field. if set, it means output address is in NS PAS.
     XN[54 - 54],
-    ADDR_L0_PAGE[47 - 39], // XXX: check this again
-    ADDR_L1_PAGE[47 - 30], // XXX: check this again
-    ADDR_L2_PAGE[47 - 21], // XXX: check this again
-    ADDR_L3_PAGE[47 - 12], // XXX: check this again
-    ADDR_FULL[55 - 12],
+    CONT[52 - 52],
+    // https://armv8-ref.codingbelief.com/en/chapter_d4/d43_1_vmsav8-64_translation_table_descriptor_formats.html
+    ADDR_BLK_L0[47 - 39],      // block descriptor; level 0 w/o concatenation
+    ADDR_BLK_L1[47 - 30],      // block descriptor; level 1
+    ADDR_BLK_L2[47 - 21],      // block descriptor; level 2
+    ADDR_BLK_L3[47 - 12],      // page descriptor; level 3
+    ADDR_TBL_OR_PAGE[47 - 12], // table descriptor(level 0-2) || page descriptor(level3)
     AF[10 - 10],
-    SH[9 - 8],
-    AP[7 - 6],
+    SH[9 - 8],   // pte_shareable
+    S2AP[7 - 6], // pte_access_perm
     INVALID_RIPAS[6 - 5],
     INVALID_HIPAS[4 - 2],
-    MEMATTR[5 - 2],
+    MEMATTR[5 - 2], // pte_mem_attr
     DESC_TYPE[1 - 0],
-    PAGE_FLAGS[11 - 0]
+    TYPE[1 - 1], // pte_type ; block(0) or table(1)
+    VALID[0 - 0]
 );
-
-impl From<usize> for S2TTE {
-    fn from(val: usize) -> Self {
-        Self(val as u64)
-    }
-}
 
 impl S2TTE {
     pub fn get_s2tte(
@@ -83,21 +92,21 @@ impl S2TTE {
     pub fn is_host_ns_valid(&self, level: usize) -> bool {
         let tmp = S2TTE::new(!0);
         let addr_mask = match level {
-            1 => tmp.get_masked(S2TTE::ADDR_L1_PAGE),
-            2 => tmp.get_masked(S2TTE::ADDR_L2_PAGE),
-            3 => tmp.get_masked(S2TTE::ADDR_L3_PAGE),
+            1 => tmp.get_masked(S2TTE::ADDR_BLK_L1),
+            2 => tmp.get_masked(S2TTE::ADDR_BLK_L2),
+            3 => tmp.get_masked(S2TTE::ADDR_BLK_L3),
             _ => return false,
         };
         let mask = addr_mask
             | tmp.get_masked(S2TTE::MEMATTR)
-            | tmp.get_masked(S2TTE::AP)
+            | tmp.get_masked(S2TTE::S2AP)
             | tmp.get_masked(S2TTE::SH);
 
         if (self.get() & !mask) != 0 {
             return false;
         }
 
-        if self.get_masked_value(S2TTE::MEMATTR) == attribute::FWB_RESERVED {
+        if self.get_masked_value(S2TTE::MEMATTR) == memattr::FWB_RESERVED {
             return false;
         }
 
@@ -188,11 +197,11 @@ impl S2TTE {
             && (self.get_ripas() != invalid_ripas::RAM)
     }
 
-    pub fn address(&self, level: usize) -> Option<PhysAddr> {
+    pub fn addr_as_block(&self, level: usize) -> Option<PhysAddr> {
         match level {
-            1 => Some(PhysAddr::from(self.get_masked(S2TTE::ADDR_L1_PAGE))),
-            2 => Some(PhysAddr::from(self.get_masked(S2TTE::ADDR_L2_PAGE))),
-            3 => Some(PhysAddr::from(self.get_masked(S2TTE::ADDR_L3_PAGE))),
+            1 => Some(PhysAddr::from(self.get_masked(S2TTE::ADDR_BLK_L1))),
+            2 => Some(PhysAddr::from(self.get_masked(S2TTE::ADDR_BLK_L2))),
+            3 => Some(PhysAddr::from(self.get_masked(S2TTE::ADDR_BLK_L3))),
             _ => None,
         }
     }

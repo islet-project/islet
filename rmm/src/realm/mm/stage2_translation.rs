@@ -1,11 +1,12 @@
 use super::page::BasePageSize;
-use super::page_table::{entry, RootTable};
 use core::arch::asm;
 use core::ffi::c_void;
 use core::fmt;
 
 use crate::realm::mm::address::GuestPhysAddr;
-use crate::realm::mm::translation_granule_4k::{mapping_size, RawPTE};
+use crate::realm::mm::entry;
+use crate::realm::mm::stage2_tte::mapping_size;
+use crate::realm::mm::table_level::RootTable;
 use crate::realm::mm::IPATranslation;
 use crate::rmi::error::Error;
 use alloc::alloc::Layout;
@@ -15,10 +16,6 @@ use vmsa::page_table::Entry;
 use vmsa::page_table::{Level, MemAlloc, PageTable, PageTableMethods};
 
 use armv9a::{bits_in_reg, define_bitfield, define_bits, define_mask};
-
-// initial lookup starts at level 1 with 2 page tables concatenated
-pub const NUM_ROOT_PAGE: usize = 2;
-pub const ALIGN_ROOT_PAGE: usize = 2;
 
 pub mod tlbi_ns {
     pub const IPAS_S: u64 = 0b0;
@@ -178,8 +175,7 @@ macro_rules! to_pte {
 macro_rules! set_pte {
     ($root:expr, $guest:expr, $level:expr, $val:expr) => {
         $root.entry($guest, $level, true, |entry| {
-            let pte = entry.mut_pte();
-            *pte = RawPTE($val);
+            let _ = entry.set(PhysAddr::from(0 as u64), $val, true); //FIXME: get pa
             Ok(None)
         })
     };

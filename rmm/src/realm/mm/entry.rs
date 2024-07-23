@@ -1,7 +1,7 @@
-use super::pte;
-use super::L3Table;
 use crate::config::PAGE_SIZE;
-use crate::realm::mm::translation_granule_4k::RawPTE;
+use crate::realm::mm::attribute::{memattr, page_type, shareable};
+use crate::realm::mm::stage2_tte::S2TTE;
+use crate::realm::mm::table_level::L3Table;
 use vmsa::address::PhysAddr;
 use vmsa::error::Error;
 use vmsa::page_table::{self, Level};
@@ -10,21 +10,27 @@ use vmsa::RawGPA;
 use armv9a::bits_in_reg;
 
 #[derive(Clone, Copy)]
-pub struct Entry(RawPTE);
+pub struct Entry(S2TTE);
+
+impl From<usize> for S2TTE {
+    fn from(val: usize) -> Self {
+        Self(val as u64)
+    }
+}
 
 impl page_table::Entry for Entry {
-    type Inner = RawPTE;
+    type Inner = S2TTE;
 
     fn new() -> Self {
-        Self(RawPTE::new(0))
+        Self(S2TTE::new(0))
     }
 
     fn is_valid(&self) -> bool {
-        self.0.get_masked_value(RawPTE::VALID) != 0
+        self.0.get_masked_value(S2TTE::VALID) != 0
     }
 
     fn clear(&mut self) {
-        self.0 = RawPTE::new(0);
+        self.0 = S2TTE::new(0);
     }
 
     fn pte(&self) -> u64 {
@@ -37,13 +43,13 @@ impl page_table::Entry for Entry {
 
     fn address(&self, level: usize) -> Option<PhysAddr> {
         match self.is_valid() {
-            true => match self.0.get_masked_value(RawPTE::TYPE) {
-                pte::page_type::TABLE_OR_PAGE => {
-                    Some(PhysAddr::from(self.0.get_masked(RawPTE::ADDR_TBL_OR_PAGE)))
+            true => match self.0.get_masked_value(S2TTE::TYPE) {
+                page_type::TABLE_OR_PAGE => {
+                    Some(PhysAddr::from(self.0.get_masked(S2TTE::ADDR_TBL_OR_PAGE)))
                 }
-                pte::page_type::BLOCK => match level {
-                    1 => Some(PhysAddr::from(self.0.get_masked(RawPTE::ADDR_BLK_L1))),
-                    2 => Some(PhysAddr::from(self.0.get_masked(RawPTE::ADDR_BLK_L2))),
+                page_type::BLOCK => match level {
+                    1 => Some(PhysAddr::from(self.0.get_masked(S2TTE::ADDR_BLK_L1))),
+                    2 => Some(PhysAddr::from(self.0.get_masked(S2TTE::ADDR_BLK_L2))),
                     _ => None,
                 },
                 _ => None,
@@ -58,9 +64,9 @@ impl page_table::Entry for Entry {
         } else {
             self.0
                 .set(addr.as_u64() | flags)
-                .set_masked_value(RawPTE::SH, pte::shareable::INNER)
-                .set_bits(RawPTE::AF)
-                .set_bits(RawPTE::VALID);
+                .set_masked_value(S2TTE::SH, shareable::INNER)
+                .set_bits(S2TTE::AF)
+                .set_bits(S2TTE::VALID);
         }
 
         unsafe {
@@ -78,8 +84,8 @@ impl page_table::Entry for Entry {
     fn point_to_subtable(&mut self, _index: usize, addr: PhysAddr) -> Result<(), Error> {
         self.set(
             addr,
-            bits_in_reg(RawPTE::ATTR, pte::attribute::NORMAL_FWB)
-                | bits_in_reg(RawPTE::TYPE, pte::page_type::TABLE_OR_PAGE),
+            bits_in_reg(S2TTE::MEMATTR, memattr::NORMAL_FWB)
+                | bits_in_reg(S2TTE::TYPE, page_type::TABLE_OR_PAGE),
             false,
         )
     }
@@ -115,9 +121,9 @@ impl page_table::Entry for Entry {
 
     fn points_to_table_or_page(&self) -> bool {
         match self.is_valid() {
-            true => match self.0.get_masked_value(RawPTE::TYPE) {
-                pte::page_type::TABLE_OR_PAGE => true,
-                pte::page_type::BLOCK => false,
+            true => match self.0.get_masked_value(S2TTE::TYPE) {
+                page_type::TABLE_OR_PAGE => true,
+                page_type::BLOCK => false,
                 _ => false,
             },
             false => false,

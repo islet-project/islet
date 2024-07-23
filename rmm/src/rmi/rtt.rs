@@ -10,7 +10,7 @@ use crate::listen;
 use crate::measurement::HashContext;
 use crate::realm::mm::rtt;
 use crate::realm::mm::rtt::{RTT_MIN_BLOCK_LEVEL, RTT_PAGE_LEVEL};
-use crate::realm::mm::stage2_tte::S2TTE;
+use crate::realm::mm::stage2_tte::{level_mask, S2TTE};
 use crate::realm::rd::{Rd, State};
 use crate::rec::Rec;
 use crate::rmi;
@@ -28,13 +28,7 @@ fn is_valid_rtt_cmd(ipa: usize, level: usize, ipa_bits: usize) -> bool {
     if ipa >= realm_ipa_size(ipa_bits) {
         return false;
     }
-    let mask = match level {
-        0 => S2TTE::ADDR_L0_PAGE,
-        1 => S2TTE::ADDR_L1_PAGE,
-        2 => S2TTE::ADDR_L2_PAGE,
-        3 => S2TTE::ADDR_L3_PAGE,
-        _ => unreachable!(),
-    };
+    let mask = level_mask(level).unwrap_or(0);
     if ipa & mask as usize != ipa {
         return false;
     }

@@ -339,8 +339,11 @@ pub fn make_shared_ripas(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error>
 
     let ripas = s2tte.get_ripas();
     match ripas {
-        invalid_ripas::RAM => {}
+        invalid_ripas::RAM => {
+            warn!("ripas ram. s2tte {:x}", new_s2tte);
+        }
         invalid_ripas::EMPTY => {
+            warn!("ripas empty. s2tte {:x}", new_s2tte);
             flags |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
             flags |= bits_in_reg(S2TTE::MEMATTR, attribute::NORMAL_FWB);
             flags |= bits_in_reg(S2TTE::AP, permission::RW);
@@ -393,6 +396,36 @@ pub fn make_shared_as_readonly(rd: &Rd, ipa: usize, target_pa: usize) -> Result<
         ),
     }
 
+    rd.s2_table()
+        .lock()
+        .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
+
+    Ok(())
+}
+
+pub fn unmap_shared_realm_memory(rd: &Rd, ipa: usize, target_pa: usize) -> Result<(), Error> {
+    let level = RTT_PAGE_LEVEL;
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
+
+    if level != last_level {
+        return Err(Error::RmiErrorRtt(last_level));
+    }
+
+    if !s2tte.is_valid(last_level, false) {
+        return Err(Error::RmiErrorRtt(RTT_PAGE_LEVEL));
+    }
+
+    let pa: usize = s2tte
+        .address(last_level)
+        .ok_or(Error::RmiErrorRtt(0))?
+        .into();
+
+    if pa != target_pa {
+        error!("pa: {:x} != target_pa: {:x}", pa, target_pa);
+        return Err(Error::RmiErrorInput);
+    }
+
+    let new_s2tte = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::DESTROYED);
     rd.s2_table()
         .lock()
         .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;

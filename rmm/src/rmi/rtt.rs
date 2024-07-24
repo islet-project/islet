@@ -54,6 +54,45 @@ fn is_valid_rtt_cmd(ipa: usize, level: usize) -> bool {
     true
 }
 
+fn unmap_shared_realm_memory(
+    arg: &[usize],
+    _ret: &mut [usize],
+    rmm: &crate::Monitor,
+) -> core::result::Result<(), Error> {
+    // target_phys: location where realm data is created.
+    let target_pa = arg[0];
+    let ipa = arg[2];
+
+    warn!(
+        "RMI::UNMAP_SHARED_REALM_MEM called with target_pa: {:x}, ipa: {:x}",
+        target_pa, ipa
+    );
+
+    if target_pa == arg[1] {
+        return Err(Error::RmiErrorInput);
+    }
+
+    // rd granule lock
+    let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
+    let rd = rd_granule.content::<Rd>();
+
+    validate_ipa(ipa, rd.ipa_bits())?;
+
+    warn!("check the target_pa is undelegated granule");
+    // First of all, the memory must be destroyed on the owner realm side
+    get_granule_if!(target_pa, GranuleState::Undelegated)?;
+
+    warn!("call rtt::unmap_shared_realm_memory");
+    let ret = crate::rtt::unmap_shared_realm_memory(rd, ipa, target_pa);
+    if let Err(e) = &ret {
+        warn!("rtt::unmap_shared_realm_memory return error: {:?}", e);
+        return ret;
+    }
+
+    warn!("RMI::UNMAP_SHARED_REALM_MEM done!");
+    Ok(())
+}
+
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::RTT_CREATE, |arg, _ret, _rmm| {
         let rtt_addr = arg[0];
@@ -117,13 +156,21 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mut rec_granule = get_granule_if!(arg[1], GranuleState::Rec)?;
         let rec = rec_granule.content_mut::<Rec<'_>>();
 
+        trace!(
+            "RTT_SET_RIPAS start: ipa {:x}, level {}, ripas {}, rd.id(): {}",
+            ipa,
+            level,
+            ripas,
+            rd.id()
+        );
+
         let mut prot = rmi::MapProt::new(0);
         match ripas as u64 {
             RIPAS_EMPTY => prot.set_bit(rmi::MapProt::NS_PAS),
             RIPAS_RAM => { /* do nothing: ripas ram by default */ }
             RIPAS_SHARED => {
                 /* do nothing */
-                warn!("ripas shared is called!");
+                warn!("ripas shared is called! ipa {:x}", ipa);
             }
             _ => {
                 warn!("Unknown RIPAS:{}", ripas);
@@ -170,6 +217,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             unreachable!();
         }
         rec.inc_ripas_addr(map_size);
+
+        trace!(
+            "RTT_SET_RIPAS end: ipa {:x}, level {}, ripas {}",
+            ipa,
+            level,
+            ripas
+        );
         Ok(())
     });
 
@@ -329,8 +383,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // target_phys: location where realm data is created.
         let target_pa = arg[0];
         let ipa = arg[2];
+        let size = arg[3];
         if target_pa == arg[1] {
             return Err(Error::RmiErrorInput);
+        }
+
+        if size == 0 {
+            return unmap_shared_realm_memory(arg, _ret, rmm);
         }
 
         warn!(
@@ -355,6 +414,41 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
 
         warn!("RMI::MAP_SHARED_MEM_AS_RO done!");
+        Ok(())
+    });
+
+    listen!(mainloop, rmi::UNMAP_SHARED_REALM_MEM, |arg, _ret, rmm| {
+        // target_phys: location where realm data is created.
+        let target_pa = arg[0];
+        let ipa = arg[2];
+
+        warn!(
+            "RMI::UNMAP_SHARED_REALM_MEM called with target_pa: {:x}, ipa: {:x}",
+            target_pa, ipa
+        );
+
+        if target_pa == arg[1] {
+            return Err(Error::RmiErrorInput);
+        }
+
+        // rd granule lock
+        let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
+
+        validate_ipa(ipa, rd.ipa_bits())?;
+
+        warn!("check the target_pa is undelegated granule");
+        // First of all, the memory must be destroyed on the owner realm side
+        get_granule_if!(target_pa, GranuleState::Undelegated)?;
+
+        warn!("call rtt::unmap_shared_realm_memory");
+        let ret = crate::rtt::unmap_shared_realm_memory(rd, ipa, target_pa);
+        if let Err(e) = &ret {
+            warn!("rtt::unmap_shared_realm_memory return error: {:?}", e);
+            return ret;
+        }
+
+        warn!("RMI::UNMAP_SHARED_REALM_MEM done!");
         Ok(())
     });
 }

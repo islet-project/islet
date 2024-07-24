@@ -362,12 +362,13 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             ipa_state,
         );
         ret[0] = rmi::SUCCESS;
-        debug!(
+        warn!(
             "RSI_IPA_STATE_SET: {:X} ~ {:X} {:X}",
             ipa_start,
             ipa_start + ipa_size,
             ipa_state
         );
+
         super::rmi::dummy();
         Ok(())
     });

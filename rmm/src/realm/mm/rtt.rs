@@ -25,11 +25,16 @@ fn level_space_size(rd: &Rd, level: usize) -> usize {
     rd.s2_table().lock().space_size(level)
 }
 
-fn create_pgtbl_at(rtt_addr: usize, flags: u64, mut pa: usize, map_size: usize) {
+fn create_pgtbl_at(
+    rtt_addr: usize,
+    flags: u64,
+    mut pa: usize,
+    map_size: usize,
+) -> Result<(), Error> {
     let alloc = RttAllocator { base: rtt_addr };
     let mut new_s2tte = pa as u64 | flags;
 
-    let _ = PageTable::<
+    let ret = PageTable::<
         GuestPhysAddr,
         table_level::L3Table, //Table Level is not meaninful here
         entry::Entry,
@@ -41,6 +46,11 @@ fn create_pgtbl_at(rtt_addr: usize, flags: u64, mut pa: usize, map_size: usize) 
         pa += map_size;
         new_s2tte = pa as u64 | flags;
     });
+
+    if ret.is_err() {
+        return Err(Error::RmiErrorRtt(0));
+    }
+    Ok(())
 }
 
 pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), Error> {
@@ -67,7 +77,7 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
             new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, ripas);
         }
 
-        create_pgtbl_at(rtt_addr, new_s2tte, 0, 0);
+        create_pgtbl_at(rtt_addr, new_s2tte, 0, 0)?;
     } else if parent_s2tte.is_assigned() {
         let mut flags = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
         if parent_s2tte.is_assigned_destroyed() {
@@ -83,7 +93,7 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
             .ok_or(Error::RmiErrorRtt(0))?
             .into(); //XXX: check this again
 
-        create_pgtbl_at(rtt_addr, flags, pa, map_size);
+        create_pgtbl_at(rtt_addr, flags, pa, map_size)?;
     } else if parent_s2tte.is_assigned_ram(level - 1) {
         let mut flags = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
         if level == RTT_PAGE_LEVEL {
@@ -97,7 +107,7 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
             .ok_or(Error::RmiErrorRtt(0))?
             .into(); //XXX: check this again
 
-        create_pgtbl_at(rtt_addr, flags, pa, map_size);
+        create_pgtbl_at(rtt_addr, flags, pa, map_size)?;
     } else if parent_s2tte.is_assigned_ns(level - 1) {
         unimplemented!();
     } else if parent_s2tte.is_table(level - 1) {

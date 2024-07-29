@@ -175,7 +175,7 @@ macro_rules! to_pte {
 macro_rules! set_pte {
     ($root:expr, $guest:expr, $level:expr, $val:expr) => {
         $root.entry($guest, $level, true, |entry| {
-            let _ = entry.set(PhysAddr::from(0 as u64), $val, true); //FIXME: get pa
+            let _ = entry.set(PhysAddr::from(0 as u64), $val); //FIXME: get pa
             Ok(None)
         })
     };

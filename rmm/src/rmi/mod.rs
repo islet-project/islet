@@ -79,28 +79,3 @@ pub const EXIT_PSCI: u8 = 3;
 pub const EXIT_RIPAS_CHANGE: u8 = 4;
 pub const EXIT_HOST_CALL: u8 = 5;
 pub const EXIT_SERROR: u8 = 6;
-
-pub struct MapProt(usize);
-
-impl From<usize> for MapProt {
-    fn from(prot: usize) -> Self {
-        Self(prot)
-    }
-}
-
-impl MapProt {
-    pub fn new(data: usize) -> Self {
-        MapProt(data)
-    }
-    pub fn set_bit(&mut self, prot: u64) {
-        self.0 |= 1 << prot;
-    }
-    pub fn get(&self) -> usize {
-        self.0
-    }
-    pub fn is_set(&self, prot: u64) -> bool {
-        (self.0 >> prot) & 1 == 1
-    }
-    pub const DEVICE: u64 = 0;
-    pub const NS_PAS: u64 = 1;
-}

@@ -41,7 +41,7 @@ fn create_pgtbl_at(
         { table_level::L3Table::NUM_ENTRIES },
     >::new_init_in(&alloc, |entries| {
         for e in entries.iter_mut() {
-            let _ = (*e).set(PhysAddr::from(pa), new_s2tte, true);
+            let _ = (*e).set(PhysAddr::from(pa), new_s2tte);
         }
         pa += map_size;
         new_s2tte = pa as u64 | flags;
@@ -68,6 +68,7 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
         if parent_s2tte.is_invalid_ripas() {
             panic!("invalid ripas");
         }
+
         let mut new_s2tte = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
 
         if parent_s2tte.get_masked_value(S2TTE::NS) != 0 {
@@ -79,14 +80,11 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
 
         create_pgtbl_at(rtt_addr, new_s2tte, 0, 0)?;
     } else if parent_s2tte.is_assigned() {
-        let mut flags = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
-        if parent_s2tte.is_assigned_destroyed() {
-            flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::DESTROYED);
-        } else if parent_s2tte.is_assigned_empty() {
-            flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
-        } else {
+        if parent_s2tte.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::RAM {
             panic!("Unexpected s2tte value:{:X}", parent_s2tte.get());
         }
+
+        let flags = parent_s2tte.get_masked(S2TTE::INVALID_HIPAS | S2TTE::INVALID_RIPAS);
 
         let pa: usize = parent_s2tte
             .addr_as_block(level - 1)

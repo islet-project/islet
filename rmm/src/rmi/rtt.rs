@@ -417,40 +417,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::UNMAP_SHARED_REALM_MEM, |arg, _ret, rmm| {
-        // target_phys: location where realm data is created.
-        let target_pa = arg[0];
-        let ipa = arg[2];
-
-        warn!(
-            "RMI::UNMAP_SHARED_REALM_MEM called with target_pa: {:x}, ipa: {:x}",
-            target_pa, ipa
-        );
-
-        if target_pa == arg[1] {
-            return Err(Error::RmiErrorInput);
-        }
-
-        // rd granule lock
-        let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
-        let rd = rd_granule.content::<Rd>();
-
-        validate_ipa(ipa, rd.ipa_bits())?;
-
-        warn!("check the target_pa is undelegated granule");
-        // First of all, the memory must be destroyed on the owner realm side
-        get_granule_if!(target_pa, GranuleState::Undelegated)?;
-
-        warn!("call rtt::unmap_shared_realm_memory");
-        let ret = crate::rtt::unmap_shared_realm_memory(rd, ipa, target_pa);
-        if let Err(e) = &ret {
-            warn!("rtt::unmap_shared_realm_memory return error: {:?}", e);
-            return ret;
-        }
-
-        warn!("RMI::UNMAP_SHARED_REALM_MEM done!");
-        Ok(())
-    });
+    listen!(
+        mainloop,
+        rmi::UNMAP_SHARED_REALM_MEM,
+        unmap_shared_realm_memory
+    );
 }
 
 fn realm_ipa_size(ipa_bits: usize) -> usize {

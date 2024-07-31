@@ -10,7 +10,7 @@ use crate::host;
 use crate::host::DataPage;
 use crate::listen;
 use crate::measurement::HashContext;
-use crate::realm::mm::stage2_tte::S2TTE;
+use crate::realm::mm::stage2_tte::{invalid_ripas, S2TTE};
 use crate::rmi;
 use crate::rmi::error::Error;
 #[cfg(not(feature = "gst_page_table"))]
@@ -93,6 +93,32 @@ fn unmap_shared_realm_memory(
     Ok(())
 }
 
+fn rtt_init_ripas(
+    arg: &[usize],
+    _ret: &mut [usize],
+    _rmm: &crate::Monitor,
+    ripas: u64,
+) -> core::result::Result<(), Error> {
+    let mut rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+    let rd = rd_granule.content_mut::<Rd>();
+    let ipa = arg[1];
+    let level = arg[2];
+
+    if rd.state() != State::New {
+        return Err(Error::RmiErrorRealm(0));
+    }
+    if !is_valid_rtt_cmd(ipa, level) {
+        return Err(Error::RmiErrorInput);
+    }
+    crate::rtt::init_ripas(rd, ipa, level, ripas)?;
+
+    #[cfg(not(kani))]
+    // `rsi` is currently not reachable in model checking harnesses
+    HashContext::new(rd)?.measure_ripas_granule(ipa, level as u8)?;
+
+    Ok(())
+}
+
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::RTT_CREATE, |arg, _ret, _rmm| {
         let rtt_addr = arg[0];
@@ -126,24 +152,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     listen!(mainloop, rmi::RTT_INIT_RIPAS, |arg, _ret, _rmm| {
-        let mut rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
-        let rd = rd_granule.content_mut::<Rd>();
-        let ipa = arg[1];
-        let level = arg[2];
+        rtt_init_ripas(arg, _ret, _rmm, invalid_ripas::RAM)
+    });
 
-        if rd.state() != State::New {
-            return Err(Error::RmiErrorRealm(0));
-        }
-        if !is_valid_rtt_cmd(ipa, level) {
-            return Err(Error::RmiErrorInput);
-        }
-        crate::rtt::init_ripas(rd, ipa, level)?;
-
-        #[cfg(not(kani))]
-        // `rsi` is currently not reachable in model checking harnesses
-        HashContext::new(rd)?.measure_ripas_granule(ipa, level as u8)?;
-
-        Ok(())
+    listen!(mainloop, rmi::RTT_INIT_SHARED_RIPAS, |arg, _ret, _rmm| {
+        rtt_init_ripas(arg, _ret, _rmm, invalid_ripas::SHARED)
     });
 
     listen!(mainloop, rmi::RTT_SET_RIPAS, |arg, _ret, _rmm| {

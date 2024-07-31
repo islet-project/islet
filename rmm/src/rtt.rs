@@ -132,7 +132,7 @@ pub fn destroy(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(),
     Ok(())
 }
 
-pub fn init_ripas(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error> {
+pub fn init_ripas(rd: &Rd, ipa: usize, level: usize, ripas: u64) -> Result<(), Error> {
     let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 
     if level != last_level {
@@ -144,7 +144,7 @@ pub fn init_ripas(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error> {
     }
 
     let mut new_s2tte = s2tte.get();
-    new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::RAM);
+    new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, ripas);
 
     rd.s2_table()
         .lock()

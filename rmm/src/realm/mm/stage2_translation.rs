@@ -1,12 +1,16 @@
-use super::page::BasePageSize;
+//use super::page::BasePageSize;
 use core::arch::asm;
 use core::ffi::c_void;
 use core::fmt;
 
+use crate::granule::GRANULE_SHIFT;
 use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::mm::entry;
+use crate::realm::mm::page::BasePageSize;
+use crate::realm::mm::page::{HugePageSize, LargePageSize};
 use crate::realm::mm::stage2_tte::mapping_size;
 use crate::realm::mm::table_level::RootTable;
+use crate::realm::mm::table_level::{L0Table, L1Table, L2Table};
 use crate::realm::mm::IPATranslation;
 use crate::rmi::error::Error;
 use alloc::alloc::Layout;
@@ -15,6 +19,7 @@ use vmsa::page::{Page, PageIter, PageSize};
 use vmsa::page_table::Entry;
 use vmsa::page_table::{Level, MemAlloc, PageTable, PageTableMethods};
 
+use aarch64_cpu::registers::*;
 use armv9a::{bits_in_reg, define_bitfield, define_bits, define_mask};
 
 pub mod tlbi_ns {
@@ -22,7 +27,22 @@ pub mod tlbi_ns {
     pub const IPAS_NS: u64 = 0b1;
 }
 
+pub enum Tlbi {
+    NONE,
+    LEAF(usize),      // vmid : usize
+    BREAKDOWN(usize), // vmid: usize
+}
+
 define_bits!(TLBI_OP, NS[63 - 63], TTL[47 - 44], IPA[35 - 0]);
+define_bits!(
+    TLBI_RANGE_OP,
+    NS[63 - 63],
+    TG[47 - 46],
+    SCALE[45 - 44],
+    NUM[43 - 39],
+    TTL[38 - 37],
+    IPA[36 - 0]
+);
 
 const ENTR1: usize = <RootTable<0, 1> as Level>::NUM_ENTRIES;
 const ENTR2: usize = ENTR1 * 2;
@@ -108,26 +128,120 @@ impl<'a> Stage2Translation<'a> {
         }
     }
 
-    // According to DDI0608A E1.2.1.11 Cache and TLB operations
-    // 'TLBI IPAS2E1, Xt; DSB; TLBI VMALLE1'
-    // or TLBI ALL or TLBI VMALLS1S2
-    #[allow(unused)]
-    fn tlb_flush_by_vmid_ipa<S: PageSize>(&mut self, guest_iter: PageIter<S, GuestPhysAddr>) {
+    fn tlbi_iter<S: PageSize>(level: usize, guest_iter: PageIter<S, GuestPhysAddr>, vmid: usize) {
+        let vmid_saved = VTTBR_EL2.read(VTTBR_EL2::VMID);
+        VTTBR_EL2.write(VTTBR_EL2::VMID.val(vmid as u64));
+
+        unsafe {
+            asm!("isb");
+        }
         for guest in guest_iter {
-            let _level: u64 = S::MAP_TABLE_LEVEL as u64;
-            let mut ipa: u64 = guest.address().as_u64() >> 12;
+            let mut ipa: u64 = guest.address().as_u64() >> GRANULE_SHIFT;
             unsafe {
-                ipa = bits_in_reg(TLBI_OP::NS, tlbi_ns::IPAS_S)
-                    | bits_in_reg(TLBI_OP::TTL, 0b0100 | _level)
+                ipa = bits_in_reg(TLBI_OP::TTL, 0b0100 | level as u64)
                     | bits_in_reg(TLBI_OP::IPA, ipa);
-                // corresponds to __kvm_tlb_flush_vmid_ipa()
                 asm!(
-                    "dsb ishst",
-                    "tlbi ipas2e1is, {}",
-                    "isb",
+                    "tlbi IPAS2E1IS, {}",
                     in(reg) ipa,
                 );
             }
+        }
+        unsafe {
+            asm!("dsb ish");
+        }
+
+        VTTBR_EL2.write(VTTBR_EL2::VMID.val(vmid_saved));
+    }
+
+    // According to DDI0608A E1.2.1.11 Cache and TLB operations
+    // 'TLBI IPAS2E1, Xt; DSB; TLBI VMALLE1'
+    // or TLBI ALL or TLBI VMALLS1S2
+    fn tlbi_by_vmid_ipa(level: usize, guest: GuestPhysAddr, vmid: usize) {
+        let guest_iter =
+            Page::<BasePageSize, GuestPhysAddr>::range_with_size(guest, BasePageSize::SIZE);
+        Self::tlbi_iter(level, guest_iter, vmid);
+        // TODO: Do it at once when switchng the context to the realm
+        Self::tlbi_vmalle1is(vmid);
+    }
+
+    #[allow(unused)]
+    // Saved in case tlb-rmi arch extension is not provided
+    fn tlbi_by_vmid_ipa_range_v2(level: usize, guest: GuestPhysAddr, vmid: usize) {
+        match level {
+            L2Table::THIS_LEVEL => {
+                let guest_iter = Page::<BasePageSize, GuestPhysAddr>::range_with_size(
+                    guest,
+                    mapping_size(level),
+                );
+                Self::tlbi_iter(level + 1, guest_iter, vmid);
+            }
+            L1Table::THIS_LEVEL => {
+                let guest_iter = Page::<LargePageSize, GuestPhysAddr>::range_with_size(
+                    guest,
+                    mapping_size(level),
+                );
+                Self::tlbi_iter(level + 1, guest_iter, vmid);
+            }
+            L0Table::THIS_LEVEL => {
+                let guest_iter = Page::<HugePageSize, GuestPhysAddr>::range_with_size(
+                    guest,
+                    mapping_size(level),
+                );
+                Self::tlbi_iter(level + 1, guest_iter, vmid);
+            }
+            _ => {
+                panic!("wrong invalidation level")
+            }
+        };
+        // TODO: Do it at once when switchng the context to the realm
+        Self::tlbi_vmalle1is(vmid);
+    }
+
+    fn tlbi_by_vmid_ipa_range(level: usize, guest: GuestPhysAddr, vmid: usize) {
+        let vmid_saved = VTTBR_EL2.read(VTTBR_EL2::VMID);
+        VTTBR_EL2.write(VTTBR_EL2::VMID.val(vmid as u64));
+        unsafe {
+            asm!("isb");
+        }
+
+        // The entry is within the address range determined by the formula
+        // [BaseADDR <= VA < BaseADDR + ((NUM +1)*2(5*SCALE +1) * Translation_Granule_Size)].
+        let scale = 3 - level as u64;
+        let num = 8 + 4 * scale;
+        unsafe {
+            let xt = bits_in_reg(TLBI_RANGE_OP::TG, 0b01)    // 4K tranlsation granule
+                | bits_in_reg(TLBI_RANGE_OP::SCALE, scale)
+                | bits_in_reg(TLBI_RANGE_OP::NUM, num)
+                | bits_in_reg(TLBI_RANGE_OP::TTL, (level + 1) as u64)
+                | bits_in_reg(TLBI_RANGE_OP::IPA, guest.as_u64());
+            asm!(
+                "tlbi RIPAS2LE1, {}",
+                in(reg) xt,
+            );
+        }
+        unsafe {
+            asm!("dsb ish");
+        }
+        VTTBR_EL2.write(VTTBR_EL2::VMID.val(vmid_saved));
+        // TODO: Do it at once when switchng the context to the realm
+        Self::tlbi_vmalle1is(vmid);
+    }
+
+    fn tlbi_vmalle1is(vmid: usize) {
+        unsafe {
+            let vmid_saved = VTTBR_EL2.read(VTTBR_EL2::VMID);
+            VTTBR_EL2.write(VTTBR_EL2::VMID.val(vmid as u64));
+            // According to DDI0608A E1.2.1.11 Cache and TLB operations
+            // second half part
+            asm! {
+                "
+                    dsb ishst
+                    tlbi VMALLE1IS
+                    dsb ish
+                    isb
+                    "
+            }
+            VTTBR_EL2.write(VTTBR_EL2::VMID.val(vmid_saved));
         }
     }
 }
@@ -263,7 +377,9 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
         guest: GuestPhysAddr,
         level: usize,
         val: u64,
+        invalidate: Tlbi,
     ) -> Result<(), Error> {
+        let map_addr = guest;
         let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
         let res = match &mut self.root_pgtbl {
             Root::L2N8(root) => set_pte!(root, guest, level, val),
@@ -276,27 +392,27 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
             Root::L2N16(root) => set_pte!(root, guest, level, val),
         };
         if let Ok(_x) = res {
+            match invalidate {
+                Tlbi::LEAF(vmid) => {
+                    Self::tlbi_by_vmid_ipa(level, map_addr, vmid);
+                    self.dirty = true;
+                }
+                Tlbi::BREAKDOWN(vmid) => {
+                    Self::tlbi_by_vmid_ipa_range(level, map_addr, vmid);
+                    self.dirty = true;
+                }
+                _ => {}
+            }
+
             Ok(())
         } else {
             Err(Error::RmiErrorInput)
         }
     }
 
-    fn clean(&mut self) {
+    fn clean(&mut self, vmid: usize) {
         if self.dirty {
-            unsafe {
-                // According to DDI0608A E1.2.1.11 Cache and TLB operations
-                // second half part
-                asm! {
-                    "
-                    dsb ishst
-                    tlbi vmalle1is
-                    dsb ish
-                    isb
-                    "
-                }
-            }
-
+            Self::tlbi_vmalle1is(vmid);
             self.dirty = false;
         }
     }

@@ -57,7 +57,7 @@ fn is_valid_rtt_cmd(ipa: usize, level: usize) -> bool {
 fn unmap_shared_realm_memory(
     arg: &[usize],
     _ret: &mut [usize],
-    rmm: &crate::Monitor,
+    _rmm: &crate::Monitor,
 ) -> core::result::Result<(), Error> {
     // target_phys: location where realm data is created.
     let target_pa = arg[0];
@@ -80,7 +80,7 @@ fn unmap_shared_realm_memory(
 
     warn!("check the target_pa is undelegated granule");
     // First of all, the memory must be destroyed on the owner realm side
-    get_granule_if!(target_pa, GranuleState::Undelegated)?;
+    let _ = get_granule_if!(target_pa, GranuleState::Undelegated)?;
 
     warn!("call rtt::unmap_shared_realm_memory");
     let ret = crate::rtt::unmap_shared_realm_memory(rd, ipa, target_pa);
@@ -417,7 +417,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         validate_ipa(ipa, rd.ipa_bits())?;
 
         warn!("check the target_pa is data granule");
-        get_granule_if!(target_pa, GranuleState::Data)?;
+        let _ = get_granule_if!(target_pa, GranuleState::Data)?;
 
         warn!("call rtt::map_shared_mem_as_ro");
         let ret = crate::rtt::make_shared_as_readonly(rd, ipa, target_pa);

@@ -333,7 +333,7 @@ pub fn make_exclusive(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error> {
 }
 
 pub fn make_shared_ripas(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error> {
-    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
+    let (s2tte, _last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
     let new_s2tte = s2tte.get();
     let mut flags = 0;
 

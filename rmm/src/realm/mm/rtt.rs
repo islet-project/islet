@@ -3,7 +3,7 @@ use crate::granule::{set_granule, GranuleState};
 use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::mm::attribute::{desc_type, memattr, permission, shareable};
 use crate::realm::mm::entry;
-use crate::realm::mm::stage2_translation::RttAllocator;
+use crate::realm::mm::stage2_translation::{RttAllocator, Tlbi};
 use crate::realm::mm::stage2_tte::{invalid_hipas, invalid_ripas, mapping_size, S2TTE};
 use crate::realm::mm::stage2_tte::{level_mask, INVALID_UNPROTECTED};
 use crate::realm::mm::table_level;
@@ -54,6 +54,7 @@ fn create_pgtbl_at(
 }
 
 pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), Error> {
+    let mut invalidate = Tlbi::NONE;
     let mut rtt_granule = get_granule_if!(rtt_addr, GranuleState::Delegated)?;
 
     let (parent_s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level - 1, Error::RmiErrorInput)?;
@@ -106,6 +107,7 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
             .into(); //XXX: check this again
 
         create_pgtbl_at(rtt_addr, flags, pa, map_size)?;
+        invalidate = Tlbi::LEAF(rd.id());
     } else if parent_s2tte.is_assigned_ns(level - 1) {
         unimplemented!();
     } else if parent_s2tte.is_table(level - 1) {
@@ -117,9 +119,12 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
     set_granule(&mut rtt_granule, GranuleState::RTT)?;
 
     let parent_s2tte = rtt_addr as u64 | bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_TABLE);
-    rd.s2_table()
-        .lock()
-        .ipa_to_pte_set(GuestPhysAddr::from(ipa), level - 1, parent_s2tte)?;
+    rd.s2_table().lock().ipa_to_pte_set(
+        GuestPhysAddr::from(ipa),
+        level - 1,
+        parent_s2tte,
+        invalidate,
+    )?;
 
     // The below is added to avoid a fault regarding the RTT entry
     crate::mm::translation::PageTable::get_ref().map(rtt_addr, true);
@@ -133,6 +138,7 @@ pub fn destroy<F: FnMut(usize)>(
     level: usize,
     mut f: F,
 ) -> Result<(usize, usize), Error> {
+    let invalidate;
     let (parent_s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level - 1, Error::RmiErrorRtt(0))?;
 
     if (last_level != level - 1) || !parent_s2tte.is_table(level - 1) {
@@ -152,17 +158,22 @@ pub fn destroy<F: FnMut(usize)>(
     //       Unless its ref count is 0, RTT DESTROY should fail
 
     let parent_s2tte = if rd.addr_in_par(ipa) {
+        invalidate = Tlbi::LEAF(rd.id());
         bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED)
             | bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::DESTROYED)
     } else {
+        invalidate = Tlbi::BREAKDOWN(rd.id());
         bits_in_reg(S2TTE::NS, 1)
             | bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED)
             | INVALID_UNPROTECTED
     };
 
-    rd.s2_table()
-        .lock()
-        .ipa_to_pte_set(GuestPhysAddr::from(ipa), level - 1, parent_s2tte)?;
+    rd.s2_table().lock().ipa_to_pte_set(
+        GuestPhysAddr::from(ipa),
+        level - 1,
+        parent_s2tte,
+        invalidate,
+    )?;
 
     set_granule(&mut g_rtt, GranuleState::Delegated)?;
 
@@ -204,6 +215,7 @@ pub fn init_ripas(rd: &Rd, base: usize, top: usize) -> Result<usize, Error> {
                 GuestPhysAddr::from(addr),
                 last_level,
                 new_s2tte,
+                Tlbi::NONE,
             )?;
         } else if !s2tte.is_unassigned_ram() {
             break;
@@ -312,9 +324,12 @@ pub fn map_unprotected(rd: &Rd, ipa: usize, level: usize, host_s2tte: usize) -> 
             | bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_BLOCK);
     }
 
-    rd.s2_table()
-        .lock()
-        .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
+    rd.s2_table().lock().ipa_to_pte_set(
+        GuestPhysAddr::from(ipa),
+        level,
+        new_s2tte,
+        Tlbi::LEAF(rd.id()),
+    )?;
 
     Ok(())
 }
@@ -345,18 +360,12 @@ pub fn unmap_unprotected<F: FnMut(usize)>(
         | bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED)
         | INVALID_UNPROTECTED;
 
-    rd.s2_table()
-        .lock()
-        .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
-
-    //TODO: add page/block invalidation
-    /*
-    if level == RTT_PAGE_LEVEL {
-        // invalidate the page
-    } else {
-        // invalidate the block
-    }
-    */
+    rd.s2_table().lock().ipa_to_pte_set(
+        GuestPhysAddr::from(ipa),
+        level,
+        new_s2tte,
+        Tlbi::LEAF(rd.id()),
+    )?;
 
     let top_ipa = skip_non_live_entries(rd, ipa, level)?;
     Ok(top_ipa)
@@ -386,6 +395,7 @@ pub fn set_ripas(rd: &Rd, base: usize, top: usize, ripas: u8, flags: u64) -> Res
     }
 
     while addr < table_top && addr < top {
+        let mut invalidate = Tlbi::NONE;
         let (s2tte, last_level) =
             S2TTE::get_s2tte(rd, addr, RTT_PAGE_LEVEL, Error::RmiErrorRtt(level))?;
         let mut new_s2tte = 0;
@@ -412,10 +422,12 @@ pub fn set_ripas(rd: &Rd, base: usize, top: usize, ripas: u8, flags: u64) -> Res
             } else if s2tte.is_assigned_ram(level) {
                 new_s2tte |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
                 add_pa = true;
+                invalidate = Tlbi::LEAF(rd.id());
             } else if s2tte.is_assigned_destroyed() {
                 if flags & CHANGE_DESTROYED != 0 {
                     new_s2tte |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
                     add_pa = true;
+                    invalidate = Tlbi::LEAF(rd.id());
                 } else {
                     break;
                 }
@@ -462,9 +474,12 @@ pub fn set_ripas(rd: &Rd, base: usize, top: usize, ripas: u8, flags: u64) -> Res
         if add_pa {
             new_s2tte |= pa as u64;
         }
-        rd.s2_table()
-            .lock()
-            .ipa_to_pte_set(GuestPhysAddr::from(addr), last_level, new_s2tte)?;
+        rd.s2_table().lock().ipa_to_pte_set(
+            GuestPhysAddr::from(addr),
+            last_level,
+            new_s2tte,
+            invalidate,
+        )?;
 
         addr += map_size;
     }
@@ -507,7 +522,7 @@ pub fn data_create(rd: &Rd, ipa: usize, target_pa: usize, unknown: bool) -> Resu
 
     rd.s2_table()
         .lock()
-        .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
+        .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte, Tlbi::NONE)?;
 
     Ok(())
 }
@@ -517,6 +532,7 @@ pub fn data_destroy<F: FnMut(usize)>(
     ipa: usize,
     mut f: F,
 ) -> Result<(usize, usize), Error> {
+    let mut invalidate = Tlbi::NONE;
     let level = RTT_PAGE_LEVEL;
     let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(level))?;
 
@@ -540,7 +556,7 @@ pub fn data_destroy<F: FnMut(usize)>(
     if s2tte.is_assigned_ram(RTT_PAGE_LEVEL) {
         flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
         flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::DESTROYED);
-        // TODO: call invalidate page
+        invalidate = Tlbi::LEAF(rd.id());
     } else if s2tte.is_assigned_empty() {
         flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
         flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
@@ -551,7 +567,7 @@ pub fn data_destroy<F: FnMut(usize)>(
     let new_s2tte = flags;
     rd.s2_table()
         .lock()
-        .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
+        .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte, invalidate)?;
 
     let top_ipa = skip_non_live_entries(rd, ipa, level)?;
 

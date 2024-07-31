@@ -63,6 +63,7 @@ impl GranuleState {
     pub const RecAux: u8 = 4;
     pub const Data: u8 = 5;
     pub const RTT: u8 = 6;
+    pub const SharedData: u8 = 7;
 
     pub fn new(state: u8) -> Self {
         Self { inner: state }

@@ -337,6 +337,36 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
+    listen!(mainloop, rmi::SHARED_DATA_CREATE, |arg, _ret, rmm| {
+        // target_phys: location where realm data is created.
+        let target_pa = arg[0];
+        let ipa = arg[2];
+        if target_pa == arg[1] {
+            return Err(Error::RmiErrorInput);
+        }
+
+        // rd granule lock
+        let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
+
+        validate_ipa(ipa, rd.ipa_bits())?;
+
+        // 0. Make sure granule state can make a transition to DATA
+        // data granule lock for the target page
+        let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
+        #[cfg(not(kani))]
+        // `page_table` is currently not reachable in model checking harnesses
+        rmm.page_table.map(target_pa, true);
+
+        // 1. map ipa to target_pa in S2 table
+        crate::rtt::shared_data_create(rd, ipa, target_pa)?;
+
+        // TODO: 2. perform measure
+        // L0czek - not needed here see: tf-rmm/runtime/rmi/rtt.c:883
+        set_granule(&mut target_page_granule, GranuleState::SharedData)?;
+        Ok(())
+    });
+
     listen!(mainloop, rmi::DATA_DESTROY, |arg, _ret, _rmm| {
         // rd granule lock
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;

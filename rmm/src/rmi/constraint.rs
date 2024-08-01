@@ -27,6 +27,7 @@ fn pick(cmd: Command) -> Option<Constraint> {
         rmi::GRANULE_UNDELEGATE => Constraint::new(rmi::GRANULE_UNDELEGATE, 2, 1),
         rmi::DATA_CREATE => Constraint::new(rmi::DATA_CREATE, 6, 1),
         rmi::DATA_CREATE_UNKNOWN => Constraint::new(rmi::DATA_CREATE_UNKNOWN, 4, 1),
+        rmi::SHARED_DATA_CREATE => Constraint::new(rmi::SHARED_DATA_CREATE, 4, 1),
         rmi::DATA_DESTROY => Constraint::new(rmi::DATA_DESTROY, 3, 3),
         rmi::REALM_ACTIVATE => Constraint::new(rmi::REALM_ACTIVATE, 2, 1),
         // NOTE: REALM_CREATE has 3 of arg_num and 1 of ret_num according to the specification,

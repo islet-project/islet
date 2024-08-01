@@ -433,6 +433,48 @@ pub fn unmap_shared_realm_memory(rd: &Rd, ipa: usize, target_pa: usize) -> Resul
     Ok(())
 }
 
+pub fn shared_data_create(rd: &Rd, ipa: usize, target_pa: usize) -> Result<(), Error> {
+    let level = RTT_PAGE_LEVEL;
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
+
+    if level != last_level {
+        return Err(Error::RmiErrorRtt(last_level));
+    }
+
+    if !s2tte.is_unassigned() {
+        return Err(Error::RmiErrorRtt(RTT_PAGE_LEVEL));
+    }
+
+    let mut new_s2tte = target_pa as u64;
+    if s2tte.is_invalid_ripas() {
+        panic!("invalid ripas");
+    }
+
+    let ripas = s2tte.get_ripas();
+    if ripas == invalid_ripas::RAM {
+        panic!("Don't allow RAM ripas in shared_data_create()");
+    }
+
+    if ripas == invalid_ripas::SHARED {
+        // S2TTE_PAGE  : S2TTE_ATTRS | S2TTE_L3_PAGE
+        new_s2tte |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
+        // S2TTE_ATTRS : S2TTE_MEMATTR_FWB_NORMAL_WB | S2TTE_AP_RW | S2TTE_SH_IS | S2TTE_AF
+        new_s2tte |= bits_in_reg(S2TTE::MEMATTR, attribute::NORMAL_FWB);
+        new_s2tte |= bits_in_reg(S2TTE::AP, permission::RW);
+        new_s2tte |= bits_in_reg(S2TTE::SH, shareable::INNER);
+        new_s2tte |= bits_in_reg(S2TTE::AF, 1);
+    } else {
+        new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, ripas);
+        new_s2tte |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
+    }
+
+    rd.s2_table()
+        .lock()
+        .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
+
+    Ok(())
+}
+
 pub fn data_create(rd: &Rd, ipa: usize, target_pa: usize) -> Result<(), Error> {
     let level = RTT_PAGE_LEVEL;
     let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;

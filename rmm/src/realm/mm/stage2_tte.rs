@@ -63,8 +63,8 @@ define_bits!(
     AF[10 - 10],
     SH[9 - 8],
     AP[7 - 6],
-    INVALID_RIPAS[6 - 6],
-    INVALID_HIPAS[5 - 2],
+    INVALID_RIPAS[6 - 5], // TODO: ripas, hipas should be move to other bit. cos it shouldn't be removed if the mapping is valid
+    INVALID_HIPAS[4 - 2],
     MEMATTR[5 - 2],
     DESC_TYPE[1 - 0],
     PAGE_FLAGS[11 - 0]

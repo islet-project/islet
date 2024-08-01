@@ -14,6 +14,7 @@ use crate::granule::{FVP_DRAM0_REGION, FVP_DRAM1_IDX, FVP_DRAM1_REGION};
 pub struct Granule {
     /// granule state
     state: u8,
+    ref_cnt: u8,
 }
 
 impl Granule {
@@ -28,7 +29,32 @@ impl Granule {
         {
             self.zeroize();
         }
+
+        if state == GranuleState::SharedData {
+            self.ref_cnt = 0;
+        }
+
         self.state = state;
+        Ok(())
+    }
+
+    pub fn inc_ref(&mut self) -> Result<(), Error> {
+        if self.state != GranuleState::SharedData {
+            return Err(Error::RmiErrorInput);
+        } else if self.ref_cnt >= 2 {
+            return Err(Error::RmiErrorCount);
+        }
+        self.ref_cnt += 1;
+        Ok(())
+    }
+
+    pub fn dec_ref(&mut self) -> Result<(), Error> {
+        if self.state != GranuleState::SharedData {
+            return Err(Error::RmiErrorInput);
+        } else if self.ref_cnt == 0 {
+            return Err(Error::RmiErrorCount);
+        }
+        self.ref_cnt -= 1;
         Ok(())
     }
 
@@ -77,6 +103,7 @@ impl Entry {
     pub fn new() -> Self {
         Self(Spinlock::new(Granule {
             state: GranuleState::Undelegated,
+            ref_cnt: 0,
         }))
     }
 

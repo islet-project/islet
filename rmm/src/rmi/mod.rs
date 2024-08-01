@@ -17,6 +17,7 @@ define_interface! {
          GRANULE_UNDELEGATE     = 0xc400_0152,
          DATA_CREATE            = 0xc400_0153,
          DATA_CREATE_UNKNOWN    = 0xc400_0154,
+         SHARED_DATA_CREATE     = 0xc400_0156,
          DATA_DESTROY           = 0xc400_0155,
          REALM_ACTIVATE         = 0xc400_0157,
          REALM_CREATE           = 0xc400_0158,

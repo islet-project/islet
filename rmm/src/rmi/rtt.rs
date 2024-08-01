@@ -364,6 +364,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // TODO: 2. perform measure
         // L0czek - not needed here see: tf-rmm/runtime/rmi/rtt.c:883
         set_granule(&mut target_page_granule, GranuleState::SharedData)?;
+        target_page_granule.inc_ref()?;
         Ok(())
     });
 

@@ -34,6 +34,11 @@ impl Granule {
             self.ref_cnt = 0;
         }
 
+        if prev == GranuleState::SharedData && state == GranuleState::Delegated && self.ref_cnt != 0
+        {
+            return Err(Error::RmiErrorCount);
+        }
+
         self.state = state;
         Ok(())
     }
@@ -56,6 +61,10 @@ impl Granule {
         }
         self.ref_cnt -= 1;
         Ok(())
+    }
+
+    pub fn get_ref(&self) -> u8 {
+        self.ref_cnt
     }
 
     pub fn content_mut<T: Content>(&mut self) -> &mut T {

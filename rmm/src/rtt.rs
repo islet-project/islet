@@ -342,6 +342,11 @@ pub fn make_shared_ripas(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error>
         invalid_ripas::RAM => {
             warn!("ripas ram. s2tte {:x}", new_s2tte);
         }
+        /*
+        TODO: remove the below mapping code and set ripas only
+        after ripas bit moves to other bit range which can not be removed even
+        if the mapping is valid. maybe res0 bit range would be proper
+        */
         invalid_ripas::EMPTY => {
             warn!("ripas empty. s2tte {:x}", new_s2tte);
             flags |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
@@ -538,6 +543,43 @@ pub fn data_destroy(rd: &Rd, ipa: usize) -> Result<usize, Error> {
     } else {
         flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
         flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
+    }
+    let new_s2tte = flags;
+    rd.s2_table()
+        .lock()
+        .ipa_to_pte_set(GuestPhysAddr::from(ipa), level, new_s2tte)?;
+
+    Ok(pa)
+}
+
+pub fn shared_data_destroy(rd: &Rd, ipa: usize) -> Result<usize, Error> {
+    let level = RTT_PAGE_LEVEL;
+    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
+
+    if last_level != level {
+        return Err(Error::RmiErrorRtt(last_level));
+    }
+
+    let valid = s2tte.is_valid(last_level, false);
+    if !valid && !s2tte.is_assigned() {
+        return Err(Error::RmiErrorRtt(RTT_PAGE_LEVEL));
+    }
+
+    let pa = s2tte
+        .address(last_level)
+        .ok_or(Error::RmiErrorRtt(0))?
+        .into(); //XXX: check this again
+
+    let ripas = s2tte.get_ripas();
+
+    let mut flags = 0;
+    if valid {
+        // TODO: need to add ripas::destroyed and remove the hipas.
+        // there is no value of the hipas in spec
+        flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::DESTROYED);
+    } else {
+        flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
+        flags |= bits_in_reg(S2TTE::INVALID_RIPAS, ripas);
     }
     let new_s2tte = flags;
     rd.s2_table()

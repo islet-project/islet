@@ -387,6 +387,22 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
+    listen!(mainloop, rmi::SHARED_DATA_DESTROY, |arg, _ret, _rmm| {
+        // rd granule lock
+        let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>();
+        let ipa = arg[1];
+
+        let pa = crate::rtt::shared_data_destroy(rd, ipa)?;
+        let mut granule = get_granule_if!(pa, GranuleState::SharedData)?;
+
+        granule.dec_ref()?;
+        if granule.get_ref() == 0 {
+            set_granule(&mut granule, GranuleState::Delegated)?;
+        }
+        Ok(())
+    });
+
     // Map an unprotected IPA to a non-secure PA.
     listen!(mainloop, rmi::RTT_MAP_UNPROTECTED, |arg, _ret, _rmm| {
         let ipa = arg[1];

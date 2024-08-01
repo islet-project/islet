@@ -17,8 +17,9 @@ define_interface! {
          GRANULE_UNDELEGATE     = 0xc400_0152,
          DATA_CREATE            = 0xc400_0153,
          DATA_CREATE_UNKNOWN    = 0xc400_0154,
-         SHARED_DATA_CREATE     = 0xc400_0156,
          DATA_DESTROY           = 0xc400_0155,
+         SHARED_DATA_CREATE     = 0xc400_0156,
+         SHARED_DATA_DESTROY    = 0xc400_016b,
          REALM_ACTIVATE         = 0xc400_0157,
          REALM_CREATE           = 0xc400_0158,
          REALM_DESTROY          = 0xc400_0159,
@@ -74,6 +75,7 @@ pub mod rtt_entry_state {
     pub const RMI_ASSIGNED: usize = 2;
     pub const RMI_TABLE: usize = 3;
     pub const RMI_VALID_NS: usize = 4;
+    pub const RMI_ASSIGNED_SHARED: usize = 5; // It means SharedData granule
 }
 
 pub const MAX_REC_AUX_GRANULES: usize = 16;

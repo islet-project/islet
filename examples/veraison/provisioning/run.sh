@@ -83,13 +83,13 @@ cocli corim create --template=corim.json --comid=endorsements.cbor --comid=refva
 
 loginfo "Provisioning generated Corim"
 cocli corim submit --corim-file=corim.cbor \
-    --api-server="http://provisioning-service:8888/endorsement-provisioning/v1/submit" \
+    --api-server="https://provisioning-service:8888/endorsement-provisioning/v1/submit" \
     '--media-type='\''application/corim-unsigned+cbor; profile=http://arm.com/cca/ssd/1'\'''
 
 ##### Verifying as relaying party
 
 loginfo "Verifying token as relaying party"
 evcli cca verify-as relying-party \
-    --api-server=http://verification-service:8080/challenge-response/v1/newSession \
+    --api-server=https://verification-service:8080/challenge-response/v1/newSession \
     --token=$TOKEN | tr -d '"' > ear.jwt
 arc verify -p=pkey.jwk ear.jwt

@@ -55,7 +55,6 @@ fn create_pgtbl_at(
 
 pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), Error> {
     let mut invalidate = Tlbi::NONE;
-    let mut rtt_granule = get_granule_if!(rtt_addr, GranuleState::Delegated)?;
 
     let (parent_s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level - 1, Error::RmiErrorInput)?;
 
@@ -116,8 +115,6 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
         panic!("Unexpected s2tte value:{:X}", parent_s2tte.get());
     }
 
-    set_granule(&mut rtt_granule, GranuleState::RTT)?;
-
     let parent_s2tte = rtt_addr as u64 | bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_TABLE);
     rd.s2_table().lock().ipa_to_pte_set(
         GuestPhysAddr::from(ipa),
@@ -141,8 +138,8 @@ pub fn destroy<F: FnMut(usize)>(
     let invalidate;
     let (parent_s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level - 1, Error::RmiErrorRtt(0))?;
 
-    if (last_level != level - 1) || !parent_s2tte.is_table(level - 1) {
-        let top_ipa = skip_non_live_entries(rd, ipa, level)?;
+    if (last_level != level - 1) || !parent_s2tte.is_table(last_level) {
+        let top_ipa = skip_non_live_entries(rd, ipa, last_level)?;
         f(top_ipa);
         return Err(Error::RmiErrorRtt(last_level));
     }
@@ -177,7 +174,7 @@ pub fn destroy<F: FnMut(usize)>(
 
     set_granule(&mut g_rtt, GranuleState::Delegated)?;
 
-    let top_ipa = skip_non_live_entries(rd, ipa, level)?;
+    let top_ipa = skip_non_live_entries(rd, ipa, last_level)?;
     Ok((rtt_addr, top_ipa))
 }
 
@@ -346,14 +343,10 @@ pub fn unmap_unprotected<F: FnMut(usize)>(
 
     let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 
-    if level != last_level {
-        return Err(Error::RmiErrorRtt(last_level));
-    }
-
-    if !s2tte.is_assigned_ns(level) {
-        let top_ipa = skip_non_live_entries(rd, ipa, level)?;
+    if level != last_level || !s2tte.is_assigned_ns(last_level) {
+        let top_ipa = skip_non_live_entries(rd, ipa, last_level)?;
         f(top_ipa);
-        return Err(Error::RmiErrorRtt(level));
+        return Err(Error::RmiErrorRtt(last_level));
     }
 
     let new_s2tte: u64 = bits_in_reg(S2TTE::NS, 1)
@@ -536,13 +529,9 @@ pub fn data_destroy<F: FnMut(usize)>(
     let level = RTT_PAGE_LEVEL;
     let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(level))?;
 
-    if last_level != level {
-        return Err(Error::RmiErrorRtt(last_level));
-    }
-
     let valid = s2tte.is_valid(last_level, false);
-    if !valid && !s2tte.is_assigned() {
-        let top_ipa = skip_non_live_entries(rd, ipa, level)?;
+    if last_level < level || (!valid && !s2tte.is_assigned()) {
+        let top_ipa = skip_non_live_entries(rd, ipa, last_level)?;
         f(top_ipa);
         return Err(Error::RmiErrorRtt(last_level));
     }
@@ -552,17 +541,12 @@ pub fn data_destroy<F: FnMut(usize)>(
         .ok_or(Error::RmiErrorRtt(last_level))?
         .into(); //XXX: check this again
 
-    let mut flags = 0;
+    let mut flags = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
     if s2tte.is_assigned_ram(RTT_PAGE_LEVEL) {
-        flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
         flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::DESTROYED);
         invalidate = Tlbi::LEAF(rd.id());
-    } else if s2tte.is_assigned_empty() {
-        flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
-        flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
-    } else if s2tte.is_assigned_destroyed() {
-        flags |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
-        flags |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::DESTROYED);
+    } else {
+        flags |= s2tte.get_masked(S2TTE::INVALID_RIPAS);
     }
     let new_s2tte = flags;
     rd.s2_table()
@@ -583,11 +567,25 @@ fn skip_non_live_entries(rd: &Rd, base: usize, level: usize) -> Result<usize, Er
     }
 
     let space_size = level_space_size(rd, level);
-    let top_addr = (addr & !(space_size - 1)) + space_size;
-    while addr < top_addr {
-        let (s2tte, _last_level) = S2TTE::get_s2tte(rd, addr, level, Error::RmiErrorRtt(level))?;
+    let mut bottom_addr = addr & !(space_size - 1);
+
+    let binding = rd.s2_table();
+    let binding = binding.lock();
+    let (entries_iter, last_level) = binding.entries(GuestPhysAddr::from(base), level)?;
+    if level != last_level {
+        warn!(
+            "level doesn't match! level:{:?} last_level:{:?}",
+            level, last_level
+        );
+    }
+    for entry in entries_iter {
+        if bottom_addr < base {
+            bottom_addr += map_size;
+            continue;
+        }
+        let s2tte = S2TTE::new(entry.pte());
         if s2tte.is_live(level) {
-            break;
+            return Ok(addr);
         }
         addr += map_size;
     }

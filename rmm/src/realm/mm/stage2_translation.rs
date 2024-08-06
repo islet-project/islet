@@ -1,7 +1,7 @@
-//use super::page::BasePageSize;
 use core::arch::asm;
 use core::ffi::c_void;
 use core::fmt;
+use core::slice::Iter;
 
 use crate::granule::GRANULE_SHIFT;
 use crate::realm::mm::address::GuestPhysAddr;
@@ -423,8 +423,34 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
         } else {
             1
         };
-        let default = mapping_size(level - 1);
-        default * count
+        if level == 0 {
+            mapping_size(0) * L0Table::NUM_ENTRIES * count
+        } else {
+            mapping_size(level - 1) * count
+        }
+    }
+
+    fn entries(
+        &self,
+        guest: GuestPhysAddr,
+        level: usize,
+    ) -> Result<(Iter<'_, entry::Entry>, usize), Error> {
+        let guest = Page::<BasePageSize, GuestPhysAddr>::including_address(guest);
+        let res = match &self.root_pgtbl {
+            Root::L2N8(root) => root.table_entries(guest, level),
+            Root::L0N1(root) => root.table_entries(guest, level),
+            Root::L0N16(root) => root.table_entries(guest, level),
+            Root::L1N1(root) => root.table_entries(guest, level),
+            Root::L1N2(root) => root.table_entries(guest, level),
+            Root::L1N8(root) => root.table_entries(guest, level),
+            Root::L2N4(root) => root.table_entries(guest, level),
+            Root::L2N16(root) => root.table_entries(guest, level),
+        };
+        if let Ok(ref _x) = res {
+            Ok(res?)
+        } else {
+            Err(Error::RmiErrorInput)
+        }
     }
 }
 

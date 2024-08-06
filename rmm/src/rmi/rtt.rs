@@ -54,7 +54,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if rtt_addr == arg[0] {
             return Err(Error::RmiErrorInput);
         }
+        let mut rtt_granule = get_granule_if!(rtt_addr, GranuleState::Delegated)?;
         rtt::create(&rd, rtt_addr, ipa, level)?;
+        set_granule(&mut rtt_granule, GranuleState::RTT)?;
         Ok(())
     });
 

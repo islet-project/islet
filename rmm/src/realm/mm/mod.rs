@@ -10,6 +10,7 @@ pub mod table_level;
 use crate::rmi::error::Error;
 use core::ffi::c_void;
 use core::fmt::Debug;
+use core::slice::Iter;
 
 use address::{GuestPhysAddr, PhysAddr};
 use stage2_translation::Tlbi;
@@ -28,4 +29,9 @@ pub trait IPATranslation: Debug + Send + Sync {
     ) -> Result<(), Error>;
     fn clean(&mut self, vmid: usize);
     fn space_size(&self, level: usize) -> usize;
+    fn entries(
+        &self,
+        guest: GuestPhysAddr,
+        level: usize,
+    ) -> Result<(Iter<'_, entry::Entry>, usize), Error>;
 }

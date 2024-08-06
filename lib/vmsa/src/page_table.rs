@@ -7,6 +7,7 @@ use super::page::{Page, PageIter, PageSize};
 
 use alloc::alloc::Layout;
 use core::marker::PhantomData;
+use core::slice::Iter;
 
 // Safety/TODO:
 //  - As of now, concurrency safety for RTT and Realm page table is achieved by a big lock.
@@ -130,6 +131,23 @@ pub trait PageTableMethods<A: Address, L, E: Entry, const N: usize> {
         no_valid_check: bool,
         func: F,
     ) -> Result<(Option<EntryGuard<'_, E::Inner>>, usize), Error>;
+    /// Traverses page tables from the root and locate the page table at a specific level.
+    ///
+    /// (input)
+    ///    page: a target page to translate
+    ///    level: the intended page-table level to reach
+    ///
+    /// (output)
+    ///    if exists,
+    ///      A tuple of
+    ///        (entry array iterartor, the lastly reached page-table level (usize))
+    ///    else,
+    ///      None
+    fn table_entries<'a, S: PageSize + 'a>(
+        &'a self,
+        page: Page<S, A>,
+        level: usize,
+    ) -> Result<(Iter<'a, E>, usize), Error>;
     fn drop(&mut self);
     fn unset_page<S: PageSize>(&mut self, guest: Page<S, A>);
 }
@@ -249,6 +267,14 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
         }
     }
 
+    default fn table_entries<'a, S: PageSize + 'a>(
+        &'a self,
+        _page: Page<S, A>,
+        _level: usize,
+    ) -> Result<(Iter<'a, E>, usize), Error> {
+        Ok((self.entries.iter(), L::THIS_LEVEL))
+    }
+
     default fn drop(&mut self) {
         unsafe {
             // FIXME: need to use allocator that is used at new_in()
@@ -324,6 +350,26 @@ where
                 }
                 false => Err(Error::MmNoEntry),
             }
+        }
+    }
+
+    default fn table_entries<'a, S: PageSize + 'a>(
+        &'a self,
+        page: Page<S, A>,
+        level: usize,
+    ) -> Result<(Iter<'a, E>, usize), Error> {
+        assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
+        if level > S::MAP_TABLE_LEVEL {
+            return Err(Error::MmInvalidLevel);
+        }
+
+        if L::THIS_LEVEL < level {
+            match self.subtable::<S>(page) {
+                Ok(subtable) => subtable.table_entries(page, level),
+                Err(_e) => Ok((self.entries.iter(), L::THIS_LEVEL)),
+            }
+        } else {
+            Ok((self.entries.iter(), L::THIS_LEVEL))
         }
     }
 

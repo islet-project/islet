@@ -156,7 +156,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     listen!(mainloop, rmi::RTT_INIT_SHARED_RIPAS, |arg, _ret, _rmm| {
-        rtt_init_ripas(arg, _ret, _rmm, invalid_ripas::SHARED)
+        warn!("RTT_INIT_SHARED_RIPAS is start");
+        let ret = rtt_init_ripas(arg, _ret, _rmm, invalid_ripas::SHARED);
+        warn!("RTT_INIT_SHARED_RIPAS is end");
+        ret
     });
 
     listen!(mainloop, rmi::RTT_SET_RIPAS, |arg, _ret, _rmm| {
@@ -223,7 +226,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         } else if ripas as u64 == RIPAS_SHARED {
             let ret = crate::rtt::make_shared_ripas(rd, ipa, level);
             if let Err(e) = &ret {
-                warn!("make_shared_as_readonly failed with {:?}", e);
+                warn!("make_shared_ripas failed with {:?}", e);
                 return ret;
             }
         } else {
@@ -345,6 +348,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
+        warn!(
+            "shared_data_create is called. pa {:x}, ipa {:x}",
+            target_pa, ipa
+        );
+
         // rd granule lock
         let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
@@ -365,6 +373,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // L0czek - not needed here see: tf-rmm/runtime/rmi/rtt.c:883
         set_granule(&mut target_page_granule, GranuleState::SharedData)?;
         target_page_granule.inc_ref()?;
+
+        warn!("shared_data_create done. pa {:x}, ipa {:x}", target_pa, ipa);
         Ok(())
     });
 
@@ -387,19 +397,26 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::SHARED_DATA_DESTROY, |arg, _ret, _rmm| {
+    listen!(mainloop, rmi::SHARED_DATA_DESTROY, |arg, ret, _rmm| {
         // rd granule lock
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
         let ipa = arg[1];
 
+        warn!("SHARED_DATA_DESTROY start. ipa {:x}", ipa);
+
         let pa = crate::rtt::shared_data_destroy(rd, ipa)?;
         let mut granule = get_granule_if!(pa, GranuleState::SharedData)?;
 
         granule.dec_ref()?;
+
+        ret[1] = granule.get_ref() as usize;
+        warn!("SHARED_DATA_DESTROY: get_ref: {:x}", ret[1]);
+
         if granule.get_ref() == 0 {
             set_granule(&mut granule, GranuleState::Delegated)?;
         }
+
         Ok(())
     });
 
@@ -463,8 +480,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         validate_ipa(ipa, rd.ipa_bits())?;
 
-        warn!("check the target_pa is data granule");
-        let _ = get_granule_if!(target_pa, GranuleState::Data)?;
+        warn!("check the target_pa is SharedData granule");
+        let mut target_page_granule = get_granule_if!(target_pa, GranuleState::SharedData)?;
 
         warn!("call rtt::map_shared_mem_as_ro");
         let ret = crate::rtt::make_shared_as_readonly(rd, ipa, target_pa);
@@ -472,6 +489,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             warn!("rtt::map_shared_mem_as_ro return error: {:?}", e);
             return ret;
         }
+        target_page_granule.inc_ref()?;
 
         warn!("RMI::MAP_SHARED_MEM_AS_RO done!");
         Ok(())

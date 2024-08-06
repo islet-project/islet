@@ -460,6 +460,8 @@ pub fn shared_data_create(rd: &Rd, ipa: usize, target_pa: usize) -> Result<(), E
         panic!("Don't allow RAM ripas in shared_data_create()");
     }
 
+    warn!("shared_data_create: current ripas: {:?}", ripas);
+
     if ripas == invalid_ripas::SHARED {
         // S2TTE_PAGE  : S2TTE_ATTRS | S2TTE_L3_PAGE
         new_s2tte |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);

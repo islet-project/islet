@@ -34,7 +34,6 @@ define_interface! {
          FEATURES               = 0xc400_0165,
          REC_AUX_COUNT          = 0xc400_0167,
          RTT_INIT_RIPAS         = 0xc400_0168,
-         RTT_INIT_SHARED_RIPAS  = 0xc400_0160,
          RTT_SET_RIPAS          = 0xc400_0169,
          MAP_SHARED_MEM_AS_RO   = 0xc400_0163,
          UNMAP_SHARED_REALM_MEM = 0xc400_016a, // temporarily not used. because the cmd value is come from with 0xFFFFEEEE. I don't know why..

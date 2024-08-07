@@ -93,32 +93,6 @@ fn unmap_shared_realm_memory(
     Ok(())
 }
 
-fn rtt_init_ripas(
-    arg: &[usize],
-    _ret: &mut [usize],
-    _rmm: &crate::Monitor,
-    ripas: u64,
-) -> core::result::Result<(), Error> {
-    let mut rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
-    let rd = rd_granule.content_mut::<Rd>();
-    let ipa = arg[1];
-    let level = arg[2];
-
-    if rd.state() != State::New {
-        return Err(Error::RmiErrorRealm(0));
-    }
-    if !is_valid_rtt_cmd(ipa, level) {
-        return Err(Error::RmiErrorInput);
-    }
-    crate::rtt::init_ripas(rd, ipa, level, ripas)?;
-
-    #[cfg(not(kani))]
-    // `rsi` is currently not reachable in model checking harnesses
-    HashContext::new(rd)?.measure_ripas_granule(ipa, level as u8)?;
-
-    Ok(())
-}
-
 pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::RTT_CREATE, |arg, _ret, _rmm| {
         let rtt_addr = arg[0];
@@ -152,14 +126,31 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     listen!(mainloop, rmi::RTT_INIT_RIPAS, |arg, _ret, _rmm| {
-        rtt_init_ripas(arg, _ret, _rmm, invalid_ripas::RAM)
-    });
+        let mut rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        let rd = rd_granule.content_mut::<Rd>();
+        let ipa = arg[1];
+        let level = arg[2];
+        let shared = arg[3];
+        let mut ripas = invalid_ripas::RAM;
 
-    listen!(mainloop, rmi::RTT_INIT_SHARED_RIPAS, |arg, _ret, _rmm| {
-        warn!("RTT_INIT_SHARED_RIPAS is start");
-        let ret = rtt_init_ripas(arg, _ret, _rmm, invalid_ripas::SHARED);
-        warn!("RTT_INIT_SHARED_RIPAS is end");
-        ret
+        if rd.state() != State::New {
+            return Err(Error::RmiErrorRealm(0));
+        }
+        if !is_valid_rtt_cmd(ipa, level) {
+            return Err(Error::RmiErrorInput);
+        }
+
+        if shared != 0 {
+            ripas = invalid_ripas::SHARED;
+        }
+
+        crate::rtt::init_ripas(rd, ipa, level, ripas)?;
+
+        #[cfg(not(kani))]
+        // `rsi` is currently not reachable in model checking harnesses
+        HashContext::new(rd)?.measure_ripas_granule(ipa, level as u8)?;
+
+        Ok(())
     });
 
     listen!(mainloop, rmi::RTT_SET_RIPAS, |arg, _ret, _rmm| {

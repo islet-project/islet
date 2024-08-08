@@ -86,10 +86,7 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
 
         let flags = parent_s2tte.get_masked(S2TTE::INVALID_HIPAS | S2TTE::INVALID_RIPAS);
 
-        let pa: usize = parent_s2tte
-            .addr_as_block(level - 1)
-            .ok_or(Error::RmiErrorRtt(0))?
-            .into(); //XXX: check this again
+        let pa: usize = parent_s2tte.addr_as_block(level - 1).into(); //XXX: check this again
 
         create_pgtbl_at(rtt_addr, flags, pa, map_size)?;
     } else if parent_s2tte.is_assigned_ram(level - 1) {
@@ -100,10 +97,7 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
             flags |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_BLOCK);
         }
 
-        let pa: usize = parent_s2tte
-            .addr_as_block(level - 1)
-            .ok_or(Error::RmiErrorRtt(0))?
-            .into(); //XXX: check this again
+        let pa: usize = parent_s2tte.addr_as_block(level - 1).into(); //XXX: check this again
 
         create_pgtbl_at(rtt_addr, flags, pa, map_size)?;
         invalidate = Tlbi::LEAF(rd.id());
@@ -144,10 +138,7 @@ pub fn destroy<F: FnMut(usize)>(
         return Err(Error::RmiErrorRtt(last_level));
     }
 
-    let rtt_addr = parent_s2tte
-        .addr_as_block(RTT_PAGE_LEVEL)
-        .ok_or(Error::RmiErrorInput)?
-        .into();
+    let rtt_addr = parent_s2tte.addr_as_block(RTT_PAGE_LEVEL).into();
 
     let mut g_rtt = get_granule_if!(rtt_addr, GranuleState::RTT)?;
 
@@ -258,20 +249,14 @@ pub fn read_entry(rd: &Rd, ipa: usize, level: usize) -> Result<[usize; 4], Error
         };
     } else if s2tte.is_assigned_empty() {
         r2 = rtt_entry_state::RMI_ASSIGNED;
-        r3 = s2tte
-            .addr_as_block(last_level)
-            .ok_or(Error::RmiErrorRtt(0))?
-            .into(); //XXX: check this again
+        r3 = s2tte.addr_as_block(last_level).into(); //XXX: check this again
         r4 = invalid_ripas::EMPTY as usize;
     } else if s2tte.is_assigned_destroyed() {
         r2 = rtt_entry_state::RMI_ASSIGNED;
         r4 = invalid_ripas::DESTROYED as usize;
     } else if s2tte.is_assigned_ram(last_level) {
         r2 = rtt_entry_state::RMI_ASSIGNED;
-        r3 = s2tte
-            .addr_as_block(last_level)
-            .ok_or(Error::RmiErrorRtt(0))?
-            .into(); //XXX: check this again
+        r3 = s2tte.addr_as_block(last_level).into(); //XXX: check this again
         r4 = invalid_ripas::RAM as usize;
     } else if s2tte.is_assigned_ns(last_level) {
         r2 = rtt_entry_state::RMI_ASSIGNED;
@@ -281,10 +266,7 @@ pub fn read_entry(rd: &Rd, ipa: usize, level: usize) -> Result<[usize; 4], Error
         r4 = invalid_ripas::EMPTY as usize;
     } else if s2tte.is_table(last_level) {
         r2 = rtt_entry_state::RMI_TABLE;
-        r3 = s2tte
-            .addr_as_block(RTT_PAGE_LEVEL)
-            .ok_or(Error::RmiErrorRtt(0))?
-            .into(); //XXX: check this again
+        r3 = s2tte.addr_as_block(RTT_PAGE_LEVEL).into(); //XXX: check this again
         r4 = invalid_ripas::EMPTY as usize;
     } else {
         error!("Unexpected S2TTE value retrieved!");
@@ -397,10 +379,7 @@ pub fn set_ripas(rd: &Rd, base: usize, top: usize, ripas: u8, flags: u64) -> Res
         if level != last_level {
             break;
         }
-        let pa: usize = s2tte
-            .addr_as_block(last_level)
-            .ok_or(Error::RmiErrorRtt(0))?
-            .into(); //XXX: check this again
+        let pa: usize = s2tte.addr_as_block(last_level).into(); //XXX: check this again
         if ripas as u64 == invalid_ripas::EMPTY {
             new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
 
@@ -536,10 +515,7 @@ pub fn data_destroy<F: FnMut(usize)>(
         return Err(Error::RmiErrorRtt(last_level));
     }
 
-    let pa = s2tte
-        .addr_as_block(last_level)
-        .ok_or(Error::RmiErrorRtt(last_level))?
-        .into(); //XXX: check this again
+    let pa = s2tte.addr_as_block(last_level).into(); //XXX: check this again
 
     let mut flags = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
     if s2tte.is_assigned_ram(RTT_PAGE_LEVEL) {

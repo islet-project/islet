@@ -8,7 +8,7 @@ use crate::rec::Rec;
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmi::rec::run::{Run, REC_ENTRY_FLAG_RIPAS_RESPONSE};
-use crate::rmi::rtt::{is_protected_ipa, validate_ipa};
+use crate::rmi::rtt::validate_ipa;
 use crate::rsi;
 use crate::Monitor;
 use crate::{get_granule, get_granule_if};
@@ -20,12 +20,11 @@ pub fn get_ripas_state(
     rec: &mut Rec<'_>,
     _run: &mut Run,
 ) -> core::result::Result<(), Error> {
-    let ipa_bits = rec.ipa_bits()?;
     let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
     let rd = rd_granule.content::<Rd>()?;
 
     let ipa_page = get_reg(rec, 1)?;
-    if validate_ipa(ipa_page, ipa_bits).is_err() {
+    if validate_ipa(&rd, ipa_page).is_err() {
         if set_reg(rec, 0, rsi::ERROR_INPUT).is_err() {
             warn!("Unable to set register 0. rec: {:?}", rec);
         }
@@ -59,8 +58,6 @@ pub fn set_ripas_state(
     rec: &mut Rec<'_>,
     run: &mut Run,
 ) -> core::result::Result<(), Error> {
-    let ipa_bits = rec.ipa_bits()?;
-
     let ipa_start = get_reg(rec, 1)?;
     let ipa_end = get_reg(rec, 2)?;
     let ipa_state = get_reg(rec, 3)? as u8;
@@ -73,12 +70,15 @@ pub fn set_ripas_state(
         //return Err(Error::RmiErrorInput); // integer overflows or size is zero
     }
 
+    let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+    let rd = rd_granule.content::<Rd>()?;
+
     if !is_granule_aligned(ipa_start)
         || !is_granule_aligned(ipa_end)
         || !is_ripas_valid(ipa_state)
         || ipa_end <= ipa_start
-        || !is_protected_ipa(ipa_start, ipa_bits)
-        || !is_protected_ipa(ipa_end - 1, ipa_bits)
+        || !rd.addr_in_par(ipa_start)
+        || !rd.addr_in_par(ipa_end - 1)
     {
         set_reg(rec, 0, rsi::ERROR_INPUT)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;

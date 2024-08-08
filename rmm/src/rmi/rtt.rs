@@ -20,12 +20,12 @@ use crate::{get_granule, get_granule_if};
 #[cfg(feature = "gst_page_table")]
 use crate::{get_granule, get_granule_if, set_state_and_get_granule};
 
-fn is_valid_rtt_cmd(ipa: usize, level: usize, ipa_bits: usize) -> bool {
+fn is_valid_rtt_cmd(rd: &Rd, ipa: usize, level: usize) -> bool {
     if level > RTT_PAGE_LEVEL {
         return false;
     }
 
-    if ipa >= realm_ipa_size(ipa_bits) {
+    if ipa >= rd.ipa_size() {
         return false;
     }
     let mask = level_mask(level).unwrap_or(0);
@@ -45,9 +45,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         let min_level = rd.s2_starting_level() as usize + 1;
 
-        if (level < min_level)
-            || (level > RTT_PAGE_LEVEL)
-            || !is_valid_rtt_cmd(ipa, level - 1, rd.ipa_bits())
+        if (level < min_level) || (level > RTT_PAGE_LEVEL) || !is_valid_rtt_cmd(&rd, ipa, level - 1)
         {
             return Err(Error::RmiErrorInput);
         }
@@ -68,9 +66,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         let min_level = rd.s2_starting_level() as usize + 1;
 
-        if (level < min_level)
-            || (level > RTT_PAGE_LEVEL)
-            || !is_valid_rtt_cmd(ipa, level - 1, rd.ipa_bits())
+        if (level < min_level) || (level > RTT_PAGE_LEVEL) || !is_valid_rtt_cmd(&rd, ipa, level - 1)
         {
             return Err(Error::RmiErrorInput);
         }
@@ -96,10 +92,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        if !is_valid_rtt_cmd(base, RTT_PAGE_LEVEL, rd.ipa_bits())
-            || !is_valid_rtt_cmd(top, RTT_PAGE_LEVEL, rd.ipa_bits())
-            || !is_protected_ipa(base, rd.ipa_bits())
-            || !is_protected_ipa(top - GRANULE_SIZE, rd.ipa_bits())
+        if !is_valid_rtt_cmd(&rd, base, RTT_PAGE_LEVEL)
+            || !is_valid_rtt_cmd(&rd, top, RTT_PAGE_LEVEL)
+            || !rd.addr_in_par(base)
+            || !rd.addr_in_par(top - GRANULE_SIZE)
         {
             return Err(Error::RmiErrorInput);
         }
@@ -137,8 +133,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         if !is_granule_aligned(base)
             || !is_granule_aligned(top)
-            || !is_protected_ipa(base, rd.ipa_bits())
-            || !is_protected_ipa(top - GRANULE_SIZE, rd.ipa_bits())
+            || !rd.addr_in_par(base)
+            || !rd.addr_in_par(top - GRANULE_SIZE)
         {
             return Err(Error::RmiErrorInput);
         }
@@ -154,7 +150,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd = rd_granule.content::<Rd>()?;
         let ipa = arg[1];
         let level = arg[2];
-        if !is_valid_rtt_cmd(ipa, level, rd.ipa_bits()) {
+        if !is_valid_rtt_cmd(&rd, ipa, level) {
             return Err(Error::RmiErrorInput);
         }
 
@@ -186,7 +182,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorRealm(0));
         }
 
-        validate_ipa(ipa, rd.ipa_bits())?;
+        validate_ipa(&rd, ipa)?;
 
         if !is_not_in_realm(src_pa) {
             return Err(Error::RmiErrorInput);
@@ -225,7 +221,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        validate_ipa(ipa, rd.ipa_bits())?;
+        validate_ipa(&rd, ipa)?;
 
         // 0. Make sure granule state can make a transition to DATA
         // data granule lock for the target page
@@ -249,9 +245,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd = rd_granule.content::<Rd>()?;
         let ipa = arg[1];
 
-        if !is_protected_ipa(ipa, rd.ipa_bits())
-            || !is_valid_rtt_cmd(ipa, RTT_PAGE_LEVEL, rd.ipa_bits())
-        {
+        if !rd.addr_in_par(ipa) || !is_valid_rtt_cmd(&rd, ipa, RTT_PAGE_LEVEL) {
             return Err(Error::RmiErrorInput);
         }
 
@@ -288,7 +282,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>()?;
 
-        if !is_valid_rtt_cmd(ipa, level, rd.ipa_bits()) {
+        if !is_valid_rtt_cmd(&rd, ipa, level) {
             return Err(Error::RmiErrorInput);
         }
         rtt::map_unprotected(&rd, ipa, level, host_s2tte)?;
@@ -305,7 +299,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let level = arg[2];
         if (level < RTT_MIN_BLOCK_LEVEL)
             || (level > RTT_PAGE_LEVEL)
-            || !is_valid_rtt_cmd(ipa, level, rd.ipa_bits())
+            || !is_valid_rtt_cmd(&rd, ipa, level)
         {
             return Err(Error::RmiErrorInput);
         }
@@ -319,34 +313,22 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 }
 
-fn realm_ipa_size(ipa_bits: usize) -> usize {
-    1 << ipa_bits
-}
-
-pub fn realm_par_size(ipa_bits: usize) -> usize {
-    realm_ipa_size(ipa_bits) / 2
-}
-
-pub fn is_protected_ipa(ipa: usize, ipa_bits: usize) -> bool {
-    ipa < realm_par_size(ipa_bits)
-}
-
-pub fn validate_ipa(ipa: usize, ipa_bits: usize) -> Result<(), Error> {
+pub fn validate_ipa(rd: &Rd, ipa: usize) -> Result<(), Error> {
     if !is_granule_aligned(ipa) {
         error!("ipa: {:x} is not aligned with {:x}", ipa, GRANULE_SIZE);
         return Err(Error::RmiErrorInput);
     }
 
-    if !is_protected_ipa(ipa, ipa_bits) {
+    if !rd.addr_in_par(ipa) {
         error!(
             "ipa: {:x} is not in protected ipa range {:x}",
             ipa,
-            realm_par_size(ipa_bits)
+            rd.par_size()
         );
         return Err(Error::RmiErrorInput);
     }
 
-    if !is_valid_rtt_cmd(ipa, RTT_PAGE_LEVEL, ipa_bits) {
+    if !is_valid_rtt_cmd(rd, ipa, RTT_PAGE_LEVEL) {
         return Err(Error::RmiErrorInput);
     }
 

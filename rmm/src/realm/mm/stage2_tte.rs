@@ -198,12 +198,12 @@ impl S2TTE {
             && (self.get_ripas() != invalid_ripas::RAM)
     }
 
-    pub fn addr_as_block(&self, level: usize) -> Option<PhysAddr> {
+    pub fn addr_as_block(&self, level: usize) -> PhysAddr {
         match level {
-            1 => Some(PhysAddr::from(self.get_masked(S2TTE::ADDR_BLK_L1))),
-            2 => Some(PhysAddr::from(self.get_masked(S2TTE::ADDR_BLK_L2))),
-            3 => Some(PhysAddr::from(self.get_masked(S2TTE::ADDR_BLK_L3))),
-            _ => None,
+            1 => PhysAddr::from(self.get_masked(S2TTE::ADDR_BLK_L1)),
+            2 => PhysAddr::from(self.get_masked(S2TTE::ADDR_BLK_L2)),
+            3 => PhysAddr::from(self.get_masked(S2TTE::ADDR_BLK_L3)),
+            _ => unreachable!(),
         }
     }
 

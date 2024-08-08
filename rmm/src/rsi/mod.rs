@@ -23,7 +23,7 @@ use crate::rec::{Rec, RmmRecAttestState};
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmi::rec::run::Run;
-use crate::rmi::rtt::{is_protected_ipa, validate_ipa};
+use crate::rmi::rtt::validate_ipa;
 use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 use crate::rsi::ripas::{get_ripas_state, set_ripas_state};
 use crate::Monitor;
@@ -77,12 +77,11 @@ pub fn do_host_call(
     let rd = rd_granule.content::<Rd>()?;
 
     let ipa = get_reg(rec, 1).unwrap_or(0x0);
-    let ipa_bits = rec.ipa_bits()?;
 
     let struct_size = core::mem::size_of::<HostCall>();
     if ipa % struct_size != 0
         || ipa / GRANULE_SIZE != (ipa + struct_size - 1) / GRANULE_SIZE
-        || !is_protected_ipa(ipa, ipa_bits)
+        || !rd.addr_in_par(ipa)
     {
         set_reg(rec, 0, ERROR_INPUT)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;
@@ -172,8 +171,6 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
     });
 
     listen!(rsi, ATTEST_TOKEN_CONTINUE, |_arg, ret, _rmm, rec, _| {
-        let ipa_bits = rec.ipa_bits()?;
-
         let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>()?;
 
@@ -185,7 +182,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         }
 
         let attest_ipa = get_reg(rec, 1)?;
-        if validate_ipa(attest_ipa, ipa_bits).is_err() {
+        if validate_ipa(&rd, attest_ipa).is_err() {
             warn!("Wrong ipa passed {}", attest_ipa);
             set_reg(rec, 0, ERROR_INPUT)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
@@ -344,7 +341,7 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         let rd = rd_granule.content::<Rd>()?;
 
         let config_ipa = get_reg(rec, 1)?;
-        if validate_ipa(config_ipa, ipa_bits).is_err() {
+        if validate_ipa(&rd, config_ipa).is_err() {
             set_reg(rec, 0, ERROR_INPUT)?;
             ret[0] = rmi::SUCCESS_REC_ENTER;
             return Ok(());

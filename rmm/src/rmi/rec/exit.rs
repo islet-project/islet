@@ -11,7 +11,6 @@ use crate::realm::rd::Rd;
 use crate::rec::Rec;
 use crate::rmi::error::Error;
 use crate::rmi::rec::run::Run;
-use crate::rmi::rtt::is_protected_ipa;
 use crate::Monitor;
 use crate::{rmi, rsi};
 use armv9a::{EsrEl2, EMULATABLE_ABORT_MASK, NON_EMULATABLE_ABORT_MASK};
@@ -73,14 +72,9 @@ pub fn handle_realm_exit(
     Ok((return_to_ns, ret))
 }
 
-fn is_non_emulatable_data_abort(
-    rd: &Rd,
-    ipa_bits: usize,
-    fault_ipa: usize,
-    esr_el2: u64,
-) -> Result<bool, Error> {
+fn is_non_emulatable_data_abort(rd: &Rd, fault_ipa: usize, esr_el2: u64) -> Result<bool, Error> {
     let (s2tte, _) = S2TTE::get_s2tte(rd, fault_ipa, RTT_PAGE_LEVEL, Error::RmiErrorRtt(0))?;
-    let is_protected_ipa = is_protected_ipa(fault_ipa, ipa_bits);
+    let is_protected_ipa = rd.addr_in_par(fault_ipa);
 
     let ret = match is_protected_ipa {
         true => s2tte.is_unassigned() || s2tte.is_destroyed(),
@@ -105,7 +99,6 @@ fn handle_data_abort(
     rec: &Rec<'_>,
     run: &mut Run,
 ) -> Result<usize, Error> {
-    let ipa_bits = rec.ipa_bits()?;
     let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
     let rd = rd_granule.content::<Rd>()?;
 
@@ -119,20 +112,19 @@ fn handle_data_abort(
     let fault_ipa = hpfar_el2 & (HPFAR_EL2::FIPA.mask << HPFAR_EL2::FIPA.shift);
     let fault_ipa = (fault_ipa << 8) as usize;
 
-    let (exit_esr, exit_far) =
-        match is_non_emulatable_data_abort(&rd, ipa_bits, fault_ipa, esr_el2)? {
-            true => (esr_el2 & NON_EMULATABLE_ABORT_MASK, 0),
-            false => {
-                if esr_el2 & EsrEl2::WNR != 0 {
-                    let write_val = get_write_val(rec, esr_el2)?;
-                    run.set_gpr(0, write_val)?;
-                }
-                (
-                    esr_el2 & EMULATABLE_ABORT_MASK,
-                    (far_el2 & !(GRANULE_MASK as u64)),
-                )
+    let (exit_esr, exit_far) = match is_non_emulatable_data_abort(&rd, fault_ipa, esr_el2)? {
+        true => (esr_el2 & NON_EMULATABLE_ABORT_MASK, 0),
+        false => {
+            if esr_el2 & EsrEl2::WNR != 0 {
+                let write_val = get_write_val(rec, esr_el2)?;
+                run.set_gpr(0, write_val)?;
             }
-        };
+            (
+                esr_el2 & EMULATABLE_ABORT_MASK,
+                (far_el2 & !(GRANULE_MASK as u64)),
+            )
+        }
+    };
 
     run.set_esr(exit_esr);
     run.set_far(exit_far);

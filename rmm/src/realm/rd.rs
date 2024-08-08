@@ -1,5 +1,3 @@
-use crate::rmi::rtt::realm_par_size;
-
 use vmsa::guard::Content;
 
 use crate::measurement::{Measurement, MEASUREMENTS_SLOT_NR};
@@ -94,9 +92,16 @@ impl Rd {
         self.rec_index += 1;
     }
 
-    pub fn addr_in_par(&self, addr: usize) -> bool {
-        let ipa_bits = self.ipa_bits();
-        addr < realm_par_size(ipa_bits)
+    pub fn ipa_size(&self) -> usize {
+        1 << self.ipa_bits
+    }
+
+    pub fn par_size(&self) -> usize {
+        self.ipa_size() / 2
+    }
+
+    pub fn addr_in_par(&self, ipa: usize) -> bool {
+        ipa < self.par_size()
     }
 
     pub fn hash_algo(&self) -> u8 {

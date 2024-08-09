@@ -65,9 +65,6 @@ pub const ERROR_REC: usize = 3;
 pub const SUCCESS_REC_ENTER: usize = 4;
 
 // RmiRttEntryState represents the state of an RTTE
-// FIXME: cca-rmm-acs and linux realm is using old version of entry state.
-// i.e. There is no differentiation between (un)assigned and (un)assigned_ns
-// while RMM spec defines each individually.
 pub mod rtt_entry_state {
     pub const RMI_UNASSIGNED: usize = 0;
     pub const RMI_ASSIGNED: usize = 1;

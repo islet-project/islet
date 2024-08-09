@@ -241,9 +241,6 @@ pub fn get_ripas(rd: &Rd, ipa: usize, level: usize) -> Result<u64, Error> {
     Ok(s2tte.get_ripas())
 }
 
-// FIXME: cca-rmm-acs and linux realm is using old version of entry state.
-// i.e. no differentiation between (un)assigned and (un)assigned_ns
-// while RMM spec defines each individually.
 pub fn read_entry(rd: &Rd, ipa: usize, level: usize) -> Result<[usize; 4], Error> {
     let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 

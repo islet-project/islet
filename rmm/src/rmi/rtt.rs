@@ -311,6 +311,25 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         Ok(())
     });
+
+    // Destroy a homogeneous RTT and map as a bigger block at its parent RTT
+    listen!(mainloop, rmi::RTT_FOLD, |arg, ret, _rmm| {
+        let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>()?;
+        let ipa = arg[1];
+        let level = arg[2];
+
+        let min_level = rd.s2_starting_level() as usize + 1;
+
+        if (level < min_level) || (level > RTT_PAGE_LEVEL) || !is_valid_rtt_cmd(&rd, ipa, level - 1)
+        {
+            return Err(Error::RmiErrorInput);
+        }
+
+        let rtt = rtt::fold(&rd, ipa, level)?;
+        ret[1] = rtt;
+        Ok(())
+    });
 }
 
 pub fn validate_ipa(rd: &Rd, ipa: usize) -> Result<(), Error> {

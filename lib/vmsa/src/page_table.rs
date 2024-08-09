@@ -324,7 +324,7 @@ where
         let index = E::index::<L>(page.address().into());
 
         if no_valid_check {
-            if L::THIS_LEVEL < level {
+            if L::THIS_LEVEL < level && self.entries[index].points_to_table_or_page() {
                 // Need to go deeper (recursive)
                 match self.subtable::<S>(page) {
                     Ok(subtable) => subtable.entry(page, level, no_valid_check, func),
@@ -337,7 +337,7 @@ where
         } else {
             match self.entries[index].is_valid() {
                 true => {
-                    if L::THIS_LEVEL < level {
+                    if L::THIS_LEVEL < level && self.entries[index].points_to_table_or_page() {
                         // Need to go deeper (recursive)
                         match self.subtable::<S>(page) {
                             Ok(subtable) => subtable.entry(page, level, no_valid_check, func),
@@ -451,6 +451,9 @@ where
         assert!(L::THIS_LEVEL < S::MAP_TABLE_LEVEL);
 
         let index = E::index::<L>(page.address().into());
+        if !self.entries[index].points_to_table_or_page() {
+            return Err(Error::MmSubtableError);
+        }
         match self.entries[index].as_subtable(index, L::THIS_LEVEL) {
             Ok(table_addr) => Ok(unsafe {
                 &mut *(table_addr

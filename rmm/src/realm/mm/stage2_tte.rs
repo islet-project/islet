@@ -1,8 +1,12 @@
+use core::slice::Iter;
+
 use armv9a::{define_bitfield, define_bits, define_mask};
 use vmsa::address::PhysAddr;
+use vmsa::page_table::Entry;
 
 use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::mm::attribute::{desc_type, memattr, shareable};
+use crate::realm::mm::entry;
 use crate::realm::mm::rtt::{RTT_MIN_BLOCK_LEVEL, RTT_PAGE_LEVEL};
 use crate::realm::rd::Rd;
 use crate::rmi::error::Error;
@@ -12,7 +16,6 @@ pub const INVALID_UNPROTECTED: u64 = 0x0;
 pub mod invalid_hipas {
     pub const UNASSIGNED: u64 = 0b00;
     pub const ASSIGNED: u64 = 0b01;
-    pub const DESTROYED: u64 = 0b10;
 }
 
 pub mod invalid_ripas {
@@ -120,12 +123,11 @@ impl S2TTE {
     pub fn is_unassigned(&self) -> bool {
         self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
             && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::UNASSIGNED
+            && self.get_masked_value(S2TTE::NS) == 0
     }
 
     pub fn is_unassigned_empty(&self) -> bool {
-        self.is_unassigned()
-            && self.get_masked_value(S2TTE::NS) == 0
-            && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::EMPTY
+        self.is_unassigned() && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::EMPTY
     }
 
     pub fn is_unassigned_destroyed(&self) -> bool {
@@ -138,12 +140,14 @@ impl S2TTE {
     }
 
     pub fn is_unassigned_ns(&self) -> bool {
-        self.is_unassigned() && self.get_masked_value(S2TTE::NS) != 0
+        self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
+            && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::UNASSIGNED
+            && self.get_masked_value(S2TTE::NS) != 0
     }
 
     pub fn is_destroyed(&self) -> bool {
         self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
-            && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::DESTROYED
+            && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::DESTROYED
     }
 
     pub fn is_assigned(&self) -> bool {
@@ -215,5 +219,84 @@ impl S2TTE {
         self.get_masked_value(S2TTE::DESC_TYPE) != desc_type::LX_INVALID
             || self.is_assigned_empty()
             || self.is_assigned_destroyed()
+    }
+
+    // TODO: remvoe mut
+    pub fn is_homogeneous(entries: &mut Iter<'_, entry::Entry>, level: usize) -> bool {
+        let mut hipas = 0;
+        let mut ripas = 0;
+        let mut desc_type = 0;
+        let mut pa = 0;
+        let mut attr: u64 = 0;
+        let mut ns = 0;
+        let mut first = true;
+        let map_size = mapping_size(level) as u64;
+        for entry in entries {
+            let s2tte = S2TTE::new(entry.pte());
+            if first {
+                desc_type = s2tte.get_masked_value(S2TTE::DESC_TYPE);
+                hipas = s2tte.get_masked_value(S2TTE::INVALID_HIPAS);
+                ripas = s2tte.get_masked_value(S2TTE::INVALID_RIPAS);
+                ns = s2tte.get_masked_value(S2TTE::NS);
+                first = false;
+                if s2tte.is_assigned_ns(level) | s2tte.is_assigned_ram(level) | s2tte.is_assigned()
+                {
+                    // level is 2 or 3
+                    if level != 2 && level != 3 {
+                        return false;
+                    }
+                    pa = s2tte.addr_as_block(level).into(); //XXX: check this again
+                    attr = entry.pte() & !level_mask(level).unwrap_or(0);
+                    // output of first entry is algned to parent's mapping size
+                    if (pa & !level_mask(level - 1).unwrap_or(0)) != 0 {
+                        return false;
+                    }
+                }
+                continue;
+            }
+
+            if desc_type != s2tte.get_masked_value(S2TTE::DESC_TYPE) {
+                return false;
+            } else if s2tte.is_assigned_ns(level) {
+                // addr is contiguous
+                pa += map_size;
+                if pa != s2tte.addr_as_block(level).into() {
+                    return false;
+                }
+                // attributes are identical
+                if attr != s2tte.get() & !level_mask(level).unwrap_or(0) {
+                    return false;
+                }
+            } else if s2tte.is_assigned_ram(level) || s2tte.is_assigned() {
+                // addr is contiguous
+                pa += map_size;
+                if pa != s2tte.addr_as_block(level).into() {
+                    return false;
+                }
+                // ripas is identical
+                if ripas != s2tte.get_masked_value(S2TTE::INVALID_RIPAS) {
+                    return false;
+                }
+            } else if s2tte.is_unassigned_ns() {
+                // ns is always 1
+                if ns != s2tte.get_masked_value(S2TTE::NS) {
+                    return false;
+                }
+                // hipas is always UNASSIGNED
+                if hipas != s2tte.get_masked_value(S2TTE::INVALID_HIPAS) {
+                    return false;
+                }
+            } else if s2tte.is_unassigned() {
+                // hipas is always UNASSIGNED
+                if hipas != s2tte.get_masked_value(S2TTE::INVALID_HIPAS) {
+                    return false;
+                }
+                // ripas is identical
+                if ripas != s2tte.get_masked_value(S2TTE::INVALID_RIPAS) {
+                    return false;
+                }
+            }
+        }
+        true
     }
 }

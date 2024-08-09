@@ -30,6 +30,7 @@ define_interface! {
          RTT_READ_ENTRY         = 0xc400_0161,
          PSCI_COMPLETE          = 0xc400_0164,
          FEATURES               = 0xc400_0165,
+         RTT_FOLD               = 0xc400_0166,
          REC_AUX_COUNT          = 0xc400_0167,
          RTT_INIT_RIPAS         = 0xc400_0168,
          RTT_SET_RIPAS          = 0xc400_0169,
@@ -64,6 +65,9 @@ pub const ERROR_REC: usize = 3;
 pub const SUCCESS_REC_ENTER: usize = 4;
 
 // RmiRttEntryState represents the state of an RTTE
+// FIXME: cca-rmm-acs and linux realm is using old version of entry state.
+// i.e. There is no differentiation between (un)assigned and (un)assigned_ns
+// while RMM spec defines each individually.
 pub mod rtt_entry_state {
     pub const RMI_UNASSIGNED: usize = 0;
     pub const RMI_ASSIGNED: usize = 1;

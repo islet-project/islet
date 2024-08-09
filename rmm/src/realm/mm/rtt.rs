@@ -42,9 +42,9 @@ fn create_pgtbl_at(
     >::new_init_in(&alloc, |entries| {
         for e in entries.iter_mut() {
             let _ = (*e).set(PhysAddr::from(pa), new_s2tte);
+            pa += map_size;
+            new_s2tte = pa as u64 | flags;
         }
-        pa += map_size;
-        new_s2tte = pa as u64 | flags;
     });
 
     if ret.is_err() {
@@ -58,7 +58,7 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
 
     let (parent_s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level - 1, Error::RmiErrorInput)?;
 
-    if last_level != level - 1 {
+    if last_level != level - 1 || parent_s2tte.is_table(last_level) {
         return Err(Error::RmiErrorRtt(last_level));
     }
 
@@ -68,29 +68,20 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
         if parent_s2tte.is_invalid_ripas() {
             panic!("invalid ripas");
         }
+        let flags = parent_s2tte.get_masked(S2TTE::INVALID_HIPAS | S2TTE::INVALID_RIPAS);
 
-        let mut new_s2tte = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
-
-        if parent_s2tte.get_masked_value(S2TTE::NS) != 0 {
-            new_s2tte |= bits_in_reg(S2TTE::NS, 1);
-        } else {
-            let ripas = parent_s2tte.get_ripas();
-            new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, ripas);
-        }
-
-        create_pgtbl_at(rtt_addr, new_s2tte, 0, 0)?;
+        create_pgtbl_at(rtt_addr, flags, 0, 0)?;
     } else if parent_s2tte.is_assigned() {
         if parent_s2tte.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::RAM {
             panic!("Unexpected s2tte value:{:X}", parent_s2tte.get());
         }
 
         let flags = parent_s2tte.get_masked(S2TTE::INVALID_HIPAS | S2TTE::INVALID_RIPAS);
-
         let pa: usize = parent_s2tte.addr_as_block(level - 1).into(); //XXX: check this again
 
         create_pgtbl_at(rtt_addr, flags, pa, map_size)?;
     } else if parent_s2tte.is_assigned_ram(level - 1) {
-        let mut flags = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
+        let mut flags = parent_s2tte.get_masked(S2TTE::INVALID_HIPAS | S2TTE::INVALID_RIPAS);
         if level == RTT_PAGE_LEVEL {
             flags |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
         } else {
@@ -101,10 +92,22 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
 
         create_pgtbl_at(rtt_addr, flags, pa, map_size)?;
         invalidate = Tlbi::LEAF(rd.id());
+    } else if parent_s2tte.is_unassigned_ns() {
+        let flags = bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED)
+            | bits_in_reg(S2TTE::NS, 1);
+        create_pgtbl_at(rtt_addr, flags, 0, 0)?;
     } else if parent_s2tte.is_assigned_ns(level - 1) {
-        unimplemented!();
-    } else if parent_s2tte.is_table(level - 1) {
-        return Err(Error::RmiErrorRtt(level - 1));
+        let mut flags = bits_in_reg(S2TTE::NS, 1)
+            | parent_s2tte.get_masked(S2TTE::MEMATTR | S2TTE::S2AP | S2TTE::SH);
+        if level == RTT_PAGE_LEVEL {
+            flags |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
+        } else {
+            flags |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_BLOCK);
+        }
+
+        let pa: usize = parent_s2tte.addr_as_block(level - 1).into(); //XXX: check this again
+
+        create_pgtbl_at(rtt_addr, flags, pa, map_size)?;
     } else {
         panic!("Unexpected s2tte value:{:X}", parent_s2tte.get());
     }
@@ -144,6 +147,10 @@ pub fn destroy<F: FnMut(usize)>(
 
     // TODO: granule needs to contain its refcount info.
     //       Unless its ref count is 0, RTT DESTROY should fail
+    if is_live_rtt(rd, ipa, level).unwrap_or(false) {
+        f(ipa);
+        return Err(Error::RmiErrorRtt(level));
+    }
 
     let parent_s2tte = if rd.addr_in_par(ipa) {
         invalidate = Tlbi::LEAF(rd.id());
@@ -234,6 +241,9 @@ pub fn get_ripas(rd: &Rd, ipa: usize, level: usize) -> Result<u64, Error> {
     Ok(s2tte.get_ripas())
 }
 
+// FIXME: cca-rmm-acs and linux realm is using old version of entry state.
+// i.e. no differentiation between (un)assigned and (un)assigned_ns
+// while RMM spec defines each individually.
 pub fn read_entry(rd: &Rd, ipa: usize, level: usize) -> Result<[usize; 4], Error> {
     let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 
@@ -242,36 +252,29 @@ pub fn read_entry(rd: &Rd, ipa: usize, level: usize) -> Result<[usize; 4], Error
 
     if s2tte.is_unassigned() {
         r2 = rtt_entry_state::RMI_UNASSIGNED;
-        r4 = if s2tte.is_unassigned_ns() {
-            invalid_ripas::EMPTY as usize
-        } else {
-            s2tte.get_masked_value(S2TTE::INVALID_RIPAS) as usize
-        };
-    } else if s2tte.is_assigned_empty() {
+        r4 = s2tte.get_masked_value(S2TTE::INVALID_RIPAS) as usize;
+    } else if s2tte.is_assigned() {
         r2 = rtt_entry_state::RMI_ASSIGNED;
         r3 = s2tte.addr_as_block(last_level).into(); //XXX: check this again
-        r4 = invalid_ripas::EMPTY as usize;
-    } else if s2tte.is_assigned_destroyed() {
-        r2 = rtt_entry_state::RMI_ASSIGNED;
-        r4 = invalid_ripas::DESTROYED as usize;
+        r4 = s2tte.get_masked_value(S2TTE::INVALID_RIPAS) as usize;
+    } else if s2tte.is_table(last_level) {
+        r2 = rtt_entry_state::RMI_TABLE;
+        r3 = s2tte.get_masked(S2TTE::ADDR_TBL_OR_PAGE); //XXX: check this again
     } else if s2tte.is_assigned_ram(last_level) {
         r2 = rtt_entry_state::RMI_ASSIGNED;
         r3 = s2tte.addr_as_block(last_level).into(); //XXX: check this again
         r4 = invalid_ripas::RAM as usize;
+    } else if s2tte.is_unassigned_ns() {
+        r2 = rtt_entry_state::RMI_UNASSIGNED;
     } else if s2tte.is_assigned_ns(last_level) {
         r2 = rtt_entry_state::RMI_ASSIGNED;
-        let addr_mask: u64 = level_mask(level).ok_or(Error::RmiErrorRtt(0))?;
+        let addr_mask: u64 = level_mask(last_level).ok_or(Error::RmiErrorRtt(0))?;
         let mask = addr_mask | S2TTE::MEMATTR | S2TTE::S2AP | S2TTE::SH;
-        r3 = s2tte.get_masked(mask) as usize;
-        r4 = invalid_ripas::EMPTY as usize;
-    } else if s2tte.is_table(last_level) {
-        r2 = rtt_entry_state::RMI_TABLE;
-        r3 = s2tte.addr_as_block(RTT_PAGE_LEVEL).into(); //XXX: check this again
-        r4 = invalid_ripas::EMPTY as usize;
+        r3 = s2tte.get_masked(mask);
     } else {
         error!("Unexpected S2TTE value retrieved!");
     }
-    Ok([r1, r2, r3, r4])
+    Ok([r1, r2, r3 as usize, r4])
 }
 
 pub fn map_unprotected(rd: &Rd, ipa: usize, level: usize, host_s2tte: usize) -> Result<(), Error> {
@@ -534,6 +537,26 @@ pub fn data_destroy<F: FnMut(usize)>(
     Ok((pa, top_ipa))
 }
 
+fn is_live_rtt(rd: &Rd, base: usize, level: usize) -> Result<bool, Error> {
+    let binding = rd.s2_table();
+    let binding = binding.lock();
+    let (entries_iter, last_level) = binding.entries(GuestPhysAddr::from(base), level)?;
+    if level != last_level {
+        error!(
+            "level doesn't match! level:{:?} last_level:{:?}",
+            level, last_level
+        );
+    }
+
+    for entry in entries_iter {
+        let s2tte = S2TTE::new(entry.pte());
+        if s2tte.is_live(level) {
+            return Ok(true);
+        }
+    }
+    Err(Error::RmiErrorRtt(level))
+}
+
 fn skip_non_live_entries(rd: &Rd, base: usize, level: usize) -> Result<usize, Error> {
     let map_size = mapping_size(level);
 
@@ -566,4 +589,54 @@ fn skip_non_live_entries(rd: &Rd, base: usize, level: usize) -> Result<usize, Er
         addr += map_size;
     }
     Ok(addr)
+}
+
+pub fn fold(rd: &Rd, ipa: usize, level: usize) -> Result<usize, Error> {
+    let is_protected_ipa = rd.addr_in_par(ipa);
+    let (fold_s2tte, _last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(level))?;
+    let (parent_s2tte, parent_level) = S2TTE::get_s2tte(rd, ipa, level - 1, Error::RmiErrorInput)?;
+    if parent_level < (level - 1) || !parent_s2tte.is_table(level - 1) {
+        return Err(Error::RmiErrorRtt(parent_level));
+    }
+
+    let rtt_addr = parent_s2tte.get_masked(S2TTE::ADDR_TBL_OR_PAGE);
+    let mut g_rtt = get_granule_if!(rtt_addr as usize, GranuleState::RTT)?;
+
+    // TODO: ref count check
+
+    let binding = rd.s2_table();
+    let mut binding = binding.lock();
+    let (mut entries_iter, _) = binding.entries(GuestPhysAddr::from(ipa), level)?;
+    if S2TTE::is_homogeneous(&mut entries_iter, level) {
+        let mut pa: u64 = 0;
+        let mut attr = fold_s2tte.get_masked(S2TTE::NS);
+        let mut hipas = 0;
+        let mut ripas = 0;
+        let mut desc_type = 0;
+        if fold_s2tte.is_assigned_ram(level) || fold_s2tte.is_assigned_ns(level) {
+            pa = fold_s2tte.addr_as_block(level).into();
+            attr |= fold_s2tte.get_masked(S2TTE::MEMATTR | S2TTE::S2AP | S2TTE::SH);
+            desc_type = desc_type::L012_BLOCK;
+        } else if fold_s2tte.is_assigned() {
+            pa = fold_s2tte.addr_as_block(level).into();
+            hipas = fold_s2tte.get_masked(S2TTE::INVALID_HIPAS);
+            ripas = fold_s2tte.get_masked(S2TTE::INVALID_RIPAS);
+            attr |= fold_s2tte.get_masked(S2TTE::S2AP | S2TTE::SH);
+        } else if is_protected_ipa {
+            ripas = fold_s2tte.get_masked(S2TTE::INVALID_RIPAS);
+        }
+
+        let parent_s2tte = pa | attr | hipas | ripas | desc_type;
+        binding.ipa_to_pte_set(
+            GuestPhysAddr::from(ipa),
+            level - 1,
+            parent_s2tte,
+            Tlbi::BREAKDOWN(rd.id()),
+        )?;
+        //Change state of child table (pa)
+        set_granule(&mut g_rtt, GranuleState::Delegated)?;
+    } else {
+        return Err(Error::RmiErrorRtt(level));
+    }
+    Ok(rtt_addr as usize)
 }

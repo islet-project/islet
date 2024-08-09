@@ -1,13 +1,11 @@
 use crate::config::PAGE_SIZE;
-use crate::realm::mm::attribute::{memattr, page_type, shareable};
+use crate::realm::mm::attribute::{desc_type, memattr, page_type, shareable};
 use crate::realm::mm::stage2_tte::S2TTE;
 use crate::realm::mm::table_level::L3Table;
 use vmsa::address::PhysAddr;
 use vmsa::error::Error;
 use vmsa::page_table::{self, Level};
 use vmsa::RawGPA;
-
-use armv9a::bits_in_reg;
 
 #[derive(Clone, Copy)]
 pub struct Entry(S2TTE);
@@ -58,16 +56,8 @@ impl page_table::Entry for Entry {
         }
     }
 
-    fn set(&mut self, addr: PhysAddr, flags: u64, is_raw: bool) -> Result<(), Error> {
-        if is_raw {
-            self.0.set(addr.as_u64() | flags);
-        } else {
-            self.0
-                .set(addr.as_u64() | flags)
-                .set_masked_value(S2TTE::SH, shareable::INNER)
-                .set_bits(S2TTE::AF)
-                .set_bits(S2TTE::VALID);
-        }
+    fn set(&mut self, addr: PhysAddr, flags: u64) -> Result<(), Error> {
+        self.0.set(addr.as_u64() | flags);
 
         unsafe {
             core::arch::asm!(
@@ -82,12 +72,12 @@ impl page_table::Entry for Entry {
     }
 
     fn point_to_subtable(&mut self, _index: usize, addr: PhysAddr) -> Result<(), Error> {
-        self.set(
-            addr,
-            bits_in_reg(S2TTE::MEMATTR, memattr::NORMAL_FWB)
-                | bits_in_reg(S2TTE::TYPE, page_type::TABLE_OR_PAGE),
-            false,
-        )
+        let mut flags = S2TTE::new(0);
+        flags
+            .set_masked_value(S2TTE::DESC_TYPE, desc_type::L012_TABLE)
+            .set_masked_value(S2TTE::MEMATTR, memattr::NORMAL_FWB)
+            .set_masked_value(S2TTE::SH, shareable::INNER);
+        self.set(addr, flags.get())
     }
 
     fn index<L: Level>(addr: usize) -> usize {

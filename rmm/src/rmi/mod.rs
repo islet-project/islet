@@ -30,6 +30,7 @@ define_interface! {
          RTT_READ_ENTRY         = 0xc400_0161,
          PSCI_COMPLETE          = 0xc400_0164,
          FEATURES               = 0xc400_0165,
+         RTT_FOLD               = 0xc400_0166,
          REC_AUX_COUNT          = 0xc400_0167,
          RTT_INIT_RIPAS         = 0xc400_0168,
          RTT_SET_RIPAS          = 0xc400_0169,
@@ -79,28 +80,3 @@ pub const EXIT_PSCI: u8 = 3;
 pub const EXIT_RIPAS_CHANGE: u8 = 4;
 pub const EXIT_HOST_CALL: u8 = 5;
 pub const EXIT_SERROR: u8 = 6;
-
-pub struct MapProt(usize);
-
-impl From<usize> for MapProt {
-    fn from(prot: usize) -> Self {
-        Self(prot)
-    }
-}
-
-impl MapProt {
-    pub fn new(data: usize) -> Self {
-        MapProt(data)
-    }
-    pub fn set_bit(&mut self, prot: u64) {
-        self.0 |= 1 << prot;
-    }
-    pub fn get(&self) -> usize {
-        self.0
-    }
-    pub fn is_set(&self, prot: u64) -> bool {
-        (self.0 >> prot) & 1 == 1
-    }
-    pub const DEVICE: u64 = 0;
-    pub const NS_PAS: u64 = 1;
-}

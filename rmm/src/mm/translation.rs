@@ -128,11 +128,7 @@ impl<'a> Inner<'a> {
         let virtaddr = Page::<BasePageSize, VirtAddr>::range_with_size(va, size);
         let phyaddr = Page::<BasePageSize, PhysAddr>::range_with_size(phys, size);
 
-        if self
-            .root_pgtbl
-            .set_pages(virtaddr, phyaddr, flags, false)
-            .is_err()
-        {
+        if self.root_pgtbl.set_pages(virtaddr, phyaddr, flags).is_err() {
             warn!("set_pages error");
         }
     }

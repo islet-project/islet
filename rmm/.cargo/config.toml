@@ -1,3 +1,6 @@
 [build]
 target = "aarch64-unknown-none-softfloat"
-rustflags = ["-C", "target-feature=+ecv"]
+rustflags = [
+  "-C", "target-feature=+ecv",
+  "-C", "target-feature=+tlb-rmi"
+]

@@ -1,7 +1,9 @@
 use super::attribute::page_type;
 use super::stage2_tte::S2TTE;
+use super::table_level::{L1Table, L2Table, L3Table};
 use crate::config::{HUGE_PAGE_SIZE, LARGE_PAGE_SIZE, PAGE_SIZE};
 use vmsa::page::PageSize;
+use vmsa::page_table::Level;
 
 use armv9a::bits_in_reg;
 
@@ -10,7 +12,7 @@ use armv9a::bits_in_reg;
 pub enum BasePageSize {}
 impl PageSize for BasePageSize {
     const SIZE: usize = PAGE_SIZE;
-    const MAP_TABLE_LEVEL: usize = 3;
+    const MAP_TABLE_LEVEL: usize = L3Table::THIS_LEVEL;
     const MAP_EXTRA_FLAG: u64 = bits_in_reg(S2TTE::TYPE, page_type::TABLE_OR_PAGE);
 }
 
@@ -19,8 +21,8 @@ impl PageSize for BasePageSize {
 pub enum LargePageSize {}
 impl PageSize for LargePageSize {
     const SIZE: usize = LARGE_PAGE_SIZE;
-    const MAP_TABLE_LEVEL: usize = 2;
-    const MAP_EXTRA_FLAG: u64 = 0;
+    const MAP_TABLE_LEVEL: usize = L2Table::THIS_LEVEL;
+    const MAP_EXTRA_FLAG: u64 = bits_in_reg(S2TTE::TYPE, page_type::BLOCK);
 }
 
 #[derive(Clone, Copy)]
@@ -28,6 +30,6 @@ impl PageSize for LargePageSize {
 pub enum HugePageSize {}
 impl PageSize for HugePageSize {
     const SIZE: usize = HUGE_PAGE_SIZE;
-    const MAP_TABLE_LEVEL: usize = 1;
-    const MAP_EXTRA_FLAG: u64 = 0;
+    const MAP_TABLE_LEVEL: usize = L1Table::THIS_LEVEL;
+    const MAP_EXTRA_FLAG: u64 = bits_in_reg(S2TTE::TYPE, page_type::BLOCK);
 }

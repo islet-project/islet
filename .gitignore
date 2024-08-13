@@ -6,7 +6,6 @@ target/
 
 third-party/*
 !third-party/README.md
-!third-party/worktree.toml
 
 cli/islet
 sdk/sdk-example-c
@@ -25,3 +24,6 @@ examples/cross-platform-e2ee/gflags/
 examples/cross-platform-e2ee/googletest/
 examples/cross-platform-e2ee/protobuf/
 examples/cross-platform-e2ee/third-party-arm/
+
+unsafe-call-trace.log
+unsafe-items-list.log

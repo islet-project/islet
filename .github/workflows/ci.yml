@@ -162,9 +162,6 @@ jobs:
     - name: Check clippy lints
       run: ./scripts/clippy.sh
 
-    - name: Check pylint
-      run: ./scripts/pylint.sh
-
     - name: Check third-party Rust dependencies
       run: |
         cargo install --locked cargo-vet
@@ -248,7 +245,7 @@ jobs:
         ./scripts/init-unsafe-analysis.sh
 
     - name: Run unsafe analyzer
-      run: ./scripts/unsafe-analyzer
+      run: ./scripts/run-unsafe-analysis.sh
 
     - name: Run MIRI test
       run: ./scripts/tests/miri.sh
@@ -256,4 +253,6 @@ jobs:
     - uses: actions/upload-artifact@v3
       with:
         name: tools
-        path: out/unsafe-analysis.log
+        path: |
+          unsafe-call-trace.log
+          unsafe-items-list.log

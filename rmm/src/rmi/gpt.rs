@@ -27,12 +27,15 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             Err(MmError::MmNoEntry) => set_state_and_get_granule!(addr, GranuleState::Undelegated),
             other => other,
         }?;
+
         #[cfg(not(feature = "gst_page_table"))]
         let mut granule = get_granule_if!(addr, GranuleState::Undelegated)?;
 
+        #[cfg(not(miri))]
         if smc(MARK_REALM, &[addr])[0] != SMC_SUCCESS {
             return Err(Error::RmiErrorInput);
         }
+
         #[cfg(not(kani))]
         // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.map(addr, true);
@@ -74,4 +77,42 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rmm.page_table.unmap(addr);
         Ok(())
     });
+}
+
+#[cfg(test)]
+mod test {
+    use crate::rmi::{ERROR_INPUT, GRANULE_DELEGATE, SUCCESS};
+    use crate::test_utils::*;
+
+    use alloc::vec;
+
+    // Source: https://github.com/ARM-software/cca-rmm-acs
+    // Test Case: cmd_granule_delegate_host
+    /*
+       Check 1 : gran_align; intent id : 0x0 addr : 0x88300001
+       Check 2 : gran_bound; intent id : 0x1 addr : 0x1C0B0000
+       Check 3 : gran_bound; intent id : 0x2 addr : 0x1000000001000
+       Check 4 : gran_state; intent id : 0x3 addr : 0x8830C000
+       Check 5 : gran_state; intent id : 0x4 addr : 0x88315000
+       Check 6 : gran_state; intent id : 0x5 addr : 0x88351000
+       Check 7 : gran_state; intent id : 0x6 addr : 0x88306000
+       Check 8 : gran_state; intent id : 0x7 addr : 0x88303000
+       Check 9 : gran_gpt; intent id : 0x8 addr : 0x88357000
+       Check 10 : gran_gpt; intent id : 0x9 addr : 0x6000000
+    */
+    #[test]
+    fn rmi_granule_delegate() {
+        let test_data = vec![
+            (0x88303000, SUCCESS),
+            (0x88300001, ERROR_INPUT),
+            (0x1C0B0000, ERROR_INPUT),
+            (0x1000000001000, ERROR_INPUT),
+            // TODO: Cover all test data
+        ];
+
+        for (input, output) in test_data {
+            let ret = rmi::<GRANULE_DELEGATE>(&[input]);
+            assert_eq!(output, ret[0]);
+        }
+    }
 }

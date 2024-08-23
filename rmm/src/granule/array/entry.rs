@@ -148,6 +148,16 @@ impl Granule {
     #[cfg(not(kani))]
     fn zeroize(&mut self) {
         let addr = self.index_to_addr();
+
+        // Safety: This operation writes to a Granule outside the RMM Memory region,
+        //         thus not violating RMM's Memory Safety.
+        //         (ref. RMM Specification A2.2.4 Granule Wiping)
+        //
+        // MIRI: This involves writing to memory not allocated by RMM,
+        //       which casues a no provenance error in MIRI.
+        //       This behavior is intentional and correct according to above reason.
+        //       Therefore, this code is excluded from MIRI test.
+        #[cfg(not(miri))]
         unsafe {
             core::ptr::write_bytes(addr as *mut u8, 0x0, GRANULE_SIZE);
         }

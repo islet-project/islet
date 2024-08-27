@@ -34,7 +34,7 @@ pub const GRANULE_MEM_SIZE: usize = GRANULE_SIZE * GRANULE_STATUS_TABLE_SIZE;
 // non-deterministic contents. It helps to address an issue related
 // to the backend CBMC's pointer encoding, as 0x8000_0000 cannot be
 // distinguished from null pointer in CBMC.
-pub const GRANULE_REGION: [u8; GRANULE_MEM_SIZE] = [0; GRANULE_MEM_SIZE];
+pub static GRANULE_REGION: [u8; GRANULE_MEM_SIZE] = [0; GRANULE_MEM_SIZE];
 
 #[cfg(not(kani))]
 pub fn validate_addr(addr: usize) -> bool {

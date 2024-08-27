@@ -105,7 +105,6 @@ impl Params {
     }
 
     pub fn verify_compliance(&self, rd: usize) -> Result<(), Error> {
-        trace!("{:?}", self);
         if self.rtt_base as usize == rd {
             return Err(Error::RmiErrorInput);
         }

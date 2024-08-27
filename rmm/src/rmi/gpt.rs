@@ -39,6 +39,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         #[cfg(not(kani))]
         // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.map(addr, true);
+
         set_granule(&mut granule, GranuleState::Delegated).map_err(|e| {
             #[cfg(not(kani))]
             // `page_table` is currently not reachable in model checking harnesses

@@ -13,6 +13,7 @@ use crate::{get_granule, get_granule_if, set_state_and_get_granule};
 use vmsa::error::Error as MmError;
 
 extern crate alloc;
+extern crate std;
 
 // defined in trusted-firmware-a/include/services/rmmd_svc.h
 pub const MARK_REALM: usize = 0xc400_01b0;
@@ -22,16 +23,21 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     #[cfg(any(not(kani), feature = "mc_rmi_granule_delegate"))]
     listen!(mainloop, rmi::GRANULE_DELEGATE, |arg, _, rmm| {
         let addr = arg[0];
-        #[cfg(feature = "gst_page_table")]
-        let mut granule = match get_granule_if!(addr, GranuleState::Undelegated) {
-            Err(MmError::MmNoEntry) => set_state_and_get_granule!(addr, GranuleState::Undelegated),
-            other => other,
-        }?;
 
-        #[cfg(not(feature = "gst_page_table"))]
-        let mut granule = get_granule_if!(addr, GranuleState::Undelegated)?;
+        {
+            // Avoid deadlock in get_granule() in smc
+            #[cfg(feature = "gst_page_table")]
+            let mut granule = match get_granule_if!(addr, GranuleState::Undelegated) {
+                Err(MmError::MmNoEntry) => {
+                    set_state_and_get_granule!(addr, GranuleState::Undelegated)
+                }
+                other => other,
+            }?;
 
-        #[cfg(not(miri))]
+            #[cfg(not(feature = "gst_page_table"))]
+            let mut granule = get_granule_if!(addr, GranuleState::Undelegated)?;
+        }
+
         if smc(MARK_REALM, &[addr])[0] != SMC_SUCCESS {
             return Err(Error::RmiErrorInput);
         }
@@ -40,6 +46,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.map(addr, true);
 
+        let mut granule = get_granule_if!(addr, GranuleState::Undelegated)?;
         set_granule(&mut granule, GranuleState::Delegated).map_err(|e| {
             #[cfg(not(kani))]
             // `page_table` is currently not reachable in model checking harnesses
@@ -82,10 +89,21 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
 #[cfg(test)]
 mod test {
+    use crate::granule::array::granule_addr;
+    use crate::rmi::gpt::GranuleState;
     use crate::rmi::{ERROR_INPUT, GRANULE_DELEGATE, GRANULE_UNDELEGATE, SUCCESS};
     use crate::test_utils::*;
+    use crate::{get_granule, get_granule_if};
 
     use alloc::vec;
+
+    #[test]
+    fn rmi_granule_delegate_positive() {
+        let mocking_addr = granule_addr(0);
+        let ret = rmi::<GRANULE_DELEGATE>(&[mocking_addr]);
+        assert_eq!(ret[0], SUCCESS);
+        assert!(get_granule_if!(mocking_addr, GranuleState::Delegated).is_ok());
+    }
 
     // Source: https://github.com/ARM-software/cca-rmm-acs
     // Test Case: cmd_granule_delegate
@@ -102,7 +120,7 @@ mod test {
        Check 10 : gran_gpt; intent id : 0x9 addr : 0x6000000
     */
     #[test]
-    fn rmi_granule_delegate() {
+    fn rmi_granule_delegate_negative() {
         let test_data = vec![
             (0x88303000, SUCCESS),
             (0x88300001, ERROR_INPUT),

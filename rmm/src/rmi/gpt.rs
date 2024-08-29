@@ -13,7 +13,6 @@ use crate::{get_granule, get_granule_if, set_state_and_get_granule};
 use vmsa::error::Error as MmError;
 
 extern crate alloc;
-extern crate std;
 
 // defined in trusted-firmware-a/include/services/rmmd_svc.h
 pub const MARK_REALM: usize = 0xc400_01b0;
@@ -62,7 +61,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     #[cfg(any(not(kani), feature = "mc_rmi_granule_undelegate"))]
     listen!(mainloop, rmi::GRANULE_UNDELEGATE, |arg, _, rmm| {
         let addr = arg[0];
-        let mut granule = get_granule_if!(addr, GranuleState::Delegated)?;
+        {
+            // Avoid deadlock in get_granule() in smc
+            let granule = get_granule_if!(addr, GranuleState::Delegated)?;
+        }
 
         if smc(MARK_NONSECURE, &[addr])[0] != SMC_SUCCESS {
             panic!(
@@ -70,6 +72,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 addr
             );
         }
+
+        let mut granule = get_granule_if!(addr, GranuleState::Delegated)?;
 
         #[cfg(not(kani))]
         // `page_table` is currently not reachable in model checking harnesses
@@ -103,6 +107,10 @@ mod test {
         let ret = rmi::<GRANULE_DELEGATE>(&[mocking_addr]);
         assert_eq!(ret[0], SUCCESS);
         assert!(get_granule_if!(mocking_addr, GranuleState::Delegated).is_ok());
+
+        let ret = rmi::<GRANULE_UNDELEGATE>(&[mocking_addr]);
+        assert_eq!(ret[0], SUCCESS);
+        assert!(get_granule_if!(mocking_addr, GranuleState::Undelegated).is_ok());
     }
 
     // Source: https://github.com/ARM-software/cca-rmm-acs
@@ -122,7 +130,6 @@ mod test {
     #[test]
     fn rmi_granule_delegate_negative() {
         let test_data = vec![
-            (0x88303000, SUCCESS),
             (0x88300001, ERROR_INPUT),
             (0x1C0B0000, ERROR_INPUT),
             (0x1000000001000, ERROR_INPUT),

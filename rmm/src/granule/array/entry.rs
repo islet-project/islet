@@ -6,19 +6,19 @@ use safe_abstraction::raw_ptr;
 use spinning_top::{Spinlock, SpinlockGuard};
 use vmsa::guard::Content;
 
-#[cfg(not(kani))]
+#[cfg(not(any(kani, miri, test)))]
 use crate::granule::{FVP_DRAM0_REGION, FVP_DRAM1_IDX, FVP_DRAM1_REGION};
 
 // Safety: concurrency safety
 //  - For a granule status table that manages granules, it doesn't use a big lock for efficiency.
 //    So, we need to associate "lock" with each granule entry.
 
-#[cfg(not(kani))]
+#[cfg(not(any(kani, miri, test)))]
 pub struct Granule {
     /// granule state
     state: u8,
 }
-#[cfg(kani)]
+#[cfg(any(kani, miri, test))]
 // DIFF: `gpt` ghost field is added to track GPT entry's status
 pub struct Granule {
     /// granule state
@@ -35,35 +35,55 @@ pub enum GranuleGpt {
     GPT_REALM,
 }
 
+#[cfg(any(miri, test))]
+#[derive(Copy, Clone, PartialEq)]
+pub enum GranuleGpt {
+    GPT_NS,
+    GPT_OTHER,
+    GPT_REALM,
+}
+
 impl Granule {
-    #[cfg(not(kani))]
+    #[cfg(not(any(kani, miri, test)))]
     fn new() -> Self {
         let state = GranuleState::Undelegated;
         Granule { state }
     }
-    #[cfg(kani)]
+    #[cfg(any(kani, miri, test))]
     // DIFF: `state` and `gpt` are filled with non-deterministic values
     fn new() -> Self {
-        let state = kani::any();
-        kani::assume(state >= GranuleState::Undelegated && state <= GranuleState::RTT);
-        let gpt = {
-            if state != GranuleState::Undelegated {
-                GranuleGpt::GPT_REALM
-            } else {
-                let gpt = kani::any();
-                kani::assume(gpt != GranuleGpt::GPT_REALM);
-                gpt
+        #[cfg(kani)]
+        {
+            let state = kani::any();
+            kani::assume(state >= GranuleState::Undelegated && state <= GranuleState::RTT);
+            let gpt = {
+                if state != GranuleState::Undelegated {
+                    GranuleGpt::GPT_REALM
+                } else {
+                    let gpt = kani::any();
+                    kani::assume(gpt != GranuleGpt::GPT_REALM);
+                    gpt
+                }
+            };
+            Granule { state, gpt }
+        }
+
+        #[cfg(any(miri, test))]
+        {
+            let state = GranuleState::Undelegated;
+            Self {
+                state: GranuleState::Undelegated,
+                gpt: GranuleGpt::GPT_NS,
             }
-        };
-        Granule { state, gpt }
+        }
     }
 
-    #[cfg(kani)]
+    #[cfg(any(kani, miri, test))]
     pub fn set_gpt(&mut self, gpt: GranuleGpt) {
         self.gpt = gpt;
     }
 
-    #[cfg(kani)]
+    #[cfg(any(kani, miri, test))]
     pub fn is_valid(&self) -> bool {
         self.state >= GranuleState::Undelegated &&
         self.state <= GranuleState::RTT &&
@@ -125,10 +145,11 @@ impl Granule {
         let entry_addr = granule_addr - granule_offset;
         let gst = &GRANULE_STATUS_TABLE;
         let table_base = gst.entries.as_ptr() as usize;
-        (entry_addr - table_base) / core::mem::size_of::<Entry>()
+        let index = (entry_addr - table_base) / core::mem::size_of::<Entry>();
+        index
     }
 
-    #[cfg(not(kani))]
+    #[cfg(not(any(kani, miri, test)))]
     fn index_to_addr(&self) -> usize {
         let idx = self.index();
         if idx < FVP_DRAM1_IDX {
@@ -136,38 +157,33 @@ impl Granule {
         }
         FVP_DRAM1_REGION.start + ((idx - FVP_DRAM1_IDX) * GRANULE_SIZE)
     }
-    #[cfg(kani)]
+    #[cfg(any(kani, miri, test))]
     // DIFF: calculate addr using GRANULE_REGION
     pub fn index_to_addr(&self) -> usize {
         use crate::granule::GRANULE_REGION;
         let idx = self.index();
         assert!(idx >= 0 && idx < 8);
-        return GRANULE_REGION.as_ptr() as usize + (idx * GRANULE_SIZE);
+        return unsafe { GRANULE_REGION.as_ptr() as usize + (idx * GRANULE_SIZE) };
     }
 
-    #[cfg(not(kani))]
+    #[cfg(not(any(kani, miri, test)))]
     fn zeroize(&mut self) {
         let addr = self.index_to_addr();
 
         // Safety: This operation writes to a Granule outside the RMM Memory region,
         //         thus not violating RMM's Memory Safety.
         //         (ref. RMM Specification A2.2.4 Granule Wiping)
-        //
-        // MIRI: This involves writing to memory not allocated by RMM,
-        //       which casues a no provenance error in MIRI.
-        //       This behavior is intentional and correct according to above reason.
-        //       Therefore, this code is excluded from MIRI test.
         #[cfg(not(miri))]
         unsafe {
             core::ptr::write_bytes(addr as *mut u8, 0x0, GRANULE_SIZE);
         }
     }
-    #[cfg(kani)]
+    #[cfg(any(kani, miri, test))]
     // DIFF: assertion is added to reduce the proof burden
     //       `write_bytes()` uses a small count value
     fn zeroize(&mut self) {
         let addr = self.index_to_addr();
-        let g_start = crate::granule::array::GRANULE_REGION.as_ptr() as usize;
+        let g_start = unsafe { crate::granule::array::GRANULE_REGION.as_ptr() as usize };
         let g_end = g_start + crate::granule::array::GRANULE_MEM_SIZE;
         assert!(addr >= g_start && addr < g_end);
 
@@ -180,11 +196,11 @@ impl Granule {
 
 pub struct Entry(Spinlock<Granule>);
 impl Entry {
-    #[cfg(not(kani))]
+    #[cfg(not(any(kani, miri, test)))]
     pub fn new() -> Self {
         Self(Spinlock::new(Granule::new()))
     }
-    #[cfg(kani)]
+    #[cfg(any(kani, miri, test))]
     // DIFF: assertion is added to reduce the proof burden
     pub fn new() -> Self {
         let granule = Granule::new();

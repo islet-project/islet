@@ -34,6 +34,9 @@ pub const GRANULE_MEM_SIZE: usize = GRANULE_SIZE * GRANULE_STATUS_TABLE_SIZE;
 // non-deterministic contents. It helps to address an issue related
 // to the backend CBMC's pointer encoding, as 0x8000_0000 cannot be
 // distinguished from null pointer in CBMC.
+//
+// NOTE: In MIRI and test evironments, aligned addresses are used,
+//       so the last region cannot be utilized.
 pub static mut GRANULE_REGION: [u8; GRANULE_MEM_SIZE] = [0; GRANULE_MEM_SIZE];
 
 #[cfg(any(miri, test))]
@@ -165,7 +168,6 @@ macro_rules! get_granule {
         use crate::granule::array::{GRANULE_STATUS_TABLE, GRANULE_STATUS_TABLE_SIZE};
         use crate::granule::{granule_addr_to_index, validate_addr};
         use crate::rmi::error::Error;
-
         if !validate_addr($addr) {
             Err(Error::RmiErrorInput)
         } else {

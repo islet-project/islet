@@ -26,7 +26,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     #[cfg(any(not(kani), feature = "mc_rmi_realm_activate"))]
     listen!(mainloop, rmi::REALM_ACTIVATE, |arg, _, _| {
         let rd = arg[0];
-
         let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
         let mut rd = rd_granule.content_mut::<Rd>()?;
 
@@ -91,7 +90,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // `rsi` is currently not reachable in model checking harnesses
         HashContext::new(&mut rd_obj)?.measure_realm_create(&params)?;
 
-        let mut eplilog = move || {
+        let mut epilogue = move || {
             for i in 0..params.rtt_num_start as usize {
                 let rtt = rtt_base + i * GRANULE_SIZE;
                 let mut rtt_granule = get_granule_if!(rtt, GranuleState::Delegated)?;
@@ -100,7 +99,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             set_granule(&mut rd_granule, GranuleState::RD)
         };
 
-        eplilog().map_err(|e| {
+        epilogue().map_err(|e| {
             #[cfg(not(kani))]
             // `page_table` is currently not reachable in model checking harnesses
             rmm.page_table.unmap(rd);
@@ -164,8 +163,12 @@ fn create_realm(vmid: usize) -> Result<(), Error> {
 #[cfg(test)]
 mod test {
     use crate::granule::array::granule_addr;
+    use crate::realm::rd::{Rd, State};
     use crate::rmi::realm::Params;
-    use crate::rmi::{ERROR_INPUT, GRANULE_DELEGATE, REALM_CREATE, REALM_DESTROY, SUCCESS};
+    use crate::rmi::{
+        ERROR_INPUT, GRANULE_DELEGATE, GRANULE_UNDELEGATE, REALM_ACTIVATE, REALM_CREATE,
+        REALM_DESTROY, SUCCESS,
+    };
     use crate::test_utils::*;
 
     use alloc::vec;
@@ -189,9 +192,26 @@ mod test {
 
         let ret = rmi::<REALM_CREATE>(&[rd, params_ptr]);
         assert_eq!(ret[0], SUCCESS);
+        unsafe {
+            let rd_obj = &*(rd as *const Rd);
+            assert!(rd_obj.at_state(State::New));
+        };
+
+        let ret = rmi::<REALM_ACTIVATE>(&[rd]);
+        assert_eq!(ret[0], SUCCESS);
+
+        unsafe {
+            let rd_obj = &*(rd as *const Rd);
+            assert!(rd_obj.at_state(State::Active));
+        };
 
         let ret = rmi::<REALM_DESTROY>(&[rd]);
         assert_eq!(ret[0], SUCCESS);
+
+        for mocking_addr in &[granule_addr(0), granule_addr(1)] {
+            let ret = rmi::<GRANULE_UNDELEGATE>(&[*mocking_addr]);
+            assert_eq!(ret[0], SUCCESS);
+        }
     }
 
     // Source: https://github.com/ARM-software/cca-rmm-acs

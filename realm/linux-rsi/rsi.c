@@ -19,6 +19,8 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Havner");
 MODULE_DESCRIPTION("Linux RSI playground");
 
+/* Non standard RSIs used for sealing and handling realm metadata */
+#define RSI_ISLET_REALM_SEALING_KEY 0xC7000191
 
 #define RSI_TAG   "rsi: "
 #define RSI_INFO  KERN_INFO  RSI_TAG
@@ -306,6 +308,41 @@ unlock:
 	return ret;
 }
 
+static int do_sealing_key(struct rsi_sealing_key *sealing)
+{
+	union {
+		unsigned char key[SHA256_HKDF_OUTPUT_SIZE];
+		struct {
+			uint64_t k0;
+			uint64_t k1;
+			uint64_t k2;
+			uint64_t k3;
+		} dw;
+	} slk;
+
+	struct arm_smccc_1_2_regs input = {
+		.a0 = RSI_ISLET_REALM_SEALING_KEY,
+		.a1 = sealing->flags,
+		.a2 = sealing->svn
+	};
+	struct arm_smccc_1_2_regs output = {0};
+
+	arm_smccc_1_2_smc(&input, &output);
+
+	if (output.a0 == RSI_SUCCESS) {
+		slk.dw.k0 = output.a1;
+		slk.dw.k1 = output.a2;
+		slk.dw.k2 = output.a3;
+		slk.dw.k3 = output.a4;
+
+		(void)memcpy(&sealing->realm_sealing_key, slk.key, sizeof(sealing->realm_sealing_key));
+		memzero_explicit(slk.key, sizeof(slk.key));
+		memzero_explicit(&output, sizeof(output));
+	}
+
+	return -rsi_ret_to_errno(output.a0);
+}
+
 static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0, retry = 0;
@@ -313,6 +350,7 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	uint64_t version = 0;
 	struct rsi_measurement *measur = NULL;
 	struct rsi_attestation *attest = NULL;
+    struct rsi_sealing_key *sealing = NULL;
 
 	switch (cmd) {
 	case RSIIO_ABI_VERSION:
@@ -332,7 +370,7 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	case RSIIO_MEASUREMENT_READ:
 		measur = kmalloc(sizeof(struct rsi_measurement), GFP_KERNEL);
 		if (measur == NULL) {
-			printk("ioctl: failed to allocate");
+			printk(RSI_ALERT "ioctl: failed to allocate\n");
 			return -ENOMEM;
 		}
 
@@ -360,7 +398,7 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	case RSIIO_MEASUREMENT_EXTEND:
 		measur = kmalloc(sizeof(struct rsi_measurement), GFP_KERNEL);
 		if (measur == NULL) {
-			printk("ioctl: failed to allocate");
+			printk(RSI_ALERT "ioctl: failed to allocate\n");
 			return -ENOMEM;
 		}
 
@@ -382,7 +420,7 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	case RSIIO_ATTESTATION_TOKEN:
 		attest = kmalloc(sizeof(struct rsi_attestation), GFP_KERNEL);
 		if (attest == NULL) {
-			printk("ioctl: failed to allocate");
+			printk(RSI_ALERT "ioctl: failed to allocate\n");
 			return -ENOMEM;
 		}
 
@@ -411,6 +449,32 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 		}
 
 		break;
+	case RSIIO_SEALING_KEY:
+		sealing = kmalloc(sizeof(struct rsi_sealing_key), GFP_KERNEL);
+		if (sealing == NULL) {
+			printk(RSI_ALERT "ioctl: failed to allocate\n");
+			return -ENOMEM;
+		}
+
+		ret = copy_from_user(sealing, (struct rsi_sealing_key*)arg, sizeof(struct rsi_sealing_key));
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: copy_from_user failed: %d\n", ret);
+			goto end;
+		}
+
+		printk(RSI_INFO "ioctl: sealing_key\n");
+		ret = do_sealing_key(sealing);
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: realm_sealing_key failed: %d\n", ret);
+			goto end;
+		}
+
+		ret = copy_to_user((struct rsi_sealing_key*)arg, sealing, sizeof(struct rsi_sealing_key));
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: copy_to_user failed: %d\n", ret);
+			goto end;
+		}
+		break;
 	default:
 		printk(RSI_ALERT "ioctl: unknown ioctl cmd\n");
 		return -EINVAL;
@@ -421,6 +485,7 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 end:
 	kfree(attest);
 	kfree(measur);
+	kfree_sensitive(sealing);
 
 	// token not taken, inform more space is needed
 	if (retry)

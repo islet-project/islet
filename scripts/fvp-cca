@@ -163,6 +163,7 @@ def prepare_bootloaders(rmm, bl33, hes):
             "CFLAGS=-DARM_COT_cca=1",
             "FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts",
             "DEBUG=0",
+            "ENABLE_LTO=1",
             "BL33=%s" % bl33,
             "PLAT_RSS_COMMS_USE_SERIAL=1",
             "MEASURED_BOOT=1",
@@ -522,6 +523,7 @@ def place_prebuilt_at_shared():
 
 def place_script_at_shared():
     run(["cp", LAUNCH_REALM, SHARED_PATH], cwd=ROOT)
+    run(["cp", LAUNCH_REALM_META, SHARED_PATH], cwd=ROOT)
     run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
     run(["cp", CONFIGURE_NET, SHARED_PATH], cwd=ROOT)
     run(["cp", SET_REALM_IP, SHARED_PATH], cwd=ROOT)

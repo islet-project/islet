@@ -11,6 +11,8 @@ use daemonize::Daemonize;
 use std::fs::{self, File};
 use std::io::{Read, Result as IOResult};
 use tinyvec::ArrayVec;
+use std::thread;
+use std::time;
 
 use crate::comms::psa_serde::PSA_SUCCESS;
 
@@ -226,6 +228,9 @@ fn main() -> std::io::Result<()> {
 
         daemonize(args.daemonize_root)?;
     }
+
+    // XXX: Workaround to a hazard between launching of FVP and HES
+    thread::sleep(time::Duration::from_millis(1000));
 
     let bl_hash = match &args.hash_file {
         Some(path) => Some(load_binary_file(path)?.iter().cloned().collect()),

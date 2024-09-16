@@ -4,7 +4,7 @@
 [submodule "third-party/nw-linux"]
 	path = third-party/nw-linux
 	url = https://github.com/islet-project/assets
-	branch = eac5/3rd-nw-linux
+	branch = eac5/3rd-nw-linux-realm-metadata
 [submodule "third-party/optee-build"]
 	path = third-party/optee-build
 	url = https://github.com/islet-project/assets
@@ -19,8 +19,8 @@
 	branch = master
 [submodule "third-party/tf-rmm"]
 	path = third-party/tf-rmm
-	url = https://git.trustedfirmware.org/TF-RMM/tf-rmm.git
-	branch = rmm-spec-v1.0-eac5
+	url = git@github.com:p-sawicki2/tf-rmm.git
+	branch = devel/p.sawicki2/eac5-realm-metadata-sealing
 [submodule "third-party/android-kernel"]
 	path = third-party/android-kernel
 	url = https://github.com/islet-project/assets
@@ -32,7 +32,7 @@
 [submodule "third-party/kvmtool"]
 	path = third-party/kvmtool
 	url = https://github.com/islet-project/assets
-	branch = eac5/3rd-kvmtool
+	branch = eac5/3rd-kvmtool-realm-metadata
 [submodule "third-party/kvm-unit-tests"]
 	path = third-party/kvm-unit-tests
 	url = https://git.gitlab.arm.com/linux-arm/kvm-unit-tests-cca.git
@@ -61,7 +61,7 @@
 [submodule "third-party/tf-a-rss"]
 	path = third-party/tf-a-rss
 	url = https://github.com/islet-project/arm-trusted-firmware
-	branch = eac5-rss
+	branch = eac5-rss-realm-metadata
 [submodule "third-party/ciborium"]
 	path = third-party/ciborium
 	url = https://github.com/islet-project/ciborium.git

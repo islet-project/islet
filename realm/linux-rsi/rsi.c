@@ -21,6 +21,7 @@ MODULE_AUTHOR("Havner");
 MODULE_DESCRIPTION("Linux RSI playground");
 
 /* Non standard RSIs used for sealing and handling realm metadata */
+#define RSI_ISLET_REALM_METADATA 0xC7000190
 #define RSI_ISLET_REALM_SEALING_KEY 0xC7000191
 
 #define RSI_TAG   "rsi: "
@@ -367,6 +368,39 @@ static int do_sealing_key(struct rsi_sealing_key *sealing)
 	return -rsi_ret_to_errno(output.a0);
 }
 
+
+static int do_realm_metadata(struct rsi_metadata *metadata)
+{
+	struct page	*aux_page;
+	phys_addr_t	aux_phys;
+	void *aux_buf;
+
+	struct arm_smccc_1_2_regs input = {0}, output = {0};
+
+	aux_page = alloc_page(GFP_KERNEL);
+	if (aux_page == NULL)
+		return -ENOMEM;
+
+	aux_phys = page_to_phys(aux_page);
+
+	input.a0 = RSI_ISLET_REALM_METADATA;
+	input.a1 = aux_phys;
+
+	arm_smccc_1_2_smc(&input, &output);
+
+	printk(RSI_INFO "RSI attestation continue, ret: %s\n",
+		    rsi_ret_to_str(output.a0));
+
+	if (output.a0 == RSI_SUCCESS) {
+		aux_buf = page_to_virt(aux_page);
+		memcpy(metadata->metadata, aux_buf, sizeof(metadata->metadata));
+	}
+
+	__free_page(aux_page);
+
+	return -rsi_ret_to_errno(output.a0);
+}
+
 static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
 	int ret = 0, retry = 0;
@@ -374,7 +408,8 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	uint64_t version = 0;
 	struct rsi_measurement *measur = NULL;
 	struct rsi_attestation *attest = NULL;
-    struct rsi_sealing_key *sealing = NULL;
+	struct rsi_sealing_key *sealing = NULL;
+	struct rsi_metadata *metadata = NULL;
 
 	switch (cmd) {
 	case RSIIO_ABI_VERSION:
@@ -499,6 +534,26 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 			goto end;
 		}
 		break;
+	case RSIIO_REALM_METADATA:
+		metadata = kmalloc(sizeof(struct rsi_metadata), GFP_KERNEL);
+		if (metadata == NULL) {
+			printk(RSI_ALERT "ioctl: failed to allocate\n");
+			return -ENOMEM;
+		}
+
+		printk(RSI_INFO "ioctl: sealing_key\n");
+		ret = do_realm_metadata(metadata);
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: realm_metadata failed: %d\n", ret);
+			goto end;
+		}
+
+		ret = copy_to_user((struct rsi_metadata*)arg, metadata, sizeof(struct rsi_metadata));
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: copy_to_user failed: %d\n", ret);
+			goto end;
+		}
+		break;
 	default:
 		printk(RSI_ALERT "ioctl: unknown ioctl cmd\n");
 		return -EINVAL;
@@ -510,6 +565,7 @@ end:
 	kfree(attest);
 	kfree(measur);
 	kfree_sensitive(sealing);
+	kfree(metadata);
 
 	// token not taken, inform more space is needed
 	if (retry)

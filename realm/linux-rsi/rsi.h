@@ -64,12 +64,3 @@ struct rsi_sealing_key
 #define RSIIO_ATTESTATION_TOKEN    _IOWR('x', 194, struct rsi_attestation)
 #define RSIIO_SEALING_KEY          _IOWR('x', 200, struct rsi_sealing_key)
 
-/*
- * Those are pages that have to be defined in the kernel itself.
- * They are used as output pages for RSI calls.
- * Needs small patch to the kernel.
- *
- * This will not be required when the module is builtin in the kernel.
- */
-extern struct realm_config __attribute((aligned(GRANULE_LEN))) config;
-extern char __attribute__((aligned(GRANULE_LEN))) rsi_page_buf[GRANULE_LEN];

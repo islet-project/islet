@@ -57,7 +57,7 @@ struct rsi_sealing_key
 	uint8_t realm_sealing_key[SHA256_HKDF_OUTPUT_SIZE];
 };
 
-struct rsi_metadata
+struct rsi_realm_metadata
 {
 	uint8_t metadata[GRANULE_LEN];
 };
@@ -68,4 +68,4 @@ struct rsi_metadata
 #define RSIIO_MEASUREMENT_EXTEND   _IOW('x', 193, struct rsi_measurement)
 #define RSIIO_ATTESTATION_TOKEN    _IOWR('x', 194, struct rsi_attestation)
 #define RSIIO_SEALING_KEY          _IOWR('x', 200, struct rsi_sealing_key)
-#define RSIIO_REALM_METADATA       _IOR('x', 201, struct rsi_metadata)
+#define RSIIO_REALM_METADATA       _IOR('x', 201, struct rsi_realm_metadata)

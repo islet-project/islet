@@ -369,7 +369,7 @@ static int do_sealing_key(struct rsi_sealing_key *sealing)
 }
 
 
-static int do_realm_metadata(struct rsi_metadata *metadata)
+static int do_realm_metadata(struct rsi_realm_metadata *metadata)
 {
 	struct page	*aux_page;
 	phys_addr_t	aux_phys;
@@ -388,7 +388,7 @@ static int do_realm_metadata(struct rsi_metadata *metadata)
 
 	arm_smccc_1_2_smc(&input, &output);
 
-	printk(RSI_INFO "RSI attestation continue, ret: %s\n",
+	printk(RSI_INFO "RSI realm metadata, ret: %s\n",
 		    rsi_ret_to_str(output.a0));
 
 	if (output.a0 == RSI_SUCCESS) {
@@ -409,7 +409,7 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	struct rsi_measurement *measur = NULL;
 	struct rsi_attestation *attest = NULL;
 	struct rsi_sealing_key *sealing = NULL;
-	struct rsi_metadata *metadata = NULL;
+	struct rsi_realm_metadata *metadata = NULL;
 
 	switch (cmd) {
 	case RSIIO_ABI_VERSION:
@@ -535,7 +535,7 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 		}
 		break;
 	case RSIIO_REALM_METADATA:
-		metadata = kmalloc(sizeof(struct rsi_metadata), GFP_KERNEL);
+		metadata = kmalloc(sizeof(struct rsi_realm_metadata), GFP_KERNEL);
 		if (metadata == NULL) {
 			printk(RSI_ALERT "ioctl: failed to allocate\n");
 			return -ENOMEM;
@@ -548,14 +548,14 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 			goto end;
 		}
 
-		ret = copy_to_user((struct rsi_metadata*)arg, metadata, sizeof(struct rsi_metadata));
+		ret = copy_to_user((struct rsi_realm_metadata*)arg, metadata, sizeof(struct rsi_realm_metadata));
 		if (ret != 0) {
 			printk(RSI_ALERT "ioctl: copy_to_user failed: %d\n", ret);
 			goto end;
 		}
 		break;
 	default:
-		printk(RSI_ALERT "ioctl: unknown ioctl cmd\n");
+		printk(RSI_ALERT "ioctl: unknown ioctl cmd: %u\n", cmd);
 		return -EINVAL;
 	}
 

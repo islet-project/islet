@@ -3,6 +3,7 @@
 #include <linux/init.h>      // included for __init and __exit macros
 #include <linux/mutex.h>
 #include <linux/slab.h>
+#include <linux/mm.h>
 
 #include <linux/fs.h>
 #include <linux/cdev.h>
@@ -78,6 +79,8 @@ static void rsi_playground(void)
 {
 	unsigned long ret = 0;
 	bool realm = false;
+	struct page	*config_page;
+	struct realm_config *config;
 
 	// creative use of an RSI API, rsi_present is static, this is a workaround
 	realm = cc_platform_has(CC_ATTR_MEM_ENCRYPT);
@@ -91,10 +94,20 @@ static void rsi_playground(void)
 	       RSI_ABI_VERSION_GET_MAJOR(lower), RSI_ABI_VERSION_GET_MINOR(lower),
 	       RSI_ABI_VERSION_GET_MAJOR(higher), RSI_ABI_VERSION_GET_MINOR(higher));
 
+	config_page = alloc_page(GFP_KERNEL);
+	if (config_page == NULL) {
+		printk(RSI_ALERT "Couldn't allocate page for realm_config!\n");
+		return;
+	}
+
+	static_assert(sizeof(struct realm_config) <= PAGE_SIZE);
+	config = (struct realm_config *)page_to_virt(config_page);
+
 	// get config, just for info/test
-	ret = rsi_get_realm_config(&config);
+	ret = rsi_get_realm_config(config);
 	printk(RSI_INFO "RSI config, ret: %s, ipa_width_in_bits: %lu\n",
-	       rsi_ret_to_str(ret), config.ipa_bits);
+	       rsi_ret_to_str(ret), config->ipa_bits);
+	__free_page(config_page);
 }
 
 #if 0
@@ -271,9 +284,18 @@ static int do_attestation_continue(phys_addr_t granule, unsigned long *read)
 
 static int do_attestation(struct rsi_attestation *attest)
 {
+	struct page	*aux_page;
+	phys_addr_t	aux_phys;
+	void *aux_buf;
 	int ret, err;
-	phys_addr_t granule = virt_to_phys(rsi_page_buf);
 	unsigned long total = 0;
+
+	aux_page = alloc_page(GFP_KERNEL);
+	if (aux_page == NULL)
+		return -ENOMEM;
+
+	aux_phys = page_to_phys(aux_page);
+	aux_buf = page_to_virt(aux_page);
 
 	mutex_lock(&attestation_call);
 
@@ -284,12 +306,12 @@ static int do_attestation(struct rsi_attestation *attest)
 	if (attest->token == NULL)
 		return -EINVAL;
 
-	// fill as much into granule as possible,
+	// fill as much into auxillary buffer as possible,
 	// either till the buffer is full or we have the whole token
 	do {
 		unsigned long read = 0;
-		ret = do_attestation_continue(granule, &read);
-		err = copy_to_user(attest->token + total, rsi_page_buf, read);
+		ret = do_attestation_continue(aux_phys, &read);
+		err = copy_to_user(attest->token + total, aux_buf, read);
 		if (err != 0) {
 			printk(RSI_ALERT "ioctl: copy_to_user failed: %d\n", ret);
 			ret = err;
@@ -300,6 +322,8 @@ static int do_attestation(struct rsi_attestation *attest)
 
 unlock:
 	mutex_unlock(&attestation_call);
+
+	__free_page(aux_page);
 
 	if (ret == 0) {
 		attest->token_len = total;

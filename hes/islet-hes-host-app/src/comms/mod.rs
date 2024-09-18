@@ -12,6 +12,7 @@ use islet_hes::{
     ECCFamily, HashAlgo, KeyBits, Measurement, MeasurementMetaData, MeasurementType, ValueHash,
     NUM_OF_MEASUREMENT_SLOTS, SW_TYPE_MAX_SIZE,
 };
+use psa_serde::{RSS_VHUK_GET_KEY, RSS_VHUK_SERVICE_HANDLE};
 
 use self::psa_serde::{
     ExtendRequest, PSAError, PSARequest, PSAResponse, ReadRequest, PSA_MAX_IOVEC,
@@ -40,6 +41,13 @@ struct MsgMetadata {
     pub response_params: ResponseParams,
 }
 
+#[allow(non_camel_case_types)]
+#[derive(Debug)]
+pub enum VHukId {
+    VHUK_A = 0x1,
+    VHUK_M = 0x2,
+}
+
 #[derive(Debug)]
 pub enum Request {
     GetDAK(ECCFamily, KeyBits, HashAlgo),
@@ -47,6 +55,7 @@ pub enum Request {
     // (index, sw_type_len, sw_version_len)
     ReadMeasurement(usize, usize, usize),
     ExtendMeasurement(usize, Measurement, bool),
+    GetVHuk(VHukId)
 }
 
 #[derive(Debug)]
@@ -54,6 +63,7 @@ pub enum Response {
     GetDAK(Vec<u8>),
     GetPlatformToken(Vec<u8>),
     ReadMeasurement(Measurement, bool),
+    GetVHuk(Vec<u8>)
 }
 
 struct Channel {
@@ -182,6 +192,30 @@ impl CommsChannel {
         }
     }
 
+    fn convert_vhuk_request(
+        request_type: i16,
+        in_vecs: &[Vec<u8>],
+    ) -> Result<Request, CommsError> {
+        match request_type {
+            RSS_VHUK_GET_KEY => {
+                if in_vecs[0].len() != std::mem::size_of::<u8>() {
+                    return Err(CommsError::GenericError);
+                }
+                let raw_key_id = u8::from_ne_bytes(in_vecs[0].clone().try_into().unwrap());
+                let key_id = match raw_key_id {
+                    0x1 => VHukId::VHUK_A,
+                    0x2 => VHukId::VHUK_M,
+                    _ => return Err(CommsError::InvalidArgument),
+                };
+                Ok(Request::GetVHuk(key_id))
+            },
+            _ => {
+                // This doesn't happen in case of real psa
+                Err(CommsError::ProgrammerError)
+            }
+        }
+    }
+
     fn convert_measured_boot_request(
         request_type: i16,
         in_vecs: &[Vec<u8>],
@@ -259,14 +293,17 @@ impl CommsChannel {
         let request = match psa_request.handle {
             RSS_DELEGATED_SERVICE_HANDLE => {
                 Self::convert_attestation_request(psa_request.psa_type, &psa_request.in_vecs)?
-            }
+            },
             RSS_MEASURED_BOOT_SERVICE_HANDLE => {
                 Self::convert_measured_boot_request(psa_request.psa_type, &psa_request.in_vecs)?
-            }
+            },
+            RSS_VHUK_SERVICE_HANDLE => {
+                Self::convert_vhuk_request(psa_request.psa_type, &psa_request.in_vecs)?
+            },
             _ => {
                 println!("Unknown service handle: {}", psa_request.handle);
                 return Err(CommsError::ServiceHandleError);
-            }
+            },
         };
 
         Ok(request)
@@ -357,6 +394,13 @@ impl CommsChannel {
                     out_vecs[0] = read_response.ser()?;
                     out_vecs[1] = measurement.metadata.signer_id.to_vec();
                     out_vecs[2] = measurement.value.to_vec();
+                }
+                Some(Response::GetVHuk(key)) => {
+                    if key.len() > msg_metadata.response_params[0] {
+                        println!("Key too big for buffer!");
+                        return Err(CommsError::BufferTooSmall);
+                    }
+                    out_vecs[0] = key;
                 }
                 None => {
                     if msg_metadata.response_params[0] != 0 {

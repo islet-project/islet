@@ -13,6 +13,7 @@ use p384::elliptic_curve::Curve;
 use p384::U384;
 use sha2::{Digest, Sha256};
 
+
 /// Derives key material from a symmetric key, some label and input data.
 /// Key material is a derived 256-bit symmetric key using counter-mode KDF complying
 /// with NIST SP800-108, where the PRF is a combined sha256 hash and an ECB-mode
@@ -24,19 +25,11 @@ use sha2::{Digest, Sha256};
 /// * `input_key` - A 256-bit symmetric input derivation key
 /// * `label` - Unique label describing seed purpose
 ///
-pub fn generate_seed(input: &[u8], input_key: &[u8], label: &[u8]) -> Vec<u8> {
-    let mut context = vec![0; input.len() + mem::size_of::<u32>() * 2];
+pub fn generate_seed(context: &[u8], input_key: &[u8], label: &[u8]) -> Vec<u8> {
     let mut state =
         vec![0; context.len() + label.len() + mem::size_of::<u8>() + mem::size_of::<u32>() * 2];
-    let lcs: u32 = 3;
-    let reprovisioning_bits: u32 = 0;
     let block_index: u32 = 1;
     let seed_output_length: u32 = 32;
-
-    context[..input.len()].copy_from_slice(&input);
-    context[input.len()..input.len() + mem::size_of::<u32>()].copy_from_slice(&lcs.to_ne_bytes());
-    context[input.len() + mem::size_of::<u32>()..]
-        .copy_from_slice(&reprovisioning_bits.to_ne_bytes());
 
     state[mem::size_of::<u32>()..mem::size_of::<u32>() + label.len()].copy_from_slice(&label);
     state[mem::size_of::<u32>() + label.len()

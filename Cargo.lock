@@ -592,6 +592,7 @@ dependencies = [
  "coset",
  "ecdsa",
  "hex",
+ "hkdf",
  "io",
  "lazy_static",
  "linked_list_allocator",

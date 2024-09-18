@@ -7,6 +7,8 @@ use alloc::collections::btree_map::BTreeMap;
 use alloc::sync::Arc;
 use spin::mutex::Mutex;
 
+pub const RPV_SIZE: usize = 64;
+
 lazy_static! {
     static ref RTT_TABLES: Mutex<BTreeMap<usize, Arc<Mutex<Box<dyn IPATranslation>>>>> = {
         let m = BTreeMap::new();
@@ -28,7 +30,7 @@ pub struct Rd {
     rec_index: usize,
     s2_starting_level: isize,
     hash_algo: u8,
-    rpv: [u8; 64],
+    rpv: [u8; RPV_SIZE],
     pub measurements: [Measurement; MEASUREMENTS_SLOT_NR],
     pub vcpu_index: usize,
 }

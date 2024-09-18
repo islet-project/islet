@@ -2,6 +2,7 @@ use clap::Parser;
 use p384::pkcs8::{EncodePublicKey, LineEnding};
 use std::fs::{self, File};
 use std::io::{Read, Result as IOResult, Write};
+use std::mem;
 
 /// Creates a path to a resource file
 macro_rules! resource_file {
@@ -68,7 +69,17 @@ fn main() -> std::io::Result<()> {
     fs::create_dir_all(args.output_dir.clone())?;
 
     const CPAK_SEED_LABEL: &[u8] = b"BL1_CPAK_SEED_DERIVATION";
-    let seed = key_derivation::generate_seed(&bl2_hash, &guk, &CPAK_SEED_LABEL);
+    let lcs: u32 = 3;
+    let reprovisioning_bits: u32 = 0;
+    let input = bl2_hash.as_slice();
+
+    let mut context = vec![0; input.len() + mem::size_of::<u32>() * 2];
+    context[..input.len()].copy_from_slice(&input);
+    context[input.len()..input.len() + mem::size_of::<u32>()].copy_from_slice(&lcs.to_ne_bytes());
+    context[input.len() + mem::size_of::<u32>()..]
+        .copy_from_slice(&reprovisioning_bits.to_ne_bytes());
+
+    let seed = key_derivation::generate_seed(&context, &guk, &CPAK_SEED_LABEL);
 
     let public_key = key_derivation::derive_p384_key(&seed, None).public_key();
 

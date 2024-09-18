@@ -5,6 +5,7 @@ pub mod hostcall;
 pub mod measurement;
 pub mod psci;
 pub mod ripas;
+pub mod sealing;
 pub mod version;
 
 use alloc::vec::Vec;
@@ -26,6 +27,7 @@ use crate::rmi::rec::run::Run;
 use crate::rmi::rtt::validate_ipa;
 use crate::rsi::hostcall::{HostCall, HOST_CALL_NR_GPRS};
 use crate::rsi::ripas::{get_ripas_state, set_ripas_state};
+use crate::rsi::sealing::{realm_sealing_key, SEALING_KEY_SIZE};
 use crate::Monitor;
 use crate::{get_granule, get_granule_if};
 
@@ -53,6 +55,8 @@ define_interface! {
         PSCI_SYSTEM_OFF         = 0x8400_0008,
         PSCI_SYSTEM_RESET       = 0x8400_0009,
         PSCI_FEATURES           = 0x8400_000A,
+        // vendor calls
+        ISLET_REALM_SEALING_KEY = 0xC700_0191,
     }
 }
 
@@ -358,4 +362,31 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
 
     listen!(rsi, IPA_STATE_GET, get_ripas_state);
     listen!(rsi, IPA_STATE_SET, set_ripas_state);
+
+    listen!(rsi, ISLET_REALM_SEALING_KEY, |_arg, ret, _rmm, rec, _| {
+        let flags = get_reg(rec, 1)?;
+        let svn = get_reg(rec, 2)?;
+        let mut buf = [0u8; SEALING_KEY_SIZE];
+
+        let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>()?;
+
+        if realm_sealing_key(&rd, flags, svn, &mut buf).is_err() {
+            set_reg(rec, 0, ERROR_INPUT)?;
+            ret[0] = rmi::SUCCESS_REC_ENTER;
+            return Ok(());
+        }
+
+        for (ind, chunk) in buf.chunks_exact(core::mem::size_of::<usize>()).enumerate() {
+            let reg_value = usize::from_ne_bytes(chunk.try_into().unwrap());
+            set_reg(rec, ind + 1, reg_value)?;
+        }
+
+        // zero the sealing key memory
+        buf.copy_from_slice(&[0; SEALING_KEY_SIZE]);
+
+        set_reg(rec, 0, SUCCESS)?;
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        Ok(())
+    });
 }

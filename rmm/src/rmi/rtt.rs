@@ -100,13 +100,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorInput);
         }
 
-        let out_top = rtt::init_ripas(&rd, base, top)?;
+        let out_top = rtt::init_ripas(&mut rd, base, top)?;
         ret[1] = out_top; //This is walk_top
 
-        //TODO: Update the function according to the changes from eac5
-        #[cfg(not(kani))]
-        // `rsi` is currently not reachable in model checking harnesses
-        HashContext::new(&mut rd)?.measure_ripas_granule(base, RTT_PAGE_LEVEL as u8)?;
         Ok(())
     });
 
@@ -199,12 +195,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // copy src to target
         host::copy_to_obj::<DataPage>(src_pa, &mut target_page).ok_or(Error::RmiErrorInput)?;
 
+        // map ipa to taget_pa in S2 table
+        rtt::data_create(&rd, ipa, target_pa, false)?;
+
         #[cfg(not(kani))]
         // `rsi` is currently not reachable in model checking harnesses
         HashContext::new(&mut rd)?.measure_data_granule(&target_page, ipa, flags)?;
-
-        // map ipa to taget_pa in S2 table
-        rtt::data_create(&rd, ipa, target_pa, false)?;
 
         set_granule(&mut target_page_granule, GranuleState::Data)?;
         Ok(())

@@ -14,11 +14,13 @@ use crate::granule::{FVP_DRAM0_REGION, FVP_DRAM1_IDX, FVP_DRAM1_REGION};
 //    So, we need to associate "lock" with each granule entry.
 
 #[cfg(not(any(kani, miri, test)))]
+#[derive(Debug)]
 pub struct Granule {
     /// granule state
     state: u8,
 }
 #[cfg(any(kani, miri, test))]
+#[derive(Debug)]
 // DIFF: `gpt` ghost field is added to track GPT entry's status
 pub struct Granule {
     /// granule state

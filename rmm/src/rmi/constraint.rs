@@ -50,6 +50,7 @@ fn pick(cmd: Command) -> Option<Constraint> {
         rmi::RTT_FOLD => Constraint::new(rmi::RTT_FOLD, 4, 2),
         rmi::REQ_COMPLETE => Constraint::new(rmi::REQ_COMPLETE, 4, 2),
         rmi::PSCI_COMPLETE => Constraint::new(rmi::PSCI_COMPLETE, 4, 1),
+        rmi::ISLET_REALM_SET_METADATA => Constraint::new(rmi::ISLET_REALM_SET_METADATA, 4, 1),
         _ => return None,
     };
     Some(constraint)

@@ -382,8 +382,11 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             set_reg(rec, ind + 1, reg_value)?;
         }
 
-        // zero the sealing key memory
-        buf.copy_from_slice(&[0; SEALING_KEY_SIZE]);
+        // Clear the sealing key
+        // TODO: use zeroize?
+        unsafe {
+            core::ptr::write_bytes(buf.as_mut_ptr(), 0x0, SEALING_KEY_SIZE);
+        }
 
         set_reg(rec, 0, SUCCESS)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;

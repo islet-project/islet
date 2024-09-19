@@ -2,6 +2,7 @@ pub mod constraint;
 pub mod error;
 pub mod features;
 pub mod gpt;
+pub mod metadata;
 pub mod realm;
 pub mod rec;
 pub mod rtt;
@@ -34,6 +35,8 @@ define_interface! {
          REC_AUX_COUNT          = 0xc400_0167,
          RTT_INIT_RIPAS         = 0xc400_0168,
          RTT_SET_RIPAS          = 0xc400_0169,
+         // vendor calls
+         ISLET_REALM_SET_METADATA = 0xc700_0150,
     }
 }
 

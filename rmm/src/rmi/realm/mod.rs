@@ -6,14 +6,14 @@ use crate::granule::GRANULE_SIZE;
 use crate::granule::{set_granule, GranuleState};
 use crate::host;
 use crate::listen;
-use crate::measurement::HashContext;
+use crate::measurement::{HashContext, MEASUREMENTS_SLOT_RIM};
 use crate::mm::translation::PageTable;
 use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::IPATranslation;
 use crate::realm::rd::State;
 use crate::realm::rd::{insert_rtt, Rd};
 use crate::realm::registry::{remove, VMID_SET};
-use crate::rmi;
+use crate::rmi::{self, metadata::IsletRealmMetadata};
 use crate::{get_granule, get_granule_if};
 
 use alloc::boxed::Box;
@@ -28,6 +28,22 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd = arg[0];
         let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
         let mut rd = rd_granule.content_mut::<Rd>()?;
+
+        if let Some(meta) = rd.metadata() {
+            info!("Realm metadata is in use!");
+            let g_metadata = get_granule_if!(meta, GranuleState::Metadata)?;
+            let metadata = g_metadata.content::<IsletRealmMetadata>()?;
+
+            if !metadata.equal_rd_rim(&rd.measurements[MEASUREMENTS_SLOT_RIM]) {
+                error!("Calculated rim and those read from metadata are not the same!");
+                return Err(Error::RmiErrorRealm(0));
+            }
+
+            if !metadata.equal_rd_hash_algo(rd.hash_algo()) {
+                error!("Provided measurement hash algorithm and metadata hash algorithm are different!");
+                return Err(Error::RmiErrorRealm(0));
+            }
+        }
 
         if !rd.at_state(State::New) {
             return Err(Error::RmiErrorRealm(0));
@@ -122,9 +138,15 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if rd_granule.num_children() > 0 {
             return Err(Error::RmiErrorRealm(0));
         }
-        let rd = rd_granule.content::<Rd>()?;
+        let mut rd = rd_granule.content::<Rd>()?;
         let vmid = rd.id();
         let rtt_base = rd.rtt_base();
+
+        if let Some(meta) = rd.metadata() {
+            let mut meta_granule = get_granule_if!(meta, GranuleState::Metadata)?;
+            set_granule(&mut meta_granule, GranuleState::Delegated)?;
+            rd.set_metadata(None);
+        }
 
         #[cfg(kani)]
         // XXX: the below can be guaranteed by Rd's invariants
@@ -177,6 +199,49 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         Ok(())
     });
+
+    listen!(
+        mainloop,
+        rmi::ISLET_REALM_SET_METADATA,
+        |arg, _ret, _rmm| {
+            let rd_addr = arg[0];
+            let mdg_addr = arg[1];
+            let meta_ptr = arg[2];
+
+            // TODO: should we really hold a whole 4k on the stack? Either remove
+            // the unused field from metadata or copy directly from granule to
+            // granule. Is there any use for the unused? Its content is irrelevant.
+            let realm_metadata = IsletRealmMetadata::from_ns(meta_ptr)?;
+            realm_metadata.dump();
+
+            if let Err(e) = realm_metadata.verify_signature() {
+                error!("Verification of realm metadata signature has failed");
+                Err(e)?;
+            }
+
+            if let Err(e) = realm_metadata.validate() {
+                error!("The content of realm metadata is not valid");
+                Err(e)?;
+            }
+
+            let mut rd_granule = get_granule_if!(rd_addr, GranuleState::RD)?;
+            let mut rd = rd_granule.content_mut::<Rd>()?;
+            if rd.metadata().is_some() {
+                error!("Metadata is already set");
+                Err(Error::RmiErrorRealm(0))?;
+            }
+
+            let mut g_metadata = get_granule_if!(mdg_addr, GranuleState::Delegated)?;
+            let mut meta = g_metadata.content_mut::<IsletRealmMetadata>()?;
+            *meta = realm_metadata.clone();
+            // TODO: with_parent?
+            set_granule(&mut g_metadata, GranuleState::Metadata)?;
+
+            rd.set_metadata(Some(mdg_addr));
+
+            Ok(())
+        }
+    );
 }
 
 fn create_realm(vmid: usize) -> Result<(), Error> {

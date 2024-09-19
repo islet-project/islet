@@ -1,6 +1,7 @@
 use crate::granule::GRANULE_SHIFT;
 use crate::granule::{set_granule, GranuleState};
 use crate::mm::translation::PageTable as mmPageTable;
+use crate::measurement::HashContext;
 use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::mm::attribute::{desc_type, memattr, permission, shareable};
 use crate::realm::mm::entry;
@@ -177,7 +178,7 @@ pub fn destroy<F: FnMut(usize)>(
     Ok((rtt_addr, top_ipa))
 }
 
-pub fn init_ripas(rd: &Rd, base: usize, top: usize) -> Result<usize, Error> {
+pub fn init_ripas(rd: &mut Rd, base: usize, top: usize) -> Result<usize, Error> {
     // TODO: get s2tte without the level input
     let level = RTT_PAGE_LEVEL;
     let (_s2tte, last_level) = S2TTE::get_s2tte(rd, base, level, Error::RmiErrorRtt(0))?;
@@ -216,7 +217,10 @@ pub fn init_ripas(rd: &Rd, base: usize, top: usize) -> Result<usize, Error> {
         } else if !s2tte.is_unassigned_ram() {
             break;
         }
-        // TODO: measurement
+
+        #[cfg(not(kani))]
+        // `rsi` is currently not reachable in model checking harnesses
+        HashContext::new(rd)?.measure_ripas_granule(addr as u64, next as u64)?;
 
         addr += map_size;
     }

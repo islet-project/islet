@@ -90,8 +90,8 @@ impl<'a> HashContext<'a> {
 
     pub fn measure_ripas_granule(
         &mut self,
-        ipa: usize,
-        level: u8,
+        base: u64,
+        top:  u64,
     ) -> Result<(), rsi::error::Error> {
         crate::rsi::measurement::extend(self.rd, MEASUREMENTS_SLOT_RIM, |current| {
             let oldrim = *current;
@@ -101,10 +101,9 @@ impl<'a> HashContext<'a> {
                 h.hash([0u8; 7]); // padding
                 h.hash_u64(0x100); // desc struct size
                 h.hash(oldrim); // old RIM value
-                h.hash_usize(ipa); // ipa
-                h.hash_u8(level); // level
-                h.hash([0u8; 7]); // level's padding
-                h.hash([0u8; 0xa0]); // padding to 0x100 size
+                h.hash_u64(base); // ipa
+                h.hash_u64(top); // level
+                h.hash([0u8; 0x100 - 0x60]); // padding to 0x100 size
             })
         })
     }

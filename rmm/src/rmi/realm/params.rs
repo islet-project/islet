@@ -71,7 +71,7 @@ impl Hashable for Params {
         out: &mut [u8],
     ) -> Result<(), crate::measurement::MeasurementError> {
         hasher.hash_fields_into(out, |alg| {
-            alg.hash_u64(0); // flags aren't used
+            alg.hash_u64(self.flags);
             alg.hash(self._padflags);
             alg.hash_u8(self.s2sz);
             alg.hash(self._pads2sz);

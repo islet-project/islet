@@ -1,16 +1,17 @@
+use core::ffi::CStr;
+
+use crate::granule::GranuleState;
 use crate::measurement::{Measurement, MEASUREMENTS_SLOT_MAX_SIZE, MEASUREMENTS_SLOT_RIM};
 use crate::realm::rd::{Rd, RPV_SIZE};
 use crate::rmi::error::Error;
+use crate::rmi::metadata::{IsletRealmMetadata, P384_PUBLIC_KEY_SIZE, REALM_ID_SIZE};
 use crate::rmm_el3::{vhuk_a, vhuk_m};
+use crate::{get_granule, get_granule_if};
 
 const RSI_ISLET_USE_VHUK_M: usize = 0x1 << 0;
 const RSI_ISLET_SLK_RIM: usize = 0x1 << 1;
 const RSI_ISLET_SLK_REALM_ID: usize = 0x1 << 2;
 const RSI_ISLET_SLK_SVN: usize = 0x1 << 3;
-
-// TODO move some of those consts to metadata
-const REALM_ID_SIZE: usize = 128;
-const P384_PUBLIC_KEY_SIZE: usize = 96;
 
 pub const SEALING_KEY_SIZE: usize = 32;
 
@@ -43,10 +44,31 @@ impl KdfInfo {
         }
     }
 
+    // TODO: use zeroize?
+    fn zeroize(&mut self) {
+        let addr = self as *mut Self;
+        unsafe {
+            core::ptr::write_bytes(addr as *mut u8, 0x0, core::mem::size_of::<Self>());
+        }
+    }
+
+    fn realm_id_as_str(&self) -> Option<&str> {
+        let Ok(cstr) = CStr::from_bytes_until_nul(&self.realm_id) else {
+            return None;
+        };
+        let Ok(s) = cstr.to_str() else {
+            return None;
+        };
+        Some(s)
+    }
+
     fn dump(&self) {
         info!("KDF info");
         info!("public_key: {}", hex::encode(self.public_key));
-        info!("realm_id: {}", hex::encode(self.realm_id));
+        info!(
+            "realm_id: {}",
+            self.realm_id_as_str().unwrap_or("INVALID REALM ID")
+        );
         info!("rpv: {}", hex::encode(self.rpv));
         let flags = self.flags; // not aligned
         info!("flags: {:#010x}", flags);
@@ -93,13 +115,30 @@ pub fn realm_sealing_key(
     info.rpv.copy_from_slice(rd.personalization_value());
     info.flags = flags;
 
-    let metadata: Option<()> = None;
+    if let Some(meta_addr) = rd.metadata() {
+        let g_metadata = get_granule_if!(meta_addr, GranuleState::Metadata)?;
+        let metadata = g_metadata.content::<IsletRealmMetadata>()?;
 
-    if metadata.is_some() {
-        // TODO: rd
+        if flags & RSI_ISLET_SLK_SVN != 0 && metadata.svn() < svn {
+            warn!("The SVN parameter is invalid!");
+            Err(Error::RmiErrorInput)?
+        }
+
+        info.public_key = metadata.public_key().clone();
+
+        if flags & RSI_ISLET_SLK_REALM_ID != 0 {
+            info.realm_id = metadata.realm_id().clone();
+        }
+
+        if flags & RSI_ISLET_SLK_SVN != 0 {
+            info.svn = svn;
+        }
     }
 
-    if flags & RSI_ISLET_SLK_RIM != 0 || metadata.is_none() {
+    // We allow realms not having a metadata block assigned
+    // to derive sealing keys. In that case, the RIM of the realm
+    // is always used as the key material.
+    if flags & RSI_ISLET_SLK_RIM != 0 || rd.metadata().is_none() {
         let mut rim = Measurement::empty();
         crate::rsi::measurement::read(&rd, MEASUREMENTS_SLOT_RIM, &mut rim)?;
         info.rim.copy_from_slice(rim.as_slice());
@@ -115,6 +154,9 @@ pub fn realm_sealing_key(
         }
     );
     info.derive_sealing_key(flags & RSI_ISLET_USE_VHUK_M != 0, buf);
+
+    // Clear the input key material
+    info.zeroize();
 
     Ok(())
 }

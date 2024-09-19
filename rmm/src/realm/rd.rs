@@ -33,6 +33,7 @@ pub struct Rd {
     rpv: [u8; RPV_SIZE],
     pub measurements: [Measurement; MEASUREMENTS_SLOT_NR],
     pub vcpu_index: usize,
+    metadata: Option<usize>,
 }
 
 impl Rd {
@@ -55,6 +56,7 @@ impl Rd {
         self.measurements = [Measurement::empty(); MEASUREMENTS_SLOT_NR];
         self.vcpu_index = 0;
         self.rpv.copy_from_slice(rpv.as_slice());
+        self.metadata = None;
     }
 
     pub fn id(&self) -> usize {
@@ -123,6 +125,14 @@ impl Rd {
 
     pub fn personalization_value(&self) -> &[u8] {
         self.rpv.as_slice()
+    }
+
+    pub fn metadata(&self) -> Option<usize> {
+        self.metadata
+    }
+
+    pub fn set_metadata(&mut self, metadata: Option<usize>) {
+        self.metadata = metadata
     }
 }
 

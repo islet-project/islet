@@ -117,7 +117,7 @@ fn process_requests(comms: &mut CommsChannel, islet_hes: &mut IsletHES) -> Resul
                     // Server disconnected gracefully
                     return Ok(());
                 }
-                println!("Request read: {:?}", requests);
+                println!("Request read: {:02x?}", requests);
                 let request = requests.unwrap();
                 match request {
                     Request::GetDAK(ecc_family, key_bits, hash_algo) => {
@@ -155,6 +155,22 @@ fn process_requests(comms: &mut CommsChannel, islet_hes: &mut IsletHES) -> Resul
                             Err(e) => (islet_hes_error_to_ret_val(e), None),
                         }
                     }
+                    Request::GetVHuk(key_id) => {
+                        let key_result = match key_id {
+                            comms::VHukId::VHUK_A => {
+                                islet_hes.get_authority_vhuk()
+                            },
+                            comms::VHukId::VHUK_M => {
+                                islet_hes.get_measurement_vhuk()
+                            }
+                        };
+                        match key_result {
+                            Ok(key) => {
+                                (PSA_SUCCESS, Some(Response::GetVHuk(key)))
+                            },
+                            Err(e) => (islet_hes_error_to_ret_val(e), None)
+                        }
+                    }
                 }
             }
             Err(e) => {
@@ -177,7 +193,7 @@ fn process_requests(comms: &mut CommsChannel, islet_hes: &mut IsletHES) -> Resul
             }
         };
 
-        println!("Sending response: {:?}", response);
+        println!("Sending response {:02x?}", response);
         match comms.send_response(ret_val, response) {
             Ok(()) => (),
             Err(e) => match e {

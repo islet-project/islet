@@ -12,36 +12,34 @@ In our network configuration, each of the three has different static IP address 
 Under this setting, any of the three can act as either server or client.
 
 And here is how to make "*FVP Host* and *Realm*" capable of communicating through to *PC Host*.
-First of all, make sure you are in the root directory of Islet and go through the following instructions.
-In most cases, you would probably not have to customize network-related arguments and feed them into `fvp-cca`. Using a default configuration would be sufficient.
+First, make sure you are in the root directory of Islet and go through the following instructions.
+In most cases, it would be sufficient to use a default configuration but `--host-ip` and `--ifname`.
 ```
 # full command:
-# ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=tf-rmm --host-ip=<PC Host IP> --fvp-ip=<FVP IP> --fvp-tap-ip=<FVP Tap Device IP> --realm-ip=<Realm IP> --route-ip=<Route IP> --gateway=<Gateway IP of PC Host> --ifname=<Interface name>
+# ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=islet --hes --no-telnet --rmm-log-level=info --ifname=<the network interface name in your PC host> --host-ip=<the IP of your PC host>
 
-$ ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=tf-rmm
+$ ./scripts/fvp-cca --normal-world=linux-net --realm=linux --rmm=islet --hes --no-telnet --rmm-log-level=info --ifname=enp3s0 --host-ip=111.222.333.15
   # this takes a default network configuration in which
-  # --host-ip: 193.168.10.15
-  # --fvp-ip: 193.168.10.5
-  # --fvp-tap-ip: 193.168.20.20
-  # --realm-ip: 193.168.20.10
-  # --route-ip: 193.168.20.0
-  # --gateway-ip: 193.168.10.1
-  # --ifname: eth0
+  # --host-ip: put in the IP address of your PC Host (111.222.333.15)
+  # --ifname: put in the network interface name of your PC Host (enp3s0)
+  # --host-tap-ip: 193.168.10.1 (default value)
+  # --fvp-ip: 193.168.10.5 (default value)
+  # --fvp-tap-ip: 193.168.20.1 (default value)
+  # --realm-ip: 193.168.20.10 (default value)
+  # --route-ip: 193.168.20.0 (default value)
 ```
-
-FVP is able to communicate through Host to external networks in a similar way to what most VMs do.
-To do so, it is required to assign a real IP address (wired or wireless) into the PC host while IP addresses for FVP Host and Realm do not have to be a real IP,
-since the PC Host takes the role of NAT in order to hide their IPs from external networks. 
+In this setting, both FVP Host and Realm are able to connect to external networks (i.e., internet) through PC Host's network interface you specify through `--ifname`.
 
 ## A closer look at network configuration
 
 This is how the aforementioned three components interact with each other:
 ```
 // A default configuration
-// Realm:     IP: 193.168.20.10 (static address),  Gateway: 193.168.20.20 (the tap device of FVP Host)
-// FVP Host:  IP: 193.168.10.5 (static address),   Tap: 193.168.20.20
-// PC Host:   IP: 193.168.10.15 (a real IP address + bridge/tap device + network address translation)
+// Realm:     IP: 193.168.20.10 (static address),  Gateway: 193.168.20.1 (the tap device of FVP Host)
+// FVP Host:  IP: 193.168.10.5 (static address),   Gateway: 193.168.10.1 (the tap device of PC Host)
+// PC Host:   IP: 111.222.333.15 (a real IP address + tap device + Source NAT)
 
 Realm <----------------> FVP Host  <-----------------> PC Host
-      (tap network)  (ipv4_forward) (tap network)
+       (tap network)    (ipv4_forward)   (tap network)
 ```
+

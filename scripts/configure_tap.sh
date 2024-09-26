@@ -2,41 +2,33 @@
 
 # input arguments
 host_ip=$1
-fvp_ip=$2
-route_ip=$3
-gateway=$4
-ifname=$5
+host_tap_ip=$2
+fvp_ip=$3
+route_ip=$4
+gateway=$5
+ifname=$6
 
-# 1. check if armbr0 is already configured
-out=$(brctl show | grep armbr0)
+# 0. check if the tap is already configured
+out=$(ifconfig | grep ARM)
 user=$(whoami)
-if [[ $out == *"armbr0"* ]]; then
+if [[ $out == *"ARM"* ]]; then
 	if [[ $out == *"${user}"* ]]; then
 		echo "tap network already configured!"
 		exit 0
 	fi
 fi
 
-# 2. create a bridge network
-sudo ip link add armbr0 type bridge
-sudo ip link set armbr0 up
+# 1. create a tap device that is connected to FVP
+sudo ip tuntap add dev ARM${user} mode tap
+sudo ip addr add ${host_tap_ip}/24 dev ARM${user}
+sudo ip link set ARM${user} up promisc on
 
-# 3. reassign IP address to the bridge
-sudo ip link set ${ifname} up
-sudo ip link set ${ifname} master armbr0
+# 2. enable ip forwarding
+sudo sysctl net.ipv4.ip_forward=1
+sudo sysctl net.ipv6.conf.default.forwarding=1
+sudo sysctl net.ipv6.conf.all.forwarding=1
 
-# Drop existing IP from eth0
-sudo ip addr flush dev ${ifname}
-
-# Assign IP to armbr0
-sudo ip addr add ${host_ip}/24 brd + dev armbr0
-
-# 4. create a tap device
-sudo ip tuntap add dev ARM${user} mode tap user ${user}
-sudo ip link set dev ARM${user} up
-sudo ip link set ARM${user} master armbr0
-sudo ip route add ${route_ip}/24 via ${fvp_ip}
-
-# 5. add NAT functionality to properly interact with remote hosts
-echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
-sudo iptables -t nat -A POSTROUTING -j MASQUERADE
+# 3. set SNAT to allow FVP/Realm to connect internet through the host's network interface
+sudo iptables -A FORWARD -i enp3s0 -j ACCEPT
+sudo iptables -A FORWARD -o enp3s0 -j ACCEPT
+sudo iptables -t nat -A POSTROUTING -s ${host_tap_ip}/24 -o ${ifname} -j SNAT --to ${host_ip}

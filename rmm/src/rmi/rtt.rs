@@ -357,26 +357,21 @@ pub fn validate_ipa(rd: &Rd, ipa: usize) -> Result<(), Error> {
 #[cfg(test)]
 mod test {
     use crate::granule::array::granule_addr;
-    use crate::rmi::{GRANULE_DELEGATE, RTT_CREATE, SUCCESS};
+    use crate::realm::rd::{Rd, State};
+    use crate::rmi::{
+        GRANULE_DELEGATE, GRANULE_UNDELEGATE, RTT_CREATE, RTT_DESTROY, RTT_INIT_RIPAS,
+        RTT_READ_ENTRY, SUCCESS,
+    };
     use crate::test_utils::*; // alloc_granule
+
+    use alloc::vec;
 
     // Source: https://github.com/ARM-software/cca-rmm-acs
     // Test Case: cmd_rtt_create
+    // Covered RMIs: RTT_CREATE, RTT_DESTROY, RTT_READ_ENTRY
     #[test]
     fn rmi_rtt_create_positive() {
         let rd = realm_create();
-        let mut ipa: usize = 0x0;
-        let mut level: usize = 0x1;
-
-        for mocking_addr in &[
-            granule_addr(3),
-            granule_addr(4),
-            granule_addr(5),
-            granule_addr(6),
-        ] {
-            let ret = rmi::<GRANULE_DELEGATE>(&[*mocking_addr]);
-            assert_eq!(ret[0], SUCCESS);
-        }
 
         let (rtt1, rtt2, rtt3, rtt4) = (
             granule_addr(3),
@@ -385,15 +380,22 @@ mod test {
             granule_addr(6),
         );
 
-        use crate::realm::rd::{Rd, State};
+        for rtt in &[rtt1, rtt2, rtt3, rtt4] {
+            let ret = rmi::<GRANULE_DELEGATE>(&[*rtt]);
+            assert_eq!(ret[0], SUCCESS);
+        }
+
+        let test_data = vec![
+            (rtt1, 0x0, 0x1),
+            (rtt2, 0x0, 0x2),
+            (rtt3, 0x0, 0x3),
+            (rtt4, 0x40000000, 0x2),
+        ];
 
         unsafe {
             let rd_obj = &*(rd as *const Rd);
             assert!(rd_obj.at_state(State::New));
         };
-
-        let ret = rmi::<RTT_CREATE>(&[rd, rtt1, ipa, level]);
-        assert_eq!(ret[0], SUCCESS);
 
         // This seems that it should be a failure condition
         unsafe {
@@ -402,17 +404,79 @@ mod test {
             assert!(rd_obj.at_state(State::SystemOff));
         };
 
-        level = 0x2;
-        let ret = rmi::<RTT_CREATE>(&[rd, rtt2, ipa, level]);
+        for (rtt, ipa, level) in &test_data {
+            let ret = rmi::<RTT_CREATE>(&[rd, *rtt, *ipa, *level]);
+            assert_eq!(ret[0], SUCCESS);
+        }
+
+        let (rtt4_ipa, rtt4_level) = (test_data[3].1, test_data[3].2);
+        let ret = rmi::<RTT_READ_ENTRY>(&[rd, rtt4_ipa, rtt4_level - 1]);
         assert_eq!(ret[0], SUCCESS);
 
-        level = 0x3;
-        let ret = rmi::<RTT_CREATE>(&[rd, rtt3, ipa, level]);
+        let (state, desc) = (ret[2], ret[3]);
+        const RMI_TABLE: usize = 2;
+        assert_eq!(state, RMI_TABLE);
+        assert_eq!(desc, rtt4);
+
+        for (_, ipa, level) in test_data.iter().rev() {
+            let ret = rmi::<RTT_DESTROY>(&[rd, *ipa, *level]);
+            assert_eq!(ret[0], SUCCESS);
+        }
+
+        for rtt in &[rtt1, rtt2, rtt3, rtt4] {
+            let ret = rmi::<GRANULE_UNDELEGATE>(&[*rtt]);
+            assert_eq!(ret[0], SUCCESS);
+        }
+
+        realm_destroy(rd);
+    }
+
+    // Source: https://github.com/ARM-software/cca-rmm-acs
+    // Test Case: cmd_rtt_init_ripas
+    // Covered RMIs: RTT_INIT_RIPAS, RTT_READ_ENTRY
+    #[test]
+    fn rmi_rtt_init_ripas_positive() {
+        let rd = realm_create();
+
+        let (rtt1, rtt2, rtt3) = (granule_addr(3), granule_addr(4), granule_addr(5));
+
+        for rtt in &[rtt1, rtt2, rtt3] {
+            let ret = rmi::<GRANULE_DELEGATE>(&[*rtt]);
+            assert_eq!(ret[0], SUCCESS);
+        }
+
+        let test_data = vec![(rtt1, 0x0, 0x1), (rtt2, 0x0, 0x2), (rtt3, 0x0, 0x3)];
+
+        for (rtt, ipa, level) in &test_data {
+            let ret = rmi::<RTT_CREATE>(&[rd, *rtt, *ipa, *level]);
+            assert_eq!(ret[0], SUCCESS);
+        }
+
+        let base = test_data[2].1;
+        let top = 0x1000;
+        let ret = rmi::<RTT_INIT_RIPAS>(&[rd, base, top]);
+        assert_eq!(ret[0], SUCCESS);
+        assert_eq!(ret[1], top);
+
+        let (rtt3_ipa, rtt3_level) = (test_data[2].1, test_data[2].2);
+        let ret = rmi::<RTT_READ_ENTRY>(&[rd, rtt3_ipa, rtt3_level]);
         assert_eq!(ret[0], SUCCESS);
 
-        ipa = 0x40000000;
-        level = 0x2;
-        let ret = rmi::<RTT_CREATE>(&[rd, rtt4, ipa, level]);
-        assert_eq!(ret[0], SUCCESS);
+        let (level, ripas) = (ret[1], ret[4]);
+        const RMI_RAM: usize = 1;
+        assert_eq!(level, rtt3_level);
+        assert_eq!(ripas, RMI_RAM);
+
+        for (_, ipa, level) in test_data.iter().rev() {
+            let ret = rmi::<RTT_DESTROY>(&[rd, *ipa, *level]);
+            assert_eq!(ret[0], SUCCESS);
+        }
+
+        for rtt in &[rtt1, rtt2, rtt3] {
+            let ret = rmi::<GRANULE_UNDELEGATE>(&[*rtt]);
+            assert_eq!(ret[0], SUCCESS);
+        }
+
+        realm_destroy(rd);
     }
 }

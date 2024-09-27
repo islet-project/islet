@@ -183,13 +183,7 @@ mod test {
             assert!(rd_obj.at_state(State::Active));
         };
 
-        let ret = rmi::<REALM_DESTROY>(&[rd]);
-        assert_eq!(ret[0], SUCCESS);
-
-        for mocking_addr in &[granule_addr(0), granule_addr(1)] {
-            let ret = rmi::<GRANULE_UNDELEGATE>(&[*mocking_addr]);
-            assert_eq!(ret[0], SUCCESS);
-        }
+        realm_destroy(rd);
     }
 
     // Source: https://github.com/ARM-software/cca-rmm-acs

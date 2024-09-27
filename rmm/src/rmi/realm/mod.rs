@@ -1,5 +1,5 @@
 pub(crate) mod params;
-use self::params::Params;
+pub(crate) use self::params::Params;
 use super::error::Error;
 use crate::event::Mainloop;
 use crate::granule::GRANULE_SIZE;
@@ -164,10 +164,8 @@ fn create_realm(vmid: usize) -> Result<(), Error> {
 mod test {
     use crate::granule::array::granule_addr;
     use crate::realm::rd::{Rd, State};
-    use crate::rmi::realm::Params;
     use crate::rmi::{
-        ERROR_INPUT, GRANULE_DELEGATE, GRANULE_UNDELEGATE, REALM_ACTIVATE, REALM_CREATE,
-        REALM_DESTROY, SUCCESS,
+        ERROR_INPUT, GRANULE_UNDELEGATE, REALM_ACTIVATE, REALM_CREATE, REALM_DESTROY, SUCCESS,
     };
     use crate::test_utils::*;
 
@@ -175,27 +173,7 @@ mod test {
 
     #[test]
     fn rmi_realm_create_positive() {
-        for mocking_addr in &[granule_addr(0), granule_addr(1)] {
-            let ret = rmi::<GRANULE_DELEGATE>(&[*mocking_addr]);
-            assert_eq!(ret[0], SUCCESS);
-        }
-
-        let (rd, rtt, params_ptr) = (granule_addr(0), granule_addr(1), granule_addr(2));
-
-        unsafe {
-            let params = &mut *(params_ptr as *mut Params);
-            params.s2sz = 40;
-            params.rtt_num_start = 1;
-            params.rtt_level_start = 0;
-            params.rtt_base = rtt as u64;
-        };
-
-        let ret = rmi::<REALM_CREATE>(&[rd, params_ptr]);
-        assert_eq!(ret[0], SUCCESS);
-        unsafe {
-            let rd_obj = &*(rd as *const Rd);
-            assert!(rd_obj.at_state(State::New));
-        };
+        let rd = realm_create();
 
         let ret = rmi::<REALM_ACTIVATE>(&[rd]);
         assert_eq!(ret[0], SUCCESS);

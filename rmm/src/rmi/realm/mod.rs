@@ -54,10 +54,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let params = host::copy_from::<Params>(params_ptr).ok_or(Error::RmiErrorInput)?;
         params.verify_compliance(rd)?;
 
-        let rtt_granule = get_granule_if!(params.rtt_base as usize, GranuleState::Delegated)?;
-        // This is required to prevent from the deadlock in the below epilog
-        // which acquires the same lock again
-        core::mem::drop(rtt_granule);
+        for i in 0..params.rtt_num_start as usize {
+            let rtt = params.rtt_base as usize + i * GRANULE_SIZE;
+            let _ = get_granule_if!(rtt, GranuleState::Delegated)?;
+        }
 
         // revisit rmi.create_realm() (is it necessary?)
         create_realm(params.vmid as usize).map(|_| {
@@ -92,8 +92,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         HashContext::new(&mut rd_obj)?.measure_realm_create(&params)?;
 
         let mut eplilog = move || {
-            let mut rtt_granule = get_granule_if!(rtt_base, GranuleState::Delegated)?;
-            set_granule(&mut rtt_granule, GranuleState::RTT)?;
+            for i in 0..params.rtt_num_start as usize {
+                let rtt = rtt_base + i * GRANULE_SIZE;
+                let mut rtt_granule = get_granule_if!(rtt, GranuleState::Delegated)?;
+                set_granule(&mut rtt_granule, GranuleState::RTT)?;
+            }
             set_granule(&mut rd_granule, GranuleState::RD)
         };
 

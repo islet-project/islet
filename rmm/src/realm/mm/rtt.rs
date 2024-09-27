@@ -1,5 +1,6 @@
 use crate::granule::GRANULE_SHIFT;
 use crate::granule::{set_granule, GranuleState};
+use crate::mm::translation::PageTable as mmPageTable;
 use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::mm::attribute::{desc_type, memattr, permission, shareable};
 use crate::realm::mm::entry;
@@ -64,6 +65,9 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
 
     let map_size = mapping_size(level);
 
+    // The below is added to avoid a fault regarding the RTT entry
+    // during the below `create_pgtbl_at()`
+    mmPageTable::get_ref().map(rtt_addr, true);
     if parent_s2tte.is_unassigned() {
         if parent_s2tte.is_invalid_ripas() {
             panic!("invalid ripas");
@@ -119,9 +123,6 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
         parent_s2tte,
         invalidate,
     )?;
-
-    // The below is added to avoid a fault regarding the RTT entry
-    crate::mm::translation::PageTable::get_ref().map(rtt_addr, true);
 
     Ok(())
 }

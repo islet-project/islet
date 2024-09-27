@@ -385,8 +385,22 @@ mod test {
             granule_addr(6),
         );
 
+        use crate::realm::rd::{Rd, State};
+
+        unsafe {
+            let rd_obj = &*(rd as *const Rd);
+            assert!(rd_obj.at_state(State::New));
+        };
+
         let ret = rmi::<RTT_CREATE>(&[rd, rtt1, ipa, level]);
         assert_eq!(ret[0], SUCCESS);
+
+        // This seems that it should be a failure condition
+        unsafe {
+            let mut rd_obj = &mut *(rd as *mut Rd);
+            rd_obj.set_state(State::SystemOff);
+            assert!(rd_obj.at_state(State::SystemOff));
+        };
 
         level = 0x2;
         let ret = rmi::<RTT_CREATE>(&[rd, rtt2, ipa, level]);

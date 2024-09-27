@@ -3,7 +3,7 @@ use crate::event::Mainloop;
 use crate::granule::array::granule_addr; // alloc_granule
 use crate::monitor::Monitor;
 use crate::rmi::realm::Params;
-use crate::rmi::{GRANULE_DELEGATE, REALM_CREATE, SUCCESS};
+use crate::rmi::{GRANULE_DELEGATE, GRANULE_UNDELEGATE, REALM_CREATE, REALM_DESTROY, SUCCESS};
 
 use alloc::vec::Vec;
 
@@ -55,4 +55,14 @@ pub fn realm_create() -> usize {
     assert_eq!(ret[0], SUCCESS);
 
     rd
+}
+
+pub fn realm_destroy(rd: usize) {
+    let ret = rmi::<REALM_DESTROY>(&[rd]);
+    assert_eq!(ret[0], SUCCESS);
+
+    for mocking_addr in &[granule_addr(0), granule_addr(1)] {
+        let ret = rmi::<GRANULE_UNDELEGATE>(&[*mocking_addr]);
+        assert_eq!(ret[0], SUCCESS);
+    }
 }

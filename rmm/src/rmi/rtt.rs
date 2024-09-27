@@ -353,3 +353,52 @@ pub fn validate_ipa(rd: &Rd, ipa: usize) -> Result<(), Error> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod test {
+    use crate::granule::array::granule_addr;
+    use crate::rmi::{GRANULE_DELEGATE, RTT_CREATE, SUCCESS};
+    use crate::test_utils::*; // alloc_granule
+
+    // Source: https://github.com/ARM-software/cca-rmm-acs
+    // Test Case: cmd_rtt_create
+    #[test]
+    fn rmi_rtt_create_positive() {
+        let rd = realm_create();
+        let mut ipa: usize = 0x0;
+        let mut level: usize = 0x1;
+
+        for mocking_addr in &[
+            granule_addr(3),
+            granule_addr(4),
+            granule_addr(5),
+            granule_addr(6),
+        ] {
+            let ret = rmi::<GRANULE_DELEGATE>(&[*mocking_addr]);
+            assert_eq!(ret[0], SUCCESS);
+        }
+
+        let (rtt1, rtt2, rtt3, rtt4) = (
+            granule_addr(3),
+            granule_addr(4),
+            granule_addr(5),
+            granule_addr(6),
+        );
+
+        let ret = rmi::<RTT_CREATE>(&[rd, rtt1, ipa, level]);
+        assert_eq!(ret[0], SUCCESS);
+
+        level = 0x2;
+        let ret = rmi::<RTT_CREATE>(&[rd, rtt2, ipa, level]);
+        assert_eq!(ret[0], SUCCESS);
+
+        level = 0x3;
+        let ret = rmi::<RTT_CREATE>(&[rd, rtt3, ipa, level]);
+        assert_eq!(ret[0], SUCCESS);
+
+        ipa = 0x40000000;
+        level = 0x2;
+        let ret = rmi::<RTT_CREATE>(&[rd, rtt4, ipa, level]);
+        assert_eq!(ret[0], SUCCESS);
+    }
+}

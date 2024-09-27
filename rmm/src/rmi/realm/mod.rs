@@ -57,6 +57,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         for i in 0..params.rtt_num_start as usize {
             let rtt = params.rtt_base as usize + i * GRANULE_SIZE;
             let _ = get_granule_if!(rtt, GranuleState::Delegated)?;
+            // The below is added to avoid a fault regarding the RTT entry
+            // during the below stage 2 page table creation
+            PageTable::get_ref().map(rtt, true);
         }
 
         // revisit rmi.create_realm() (is it necessary?)
@@ -79,12 +82,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         })?;
 
         let rtt_base = rd_obj.rtt_base();
-        // The below is added to avoid a fault regarding the RTT entry
-        for i in 0..params.rtt_num_start as usize {
-            let rtt = rtt_base + i * GRANULE_SIZE;
-            PageTable::get_ref().map(rtt, true);
-        }
-
         rd_obj.set_hash_algo(params.hash_algo);
 
         #[cfg(not(kani))]

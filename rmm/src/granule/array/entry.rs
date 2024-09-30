@@ -1,4 +1,4 @@
-use crate::granule::array::{align_up, GRANULE_STATUS_TABLE};
+use crate::granule::array::GRANULE_STATUS_TABLE;
 use crate::rmi::error::Error;
 
 use super::{GranuleState, GRANULE_SIZE};
@@ -165,7 +165,9 @@ impl Granule {
         assert!(idx >= 0 && idx < 8);
 
         #[cfg(any(miri, test))]
-        return align_up(unsafe { GRANULE_REGION.as_ptr() as usize + (idx * GRANULE_SIZE) });
+        return crate::test_utils::align_up(unsafe {
+            GRANULE_REGION.as_ptr() as usize + (idx * GRANULE_SIZE)
+        });
 
         #[cfg(kani)]
         return unsafe { GRANULE_REGION.as_ptr() as usize + (idx * GRANULE_SIZE) };

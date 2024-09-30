@@ -356,13 +356,12 @@ pub fn validate_ipa(rd: &Rd, ipa: usize) -> Result<(), Error> {
 
 #[cfg(test)]
 mod test {
-    use crate::granule::array::granule_addr;
     use crate::realm::rd::{Rd, State};
     use crate::rmi::{
         GRANULE_DELEGATE, GRANULE_UNDELEGATE, RTT_CREATE, RTT_DESTROY, RTT_INIT_RIPAS,
         RTT_READ_ENTRY, SUCCESS,
     };
-    use crate::test_utils::*; // alloc_granule
+    use crate::test_utils::*;
 
     use alloc::vec;
 
@@ -374,10 +373,10 @@ mod test {
         let rd = realm_create();
 
         let (rtt1, rtt2, rtt3, rtt4) = (
-            granule_addr(3),
-            granule_addr(4),
-            granule_addr(5),
-            granule_addr(6),
+            alloc_granule(3),
+            alloc_granule(4),
+            alloc_granule(5),
+            alloc_granule(6),
         );
 
         for rtt in &[rtt1, rtt2, rtt3, rtt4] {
@@ -438,7 +437,7 @@ mod test {
     fn rmi_rtt_init_ripas_positive() {
         let rd = realm_create();
 
-        let (rtt1, rtt2, rtt3) = (granule_addr(3), granule_addr(4), granule_addr(5));
+        let (rtt1, rtt2, rtt3) = (alloc_granule(3), alloc_granule(4), alloc_granule(5));
 
         for rtt in &[rtt1, rtt2, rtt3] {
             let ret = rmi::<GRANULE_DELEGATE>(&[*rtt]);

@@ -34,7 +34,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             }?;
 
             #[cfg(not(feature = "gst_page_table"))]
-            let mut granule = get_granule_if!(addr, GranuleState::Undelegated)?;
+            let _granule = get_granule_if!(addr, GranuleState::Undelegated)?;
         }
 
         if smc(MARK_REALM, &[addr])[0] != SMC_SUCCESS {
@@ -63,7 +63,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let addr = arg[0];
         {
             // Avoid deadlock in get_granule() in smc
-            let granule = get_granule_if!(addr, GranuleState::Delegated)?;
+            let _granule = get_granule_if!(addr, GranuleState::Delegated)?;
         }
 
         if smc(MARK_NONSECURE, &[addr])[0] != SMC_SUCCESS {
@@ -93,7 +93,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
 #[cfg(test)]
 mod test {
-    use crate::granule::array::granule_addr;
     use crate::rmi::gpt::GranuleState;
     use crate::rmi::{ERROR_INPUT, GRANULE_DELEGATE, GRANULE_UNDELEGATE, SUCCESS};
     use crate::test_utils::*;
@@ -103,7 +102,7 @@ mod test {
 
     #[test]
     fn rmi_granule_delegate_positive() {
-        let mocking_addr = granule_addr(0);
+        let mocking_addr = alloc_granule(0);
         let ret = rmi::<GRANULE_DELEGATE>(&[mocking_addr]);
         assert_eq!(ret[0], SUCCESS);
         assert!(get_granule_if!(mocking_addr, GranuleState::Delegated).is_ok());

@@ -39,23 +39,6 @@ pub const GRANULE_MEM_SIZE: usize = GRANULE_SIZE * GRANULE_STATUS_TABLE_SIZE;
 //       so the last region cannot be utilized.
 pub static mut GRANULE_REGION: [u8; GRANULE_MEM_SIZE] = [0; GRANULE_MEM_SIZE];
 
-#[cfg(any(miri, test))]
-pub fn granule_addr(idx: usize) -> usize {
-    let start = unsafe { GRANULE_REGION.as_ptr() as usize };
-    let first = align_up(start);
-    first + idx * GRANULE_SIZE
-}
-
-#[cfg(any(miri, test))]
-fn align_up(addr: usize) -> usize {
-    let align_mask = GRANULE_SIZE - 1;
-    if addr & align_mask == 0 {
-        addr
-    } else {
-        (addr | align_mask) + 1
-    }
-}
-
 #[cfg(not(any(kani, miri, test)))]
 pub fn validate_addr(addr: usize) -> bool {
     if addr % GRANULE_SIZE != 0 {

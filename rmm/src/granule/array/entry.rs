@@ -15,6 +15,7 @@ pub struct Granule {
     /// granule state
     state: u8,
     ref_cnt: u8,
+    shrm_token: u8,
 }
 
 impl Granule {
@@ -32,6 +33,7 @@ impl Granule {
 
         if state == GranuleState::SharedData {
             self.ref_cnt = 0;
+            self.shrm_token = 0;
         }
 
         if prev == GranuleState::SharedData && state == GranuleState::Delegated && self.ref_cnt != 0
@@ -65,6 +67,21 @@ impl Granule {
 
     pub fn get_ref(&self) -> u8 {
         self.ref_cnt
+    }
+
+    pub fn set_shrm_token(&mut self, token: u8) -> Result<(), Error> {
+        if self.state != GranuleState::SharedData {
+            return Err(Error::RmiErrorInput);
+        }
+        self.shrm_token = token;
+        Ok(())
+    }
+
+    pub fn get_shrm_token(&self) -> Result<u8, Error> {
+        if self.state != GranuleState::SharedData {
+            return Err(Error::RmiErrorInput);
+        }
+        Ok(self.shrm_token)
     }
 
     pub fn content_mut<T: Content>(&mut self) -> &mut T {
@@ -113,6 +130,7 @@ impl Entry {
         Self(Spinlock::new(Granule {
             state: GranuleState::Undelegated,
             ref_cnt: 0,
+            shrm_token: 0,
         }))
     }
 

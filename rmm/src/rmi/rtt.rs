@@ -13,6 +13,7 @@ use crate::measurement::HashContext;
 use crate::realm::mm::stage2_tte::{invalid_ripas, S2TTE};
 use crate::rmi;
 use crate::rmi::error::Error;
+use crate::rmi::error::InternalError::*;
 #[cfg(not(feature = "gst_page_table"))]
 use crate::{get_granule, get_granule_if};
 #[cfg(feature = "gst_page_table")]
@@ -25,6 +26,11 @@ pub const S2TTE_STRIDE: usize = GRANULE_SHIFT - 3;
 const RIPAS_EMPTY: u64 = 0;
 const RIPAS_RAM: u64 = 1;
 const RIPAS_SHARED: u64 = 3;
+
+pub enum ShrmType {
+    RW = 0,
+    RO = 1,
+}
 
 fn level_to_size(level: usize) -> u64 {
     // TODO: get the translation granule from src/armv9
@@ -348,6 +354,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
 
+        let shrm_token = rd.shrm_token(ShrmType::RW as usize)?;
+        if shrm_token.is_none() {
+            error!("shared realm memory token is None");
+            return Err(Error::RmiErrorOthers(InvalidSharedRealmMemoryToken));
+        }
+
         validate_ipa(ipa, rd.ipa_bits())?;
 
         // 0. Make sure granule state can make a transition to DATA
@@ -364,6 +376,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // L0czek - not needed here see: tf-rmm/runtime/rmi/rtt.c:883
         set_granule(&mut target_page_granule, GranuleState::SharedData)?;
         target_page_granule.inc_ref()?;
+        target_page_granule.set_shrm_token(shrm_token.unwrap())?;
 
         warn!("shared_data_create done. pa {:x}, ipa {:x}", target_pa, ipa);
         Ok(())
@@ -473,6 +486,27 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         warn!("check the target_pa is SharedData granule");
         let mut target_page_granule = get_granule_if!(target_pa, GranuleState::SharedData)?;
+        let target_shrm_token = target_page_granule.get_shrm_token()?;
+        let realm_shrm_token = rd.shrm_token(ShrmType::RO as usize)?;
+
+        if realm_shrm_token.is_none() {
+            error!("shared realm memory token is None");
+            return Err(Error::RmiErrorOthers(InvalidSharedRealmMemoryToken));
+        }
+
+        if realm_shrm_token.unwrap() != target_shrm_token {
+            error!(
+                "realm_shrm_token {:?} != target_shrm_token {:?}",
+                realm_shrm_token.unwrap(),
+                target_shrm_token
+            );
+            return Err(Error::RmiErrorOthers(InvalidSharedRealmMemoryToken));
+        } else {
+            warn!(
+                "shrm token is the same: 0x{:x}. Create local channel",
+                target_shrm_token
+            );
+        }
 
         warn!("call rtt::map_shared_mem_as_ro");
         let ret = crate::rtt::make_shared_as_readonly(rd, ipa, target_pa);

@@ -8,6 +8,7 @@ fn pick(cmd: Command) -> Option<Constraint> {
         rsi::IPA_STATE_SET => Constraint::new(rsi::IPA_STATE_SET, 2, 1),
         rsi::HOST_CALL => Constraint::new(rsi::HOST_CALL, 2, 1),
         rsi::ABI_VERSION => Constraint::new(rsi::ABI_VERSION, 2, 1),
+        rsi::SET_SHRM_TOKEN => Constraint::new(rsi::SET_SHRM_TOKEN, 2, 1),
         rsi::REALM_CONFIG => Constraint::new(rsi::REALM_CONFIG, 2, 1),
         rsi::IPA_STATE_GET => Constraint::new(rsi::IPA_STATE_GET, 2, 1),
         psci::PSCI_VERSION => Constraint::new(psci::PSCI_VERSION, 2, 1),

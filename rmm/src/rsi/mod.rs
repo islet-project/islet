@@ -29,6 +29,7 @@ use safe_abstraction::raw_ptr::assume_safe;
 define_interface! {
     command {
         ABI_VERSION             = 0xc400_0190,
+        SET_SHRM_TOKEN          = 0xc400_0191,
         MEASUREMENT_READ        = 0xc400_0192,
         MEASUREMENT_EXTEND      = 0xc400_0193,
         ATTEST_TOKEN_INIT       = 0xc400_0194,
@@ -107,6 +108,11 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
             let start_idx = i * 8;
             let end_idx = start_idx + 8;
             challenge[start_idx..end_idx].copy_from_slice(&challenge_part.to_le_bytes());
+
+            trace!("challenge start idx: {}, end_idx: {}", start_idx, end_idx);
+            for k in start_idx..end_idx {
+                trace!("challenge 0x{:x}", challenge[k]);
+            }
         }
 
         rec.set_attest_challenge(&challenge);
@@ -370,6 +376,23 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
         );
 
         super::rmi::dummy();
+        Ok(())
+    });
+
+    listen!(rsi, SET_SHRM_TOKEN, |_arg, ret, _rmm, rec, _| {
+        let vcpuid = rec.vcpuid();
+        let mut rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+        let rd = rd_granule.content_mut::<Rd>();
+
+        let idx = get_reg(rd, vcpuid, 1)?;
+        let token = get_reg(rd, vcpuid, 2)? as u8;
+
+        warn!("RSI_SET_SHRM_TOKEN: idx: {}, token: {:x}", idx, token);
+
+        rd.set_shrm_token(idx, Some(token))?;
+
+        set_reg(rd, vcpuid, 0, SUCCESS)?;
+        ret[0] = rmi::SUCCESS_REC_ENTER;
         Ok(())
     });
 }

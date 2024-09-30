@@ -5,6 +5,7 @@ use vmsa::guard::Content;
 use crate::measurement::{Measurement, MEASUREMENTS_SLOT_NR};
 use crate::realm::mm::IPATranslation;
 use crate::realm::vcpu::VCPU;
+use crate::rmi::error::{Error, Error::*};
 use alloc::boxed::Box;
 use alloc::sync::Arc;
 use alloc::vec::Vec;
@@ -22,6 +23,7 @@ pub struct Rd {
     hash_algo: u8,
     pub measurements: [Measurement; MEASUREMENTS_SLOT_NR],
     pub vcpus: Vec<Arc<Mutex<VCPU>>>,
+    shrm_token: [Option<u8>; 2],
 }
 
 impl Rd {
@@ -43,6 +45,7 @@ impl Rd {
         self.s2_table = s2_table.clone();
         self.measurements = [Measurement::empty(); MEASUREMENTS_SLOT_NR];
         self.vcpus = Vec::new();
+        self.shrm_token = [None; 2];
     }
 
     pub fn id(&self) -> usize {
@@ -96,6 +99,24 @@ impl Rd {
 
     pub fn set_hash_algo(&mut self, alg: u8) {
         self.hash_algo = alg;
+    }
+
+    pub fn set_shrm_token(&mut self, idx: usize, token: Option<u8>) -> Result<(), Error> {
+        if 2 <= idx {
+            error!("invalid shrm token idx {}", idx);
+            return Err(RmiErrorInput);
+        }
+        self.shrm_token[idx] = token;
+        Ok(())
+    }
+
+    pub fn shrm_token(&self, idx: usize) -> Result<Option<u8>, Error> {
+        if 2 <= idx {
+            error!("invalid shrm token idx {}", idx);
+            return Err(RmiErrorInput);
+        }
+
+        Ok(self.shrm_token[idx])
     }
 }
 

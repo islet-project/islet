@@ -22,6 +22,7 @@ pub enum InternalError {
     NotExistVCPU,
     MeasurementError,
     InvalidMeasurementIndex,
+    InvalidSharedRealmMemoryToken,
 }
 
 impl From<Error> for usize {

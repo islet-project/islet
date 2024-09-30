@@ -1,9 +1,10 @@
 use crate::event::Context;
 use crate::event::Mainloop;
-use crate::granule::array::granule_addr; // alloc_granule
+use crate::granule::{GRANULE_REGION, GRANULE_SIZE};
 use crate::monitor::Monitor;
 use crate::rmi::realm::Params;
 use crate::rmi::{GRANULE_DELEGATE, GRANULE_UNDELEGATE, REALM_CREATE, REALM_DESTROY, SUCCESS};
+use crate::{get_granule, get_granule_if};
 
 use alloc::vec::Vec;
 
@@ -33,15 +34,13 @@ pub fn extract_bits(value: usize, start: u32, end: u32) -> usize {
     (value >> start) & mask
 }
 
-use crate::{get_granule, get_granule_if};
-
 pub fn realm_create() -> usize {
-    for mocking_addr in &[granule_addr(0), granule_addr(1)] {
+    for mocking_addr in &[alloc_granule(0), alloc_granule(1)] {
         let ret = rmi::<GRANULE_DELEGATE>(&[*mocking_addr]);
         assert_eq!(ret[0], SUCCESS);
     }
 
-    let (rd, rtt, params_ptr) = (granule_addr(0), granule_addr(1), granule_addr(2));
+    let (rd, rtt, params_ptr) = (alloc_granule(0), alloc_granule(1), alloc_granule(2));
 
     unsafe {
         let params = &mut *(params_ptr as *mut Params);
@@ -61,8 +60,23 @@ pub fn realm_destroy(rd: usize) {
     let ret = rmi::<REALM_DESTROY>(&[rd]);
     assert_eq!(ret[0], SUCCESS);
 
-    for mocking_addr in &[granule_addr(0), granule_addr(1)] {
+    for mocking_addr in &[alloc_granule(0), alloc_granule(1)] {
         let ret = rmi::<GRANULE_UNDELEGATE>(&[*mocking_addr]);
         assert_eq!(ret[0], SUCCESS);
     }
+}
+
+pub fn align_up(addr: usize) -> usize {
+    let align_mask = GRANULE_SIZE - 1;
+    if addr & align_mask == 0 {
+        addr
+    } else {
+        (addr | align_mask) + 1
+    }
+}
+
+pub fn alloc_granule(idx: usize) -> usize {
+    let start = unsafe { GRANULE_REGION.as_ptr() as usize };
+    let first = crate::test_utils::align_up(start);
+    first + idx * GRANULE_SIZE
 }

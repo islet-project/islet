@@ -162,7 +162,6 @@ fn create_realm(vmid: usize) -> Result<(), Error> {
 
 #[cfg(test)]
 mod test {
-    use crate::granule::array::granule_addr;
     use crate::realm::rd::{Rd, State};
     use crate::rmi::{
         ERROR_INPUT, GRANULE_UNDELEGATE, REALM_ACTIVATE, REALM_CREATE, REALM_DESTROY, SUCCESS,

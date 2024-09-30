@@ -24,9 +24,10 @@ referenced here as `$ROOT`.
     make deps
     make compile-image
 
-#### Copy resulting kernel image to islet shared dir
+#### Copy resulting kernel and initramfs images to islet shared dir
 
-    cp linux/arch/arm64/boot/Image $ROOT/islet/out/shared/nasz-realm
+    cp out/Image $ROOT/islet/out/shared/nasz-realm
+    cp out/initramfs.cpio.gz $ROOT/islet/out/shared/initramfs.cpio.gz
 
 ### Build warden daemon
 
@@ -40,12 +41,63 @@ referenced here as `$ROOT`.
 
 ## Provision the Application/Realm
 
-### Obtain the RIM (TODO)
+### Obtain the RIM
 
-Can be read when launching the realm in the Islet logs (telnet 5003)
+To obtain the RIM we can use the lkvm-rim-measurer tool.
+Firstly, clone the lkvm-rim-measurer tool repository.
 
-    [INFO]islet_rmm::rmi::realm -- RIM: 695924ba77cea5e06c4597b5a9db058ceeb97fc8a0a1fd9727248da02fb3958d
-    [INFO]islet_rmm::rmi::realm -- RIM_HASH_ALGO: sha256
+    cd $ROOT
+    git clone --single-branch -b eac5/3rd-kvmtool-realm-metadata-rim-measurer git@github.com:islet-project/assets.git  rim-measurer
+
+Clone the libfdt library
+
+    git clone git://git.kernel.org/pub/scm/utils/dtc/dtc.git
+
+Build the libfdt library
+
+    cd $ROOT/dtc
+    make
+
+Build the lkvm-rim-measurer tool
+
+    cd $ROOT/rim-measurer
+    ./build-rim-measurer.sh
+
+This should compile the lkvm-rim-measurer executable (located in $ROOT/rim-measurer directory).
+
+Copy the linux and initramfs images to the rim-measurer directory:
+
+	cp $ROOT/realm-manager/realm/out/Image .
+	cp $ROOT/realm-manager/realm/out/initramfs.cpio.gz .
+
+Create a dummy disk:
+
+    touch dummy-disk.img
+
+Launch the lkvm-rim-measurer tool to obtain the RIM:
+
+    ./lkvm-rim-measurer run \
+		-c 1 \
+		-k Image\
+		-i initramfs.cpio.gz \
+		-m 256 \
+		-n tapif=tap100,guest_mac=52:55:00:d1:55:02 \
+		--vsock 12344 \
+		--console serial \
+		--irqchip=gicv3 \
+		--disable-sve \
+		--debug \
+		--realm \
+		--measurement-algo=sha256 \
+		-d dummy-disk.img \
+		--islet
+
+The tool should display the RIM at the last line e.g.:
+
+	...
+	RIM: EB89CD86CEC19ABA5008E9380361362DBE5E4A5EBC01869166EEDD206840BD410000000000000000000000000000000000000000000000000000000000000000
+
+For the sha256 measurement algorithm, save the first 64 hexadecimal characters of RIM for the further use.
 
 ### Create provisioning files with RIM
 
@@ -185,7 +237,7 @@ All the commands below are within the UI of the client:
 
 ### Define realm
 
-    create-realm -n 1 -r 256 -k ./nasz-realm -v 12344 -z 5156ae05-1da0-4e7b-a168-ec8d1869890e -d ./metadata.bin
+    create-realm -n 1 -r 256 -k ./nasz-realm -i initramfs.cpio.gz -v 12344 -z 5156ae05-1da0-4e7b-a168-ec8d1869890e -d ./metadata.bin
 
 ### Define an application to provision (choose app below for -n)
 

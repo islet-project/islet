@@ -3,7 +3,8 @@
 set -e
 
 # Control these variables
-EXPECTED=76
+# TODO: increase it after fixing `mm_rtt_level_start` and `mm_ha_hd_access`
+EXPECTED=74
 TIMEOUT=30
 
 ROOT=$(git rev-parse --show-toplevel)

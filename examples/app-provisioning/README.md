@@ -1,5 +1,11 @@
 # App provisioning on islet instruction
 
+Islet project implements an application provisioning mechanism that provides a generic way to install applications from a registry. It uses docker containers (OCI) as application image format – this way, Islet can benefit from the existing infrastructure & standards for creating and shipping applications.
+
+The process of provisioning is handled by a realm daemon which is responsible for decrypting and mounting storage for applications as well as installing and running them. The storage is created by stacking 2 filesystems using OverlayFS so that the application can modify arbitrary files and directories - changes will be stored at the “Data.raw” disk, but the application image disk “Image.raw” will be untouched, containing only original binaries. Additionally, to provide confidentiality to the applications, design employs sealing key derivation mechanism similar to the one described in Open Profile for DICE specification. It is a layered approach, where each layer is responsible for deriving its own keys and preparing key material for the next layer - so that the lower layer keys depend on all upper ones. The storage encryption keys depend on both: the application identity and also on the hardware trust anchor taken from HES. Since key derivation is based on objects identity (not full data hash), this mechanism allows for easy application & firmware update, without breaking access to data stored in persistent storage.
+
+# Demo instruction
+
 All repositories here are to be cloned to some one common directory that is
 referenced here as `$ROOT`.
 

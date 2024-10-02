@@ -4,8 +4,7 @@ use crate::granule::{GRANULE_REGION, GRANULE_SIZE};
 use crate::monitor::Monitor;
 use crate::rmi::realm::Params as RealmParams;
 use crate::rmi::rec::params::Params as RecParams;
-use crate::rmi::{GRANULE_DELEGATE, GRANULE_UNDELEGATE, REALM_CREATE, REALM_DESTROY, SUCCESS};
-use crate::rmi::{MAX_REC_AUX_GRANULES, REC_AUX_COUNT, REC_CREATE, REC_DESTROY};
+use crate::rmi::*;
 
 use alloc::vec::Vec;
 
@@ -113,6 +112,27 @@ pub fn rec_destroy(rec: usize) {
     }
 }
 
+pub fn data_create(rd: usize, ipa: usize, idx_data: usize, idx_src: usize) {
+    const RMI_NO_MEASURE_CONTENT: usize = 0;
+
+    mock::host::map(rd, ipa);
+
+    let base = (ipa / L3_SIZE) * L3_SIZE;
+    let top = base + L3_SIZE;
+    let ret = rmi::<RTT_INIT_RIPAS>(&[rd, base, top]);
+    assert_eq!(ret[0], SUCCESS);
+
+    let data = alloc_granule(idx_data);
+    let ret = rmi::<GRANULE_DELEGATE>(&[data]);
+    assert_eq!(ret[0], SUCCESS);
+
+    let src = alloc_granule(idx_src);
+    let flags = RMI_NO_MEASURE_CONTENT;
+
+    let ret = rmi::<DATA_CREATE>(&[rd, data, ipa, src, flags]);
+    assert_eq!(ret[0], SUCCESS);
+}
+
 pub fn align_up(addr: usize) -> usize {
     let align_mask = GRANULE_SIZE - 1;
     if addr & align_mask == 0 {
@@ -141,11 +161,20 @@ pub const IDX_REC: usize = 7;
 pub const IDX_REC_PARAMS: usize = 8;
 pub const IDX_REC_AUX: usize = 9;
 pub const IDX_NS_DESC: usize = 25;
+pub const IDX_DATA1: usize = 26;
+pub const IDX_DATA2: usize = 27;
+pub const IDX_DATA3: usize = 28;
+pub const IDX_DATA4: usize = 29;
+pub const IDX_SRC1: usize = 30;
+pub const IDX_SRC2: usize = 31;
+
 pub fn alloc_granule(idx: usize) -> usize {
     let start = unsafe { GRANULE_REGION.as_ptr() as usize };
     let first = crate::test_utils::align_up(start);
     first + idx * GRANULE_SIZE
 }
+
+pub use alloc_granule as granule_addr;
 
 pub const MAP_LEVEL: usize = 3;
 pub const L3_SIZE: usize = GRANULE_SIZE;

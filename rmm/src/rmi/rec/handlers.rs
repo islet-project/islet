@@ -276,7 +276,7 @@ mod test {
 
     // Source: https://github.com/ARM-software/cca-rmm-acs
     // Test Case: cmd_rec_create
-    // Covered RMIs: REC_CREATE, REC_DESTROY
+    // Covered RMIs: REC_CREATE, REC_DESTROY, REC_AUX_COUNT
     // Related Spec: D1.2.4 REC creation flow
     #[test]
     fn rmi_rec_create_positive() {

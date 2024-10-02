@@ -189,6 +189,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorRec);
         }
 
+        #[cfg(not(any(miri, test)))]
         if !crate::gic::validate_state(&run) {
             return Err(Error::RmiErrorRec);
         }
@@ -198,6 +199,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             do_host_call(arg, ret, rmm, &mut rec, &mut run)?;
         }
 
+        #[cfg(not(any(miri, test)))]
         crate::gic::receive_state_from_host(&mut rec, &run)?;
         crate::mmio::emulate_mmio(&mut rec, &run)?;
 
@@ -209,6 +211,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             warn!("TWI(E) in HCR_EL2 is currently fixed to 'no trap'");
         }
 
+        #[cfg(not(any(miri, test)))]
         activate_stage2_mmu(&rec);
 
         let mut ret_ns;
@@ -219,22 +222,47 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
             let rd = rd_granule.content::<Rd>()?;
             rec.set_state(RecState::Running);
-            crate::rec::run_prepare(&rd, rec.vcpuid(), &mut rec, 0)?;
-            // XXX: we explicitly release Rd's lock here, because RSI calls
-            //      would acquire the same lock again (deadlock).
-            core::mem::drop(rd_granule);
-            match crate::rec::run() {
-                Ok(realm_exit_res) => {
-                    (ret_ns, ret[0]) = handle_realm_exit(realm_exit_res, rmm, &mut rec, &mut run)?
+
+            // TODO: Use cfg_if
+            #[cfg(not(any(miri, test)))]
+            {
+                crate::rec::run_prepare(&rd, rec.vcpuid(), &mut rec, 0)?;
+                // XXX: we explicitly release Rd's lock here, because RSI calls
+                //      would acquire the same lock again (deadlock).
+                core::mem::drop(rd_granule);
+                match crate::rec::run() {
+                    Ok(realm_exit_res) => {
+                        (ret_ns, ret[0]) =
+                            handle_realm_exit(realm_exit_res, rmm, &mut rec, &mut run)?
+                    }
+                    Err(_) => ret[0] = rmi::ERROR_REC,
                 }
-                Err(_) => ret[0] = rmi::ERROR_REC,
             }
+
+            #[cfg(any(miri, test))]
+            {
+                // specialized
+                /*
+                use crate::rsi::PSCI_CPU_ON;
+                use crate::event::realmexit::RecExitReason;
+                let reason: u64 = RecExitReason::PSCI.into();
+
+                rec.set_psci_pending(true);
+                run.set_exit_reason(reason as u8);
+                run.set_gpr(0, PSCI_CPU_ON as u64).unwrap();
+
+                set_reg(&mut rec, 1, 1).unwrap();*/
+                use crate::test_utils::mock;
+                mock::realm::setup_psci_complete(&mut rec, &mut run);
+            }
+
             rec.set_state(RecState::Ready);
 
             if ret_ns {
                 break;
             }
         }
+        #[cfg(not(any(miri, test)))]
         crate::gic::send_state_to_host(&rec, &mut run)?;
         crate::realm::timer::send_state_to_host(&rec, &mut run)?;
 
@@ -272,6 +300,10 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
 #[cfg(test)]
 mod test {
+    use crate::event::realmexit::RecExitReason;
+    use crate::rmi::rec::run::Run;
+    use crate::rmi::*;
+    use crate::rsi::PSCI_CPU_ON;
     use crate::test_utils::*;
 
     // Source: https://github.com/ARM-software/cca-rmm-acs
@@ -281,8 +313,34 @@ mod test {
     #[test]
     fn rmi_rec_create_positive() {
         let rd = realm_create();
-        let rec = rec_create(rd);
-        rec_destroy(rec);
+        rec_create(rd, IDX_REC1, IDX_REC1_PARAMS, IDX_REC1_AUX);
+        rec_destroy(IDX_REC1, IDX_REC1_AUX);
         realm_destroy(rd);
+    }
+
+    // Source: https://github.com/ARM-software/cca-rmm-acs
+    // Test Case: cmd_psci_complete
+    // Covered RMIs: REC_ENTER, PSCI_COMPLETE
+    #[test]
+    fn rmi_rec_enter_positive() {
+        let rd = mock::host::realm_setup();
+
+        let (rec1, run1) = (granule_addr(IDX_REC1), granule_addr(IDX_REC1_RUN));
+        let ret = rmi::<REC_ENTER>(&[rec1, run1]);
+        assert_eq!(ret[0], SUCCESS);
+
+        unsafe {
+            let run = &*(run1 as *const Run);
+            let reason: u64 = RecExitReason::PSCI.into();
+            assert_eq!(run.exit_reason(), reason as u8);
+            assert_eq!(run.gpr(0).unwrap(), PSCI_CPU_ON as u64);
+        }
+
+        let rec2 = granule_addr(IDX_REC2);
+        const PSCI_E_SUCCESS: usize = 0;
+        let ret = rmi::<PSCI_COMPLETE>(&[rec1, rec2, PSCI_E_SUCCESS]);
+        assert_eq!(ret[0], SUCCESS);
+
+        mock::host::realm_teardown(rd);
     }
 }

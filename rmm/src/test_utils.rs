@@ -66,8 +66,8 @@ pub fn realm_destroy(rd: usize) {
     }
 }
 
-pub fn rec_create(rd: usize) -> usize {
-    let (rec, params_ptr) = (alloc_granule(IDX_REC), alloc_granule(IDX_REC_PARAMS));
+pub fn rec_create(rd: usize, idx_rec: usize, idx_rec_params: usize, idx_rec_aux_start: usize) {
+    let (rec, params_ptr) = (alloc_granule(idx_rec), alloc_granule(idx_rec_params));
     let ret = rmi::<GRANULE_DELEGATE>(&[rec]);
     assert_eq!(ret[0], SUCCESS);
 
@@ -80,11 +80,11 @@ pub fn rec_create(rd: usize) -> usize {
         let params = &mut *(params_ptr as *mut RecParams);
         params.pc = 0;
         params.flags = 1; // RMI_RUNNABLE
-        params.mpidr = 0; // MPIDR_VALID
+        params.mpidr = (idx_rec % IDX_REC1) as u64;
         params.num_aux = aux_count as u64;
 
         for idx in 0..aux_count {
-            let mocking_addr = alloc_granule(idx + IDX_REC_AUX);
+            let mocking_addr = alloc_granule(idx + idx_rec_aux_start);
             let ret = rmi::<GRANULE_DELEGATE>(&[mocking_addr]);
             assert_eq!(ret[0], SUCCESS);
 
@@ -94,11 +94,10 @@ pub fn rec_create(rd: usize) -> usize {
 
     let ret = rmi::<REC_CREATE>(&[rd, rec, params_ptr]);
     assert_eq!(ret[0], SUCCESS);
-
-    rec
 }
 
-pub fn rec_destroy(rec: usize) {
+pub fn rec_destroy(idx_rec: usize, idx_rec_aux_start: usize) {
+    let rec = granule_addr(idx_rec);
     let ret = rmi::<REC_DESTROY>(&[rec]);
     assert_eq!(ret[0], SUCCESS);
 
@@ -106,7 +105,7 @@ pub fn rec_destroy(rec: usize) {
     assert_eq!(ret[0], SUCCESS);
 
     for idx in 0..MAX_REC_AUX_GRANULES {
-        let mocking_addr = alloc_granule(idx + IDX_REC_AUX);
+        let mocking_addr = alloc_granule(idx + idx_rec_aux_start);
         let ret = rmi::<GRANULE_UNDELEGATE>(&[mocking_addr]);
         assert_eq!(ret[0], SUCCESS);
     }
@@ -154,19 +153,30 @@ pub fn align_up(addr: usize) -> usize {
  * 8: REC Params
  * 9..25: REC AUX
  */
+
+pub const IDX_RD: usize = 0;
+pub const IDX_RTT_LEVEL0: usize = 1;
+pub const IDX_REALM_PARAMS: usize = 2;
 pub const IDX_RTT_LEVEL1: usize = 3;
 pub const IDX_RTT_LEVEL2: usize = 4;
 pub const IDX_RTT_LEVEL3: usize = 5;
-pub const IDX_REC: usize = 7;
-pub const IDX_REC_PARAMS: usize = 8;
-pub const IDX_REC_AUX: usize = 9;
-pub const IDX_NS_DESC: usize = 25;
-pub const IDX_DATA1: usize = 26;
-pub const IDX_DATA2: usize = 27;
-pub const IDX_DATA3: usize = 28;
-pub const IDX_DATA4: usize = 29;
-pub const IDX_SRC1: usize = 30;
-pub const IDX_SRC2: usize = 31;
+
+pub const IDX_REC1: usize = 7;
+pub const IDX_REC2: usize = 8;
+pub const IDX_REC1_AUX: usize = 9;
+pub const IDX_REC2_AUX: usize = 25; // 9 + 16
+pub const IDX_REC1_PARAMS: usize = 41; // 25 + 16
+pub const IDX_REC2_PARAMS: usize = 42;
+pub const IDX_REC1_RUN: usize = 43;
+pub const IDX_REC2_RUN: usize = 44;
+
+pub const IDX_NS_DESC: usize = 45;
+pub const IDX_DATA1: usize = 46;
+pub const IDX_DATA2: usize = 47;
+pub const IDX_DATA3: usize = 48;
+pub const IDX_DATA4: usize = 49;
+pub const IDX_SRC1: usize = 50;
+pub const IDX_SRC2: usize = 51;
 
 pub fn alloc_granule(idx: usize) -> usize {
     let start = unsafe { GRANULE_REGION.as_ptr() as usize };
@@ -251,6 +261,44 @@ pub mod mock {
                 let ret = rmi::<GRANULE_UNDELEGATE>(&[*mocking_addr]);
                 assert_eq!(ret[0], SUCCESS);
             }
+        }
+
+        pub fn realm_setup() -> usize {
+            let rd = realm_create();
+            rec_create(rd, IDX_REC1, IDX_REC1_PARAMS, IDX_REC1_AUX);
+            rec_create(rd, IDX_REC2, IDX_REC2_PARAMS, IDX_REC2_AUX);
+
+            let ret = rmi::<REALM_ACTIVATE>(&[rd]);
+            assert_eq!(ret[0], SUCCESS);
+
+            rd
+        }
+
+        pub fn realm_teardown(rd: usize) {
+            rec_destroy(IDX_REC1, IDX_REC1_AUX);
+            rec_destroy(IDX_REC2, IDX_REC2_AUX);
+            realm_destroy(rd);
+        }
+    }
+
+    pub mod realm {
+        use super::super::*;
+        use crate::event::realmexit::RecExitReason;
+        use crate::realm::context::set_reg;
+        use crate::rec::Rec;
+        use crate::rmi::rec::run::Run;
+        use crate::rsi::PSCI_CPU_ON;
+
+        pub fn setup_psci_complete(rec: &mut Rec<'_>, run: &mut Run) {
+            let reason: u64 = RecExitReason::PSCI.into();
+
+            // caller
+            rec.set_psci_pending(true);
+            run.set_exit_reason(reason as u8);
+            run.set_gpr(0, PSCI_CPU_ON as u64).unwrap();
+
+            let target_mpidr = IDX_REC2 % IDX_REC1;
+            set_reg(rec, 1, target_mpidr).unwrap();
         }
     }
 }

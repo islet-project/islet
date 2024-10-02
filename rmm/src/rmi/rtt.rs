@@ -357,11 +357,8 @@ pub fn validate_ipa(rd: &Rd, ipa: usize) -> Result<(), Error> {
 #[cfg(test)]
 mod test {
     use crate::realm::rd::{Rd, State};
-    use crate::rmi::{
-        GRANULE_DELEGATE, GRANULE_UNDELEGATE, RTT_CREATE, RTT_DESTROY, RTT_INIT_RIPAS,
-        RTT_READ_ENTRY, SUCCESS,
-    };
-    use crate::test_utils::*;
+    use crate::rmi::*;
+    use crate::test_utils::{mock, *};
 
     use alloc::vec;
 
@@ -436,45 +433,58 @@ mod test {
     #[test]
     fn rmi_rtt_init_ripas_positive() {
         let rd = realm_create();
+        let ipa = 0;
+        mock::host::map(rd, ipa);
 
-        let (rtt1, rtt2, rtt3) = (alloc_granule(3), alloc_granule(4), alloc_granule(5));
-
-        for rtt in &[rtt1, rtt2, rtt3] {
-            let ret = rmi::<GRANULE_DELEGATE>(&[*rtt]);
-            assert_eq!(ret[0], SUCCESS);
-        }
-
-        let test_data = vec![(rtt1, 0x0, 0x1), (rtt2, 0x0, 0x2), (rtt3, 0x0, 0x3)];
-
-        for (rtt, ipa, level) in &test_data {
-            let ret = rmi::<RTT_CREATE>(&[rd, *rtt, *ipa, *level]);
-            assert_eq!(ret[0], SUCCESS);
-        }
-
-        let base = test_data[2].1;
-        let top = 0x1000;
+        let base = (ipa / L3_SIZE) * L3_SIZE;
+        let top = base + L3_SIZE;
         let ret = rmi::<RTT_INIT_RIPAS>(&[rd, base, top]);
         assert_eq!(ret[0], SUCCESS);
         assert_eq!(ret[1], top);
 
-        let (rtt3_ipa, rtt3_level) = (test_data[2].1, test_data[2].2);
-        let ret = rmi::<RTT_READ_ENTRY>(&[rd, rtt3_ipa, rtt3_level]);
+        let ret = rmi::<RTT_READ_ENTRY>(&[rd, ipa, MAP_LEVEL]);
         assert_eq!(ret[0], SUCCESS);
 
         let (level, ripas) = (ret[1], ret[4]);
         const RMI_RAM: usize = 1;
-        assert_eq!(level, rtt3_level);
+        assert_eq!(level, MAP_LEVEL);
         assert_eq!(ripas, RMI_RAM);
 
-        for (_, ipa, level) in test_data.iter().rev() {
-            let ret = rmi::<RTT_DESTROY>(&[rd, *ipa, *level]);
-            assert_eq!(ret[0], SUCCESS);
-        }
+        mock::host::unmap(rd, ipa);
 
-        for rtt in &[rtt1, rtt2, rtt3] {
-            let ret = rmi::<GRANULE_UNDELEGATE>(&[*rtt]);
-            assert_eq!(ret[0], SUCCESS);
-        }
+        realm_destroy(rd);
+    }
+
+    // Source: https://github.com/ARM-software/cca-rmm-acs
+    // Test Case: cmd_rtt_map_unprotected
+    // Covered RMIs: RTT_MAP_UNPROTECTED, RTT_UNMAP_UNPROTECTED
+    #[test]
+    fn rmi_rtt_map_unprotected_positive() {
+        let rd = realm_create();
+
+        const IPA_ADDR_UNPROTECTED_UNASSIGNED: usize = (1 << (IPA_WIDTH - 1)) + L3_SIZE;
+        mock::host::map(rd, IPA_ADDR_UNPROTECTED_UNASSIGNED);
+
+        let ipa = IPA_ADDR_UNPROTECTED_UNASSIGNED;
+        let level = MAP_LEVEL;
+        let ns = alloc_granule(IDX_NS_DESC);
+        let desc = ns | ATTR_NORMAL_WB_WA_RA | ATTR_STAGE2_AP_RW | ATTR_INNER_SHARED;
+
+        let ret = rmi::<RTT_MAP_UNPROTECTED>(&[rd, ipa, level, desc]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let ret = rmi::<RTT_READ_ENTRY>(&[rd, ipa, level]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let (_level, state, out_desc, _ripas) = (ret[1], ret[2], ret[3], ret[4]);
+        const RMI_ASSIGNED: usize = 1;
+        assert_eq!(state, RMI_ASSIGNED);
+        assert_eq!(out_desc, desc);
+
+        let ret = rmi::<RTT_UNMAP_UNPROTECTED>(&[rd, ipa, level]);
+        assert_eq!(ret[0], SUCCESS);
+
+        mock::host::unmap(rd, ipa);
 
         realm_destroy(rd);
     }

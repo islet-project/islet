@@ -272,11 +272,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
 #[cfg(test)]
 mod test {
-    use crate::realm::rd::{Rd, State};
-    use crate::rmi::{ERROR_INPUT, MAX_REC_AUX_GRANULES, REC_AUX_COUNT, SUCCESS};
     use crate::test_utils::*;
-
-    use alloc::vec;
 
     // Source: https://github.com/ARM-software/cca-rmm-acs
     // Test Case: cmd_rec_create

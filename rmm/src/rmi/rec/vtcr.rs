@@ -5,7 +5,13 @@ use crate::rmi::error::Error;
 use aarch64_cpu::registers::*;
 
 fn is_feat_vmid16_present() -> bool {
-    ID_AA64MMFR1_EL1.read(ID_AA64MMFR1_EL1::VMIDBits) == ID_AA64MMFR1_EL1::VMIDBits::Bits16.into()
+    #[cfg(not(any(miri, test)))]
+    let ret = ID_AA64MMFR1_EL1.read(ID_AA64MMFR1_EL1::VMIDBits)
+        == ID_AA64MMFR1_EL1::VMIDBits::Bits16.into();
+
+    #[cfg(any(miri, test))]
+    let ret = true;
+    ret
 }
 
 pub fn prepare_vtcr(rd: &Rd) -> Result<u64, Error> {

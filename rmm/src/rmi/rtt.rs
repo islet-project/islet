@@ -356,6 +356,7 @@ pub fn validate_ipa(rd: &Rd, ipa: usize) -> Result<(), Error> {
 
 #[cfg(test)]
 mod test {
+    use crate::granule::GRANULE_SIZE;
     use crate::realm::rd::{Rd, State};
     use crate::rmi::*;
     use crate::test_utils::{mock, *};
@@ -485,6 +486,99 @@ mod test {
         assert_eq!(ret[0], SUCCESS);
 
         mock::host::unmap(rd, ipa);
+
+        realm_destroy(rd);
+    }
+
+    // Source: https://github.com/ARM-software/cca-rmm-acs
+    // Test Case: cmd_data_destroy
+    // Covered RMIs: DATA_CREATE, DATA_CREATE_UNKNOWN, DATA_DESTROY
+    #[test]
+    fn rmi_data_create_positive() {
+        let rd = realm_create();
+
+        const IPA_ADDR_ASSIGNED: usize = GRANULE_SIZE;
+        const IPA_ADDR_DATA: usize = GRANULE_SIZE * 3;
+        const IPA_ADDR_PROTECTED_ASSIGNED_EMPTY: usize = GRANULE_SIZE * 4;
+
+        const RMI_UNASSIGNED: usize = 0;
+        const RMI_DESTROYED: usize = 2;
+        const RMI_EMPTY: usize = 0;
+
+        data_create(rd, IPA_ADDR_ASSIGNED, IDX_DATA1, IDX_SRC1);
+
+        data_create(rd, IPA_ADDR_DATA, IDX_DATA2, IDX_SRC2);
+
+        let ipa = IPA_ADDR_ASSIGNED;
+        let ret = rmi::<DATA_DESTROY>(&[rd, ipa]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let (data, top) = (ret[1], ret[2]);
+        assert_eq!(data, granule_addr(IDX_DATA1));
+        assert_eq!(top, IPA_ADDR_DATA);
+
+        // Check for RIPAS and HIPAS from RIPAS = RAM
+        let ret = rmi::<RTT_READ_ENTRY>(&[rd, ipa, MAP_LEVEL]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let (_level, state, _desc, ripas) = (ret[1], ret[2], ret[3], ret[4]);
+        assert_eq!(state, RMI_UNASSIGNED);
+        assert_eq!(ripas, RMI_DESTROYED);
+
+        // Check for RIPAS transition from ASSIGNED,DESTROYED
+        let data = alloc_granule(IDX_DATA3);
+        let ret = rmi::<GRANULE_DELEGATE>(&[data]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let ret = rmi::<DATA_CREATE_UNKNOWN>(&[rd, data, ipa]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let ret = rmi::<DATA_DESTROY>(&[rd, ipa]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let ret = rmi::<RTT_READ_ENTRY>(&[rd, ipa, MAP_LEVEL]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let (_level, state, _desc, ripas) = (ret[1], ret[2], ret[3], ret[4]);
+        assert_eq!(state, RMI_UNASSIGNED);
+        assert_eq!(ripas, RMI_DESTROYED);
+
+        // Check for RIPAS and HIPAS from RIPAS = EMPTY
+        let ipa = IPA_ADDR_PROTECTED_ASSIGNED_EMPTY;
+        let ret = rmi::<RTT_READ_ENTRY>(&[rd, ipa, MAP_LEVEL]);
+        assert_eq!(ret[0], SUCCESS);
+
+        mock::host::map(rd, ipa);
+
+        let data = alloc_granule(IDX_DATA4);
+        let ret = rmi::<GRANULE_DELEGATE>(&[data]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let ret = rmi::<DATA_CREATE_UNKNOWN>(&[rd, data, ipa]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let ret = rmi::<RTT_READ_ENTRY>(&[rd, ipa, MAP_LEVEL]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let ret = rmi::<DATA_DESTROY>(&[rd, ipa]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let ret = rmi::<RTT_READ_ENTRY>(&[rd, ipa, MAP_LEVEL]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let (_level, state, _desc, ripas) = (ret[1], ret[2], ret[3], ret[4]);
+        assert_eq!(state, RMI_UNASSIGNED);
+        assert_eq!(ripas, RMI_EMPTY);
+
+        let ret = rmi::<DATA_DESTROY>(&[rd, IPA_ADDR_DATA]);
+        assert_eq!(ret[0], SUCCESS);
+
+        // Cleanup
+        mock::host::unmap(rd, ipa);
+        for idx in IDX_DATA1..IDX_DATA4 + 1 {
+            let ret = rmi::<GRANULE_UNDELEGATE>(&[granule_addr(idx)]);
+            assert_eq!(ret[0], SUCCESS);
+        }
 
         realm_destroy(rd);
     }

@@ -163,9 +163,7 @@ fn create_realm(vmid: usize) -> Result<(), Error> {
 #[cfg(test)]
 mod test {
     use crate::realm::rd::{Rd, State};
-    use crate::rmi::{
-        ERROR_INPUT, GRANULE_UNDELEGATE, REALM_ACTIVATE, REALM_CREATE, REALM_DESTROY, SUCCESS,
-    };
+    use crate::rmi::{ERROR_INPUT, REALM_ACTIVATE, REALM_CREATE, SUCCESS};
     use crate::test_utils::*;
 
     use alloc::vec;

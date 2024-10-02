@@ -269,3 +269,24 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         complete_psci(&mut caller, &mut target, status)
     });
 }
+
+#[cfg(test)]
+mod test {
+    use crate::realm::rd::{Rd, State};
+    use crate::rmi::{ERROR_INPUT, MAX_REC_AUX_GRANULES, REC_AUX_COUNT, SUCCESS};
+    use crate::test_utils::*;
+
+    use alloc::vec;
+
+    // Source: https://github.com/ARM-software/cca-rmm-acs
+    // Test Case: cmd_rec_create
+    // Covered RMIs: REC_CREATE, REC_DESTROY
+    // Related Spec: D1.2.4 REC creation flow
+    #[test]
+    fn rmi_rec_create_positive() {
+        let rd = realm_create();
+        let rec = rec_create(rd);
+        rec_destroy(rec);
+        realm_destroy(rd);
+    }
+}

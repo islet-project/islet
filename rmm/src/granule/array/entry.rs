@@ -160,9 +160,9 @@ impl Granule {
     #[cfg(any(kani, miri, test))]
     // DIFF: calculate addr using GRANULE_REGION
     pub fn index_to_addr(&self) -> usize {
-        use crate::granule::GRANULE_REGION;
+        use crate::granule::{GRANULE_REGION, GRANULE_STATUS_TABLE_SIZE};
         let idx = self.index();
-        assert!(idx >= 0 && idx < 8);
+        assert!(idx >= 0 && idx < GRANULE_STATUS_TABLE_SIZE);
 
         #[cfg(any(miri, test))]
         return crate::test_utils::align_up(unsafe {

@@ -124,7 +124,7 @@ pub const GRANULE_STATUS_TABLE_SIZE: usize = 0xfc000; // == RMM_MAX_GRANULES
 #[cfg(kani)]
 pub const GRANULE_STATUS_TABLE_SIZE: usize = 8;
 #[cfg(any(miri, test))]
-pub const GRANULE_STATUS_TABLE_SIZE: usize = 40;
+pub const GRANULE_STATUS_TABLE_SIZE: usize = 55;
 
 pub struct GranuleStatusTable {
     pub entries: [Entry; GRANULE_STATUS_TABLE_SIZE],

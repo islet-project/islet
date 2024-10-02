@@ -141,6 +141,18 @@ impl Run {
     pub fn set_cntp_cval(&mut self, val: u64) {
         self.exit.cntp_cval = val;
     }
+
+    pub fn exit_reason(&self) -> u8 {
+        self.exit.exit_reason
+    }
+
+    pub fn gpr(&self, idx: usize) -> Result<u64, Error> {
+        if idx >= NR_GPRS {
+            error!("out of index: {}", idx);
+            return Err(Error::RmiErrorInput);
+        }
+        Ok(self.exit.gprs[idx])
+    }
 }
 
 impl core::fmt::Debug for Run {

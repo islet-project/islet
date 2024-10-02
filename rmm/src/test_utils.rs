@@ -6,7 +6,6 @@ use crate::rmi::realm::Params as RealmParams;
 use crate::rmi::rec::params::Params as RecParams;
 use crate::rmi::{GRANULE_DELEGATE, GRANULE_UNDELEGATE, REALM_CREATE, REALM_DESTROY, SUCCESS};
 use crate::rmi::{MAX_REC_AUX_GRANULES, REC_AUX_COUNT, REC_CREATE, REC_DESTROY};
-use crate::{get_granule, get_granule_if};
 
 use alloc::vec::Vec;
 
@@ -135,11 +134,94 @@ pub fn align_up(addr: usize) -> usize {
  * 8: REC Params
  * 9..25: REC AUX
  */
-const IDX_REC: usize = 7;
-const IDX_REC_PARAMS: usize = 8;
-const IDX_REC_AUX: usize = 9;
+pub const IDX_RTT_LEVEL1: usize = 3;
+pub const IDX_RTT_LEVEL2: usize = 4;
+pub const IDX_RTT_LEVEL3: usize = 5;
+pub const IDX_REC: usize = 7;
+pub const IDX_REC_PARAMS: usize = 8;
+pub const IDX_REC_AUX: usize = 9;
+pub const IDX_NS_DESC: usize = 25;
 pub fn alloc_granule(idx: usize) -> usize {
     let start = unsafe { GRANULE_REGION.as_ptr() as usize };
     let first = crate::test_utils::align_up(start);
     first + idx * GRANULE_SIZE
+}
+
+pub const MAP_LEVEL: usize = 3;
+pub const L3_SIZE: usize = GRANULE_SIZE;
+pub const L2_SIZE: usize = 512 * L3_SIZE;
+pub const L1_SIZE: usize = 512 * L2_SIZE;
+pub const L0_SIZE: usize = 512 * L1_SIZE;
+pub const IPA_WIDTH: usize = 40;
+pub const ATTR_NORMAL_WB_WA_RA: usize = 1 << 2;
+pub const ATTR_STAGE2_AP_RW: usize = 3 << 6;
+pub const ATTR_INNER_SHARED: usize = 3 << 8;
+
+pub mod mock {
+    pub mod host {
+        use super::super::*;
+        use crate::rmi::{RTT_CREATE, RTT_DESTROY, RTT_READ_ENTRY};
+
+        pub fn map(rd: usize, ipa: usize) {
+            let ret = rmi::<RTT_READ_ENTRY>(&[rd, ipa, MAP_LEVEL]);
+            assert_eq!(ret[0], SUCCESS);
+
+            let (level, _state, _desc, _ripas) = (ret[1], ret[2], ret[3], ret[4]);
+            let (rtt_l1, rtt_l2, rtt_l3) = (
+                alloc_granule(IDX_RTT_LEVEL1),
+                alloc_granule(IDX_RTT_LEVEL2),
+                alloc_granule(IDX_RTT_LEVEL3),
+            );
+
+            if level < 1 {
+                let ret = rmi::<GRANULE_DELEGATE>(&[rtt_l1]);
+                assert_eq!(ret[0], SUCCESS);
+
+                let ipa_aligned = (ipa / L0_SIZE) * L0_SIZE;
+                let ret = rmi::<RTT_CREATE>(&[rd, rtt_l1, ipa_aligned, 1]);
+                assert_eq!(ret[0], SUCCESS);
+            }
+
+            if level < 2 {
+                let ret = rmi::<GRANULE_DELEGATE>(&[rtt_l2]);
+                assert_eq!(ret[0], SUCCESS);
+
+                let ipa_aligned = (ipa / L1_SIZE) * L1_SIZE;
+                let ret = rmi::<RTT_CREATE>(&[rd, rtt_l2, ipa_aligned, 2]);
+                assert_eq!(ret[0], SUCCESS);
+            }
+
+            if level < 3 {
+                let ret = rmi::<GRANULE_DELEGATE>(&[rtt_l3]);
+                assert_eq!(ret[0], SUCCESS);
+
+                let ipa_aligned = (ipa / L2_SIZE) * L2_SIZE;
+                let ret = rmi::<RTT_CREATE>(&[rd, rtt_l3, ipa_aligned, 3]);
+                assert_eq!(ret[0], SUCCESS);
+            }
+        }
+
+        pub fn unmap(rd: usize, ipa: usize) {
+            let ipa_aligned = (ipa / L2_SIZE) * L2_SIZE;
+            let ret = rmi::<RTT_DESTROY>(&[rd, ipa_aligned, 3]);
+            assert_eq!(ret[0], SUCCESS);
+
+            let ipa_aligned = (ipa / L1_SIZE) * L1_SIZE;
+            let ret = rmi::<RTT_DESTROY>(&[rd, ipa_aligned, 2]);
+            assert_eq!(ret[0], SUCCESS);
+
+            let ipa_aligned = (ipa / L0_SIZE) * L0_SIZE;
+            let ret = rmi::<RTT_DESTROY>(&[rd, ipa_aligned, 1]);
+            assert_eq!(ret[0], SUCCESS);
+
+            for mocking_addr in &[
+                alloc_granule(IDX_RTT_LEVEL1),
+                alloc_granule(IDX_RTT_LEVEL2),
+                alloc_granule(IDX_RTT_LEVEL3),
+            ] {
+                let ret = rmi::<GRANULE_UNDELEGATE>(&[*mocking_addr]);
+                assert_eq!(ret[0], SUCCESS);
+            }
+        }
+    }
 }

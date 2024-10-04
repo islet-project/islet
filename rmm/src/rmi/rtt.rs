@@ -135,6 +135,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             || !is_granule_aligned(top)
             || !rd.addr_in_par(base)
             || !rd.addr_in_par(top - GRANULE_SIZE)
+        // overflow detected!
         {
             return Err(Error::RmiErrorInput);
         }
@@ -628,5 +629,35 @@ mod test {
         mock::host::unmap(rd, ipa, true);
 
         realm_destroy(rd);
+    }
+
+    // Source: https://github.com/ARM-software/cca-rmm-acs
+    // Test Case: cmd_rtt_set_ripas
+    // Covered RMIs: RTT_SET_RIPAS
+    #[test]
+    fn rmi_rtt_set_ripas_positive() {
+        use crate::event::realmexit::RecExitReason;
+        use crate::rmi::rec::run::Run;
+        use crate::rsi::PSCI_CPU_ON;
+
+        let rd = mock::host::realm_setup();
+
+        let (rec1, run1) = (granule_addr(IDX_REC1), granule_addr(IDX_REC1_RUN));
+        let ret = rmi::<REC_ENTER>(&[rec1, run1]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let ipa = 0;
+        mock::host::map(rd, ipa);
+
+        unsafe {
+            let run = &*(run1 as *const Run);
+            let (base, top) = run.ripas();
+
+            let ret = rmi::<RTT_SET_RIPAS>(&[rd, rec1, base as usize, top as usize]);
+            assert_eq!(ret[0], SUCCESS);
+        }
+
+        mock::host::unmap(rd, ipa, false);
+        mock::host::realm_teardown(rd);
     }
 }

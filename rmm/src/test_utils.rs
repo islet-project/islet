@@ -302,5 +302,14 @@ pub mod mock {
             let target_mpidr = IDX_REC2 % IDX_REC1;
             set_reg(rec, 1, target_mpidr).unwrap();
         }
+
+        pub fn setup_ripas_state(rec: &mut Rec<'_>, run: &mut Run) {
+            let ipa_base: u64 = 0;
+            let ipa_top: u64 = 0x1000;
+            const RSI_RAM: u8 = 1;
+            const RSI_NO_CHANGE_DESTROYED: u64 = 0;
+            run.set_ripas(ipa_base, ipa_top, RSI_RAM);
+            rec.set_ripas(ipa_base, ipa_top, RSI_RAM, RSI_NO_CHANGE_DESTROYED);
+        }
     }
 }

@@ -241,19 +241,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
             #[cfg(any(miri, test))]
             {
-                // specialized
-                /*
-                use crate::rsi::PSCI_CPU_ON;
-                use crate::event::realmexit::RecExitReason;
-                let reason: u64 = RecExitReason::PSCI.into();
-
-                rec.set_psci_pending(true);
-                run.set_exit_reason(reason as u8);
-                run.set_gpr(0, PSCI_CPU_ON as u64).unwrap();
-
-                set_reg(&mut rec, 1, 1).unwrap();*/
                 use crate::test_utils::mock;
                 mock::realm::setup_psci_complete(&mut rec, &mut run);
+                mock::realm::setup_ripas_state(&mut rec, &mut run);
             }
 
             rec.set_state(RecState::Ready);

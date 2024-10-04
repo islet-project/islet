@@ -153,6 +153,13 @@ impl Run {
         }
         Ok(self.exit.gprs[idx])
     }
+
+    pub fn ripas(&self) -> (u64, u64) {
+        (
+            self.exit.ripas_base,
+            self.exit.ripas_base + self.exit.ripas_size,
+        )
+    }
 }
 
 impl core::fmt::Debug for Run {

@@ -240,10 +240,12 @@ pub mod mock {
             }
         }
 
-        pub fn unmap(rd: usize, ipa: usize) {
-            let ipa_aligned = (ipa / L2_SIZE) * L2_SIZE;
-            let ret = rmi::<RTT_DESTROY>(&[rd, ipa_aligned, 3]);
-            assert_eq!(ret[0], SUCCESS);
+        pub fn unmap(rd: usize, ipa: usize, folded: bool) {
+            if !folded {
+                let ipa_aligned = (ipa / L2_SIZE) * L2_SIZE;
+                let ret = rmi::<RTT_DESTROY>(&[rd, ipa_aligned, 3]);
+                assert_eq!(ret[0], SUCCESS);
+            }
 
             let ipa_aligned = (ipa / L1_SIZE) * L1_SIZE;
             let ret = rmi::<RTT_DESTROY>(&[rd, ipa_aligned, 2]);

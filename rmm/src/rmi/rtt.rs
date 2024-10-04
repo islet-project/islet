@@ -451,7 +451,7 @@ mod test {
         assert_eq!(level, MAP_LEVEL);
         assert_eq!(ripas, RMI_RAM);
 
-        mock::host::unmap(rd, ipa);
+        mock::host::unmap(rd, ipa, false);
 
         realm_destroy(rd);
     }
@@ -485,7 +485,7 @@ mod test {
         let ret = rmi::<RTT_UNMAP_UNPROTECTED>(&[rd, ipa, level]);
         assert_eq!(ret[0], SUCCESS);
 
-        mock::host::unmap(rd, ipa);
+        mock::host::unmap(rd, ipa, false);
 
         realm_destroy(rd);
     }
@@ -574,11 +574,58 @@ mod test {
         assert_eq!(ret[0], SUCCESS);
 
         // Cleanup
-        mock::host::unmap(rd, ipa);
+        mock::host::unmap(rd, ipa, false);
         for idx in IDX_DATA1..IDX_DATA4 + 1 {
             let ret = rmi::<GRANULE_UNDELEGATE>(&[granule_addr(idx)]);
             assert_eq!(ret[0], SUCCESS);
         }
+
+        realm_destroy(rd);
+    }
+
+    // Source: https://github.com/ARM-software/cca-rmm-acs
+    // Test Case: cmd_rtt_fold
+    // Covered RMIs: RTT_FOLD
+    #[test]
+    fn rmi_rtt_fold_positive() {
+        let rd = realm_create();
+
+        const IPA_HOMOGENEOUS_RTT: usize = 0;
+        let ipa = IPA_HOMOGENEOUS_RTT;
+
+        mock::host::map(rd, ipa);
+
+        let base = ipa;
+        let top = ipa + L2_SIZE;
+        let ret = rmi::<RTT_INIT_RIPAS>(&[rd, base, top]);
+        assert_eq!(ret[0], SUCCESS);
+
+        // Save Parent rtte.addr for comparision
+        let ret = rmi::<RTT_READ_ENTRY>(&[rd, base, MAP_LEVEL - 1]);
+        let (_level, _state, parent_desc, _ripas) = (ret[1], ret[2], ret[3], ret[4]);
+        assert_eq!(ret[0], SUCCESS);
+
+        // Save fold.addr, fold.ripas for Positive Observability
+        let ret = rmi::<RTT_READ_ENTRY>(&[rd, base, MAP_LEVEL]);
+        let (_level, fold_state, fold_desc, fold_ripas) = (ret[1], ret[2], ret[3], ret[4]);
+        assert_eq!(ret[0], SUCCESS);
+
+        let ret = rmi::<RTT_FOLD>(&[rd, base, MAP_LEVEL]);
+        assert_eq!(ret[0], SUCCESS);
+        let out_rtt = ret[1];
+        assert_eq!(out_rtt, parent_desc);
+
+        // Compare rtte_addr, rtte_ripas in folded RTTE
+        let ret = rmi::<RTT_READ_ENTRY>(&[rd, base, MAP_LEVEL - 1]);
+        assert_eq!(ret[0], SUCCESS);
+
+        // Compare HIPAS, RIPAS and addr of parent RTTE to its child RTTE
+        let (_level, state, desc, ripas) = (ret[1], ret[2], ret[3], ret[4]);
+        assert_eq!(fold_state, state);
+        assert_eq!(fold_desc, desc);
+        assert_eq!(fold_ripas, ripas);
+
+        mock::host::unmap(rd, ipa, true);
 
         realm_destroy(rd);
     }

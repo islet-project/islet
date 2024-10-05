@@ -75,6 +75,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             rd_obj.init(
                 params.vmid,
                 params.rtt_base as usize,
+                params.rtt_num_start as usize,
                 params.ipa_bits(),
                 params.rtt_level_start as isize,
                 params.rpv,
@@ -122,12 +123,17 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd = rd_granule.content::<Rd>()?;
         let vmid = rd.id();
 
-        let mut rtt_granule = get_granule_if!(rd.rtt_base(), GranuleState::RTT)?;
         #[cfg(feature = "gst_page_table")]
         if rd_granule.num_children() > 0 {
             return Err(Error::RmiErrorRealm(0));
         }
-        set_granule(&mut rtt_granule, GranuleState::Delegated)?;
+
+        let rtt_base = rd.rtt_base();
+        for i in 0..rd.rtt_num_start() {
+            let rtt = rtt_base + i * GRANULE_SIZE;
+            let mut rtt_granule = get_granule_if!(rtt, GranuleState::RTT)?;
+            set_granule(&mut rtt_granule, GranuleState::Delegated)?;
+        }
 
         // change state when everything goes fine.
         set_granule(&mut rd_granule, GranuleState::Delegated)?;

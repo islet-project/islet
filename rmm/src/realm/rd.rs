@@ -23,6 +23,7 @@ pub struct Rd {
     vmid: u16,
     state: State,
     rtt_base: usize,
+    rtt_num_start: usize,
     ipa_bits: usize,
     rec_index: usize,
     s2_starting_level: isize,
@@ -37,6 +38,7 @@ impl Rd {
         &mut self,
         vmid: u16,
         rtt_base: usize,
+        rtt_num_start: usize,
         ipa_bits: usize,
         s2_starting_level: isize,
         rpv: [u8; 64],
@@ -44,6 +46,7 @@ impl Rd {
         self.vmid = vmid;
         self.state = State::New;
         self.rtt_base = rtt_base;
+        self.rtt_num_start = rtt_num_start;
         self.ipa_bits = ipa_bits;
         self.rec_index = 0;
         self.s2_starting_level = s2_starting_level;
@@ -74,6 +77,10 @@ impl Rd {
 
     pub fn rtt_base(&self) -> usize {
         self.rtt_base
+    }
+
+    pub fn rtt_num_start(&self) -> usize {
+        self.rtt_num_start
     }
 
     pub fn ipa_bits(&self) -> usize {

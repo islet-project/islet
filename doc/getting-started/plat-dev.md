@@ -29,7 +29,7 @@ $ ./launch-realm.sh
 $ cd /shared
 
 // Insert RSI kernel module
-$ inmod rsi.ko
+$ insmod rsi.ko
 
 // Run the sample app (rust)
 $ ./sdk-example

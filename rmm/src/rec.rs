@@ -19,7 +19,6 @@ pub enum RmmRecAttestState {
 
 #[derive(Copy, Clone, Debug)]
 pub enum State {
-    Null = 0,
     Ready = 1,
     Running = 2,
 }

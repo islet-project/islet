@@ -19,6 +19,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::VERSION, |arg, ret, _| {
         let req = arg[0];
 
+        let lower = encode_version();
+        let higher = lower;
+
+        ret[1] = lower;
+        ret[2] = higher;
+
         let (req_major, req_minor) = decode_version(req);
 
         if req_major != rmi::ABI_MAJOR_VERSION || req_minor != rmi::ABI_MINOR_VERSION {
@@ -28,12 +34,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             );
             return Err(Error::RmiErrorInput);
         }
-
-        let lower = encode_version();
-        let higher = lower;
-
-        ret[1] = lower;
-        ret[2] = higher;
 
         trace!("RMI_ABI_VERSION: {:#X?} {:#X?}", lower, higher);
 

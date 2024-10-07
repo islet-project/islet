@@ -427,6 +427,8 @@ mod test {
         }
 
         realm_destroy(rd);
+
+        miri_teardown();
     }
 
     // Source: https://github.com/ARM-software/cca-rmm-acs
@@ -455,6 +457,8 @@ mod test {
         mock::host::unmap(rd, ipa, false);
 
         realm_destroy(rd);
+
+        miri_teardown();
     }
 
     // Source: https://github.com/ARM-software/cca-rmm-acs
@@ -489,6 +493,8 @@ mod test {
         mock::host::unmap(rd, ipa, false);
 
         realm_destroy(rd);
+
+        miri_teardown();
     }
 
     // Source: https://github.com/ARM-software/cca-rmm-acs
@@ -582,6 +588,8 @@ mod test {
         }
 
         realm_destroy(rd);
+
+        miri_teardown();
     }
 
     // Source: https://github.com/ARM-software/cca-rmm-acs
@@ -629,6 +637,8 @@ mod test {
         mock::host::unmap(rd, ipa, true);
 
         realm_destroy(rd);
+
+        miri_teardown();
     }
 
     // Source: https://github.com/ARM-software/cca-rmm-acs
@@ -659,5 +669,7 @@ mod test {
 
         mock::host::unmap(rd, ipa, false);
         mock::host::realm_teardown(rd);
+
+        miri_teardown();
     }
 }

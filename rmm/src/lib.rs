@@ -29,7 +29,7 @@ pub mod rmi;
 pub mod rsi;
 #[cfg(feature = "stat")]
 pub mod stat;
-#[cfg(test)]
+#[cfg(any(test, miri))]
 pub(crate) mod test_utils;
 #[macro_use]
 pub mod r#macro;

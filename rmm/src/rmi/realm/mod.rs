@@ -171,6 +171,8 @@ mod test {
         };
 
         realm_destroy(rd);
+
+        miri_teardown();
     }
 
     // Source: https://github.com/ARM-software/cca-rmm-acs

@@ -5,7 +5,7 @@ use p384::{
     EncodedPoint,
 };
 
-use crate::granule::GranuleState;
+use crate::granule::{GranuleState, GRANULE_SIZE};
 use crate::measurement::{Measurement, MEASUREMENTS_SLOT_MAX_SIZE};
 use crate::rmi::error::Error;
 use crate::{get_granule, get_granule_if};
@@ -41,18 +41,18 @@ pub struct IsletRealmMetadata {
     _unused: [u8; REALM_METADATA_UNUSED_SIZE],
 }
 
-// COMPILER_ASSERT(sizeof(struct rmi_islet_realm_metadata) == GRANULE_SIZE);
-// COMPILER_ASSERT(sizeof(struct rmi_islet_realm_metadata) >= REALM_METADATA_SIGNED_SIZE);
+const _:() = assert!(core::mem::size_of::<IsletRealmMetadata>() == GRANULE_SIZE);
+const _:() = assert!(core::mem::size_of::<IsletRealmMetadata>() >= REALM_METADATA_SIGNED_SIZE);
 
-// COMPILER_ASSERT(U(offsetof(struct rmi_islet_realm_metadata, fmt_version)) == 0x0U);
-// COMPILER_ASSERT(U(offsetof(struct rmi_islet_realm_metadata, realm_id)) == 0x8U);
-// COMPILER_ASSERT(U(offsetof(struct rmi_islet_realm_metadata, rim)) == 0x88U);
-// COMPILER_ASSERT(U(offsetof(struct rmi_islet_realm_metadata, hash_algo)) == 0xC8U);
-// COMPILER_ASSERT(U(offsetof(struct rmi_islet_realm_metadata, svn)) == 0xd0U);
-// COMPILER_ASSERT(U(offsetof(struct rmi_islet_realm_metadata, version_major)) == 0xD8U);
-// COMPILER_ASSERT(U(offsetof(struct rmi_islet_realm_metadata, version_minor)) == 0xE0U);
-// COMPILER_ASSERT(U(offsetof(struct rmi_islet_realm_metadata, version_patch)) == 0xE8U);
-// COMPILER_ASSERT(U(offsetof(struct rmi_islet_realm_metadata, public_key)) == 0xF0U);
+const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, fmt_version)     == 0x00);
+const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, realm_id)        == 0x08);
+const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, rim)             == 0x88);
+const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, hash_algo)       == 0xc8);
+const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, svn)             == 0xd0);
+const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, version_major)   == 0xd8);
+const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, version_minor)   == 0xe0);
+const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, version_patch)   == 0xe8);
+const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, public_key)      == 0xf0);
 
 impl IsletRealmMetadata {
     pub fn from_ns(metadata_addr: usize) -> core::result::Result<Self, Error> {
@@ -73,19 +73,19 @@ impl IsletRealmMetadata {
     }
 
     pub fn dump(&self) {
-        info!("fmt_version: {:#010x}", self.fmt_version);
-        info!(
+        debug!("fmt_version: {:#010x}", self.fmt_version);
+        debug!(
             "realm_id: {}",
             self.realm_id_as_str().unwrap_or("INVALID REALM ID")
         );
-        info!("rim: {}", hex::encode(self.rim));
-        info!("hash_algo: {:#010x}", self.hash_algo);
-        info!("svn: {:#010x}", self.svn);
-        info!("version_major: {:#010x}", self.version_major);
-        info!("version_minor: {:#010x}", self.version_minor);
-        info!("version_patch: {:#010x}", self.version_patch);
-        info!("public_key: {}", hex::encode(self.public_key));
-        info!("signature: {}", hex::encode(self.signature));
+        debug!("rim: {}", hex::encode(self.rim));
+        debug!("hash_algo: {:#010x}", self.hash_algo);
+        debug!("svn: {:#010x}", self.svn);
+        debug!("version_major: {:#010x}", self.version_major);
+        debug!("version_minor: {:#010x}", self.version_minor);
+        debug!("version_patch: {:#010x}", self.version_patch);
+        debug!("public_key: {}", hex::encode(self.public_key));
+        debug!("signature: {}", hex::encode(self.signature));
     }
 
     fn verifying_key(&self) -> core::result::Result<VerifyingKey, Error> {
@@ -180,7 +180,7 @@ impl IsletRealmMetadata {
     }
 }
 
-// TODO: I have no idea about this stuff
+// This should work but I don't like this traits
 impl vmsa::guard::Content for IsletRealmMetadata {}
 impl safe_abstraction::raw_ptr::RawPtr for IsletRealmMetadata {}
 impl safe_abstraction::raw_ptr::SafetyChecked for IsletRealmMetadata {}

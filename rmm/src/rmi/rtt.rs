@@ -134,6 +134,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         if !is_granule_aligned(base)
             || !is_granule_aligned(top)
             || !rd.addr_in_par(base)
+            || top.checked_sub(GRANULE_SIZE).is_none()
             || !rd.addr_in_par(top - GRANULE_SIZE)
         // overflow detected!
         {

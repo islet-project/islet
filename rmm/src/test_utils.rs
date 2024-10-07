@@ -196,6 +196,27 @@ pub const ATTR_NORMAL_WB_WA_RA: usize = 1 << 2;
 pub const ATTR_STAGE2_AP_RW: usize = 3 << 6;
 pub const ATTR_INNER_SHARED: usize = 3 << 8;
 
+/// This function is a temporary workaround to pass the MIRI test due to a memory leak bug
+/// related to the RMM Page Table. It forces the RMM Page Table to drop at the end of the
+/// test, preventing the memory leak issue from occurring during MIRI testing.
+///
+/// - Memory Leak in RMM Page Table: During the mapping/unmapping process, the Page Table
+///   might not deallocate even when there are no entries in Level 1-3 tables.
+///
+/// Note: When testing this function individually, set `TEST_TOTAL` to 1.
+pub fn miri_teardown() {
+    use core::sync::atomic::AtomicUsize;
+    use core::sync::atomic::Ordering;
+
+    const TEST_TOTAL: usize = 11;
+    static TEST_COUNT: AtomicUsize = AtomicUsize::new(0);
+    TEST_COUNT.fetch_add(1, Ordering::SeqCst);
+
+    if TEST_COUNT.load(Ordering::SeqCst) == TEST_TOTAL {
+        crate::mm::translation::drop_page_table();
+    }
+}
+
 pub mod mock {
     pub mod host {
         use super::super::*;

@@ -7,7 +7,7 @@ use crate::{get_granule, get_granule_if};
 
 use autopadding::*;
 
-const NR_AUX: usize = 16;
+pub const NR_AUX: usize = 16;
 const NR_GPRS: usize = 8;
 
 pad_struct_and_impl_default!(

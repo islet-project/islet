@@ -3,6 +3,7 @@ use crate::realm::context::Context;
 use crate::realm::rd::Rd;
 use crate::realm::timer;
 use crate::rmi::error::Error;
+use crate::rmi::rec::params::NR_AUX;
 use crate::rmm_exit;
 use crate::rsi::attestation::MAX_CHALLENGE_SIZE;
 
@@ -40,6 +41,7 @@ pub struct Rec<'a> {
     // TODO: Create consts for both numbers
     attest_challenge: [u8; MAX_CHALLENGE_SIZE],
     attest_token_offset: usize,
+    aux: [u64; NR_AUX], // Addresses of auxiliary Granules
     /// PA of RD of Realm which owns this REC
     ///
     /// Safety:
@@ -62,6 +64,7 @@ impl Rec<'_> {
             attest_state: RmmRecAttestState::NoAttestInProgress,
             attest_challenge: [0; MAX_CHALLENGE_SIZE],
             attest_token_offset: 0,
+            aux: [0; NR_AUX],
             owner: OnceCell::new(),
             vcpuid: 0,
             runnable: false,
@@ -84,6 +87,7 @@ impl Rec<'_> {
         owner: usize,
         vcpuid: usize,
         flags: u64,
+        aux: [u64; NR_AUX],
         vttbr: u64,
         vmpidr: u64,
     ) -> Result<(), Error> {
@@ -105,6 +109,7 @@ impl Rec<'_> {
         self.set_runnable(flags);
         self.context.sys_regs.vttbr = vttbr;
         self.context.sys_regs.vmpidr = vmpidr;
+        self.aux.copy_from_slice(&aux);
         timer::init_timer(self);
         gic::init_gic(self);
 

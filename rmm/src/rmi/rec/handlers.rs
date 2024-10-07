@@ -74,7 +74,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         match prepare_args(&mut rd, params.mpidr) {
             Ok((vcpuid, vttbr, vmpidr)) => {
                 ret[1] = vcpuid;
-                rec.init(owner, vcpuid, params.flags, vttbr, vmpidr)?;
+                rec.init(owner, vcpuid, params.flags, params.aux, vttbr, vmpidr)?;
             }
             Err(_) => return Err(Error::RmiErrorInput),
         }

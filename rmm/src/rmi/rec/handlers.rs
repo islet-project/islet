@@ -306,6 +306,8 @@ mod test {
         rec_create(rd, IDX_REC1, IDX_REC1_PARAMS, IDX_REC1_AUX);
         rec_destroy(IDX_REC1, IDX_REC1_AUX);
         realm_destroy(rd);
+
+        miri_teardown();
     }
 
     // Source: https://github.com/ARM-software/cca-rmm-acs
@@ -332,5 +334,7 @@ mod test {
         assert_eq!(ret[0], SUCCESS);
 
         mock::host::realm_teardown(rd);
+
+        miri_teardown();
     }
 }

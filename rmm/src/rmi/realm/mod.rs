@@ -32,7 +32,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let mut rd = rd_granule.content_mut::<Rd>()?;
 
         if let Some(meta) = rd.metadata() {
-            info!("Realm metadata is in use!");
+            debug!("Realm metadata is in use!");
             let g_metadata = get_granule_if!(meta, GranuleState::Metadata)?;
             let metadata = g_metadata.content::<IsletRealmMetadata>()?;
 

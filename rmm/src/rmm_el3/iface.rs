@@ -97,14 +97,14 @@ pub(super) fn get_vhuks() {
         let e: RmmEl3IfcError = ret_code.into();
         error!("RMM_ISLET_GET_VHUK(A) failed with {:?}", e);
     }
-    info!("VHUK_A: {:02x?}", super::vhuk_a());
+    debug!("VHUK_A: {:02x?}", super::vhuk_a());
 
     let ret_code = get_vhuk(ID_VHUK_M, &VHUK_M);
     if ret_code != 0 {
         let e: RmmEl3IfcError = ret_code.into();
         error!("RMM_ISLET_GET_VHUK(M) failed with {:?}", e);
     }
-    info!("VHUK_M: {:02x?}", super::vhuk_m());
+    debug!("VHUK_M: {:02x?}", super::vhuk_m());
 }
 
 fn get_vhuk(id: usize, out: &Spinlock<[u8; 32]>) -> isize {

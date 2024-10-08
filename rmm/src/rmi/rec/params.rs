@@ -2,6 +2,7 @@ use super::mpidr;
 use crate::const_assert_eq;
 use crate::granule::{GranuleState, GRANULE_SIZE};
 use crate::measurement::Hashable;
+use crate::rmi;
 use crate::rmi::error::Error;
 use crate::{get_granule, get_granule_if};
 
@@ -25,7 +26,8 @@ const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
 
 impl Params {
     pub fn verify_compliance(&self, rec: usize, rd: usize, params_ptr: usize) -> Result<(), Error> {
-        if !mpidr::validate(self.mpidr) || self.num_aux as usize > NR_AUX {
+        // Currently, we use rmi::MAX_REC_AUX_GRANULES for RecAuxCount(rd)
+        if !mpidr::validate(self.mpidr) || self.num_aux as usize != rmi::MAX_REC_AUX_GRANULES {
             return Err(Error::RmiErrorInput);
         }
 

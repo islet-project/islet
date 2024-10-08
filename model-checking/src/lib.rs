@@ -9,5 +9,7 @@ mod rmi_granule_undelegate;
 mod rmi_realm_activate;
 #[cfg(feature = "mc_rmi_rec_aux_count")]
 mod rmi_rec_aux_count;
+#[cfg(feature = "mc_rmi_rec_destroy")]
+mod rmi_rec_destroy;
 #[cfg(feature = "mc_rmi_version")]
 mod rmi_version;

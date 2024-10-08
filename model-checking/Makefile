@@ -14,6 +14,7 @@ ALLOWED_RMI_TARGET = \
 	rmi_granule_undelegate \
 	rmi_realm_activate \
 	rmi_rec_aux_count \
+	rmi_rec_destroy \
 	rmi_version
 
 ifeq ("$(filter $(RMI_TARGET), $(ALLOWED_RMI_TARGET))", "")

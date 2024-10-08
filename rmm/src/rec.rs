@@ -18,7 +18,7 @@ pub enum RmmRecAttestState {
     NoAttestInProgress,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum State {
     Ready = 1,
     Running = 2,

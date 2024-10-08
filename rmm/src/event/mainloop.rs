@@ -46,6 +46,8 @@ impl Mainloop {
         rmi::gpt::set_event_handler(self);
         #[cfg(any(feature = "mc_rmi_realm_activate", feature = "mc_rmi_rec_aux_count"))]
         rmi::realm::set_event_handler(self);
+        #[cfg(feature = "mc_rmi_rec_destroy")]
+        rmi::rec::set_event_handler(self);
         #[cfg(feature = "mc_rmi_version")]
         rmi::version::set_event_handler(self);
     }

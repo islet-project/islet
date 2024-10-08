@@ -106,7 +106,8 @@ impl Context {
             #[cfg(any(
                 feature = "mc_rmi_granule_delegate",
                 feature = "mc_rmi_granule_undelegate",
-                feature = "mc_rmi_realm_activate"
+                feature = "mc_rmi_realm_activate",
+                feature = "mc_rmi_rec_destroy"
             ))]
             assert!(ret_len == 1);
             #[cfg(any(feature = "mc_rmi_rec_aux_count", feature = "mc_rmi_features"))]

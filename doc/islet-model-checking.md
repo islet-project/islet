@@ -356,6 +356,10 @@ Figure 4-1. Host Memory Modeling (Declaration)  | Figure 4-2. Host Memory Modeli
     rmi_features
     rmi_granule_delegate
     rmi_granule_undelegate
+    rmi_realm_activate
+    rmi_rec_aux_count
+    rmi_rec_destroy
+    rmi_version
     ```
 
 - Verifying Islet
@@ -370,8 +374,7 @@ Figure 4-1. Host Memory Modeling (Declaration)  | Figure 4-2. Host Memory Modeli
 
 ### Bugs Found
 
-We found one correctness bug in RMI features and one security bug in RMI granule
-undelegate during Islet's model checking.
+We found four correctness bug and one security bug during Islet's model checking.
 
 - RMI Features
 
@@ -405,38 +408,101 @@ sensitive information on the target granule, which might be obtained by attacker
     |:--:|
     | Figure 6-2. Success Conditions of RMI Granule Undelegate  |
 
+- RMI Rec Destroy
+
+    Figure 7-1 indicates the previous implementation of RMI rec destroy. When this code
+was passed as an input, two verification conditions failed. It was because the code was
+violating the failure condition as well as the success condition of RMI rec destroy as 
+shown in Figure 7-2. After adding the sanitization logic and granule setting code, 
+the verification becomes successful.
+
+![](./res/model-checking/rec_destroy_code.png)  | ![](./res/model-checking/rec_destroy_spec.png)
+:--------------------------------:|:---------------------------------:
+Figure 7-1. Buggy RMI Rec Destroy Code  | Figure 7-2. Conditions of RMI Rec Destroy
+
+- RMI Version
+
+    Figure 8-1 indicates the previous implementation of RMI version. When this code
+was passed as an input, the verification failed. It was because the code was
+not satisfying the conditions for output values (lower and higher) in failure conditions 
+of RMI version as shown in Figure 8-2. After setting the output values beforehand, 
+the verification becomes successful.
+
+![](./res/model-checking/version_code.png)  | ![](./res/model-checking/version_output.png)
+:--------------------------------:|:---------------------------------:
+Figure 8-1. Buggy RMI Version Code  | Figure 8-2. Outputs of RMI Version
+
 
 ### Verification Output
 
 - RMI Features
 
-    Figure 7-1 shows the output of Islet's model checking with the target of
+    Figure 9-1 shows the output of Islet's model checking with the target of
 RMI features. It says that the total of 5271 verification conditions and the
 total of 4 cover conditions have successfully passed.
 
     |<img src="./res/model-checking/features_results.png" alt="drawing" width="450"/>|
     |:--:|
-    | Figure 7-1. Model Checking Output of RMI Features  |
+    | Figure 9-1. Model Checking Output of RMI Features  |
 
 - RMI Granule Delegate
 
-    Figure 7-2 shows the output of Islet's model checking with the target of RMI
+    Figure 9-2 shows the output of Islet's model checking with the target of RMI
 granule delegate. It says that the total of 5557 verification conditions and the
 total of 14 cover conditions have successfully passed.
 
 
     |<img src="./res/model-checking/delegate_results.png" alt="drawing" width="450"/>|
     |:--:|
-    | Figure 7-2. Model Checking Output of RMI Granule Delegate  |
+    | Figure 9-2. Model Checking Output of RMI Granule Delegate  |
 
 - RMI Granule Undelegate
 
-    Figure 7-3 shows the output of Islet's model checking with the target of RMI
+    Figure 9-3 shows the output of Islet's model checking with the target of RMI
 granule undelegate. It says that the total of 5559 verification conditions and
 the total of 14 cover conditions have successfully passed.
 
 
     |<img src="./res/model-checking/undelegate_results.png" alt="drawing" width="450"/>|
     |:--:|
-    | Figure 7-3. Model Checking Output of RMI Granule Undelegate  |
+    | Figure 9-3. Model Checking Output of RMI Granule Undelegate  |
 
+- RMI Realm Activate
+
+    Figure 9-4 shows the output of Islet's model checking with the target of RMI
+realm activate. It says that the total of 5584 verification conditions and
+the total of 12 cover conditions have successfully passed.
+
+    |<img src="./res/model-checking/activate_results.png" alt="drawing" width="450"/>|
+    |:--:|
+    | Figure 9-4. Model Checking Output of RMI Realm Activate  |
+
+- RMI Rec Aux Count
+
+    Figure 9-5 shows the output of Islet's model checking with the target of RMI
+rec aux count. It says that the total of 5495 verification conditions and
+the total of 10 cover conditions have successfully passed.
+
+    |<img src="./res/model-checking/rec_aux_count_results.png" alt="drawing" width="450"/>|
+    |:--:|
+    | Figure 9-5. Model Checking Output of RMI Rec Aux Count  |
+
+- RMI Rec Destroy
+
+    Figure 9-6 shows the output of Islet's model checking with the target of RMI
+rec destroy. It says that the total of 5610 verification conditions and
+the total of 14 cover conditions have successfully passed.
+
+    |<img src="./res/model-checking/rec_destroy_results.png" alt="drawing" width="450"/>|
+    |:--:|
+    | Figure 9-6. Model Checking Output of RMI Rec Destroy  |
+
+- RMI Version
+
+    Figure 9-7 shows the output of Islet's model checking with the target of RMI
+version. It says that the total of 5468 verification conditions and
+the total of 3 cover conditions have successfully passed.
+
+    |<img src="./res/model-checking/version_results.png" alt="drawing" width="450"/>|
+    |:--:|
+    | Figure 9-7. Model Checking Output of RMI Version  |

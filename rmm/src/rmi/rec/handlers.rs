@@ -94,6 +94,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // `rsi` is currently not reachable in model checking harnesses
         HashContext::new(&mut rd)?.measure_rec_params(&params)?;
 
+        for i in 0..rmi::MAX_REC_AUX_GRANULES {
+            let rec_aux = rec.aux(i) as usize;
+            let mut rec_aux_granule = get_granule_if!(rec_aux, GranuleState::Delegated)?;
+            set_granule(&mut rec_aux_granule, GranuleState::RecAux)?;
+        }
+
         #[cfg(feature = "gst_page_table")]
         return set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec);
         #[cfg(not(feature = "gst_page_table"))]

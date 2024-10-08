@@ -42,6 +42,7 @@ fn prepare_args(rd: &mut Rd, mpidr: u64) -> Result<(usize, u64, u64), Error> {
 }
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
+    #[cfg(not(kani))]
     listen!(mainloop, rmi::REC_CREATE, |arg, ret, rmm| {
         let rd = arg[0];
         let rec = arg[1];
@@ -106,6 +107,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         return set_granule(&mut rec_granule, GranuleState::Rec);
     });
 
+    #[cfg(any(not(kani), feature = "mc_rmi_rec_destroy"))]
     listen!(mainloop, rmi::REC_DESTROY, |arg, _ret, rmm| {
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
 
@@ -121,6 +123,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
+    #[cfg(not(kani))]
     listen!(mainloop, rmi::REC_ENTER, |arg, ret, rmm| {
         let run_pa = arg[1];
 
@@ -217,6 +220,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         host::copy_to_ptr::<Run>(&run, run_pa).ok_or(Error::RmiErrorInput)
     });
 
+    #[cfg(not(kani))]
     listen!(mainloop, rmi::PSCI_COMPLETE, |arg, _ret, _rmm| {
         let caller_pa = arg[0];
         let target_pa = arg[1];

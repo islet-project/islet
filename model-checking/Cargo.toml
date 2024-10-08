@@ -11,6 +11,7 @@ mc_rmi_granule_delegate = ["islet_rmm/mc_rmi_granule_delegate"]
 mc_rmi_granule_undelegate = ["islet_rmm/mc_rmi_granule_undelegate"]
 mc_rmi_realm_activate = ["islet_rmm/mc_rmi_realm_activate"]
 mc_rmi_rec_aux_count = ["islet_rmm/mc_rmi_rec_aux_count"]
+mc_rmi_rec_destroy = ["islet_rmm/mc_rmi_rec_destroy"]
 mc_rmi_version = ["islet_rmm/mc_rmi_version"]
 
 [dependencies]

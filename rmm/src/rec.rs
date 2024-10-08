@@ -128,6 +128,10 @@ impl Rec<'_> {
         self.attest_token_offset
     }
 
+    pub fn aux(&self, index: usize) -> u64 {
+        self.aux[index]
+    }
+
     pub fn runnable(&self) -> bool {
         self.runnable
     }

@@ -180,10 +180,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             let mdg_addr = arg[1];
             let meta_ptr = arg[2];
 
-            // TODO: should we really hold a whole 4k on the stack? Either remove
-            // the unused field from metadata or copy directly from granule to
-            // granule. Is there any use for the unused? Its content is irrelevant.
-            let realm_metadata = IsletRealmMetadata::from_ns(meta_ptr)?;
+            let realm_metadata = Box::new(IsletRealmMetadata::from_ns(meta_ptr)?);
             realm_metadata.dump();
 
             if let Err(e) = realm_metadata.verify_signature() {
@@ -205,8 +202,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
             let mut g_metadata = get_granule_if!(mdg_addr, GranuleState::Delegated)?;
             let mut meta = g_metadata.content_mut::<IsletRealmMetadata>()?;
-            *meta = realm_metadata.clone();
-            // TODO: with_parent?
+            *meta = *realm_metadata.clone();
+
             set_granule(&mut g_metadata, GranuleState::Metadata)?;
 
             rd.set_metadata(Some(mdg_addr));

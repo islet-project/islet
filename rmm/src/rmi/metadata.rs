@@ -5,11 +5,11 @@ use p384::{
     EncodedPoint,
 };
 
+use super::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
 use crate::granule::{GranuleState, GRANULE_SIZE};
 use crate::measurement::{Measurement, MEASUREMENTS_SLOT_MAX_SIZE};
 use crate::rmi::error::Error;
 use crate::{get_granule, get_granule_if};
-use super::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
 
 const FMT_VERSION: usize = 1;
 pub const REALM_ID_SIZE: usize = 128;
@@ -41,18 +41,18 @@ pub struct IsletRealmMetadata {
     _unused: [u8; REALM_METADATA_UNUSED_SIZE],
 }
 
-const _:() = assert!(core::mem::size_of::<IsletRealmMetadata>() == GRANULE_SIZE);
-const _:() = assert!(core::mem::size_of::<IsletRealmMetadata>() >= REALM_METADATA_SIGNED_SIZE);
+const _: () = assert!(core::mem::size_of::<IsletRealmMetadata>() == GRANULE_SIZE);
+const _: () = assert!(core::mem::size_of::<IsletRealmMetadata>() >= REALM_METADATA_SIGNED_SIZE);
 
-const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, fmt_version)     == 0x00);
-const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, realm_id)        == 0x08);
-const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, rim)             == 0x88);
-const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, hash_algo)       == 0xc8);
-const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, svn)             == 0xd0);
-const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, version_major)   == 0xd8);
-const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, version_minor)   == 0xe0);
-const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, version_patch)   == 0xe8);
-const _:() = assert!(core::mem::offset_of!(IsletRealmMetadata, public_key)      == 0xf0);
+const _: () = assert!(core::mem::offset_of!(IsletRealmMetadata, fmt_version) == 0x00);
+const _: () = assert!(core::mem::offset_of!(IsletRealmMetadata, realm_id) == 0x08);
+const _: () = assert!(core::mem::offset_of!(IsletRealmMetadata, rim) == 0x88);
+const _: () = assert!(core::mem::offset_of!(IsletRealmMetadata, hash_algo) == 0xc8);
+const _: () = assert!(core::mem::offset_of!(IsletRealmMetadata, svn) == 0xd0);
+const _: () = assert!(core::mem::offset_of!(IsletRealmMetadata, version_major) == 0xd8);
+const _: () = assert!(core::mem::offset_of!(IsletRealmMetadata, version_minor) == 0xe0);
+const _: () = assert!(core::mem::offset_of!(IsletRealmMetadata, version_patch) == 0xe8);
+const _: () = assert!(core::mem::offset_of!(IsletRealmMetadata, public_key) == 0xf0);
 
 impl IsletRealmMetadata {
     pub fn from_ns(metadata_addr: usize) -> core::result::Result<Self, Error> {

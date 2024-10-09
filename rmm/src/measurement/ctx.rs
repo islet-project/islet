@@ -88,11 +88,7 @@ impl<'a> HashContext<'a> {
         })
     }
 
-    pub fn measure_ripas_granule(
-        &mut self,
-        base: u64,
-        top:  u64,
-    ) -> Result<(), rsi::error::Error> {
+    pub fn measure_ripas_granule(&mut self, base: u64, top: u64) -> Result<(), rsi::error::Error> {
         crate::rsi::measurement::extend(self.rd, MEASUREMENTS_SLOT_RIM, |current| {
             let oldrim = *current;
 

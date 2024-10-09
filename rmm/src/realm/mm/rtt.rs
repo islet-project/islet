@@ -1,7 +1,7 @@
 use crate::granule::GRANULE_SHIFT;
 use crate::granule::{set_granule, GranuleState};
-use crate::mm::translation::PageTable as mmPageTable;
 use crate::measurement::HashContext;
+use crate::mm::translation::PageTable as mmPageTable;
 use crate::realm::mm::address::GuestPhysAddr;
 use crate::realm::mm::attribute::{desc_type, memattr, permission, shareable};
 use crate::realm::mm::entry;

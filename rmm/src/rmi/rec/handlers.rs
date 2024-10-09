@@ -111,6 +111,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::REC_DESTROY, |arg, _ret, rmm| {
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
 
+        let rec = rec_granule.content::<Rec<'_>>()?;
+        if rec.get_state() == RecState::Running {
+            return Err(Error::RmiErrorRec);
+        }
+
         set_granule(&mut rec_granule, GranuleState::Delegated).map_err(|e| {
             #[cfg(not(kani))]
             // `page_table` is currently not reachable in model checking harnesses

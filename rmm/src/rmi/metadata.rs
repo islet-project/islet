@@ -15,13 +15,17 @@ const FMT_VERSION: usize = 1;
 pub const REALM_ID_SIZE: usize = 128;
 pub const P384_PUBLIC_KEY_SIZE: usize = 96;
 const P384_SIGNATURE_SIZE: usize = P384_PUBLIC_KEY_SIZE;
+
+#[allow(dead_code)]
 const P385_SIGNATURE_POINT_SIZE: usize = P384_SIGNATURE_SIZE / 2;
+#[allow(dead_code)]
 const SHA_384_HASH_SIZE: usize = 48;
 
 const METADATA_HASH_SHA_256: usize = 0x01;
 const METADATA_HASH_SHA_512: usize = 0x02;
 
 const REALM_METADATA_HEADER_SIZE: usize = 0x150;
+#[allow(dead_code)]
 const REALM_METADATA_SIGNED_SIZE: usize = 0x1B0;
 const REALM_METADATA_UNUSED_SIZE: usize = 0xE50;
 
@@ -59,7 +63,7 @@ impl IsletRealmMetadata {
         let g_realm_metadata = get_granule_if!(metadata_addr, GranuleState::Undelegated)?;
         let realm_metadata = g_realm_metadata.content::<Self>()?;
 
-        Ok(realm_metadata.clone())
+        Ok(*realm_metadata)
     }
 
     fn realm_id_as_str(&self) -> Option<&str> {
@@ -90,11 +94,11 @@ impl IsletRealmMetadata {
 
     fn verifying_key(&self) -> core::result::Result<VerifyingKey, Error> {
         let point = EncodedPoint::from_untagged_bytes(GenericArray::from_slice(&self.public_key));
-        Ok(VerifyingKey::from_encoded_point(&point).or(Err(Error::RmiErrorInput))?)
+        VerifyingKey::from_encoded_point(&point).or(Err(Error::RmiErrorInput))
     }
 
     fn signature(&self) -> core::result::Result<Signature, Error> {
-        Ok(Signature::from_slice(&self.signature).or(Err(Error::RmiErrorInput))?)
+        Signature::from_slice(&self.signature).or(Err(Error::RmiErrorInput))
     }
 
     fn header_as_u8_slice(&self) -> &[u8] {
@@ -152,7 +156,7 @@ impl IsletRealmMetadata {
     }
 
     pub fn equal_rd_rim(&self, rim: &Measurement) -> bool {
-        rim.as_slice() == &self.rim
+        rim.as_slice() == self.rim
     }
 
     pub fn equal_rd_hash_algo(&self, hash_algo: u8) -> bool {

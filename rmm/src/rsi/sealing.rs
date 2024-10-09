@@ -96,7 +96,7 @@ impl KdfInfo {
         let info = self.as_u8_slice();
 
         let hkdf = hkdf::Hkdf::<sha2::Sha256>::new(Some(&SALT), &ikm);
-        hkdf.expand(&info, okm).or(Err(Error::RmiErrorInput))?;
+        hkdf.expand(info, okm).or(Err(Error::RmiErrorInput))?;
 
         Ok(())
     }
@@ -124,10 +124,10 @@ pub fn realm_sealing_key(
             Err(Error::RmiErrorInput)?
         }
 
-        info.public_key = metadata.public_key().clone();
+        info.public_key = *metadata.public_key();
 
         if flags & RSI_ISLET_SLK_REALM_ID != 0 {
-            info.realm_id = metadata.realm_id().clone();
+            info.realm_id = *metadata.realm_id();
         }
 
         if flags & RSI_ISLET_SLK_SVN != 0 {
@@ -140,7 +140,7 @@ pub fn realm_sealing_key(
     // is always used as the key material.
     if flags & RSI_ISLET_SLK_RIM != 0 || rd.metadata().is_none() {
         let mut rim = Measurement::empty();
-        crate::rsi::measurement::read(&rd, MEASUREMENTS_SLOT_RIM, &mut rim)?;
+        crate::rsi::measurement::read(rd, MEASUREMENTS_SLOT_RIM, &mut rim)?;
         info.rim.copy_from_slice(rim.as_slice());
     }
 
@@ -153,7 +153,7 @@ pub fn realm_sealing_key(
             "VHUK_A"
         }
     );
-    info.derive_sealing_key(flags & RSI_ISLET_USE_VHUK_M != 0, buf);
+    info.derive_sealing_key(flags & RSI_ISLET_USE_VHUK_M != 0, buf)?;
 
     // Clear the input key material
     info.zeroize();

@@ -116,6 +116,23 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             return Err(Error::RmiErrorRec);
         }
 
+        #[cfg(not(kani))]
+        for i in 0..rmi::MAX_REC_AUX_GRANULES {
+            let rec_aux = rec.aux(i) as usize;
+            let mut rec_aux_granule = get_granule_if!(rec_aux, GranuleState::RecAux)?;
+            set_granule(&mut rec_aux_granule, GranuleState::Delegated)?;
+        }
+        #[cfg(kani)]
+        {
+            // XXX: we check only the first aux to reduce the overall
+            //      verification time
+            let rec_aux = rec.aux(0) as usize;
+            // XXX: the below can be guaranteed by Rec's invariants instead
+            kani::assume(crate::granule::validate_addr(rec_aux));
+            let mut rec_aux_granule = get_granule!(rec_aux)?;
+            set_granule(&mut rec_aux_granule, GranuleState::Delegated)?;
+        }
+
         set_granule(&mut rec_granule, GranuleState::Delegated).map_err(|e| {
             #[cfg(not(kani))]
             // `page_table` is currently not reachable in model checking harnesses

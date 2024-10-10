@@ -1,5 +1,5 @@
 pub(crate) mod params;
-use self::params::Params;
+pub(crate) use self::params::Params;
 use super::error::Error;
 use crate::event::Mainloop;
 use crate::granule::GRANULE_SIZE;
@@ -26,7 +26,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     #[cfg(any(not(kani), feature = "mc_rmi_realm_activate"))]
     listen!(mainloop, rmi::REALM_ACTIVATE, |arg, _, _| {
         let rd = arg[0];
-
         let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
         let mut rd = rd_granule.content_mut::<Rd>()?;
 
@@ -91,7 +90,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // `rsi` is currently not reachable in model checking harnesses
         HashContext::new(&mut rd_obj)?.measure_realm_create(&params)?;
 
-        let mut eplilog = move || {
+        let mut epilogue = move || {
             for i in 0..params.rtt_num_start as usize {
                 let rtt = rtt_base + i * GRANULE_SIZE;
                 let mut rtt_granule = get_granule_if!(rtt, GranuleState::Delegated)?;
@@ -100,7 +99,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             set_granule(&mut rd_granule, GranuleState::RD)
         };
 
-        eplilog().map_err(|e| {
+        epilogue().map_err(|e| {
             #[cfg(not(kani))]
             // `page_table` is currently not reachable in model checking harnesses
             rmm.page_table.unmap(rd);
@@ -159,4 +158,78 @@ fn create_realm(vmid: usize) -> Result<(), Error> {
     };
 
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    use crate::realm::rd::{Rd, State};
+    use crate::rmi::{ERROR_INPUT, REALM_ACTIVATE, REALM_CREATE, SUCCESS};
+    use crate::test_utils::*;
+
+    use alloc::vec;
+
+    #[test]
+    fn rmi_realm_create_positive() {
+        let rd = realm_create();
+
+        let ret = rmi::<REALM_ACTIVATE>(&[rd]);
+        assert_eq!(ret[0], SUCCESS);
+
+        unsafe {
+            let rd_obj = &*(rd as *const Rd);
+            assert!(rd_obj.at_state(State::Active));
+        };
+
+        realm_destroy(rd);
+
+        miri_teardown();
+    }
+
+    // Source: https://github.com/ARM-software/cca-rmm-acs
+    // Test Case: cmd_realm_create
+    /*
+        Check 1 : params_align; rd : 0x88300000 params_ptr : 0x88303001 ret : 1
+        Check 2 : params_bound; rd : 0x88300000 params_ptr : 0x1C0B0000 ret : 1
+        Check 3 : params_bound; rd : 0x88300000 params_ptr : 0x1000000001000 ret : 1
+        Check 4 : params_pas; rd : 0x88300000 params_ptr : 0x88309000 ret : 1
+        Check 5 : params_pas; rd : 0x88300000 params_ptr : 0x6000000 ret : 1
+        Check 6 : params_valid; rd : 0x88300000 params_ptr : 0x8830C000 ret : 1
+        Check 7 : params_valid; rd : 0x88300000 params_ptr : 0x8830F000 ret : 1
+        Check 8 : params_supp
+        Skipping Test case
+        Check 9 : params_supp; rd : 0x88300000 params_ptr : 0x88315000 ret : 1
+        Check 10 : params_supp; rd : 0x88300000 params_ptr : 0x88318000 ret : 1
+        Check 11 : params_supp; rd : 0x88300000 params_ptr : 0x8831B000 ret : 1
+        Check 12 : params_supp; rd : 0x88300000 params_ptr : 0x8831E000 ret : 1
+        Check 13 : params_supp; rd : 0x88300000 params_ptr : 0x88321000 ret : 1
+        Check 14 : alias; rd : 0x88306000 params_ptr : 0x88303000 ret : 1
+        Check 15 : rd_align; rd : 0x88300001 params_ptr : 0x88303000 ret : 1
+        Check 16 : rd_bound; rd : 0x1C0B0000 params_ptr : 0x88303000 ret : 1
+        Check 17 : rd_bound; rd : 0x1000000001000 params_ptr : 0x88303000 ret : 1
+        Check 18 : rd_state; rd : 0x88324000 params_ptr : 0x88303000 ret : 1
+        Check 19 : rd_state; rd : 0x88327000 params_ptr : 0x88303000 ret : 1
+        Check 20 : rd_state; rd : 0x88336000 params_ptr : 0x88303000 ret : 1
+        Check 21 : rd_state; rd : 0x8832A000 params_ptr : 0x88303000 ret : 1
+        Check 22 : rd_state; rd : 0x88372000 params_ptr : 0x88303000 ret : 1
+        Check 23 : rtt_align; rd : 0x88300000 params_ptr : 0x88378000 ret : 1
+        Check 24 : rtt_num_level; rd : 0x88300000 params_ptr : 0x8837B000 ret : 1
+        Check 25 : rtt_state; rd : 0x88300000 params_ptr : 0x8837E000 ret : 1
+        Check 26 : vmid_valid
+        Couldn't create VMID Invalid sequence
+        Skipping Test case
+        Check 27 : vmid_valid; rd : 0x88300000 params_ptr : 0x88387000 ret : 1
+    */
+    #[test]
+    fn rmi_realm_create_negative() {
+        let test_data = vec![
+            // TODO: Cover all test data
+            ((0x88300000 as usize, 0x88303001 as usize), ERROR_INPUT),
+        ];
+
+        // main test
+        for (input, output) in test_data {
+            let ret = rmi::<REALM_CREATE>(&[input.0, input.1, 0]);
+            assert_eq!(output, ret[0]);
+        }
+    }
 }

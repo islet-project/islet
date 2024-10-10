@@ -51,6 +51,10 @@ pub fn get_page_table() -> u64 {
     page_table.get_base_address() as u64
 }
 
+pub fn drop_page_table() {
+    RMM_PAGE_TABLE.lock().root_pgtbl.drop();
+}
+
 struct Inner<'a> {
     // We will set the translation granule with 4KB.
     // To reduce the level of page lookup, initial lookup will start from L1.

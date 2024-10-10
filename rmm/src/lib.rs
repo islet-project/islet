@@ -21,7 +21,7 @@ pub(crate) mod host;
 pub mod logger;
 pub mod mm;
 pub mod mmio;
-#[cfg(not(any(test, kani)))]
+#[cfg(not(any(test, kani, miri)))]
 pub mod panic;
 pub mod realm;
 pub mod rec;
@@ -29,7 +29,7 @@ pub mod rmi;
 pub mod rsi;
 #[cfg(feature = "stat")]
 pub mod stat;
-#[cfg(test)]
+#[cfg(any(test, miri))]
 pub(crate) mod test_utils;
 #[macro_use]
 pub mod r#macro;

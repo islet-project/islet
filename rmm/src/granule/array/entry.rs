@@ -14,6 +14,7 @@ use crate::granule::{FVP_DRAM0_REGION, FVP_DRAM1_IDX, FVP_DRAM1_REGION};
 //    So, we need to associate "lock" with each granule entry.
 
 #[cfg(not(kani))]
+#[derive(Debug)]
 pub struct Granule {
     /// granule state
     state: u8,

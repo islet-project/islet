@@ -49,17 +49,23 @@ struct rsi_attestation
 	uint8_t *token;
 };
 
+#define SHA256_HKDF_OUTPUT_SIZE 32
+struct rsi_sealing_key
+{
+	uint64_t flags;
+	uint64_t svn;
+	uint8_t realm_sealing_key[SHA256_HKDF_OUTPUT_SIZE];
+};
+
+struct rsi_realm_metadata
+{
+	uint8_t metadata[GRANULE_LEN];
+};
+
+// TODO: These should be hex
 #define RSIIO_ABI_VERSION          _IOR('x', 190, uint64_t /*version*/)
 #define RSIIO_MEASUREMENT_READ     _IOWR('x', 192, struct rsi_measurement)
 #define RSIIO_MEASUREMENT_EXTEND   _IOW('x', 193, struct rsi_measurement)
 #define RSIIO_ATTESTATION_TOKEN    _IOWR('x', 194, struct rsi_attestation)
-
-/*
- * Those are pages that have to be defined in the kernel itself.
- * They are used as output pages for RSI calls.
- * Needs small patch to the kernel.
- *
- * This will not be required when the module is builtin in the kernel.
- */
-extern struct realm_config __attribute((aligned(GRANULE_LEN))) config;
-extern char __attribute__((aligned(GRANULE_LEN))) rsi_page_buf[GRANULE_LEN];
+#define RSIIO_SEALING_KEY          _IOWR('x', 200, struct rsi_sealing_key)
+#define RSIIO_REALM_METADATA       _IOR('x', 201, struct rsi_realm_metadata)

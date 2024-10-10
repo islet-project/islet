@@ -5,9 +5,11 @@ use islet_hes::{SW_TYPE_MAX_SIZE, VERSION_MAX_SIZE};
 type psa_handle_t = i32;
 
 pub const RSS_DELEGATED_SERVICE_HANDLE: psa_handle_t = 0x40000111;
+pub const RSS_VHUK_SERVICE_HANDLE: psa_handle_t = 0x40000112;
 
 pub const RSS_DELEGATED_ATTEST_GET_DELEGATED_KEY: i16 = 1001;
 pub const RSS_DELEGATED_ATTEST_GET_PLATFORM_TOKEN: i16 = 1002;
+pub const RSS_VHUK_GET_KEY: i16 = 1006;
 
 pub const RSS_MEASURED_BOOT_SERVICE_HANDLE: psa_handle_t = 0x40000110;
 

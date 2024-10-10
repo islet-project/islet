@@ -96,7 +96,7 @@ fn get_write_val(rec: &Rec<'_>, esr_el2: u64) -> Result<u64, Error> {
 
 fn handle_data_abort(
     realm_exit_res: [usize; 4],
-    rec: &Rec<'_>,
+    rec: &mut Rec<'_>,
     run: &mut Run,
 ) -> Result<usize, Error> {
     let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
@@ -113,7 +113,13 @@ fn handle_data_abort(
     let fault_ipa = (fault_ipa << 8) as usize;
 
     let (exit_esr, exit_far) = match is_non_emulatable_data_abort(&rd, fault_ipa, esr_el2)? {
-        true => (esr_el2 & NON_EMULATABLE_ABORT_MASK, 0),
+        true => {
+            // we need to clear out the ISV bit by hand in rec (the esr of the last execution) and run.exit
+            // to inform both RMM (via rec) and Host (via run.exit) that this abort is not emulatable.
+            let mut rec_esr_el2 = EsrEl2::new(rec.context.sys_regs.esr_el2);
+            rec.context.sys_regs.esr_el2 = rec_esr_el2.clear_bits(EsrEl2::ISV).get();
+            (esr_el2 & NON_EMULATABLE_ABORT_MASK, 0)
+        }
         false => {
             if esr_el2 & EsrEl2::WNR != 0 {
                 let write_val = get_write_val(rec, esr_el2)?;

@@ -16,7 +16,6 @@ use crate::rec::Rec;
 use crate::rec::State as RecState;
 use crate::rmi;
 use crate::rmi::error::Error;
-use crate::rmi::rec::exit::handle_realm_exit;
 use crate::rsi::do_host_call;
 use crate::rsi::psci::complete_psci;
 use crate::{get_granule, get_granule_if};
@@ -219,13 +218,15 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             ret_ns = true;
             run.set_imm(0);
 
-            let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
-            let rd = rd_granule.content::<Rd>()?;
             rec.set_state(RecState::Running);
 
-            // TODO: Use cfg_if
             #[cfg(not(any(miri, test)))]
             {
+                use crate::rmi::rec::exit::handle_realm_exit;
+
+                let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+                let rd = rd_granule.content::<Rd>()?;
+
                 crate::rec::run_prepare(&rd, rec.vcpuid(), &mut rec, 0)?;
                 // XXX: we explicitly release Rd's lock here, because RSI calls
                 //      would acquire the same lock again (deadlock).
@@ -252,6 +253,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 break;
             }
         }
+
         #[cfg(not(any(miri, test)))]
         crate::gic::send_state_to_host(&rec, &mut run)?;
         crate::realm::timer::send_state_to_host(&rec, &mut run)?;

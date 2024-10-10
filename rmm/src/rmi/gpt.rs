@@ -102,7 +102,7 @@ mod test {
 
     #[test]
     fn rmi_granule_delegate_positive() {
-        let mocking_addr = alloc_granule(0);
+        let mocking_addr = mock::host::alloc_granule(IDX_RD);
         let ret = rmi::<GRANULE_DELEGATE>(&[mocking_addr]);
         assert_eq!(ret[0], SUCCESS);
         assert!(get_granule_if!(mocking_addr, GranuleState::Delegated).is_ok());

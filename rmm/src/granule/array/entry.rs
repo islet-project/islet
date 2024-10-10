@@ -70,7 +70,6 @@ impl Granule {
 
         #[cfg(any(miri, test))]
         {
-            let state = GranuleState::Undelegated;
             Self {
                 state: GranuleState::Undelegated,
                 gpt: GranuleGpt::GPT_NS,
@@ -145,8 +144,7 @@ impl Granule {
         let entry_addr = granule_addr - granule_offset;
         let gst = &GRANULE_STATUS_TABLE;
         let table_base = gst.entries.as_ptr() as usize;
-        let index = (entry_addr - table_base) / core::mem::size_of::<Entry>();
-        index
+        (entry_addr - table_base) / core::mem::size_of::<Entry>()
     }
 
     #[cfg(not(any(kani, miri, test)))]
@@ -162,7 +160,7 @@ impl Granule {
     pub fn index_to_addr(&self) -> usize {
         use crate::granule::{GRANULE_REGION, GRANULE_STATUS_TABLE_SIZE};
         let idx = self.index();
-        assert!(idx >= 0 && idx < GRANULE_STATUS_TABLE_SIZE);
+        assert!(idx < GRANULE_STATUS_TABLE_SIZE);
 
         #[cfg(any(miri, test))]
         return crate::test_utils::align_up(unsafe {

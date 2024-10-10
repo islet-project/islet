@@ -136,7 +136,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             || !rd.addr_in_par(base)
             || top.checked_sub(GRANULE_SIZE).is_none()
             || !rd.addr_in_par(top - GRANULE_SIZE)
-        // overflow detected!
         {
             return Err(Error::RmiErrorInput);
         }
@@ -373,10 +372,10 @@ mod test {
         let rd = realm_create();
 
         let (rtt1, rtt2, rtt3, rtt4) = (
-            alloc_granule(3),
-            alloc_granule(4),
-            alloc_granule(5),
-            alloc_granule(6),
+            mock::host::alloc_granule(IDX_RTT_LEVEL1),
+            mock::host::alloc_granule(IDX_RTT_LEVEL2),
+            mock::host::alloc_granule(IDX_RTT_LEVEL3),
+            mock::host::alloc_granule(IDX_RTT_OTHER),
         );
 
         for rtt in &[rtt1, rtt2, rtt3, rtt4] {
@@ -398,7 +397,7 @@ mod test {
 
         // This seems that it should be a failure condition
         unsafe {
-            let mut rd_obj = &mut *(rd as *mut Rd);
+            let rd_obj = &mut *(rd as *mut Rd);
             rd_obj.set_state(State::SystemOff);
             assert!(rd_obj.at_state(State::SystemOff));
         };
@@ -474,7 +473,7 @@ mod test {
 
         let ipa = IPA_ADDR_UNPROTECTED_UNASSIGNED;
         let level = MAP_LEVEL;
-        let ns = alloc_granule(IDX_NS_DESC);
+        let ns = mock::host::alloc_granule(IDX_NS_DESC);
         let desc = ns | ATTR_NORMAL_WB_WA_RA | ATTR_STAGE2_AP_RW | ATTR_INNER_SHARED;
 
         let ret = rmi::<RTT_MAP_UNPROTECTED>(&[rd, ipa, level, desc]);
@@ -534,7 +533,7 @@ mod test {
         assert_eq!(ripas, RMI_DESTROYED);
 
         // Check for RIPAS transition from ASSIGNED,DESTROYED
-        let data = alloc_granule(IDX_DATA3);
+        let data = mock::host::alloc_granule(IDX_DATA3);
         let ret = rmi::<GRANULE_DELEGATE>(&[data]);
         assert_eq!(ret[0], SUCCESS);
 
@@ -558,7 +557,7 @@ mod test {
 
         mock::host::map(rd, ipa);
 
-        let data = alloc_granule(IDX_DATA4);
+        let data = mock::host::alloc_granule(IDX_DATA4);
         let ret = rmi::<GRANULE_DELEGATE>(&[data]);
         assert_eq!(ret[0], SUCCESS);
 
@@ -647,7 +646,6 @@ mod test {
     // Covered RMIs: RTT_SET_RIPAS
     #[test]
     fn rmi_rtt_set_ripas_positive() {
-        use crate::event::realmexit::RecExitReason;
         use crate::rmi::rec::run::Run;
         use crate::rsi::PSCI_CPU_ON;
 

@@ -1,10 +1,12 @@
 use crate::event::Context;
 use crate::event::Mainloop;
-use crate::granule::{GRANULE_REGION, GRANULE_SIZE};
+use crate::granule::GRANULE_SIZE;
 use crate::monitor::Monitor;
 use crate::rmi::realm::Params as RealmParams;
 use crate::rmi::rec::params::Params as RecParams;
 use crate::rmi::*;
+
+pub use mock::host::{alloc_granule, granule_addr};
 
 use alloc::vec::Vec;
 
@@ -35,12 +37,16 @@ pub fn extract_bits(value: usize, start: u32, end: u32) -> usize {
 }
 
 pub fn realm_create() -> usize {
-    for mocking_addr in &[alloc_granule(0), alloc_granule(1)] {
+    for mocking_addr in &[alloc_granule(IDX_RD), alloc_granule(IDX_RTT_LEVEL0)] {
         let ret = rmi::<GRANULE_DELEGATE>(&[*mocking_addr]);
         assert_eq!(ret[0], SUCCESS);
     }
 
-    let (rd, rtt, params_ptr) = (alloc_granule(0), alloc_granule(1), alloc_granule(2));
+    let (rd, rtt, params_ptr) = (
+        alloc_granule(IDX_RD),
+        alloc_granule(IDX_RTT_LEVEL0),
+        alloc_granule(IDX_REALM_PARAMS),
+    );
 
     unsafe {
         let params = &mut *(params_ptr as *mut RealmParams);
@@ -60,7 +66,7 @@ pub fn realm_destroy(rd: usize) {
     let ret = rmi::<REALM_DESTROY>(&[rd]);
     assert_eq!(ret[0], SUCCESS);
 
-    for mocking_addr in &[alloc_granule(0), alloc_granule(1)] {
+    for mocking_addr in &[granule_addr(IDX_RD), granule_addr(IDX_RTT_LEVEL0)] {
         let ret = rmi::<GRANULE_UNDELEGATE>(&[*mocking_addr]);
         assert_eq!(ret[0], SUCCESS);
     }
@@ -105,7 +111,7 @@ pub fn rec_destroy(idx_rec: usize, idx_rec_aux_start: usize) {
     assert_eq!(ret[0], SUCCESS);
 
     for idx in 0..MAX_REC_AUX_GRANULES {
-        let mocking_addr = alloc_granule(idx + idx_rec_aux_start);
+        let mocking_addr = granule_addr(idx + idx_rec_aux_start);
         let ret = rmi::<GRANULE_UNDELEGATE>(&[mocking_addr]);
         assert_eq!(ret[0], SUCCESS);
     }
@@ -141,25 +147,13 @@ pub fn align_up(addr: usize) -> usize {
     }
 }
 
-/*
- * 0: RD
- * 1: RTT0
- * 2: Realm Params
- * 3: RTT1
- * 4: RTT2
- * 5: RTT3
- * 6: RTT4
- * 7: REC
- * 8: REC Params
- * 9..25: REC AUX
- */
-
 pub const IDX_RD: usize = 0;
 pub const IDX_RTT_LEVEL0: usize = 1;
 pub const IDX_REALM_PARAMS: usize = 2;
 pub const IDX_RTT_LEVEL1: usize = 3;
 pub const IDX_RTT_LEVEL2: usize = 4;
 pub const IDX_RTT_LEVEL3: usize = 5;
+pub const IDX_RTT_OTHER: usize = 6;
 
 pub const IDX_REC1: usize = 7;
 pub const IDX_REC2: usize = 8;
@@ -168,7 +162,6 @@ pub const IDX_REC2_AUX: usize = 25; // 9 + 16
 pub const IDX_REC1_PARAMS: usize = 41; // 25 + 16
 pub const IDX_REC2_PARAMS: usize = 42;
 pub const IDX_REC1_RUN: usize = 43;
-pub const IDX_REC2_RUN: usize = 44;
 
 pub const IDX_NS_DESC: usize = 45;
 pub const IDX_DATA1: usize = 46;
@@ -177,14 +170,6 @@ pub const IDX_DATA3: usize = 48;
 pub const IDX_DATA4: usize = 49;
 pub const IDX_SRC1: usize = 50;
 pub const IDX_SRC2: usize = 51;
-
-pub fn alloc_granule(idx: usize) -> usize {
-    let start = unsafe { GRANULE_REGION.as_ptr() as usize };
-    let first = crate::test_utils::align_up(start);
-    first + idx * GRANULE_SIZE
-}
-
-pub use alloc_granule as granule_addr;
 
 pub const MAP_LEVEL: usize = 3;
 pub const L3_SIZE: usize = GRANULE_SIZE;
@@ -220,7 +205,21 @@ pub fn miri_teardown() {
 pub mod mock {
     pub mod host {
         use super::super::*;
+
+        use crate::granule::{GRANULE_REGION, GRANULE_SIZE};
         use crate::rmi::{RTT_CREATE, RTT_DESTROY, RTT_READ_ENTRY};
+
+        pub use alloc_granule as granule_addr;
+
+        /// This function simulates memory allocation by using a portion of the
+        /// pre-allocated memory within the RMM.
+        /// It mocks the memory allocation provided by host and is designed
+        /// to bypass provenance issues detected by MIRI.
+        pub fn alloc_granule(idx: usize) -> usize {
+            let start = unsafe { GRANULE_REGION.as_ptr() as usize };
+            let first = crate::test_utils::align_up(start);
+            first + idx * GRANULE_SIZE
+        }
 
         pub fn map(rd: usize, ipa: usize) {
             let ret = rmi::<RTT_READ_ENTRY>(&[rd, ipa, MAP_LEVEL]);
@@ -277,9 +276,9 @@ pub mod mock {
             assert_eq!(ret[0], SUCCESS);
 
             for mocking_addr in &[
-                alloc_granule(IDX_RTT_LEVEL1),
-                alloc_granule(IDX_RTT_LEVEL2),
-                alloc_granule(IDX_RTT_LEVEL3),
+                granule_addr(IDX_RTT_LEVEL1),
+                granule_addr(IDX_RTT_LEVEL2),
+                granule_addr(IDX_RTT_LEVEL3),
             ] {
                 let ret = rmi::<GRANULE_UNDELEGATE>(&[*mocking_addr]);
                 assert_eq!(ret[0], SUCCESS);

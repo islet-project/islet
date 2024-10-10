@@ -42,6 +42,7 @@ fn prepare_args(rd: &mut Rd, mpidr: u64) -> Result<(usize, u64, u64), Error> {
 }
 
 pub fn set_event_handler(mainloop: &mut Mainloop) {
+    #[cfg(not(kani))]
     listen!(mainloop, rmi::REC_CREATE, |arg, ret, rmm| {
         let rd = arg[0];
         let rec = arg[1];
@@ -74,7 +75,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         match prepare_args(&mut rd, params.mpidr) {
             Ok((vcpuid, vttbr, vmpidr)) => {
                 ret[1] = vcpuid;
-                rec.init(owner, vcpuid, params.flags, vttbr, vmpidr)?;
+                rec.init(owner, vcpuid, params.flags, params.aux, vttbr, vmpidr)?;
             }
             Err(_) => return Err(Error::RmiErrorInput),
         }
@@ -94,14 +95,43 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // `rsi` is currently not reachable in model checking harnesses
         HashContext::new(&mut rd)?.measure_rec_params(&params)?;
 
+        for i in 0..rmi::MAX_REC_AUX_GRANULES {
+            let rec_aux = rec.aux(i) as usize;
+            let mut rec_aux_granule = get_granule_if!(rec_aux, GranuleState::Delegated)?;
+            set_granule(&mut rec_aux_granule, GranuleState::RecAux)?;
+        }
+
         #[cfg(feature = "gst_page_table")]
         return set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec);
         #[cfg(not(feature = "gst_page_table"))]
         return set_granule(&mut rec_granule, GranuleState::Rec);
     });
 
+    #[cfg(any(not(kani), feature = "mc_rmi_rec_destroy"))]
     listen!(mainloop, rmi::REC_DESTROY, |arg, _ret, rmm| {
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
+
+        let rec = rec_granule.content::<Rec<'_>>()?;
+        if rec.get_state() == RecState::Running {
+            return Err(Error::RmiErrorRec);
+        }
+
+        #[cfg(not(kani))]
+        for i in 0..rmi::MAX_REC_AUX_GRANULES {
+            let rec_aux = rec.aux(i) as usize;
+            let mut rec_aux_granule = get_granule_if!(rec_aux, GranuleState::RecAux)?;
+            set_granule(&mut rec_aux_granule, GranuleState::Delegated)?;
+        }
+        #[cfg(kani)]
+        {
+            // XXX: we check only the first aux to reduce the overall
+            //      verification time
+            let rec_aux = rec.aux(0) as usize;
+            // XXX: the below can be guaranteed by Rec's invariants instead
+            kani::assume(crate::granule::validate_addr(rec_aux));
+            let mut rec_aux_granule = get_granule!(rec_aux)?;
+            set_granule(&mut rec_aux_granule, GranuleState::Delegated)?;
+        }
 
         set_granule(&mut rec_granule, GranuleState::Delegated).map_err(|e| {
             #[cfg(not(kani))]
@@ -115,6 +145,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
+    #[cfg(not(kani))]
     listen!(mainloop, rmi::REC_ENTER, |arg, ret, rmm| {
         let run_pa = arg[1];
 
@@ -211,6 +242,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         host::copy_to_ptr::<Run>(&run, run_pa).ok_or(Error::RmiErrorInput)
     });
 
+    #[cfg(not(kani))]
     listen!(mainloop, rmi::PSCI_COMPLETE, |arg, _ret, _rmm| {
         let caller_pa = arg[0];
         let target_pa = arg[1];

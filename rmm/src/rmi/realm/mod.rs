@@ -109,7 +109,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         })
     });
 
-    #[cfg(not(kani))]
+    #[cfg(any(not(kani), feature = "mc_rmi_rec_aux_count"))]
     listen!(mainloop, rmi::REC_AUX_COUNT, |arg, ret, _| {
         let _ = get_granule_if!(arg[0], GranuleState::RD)?;
         ret[1] = rmi::MAX_REC_AUX_GRANULES;

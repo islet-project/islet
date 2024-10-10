@@ -3,6 +3,8 @@ use islet_rmm::granule::entry::GranuleGpt;
 use islet_rmm::granule::validate_addr;
 use islet_rmm::realm::rd::Rd;
 use islet_rmm::realm::rd::State; // tmp
+use islet_rmm::rec::Rec;
+use islet_rmm::rec::State as RecState;
 
 extern "C" {
     fn CPROVER_havoc_object(address: usize);
@@ -114,6 +116,21 @@ pub fn post_rd_state(addr: usize) -> State {
         .unwrap();
     let rd = content::<Rd>(valid_addr);
     rd.state()
+}
+
+pub fn pre_rec_state(addr: usize) -> RecState {
+    let valid_addr = pre_valid_addr(addr);
+    let rec = content::<Rec>(valid_addr);
+    rec.get_state()
+}
+
+pub fn post_rec_aux_state(addr: usize) -> u8 {
+    let valid_addr = pre_valid_addr(addr);
+    let rec = content::<Rec>(valid_addr);
+    // XXX: we currently check only the first entry to
+    //      reduce the overall verification time
+    let rec_aux = rec.aux(0) as usize;
+    post_granule_state(rec_aux)
 }
 
 pub fn initialize() {

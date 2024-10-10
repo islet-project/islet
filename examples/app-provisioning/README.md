@@ -213,8 +213,8 @@ For detailed instructions see: https://github.com/islet-project/image-registry/t
     sudo iptables -A FORWARD --src 192.168.10.0/24 -j ACCEPT
     sudo iptables -A FORWARD --dst 192.168.10.0/24 -j ACCEPT
     sudo iptables -t nat -A POSTROUTING -j MASQUERADE -s 192.168.10.0/24
-    sudo ip addr del 193.168.10.15/24 dev armbr0
-    sudo ip addr add 192.168.10.15/24 dev armbr0
+    sudo ip addr del 193.168.10.15/24 dev ARM${USER}
+    sudo ip addr add 192.168.10.15/24 dev ARM${USER}
 
 ## Setup network in normal world linux (paste this in telnet 5000 console)
 

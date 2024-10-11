@@ -315,8 +315,9 @@ def prepare_eventfd_manager():
     args = [
         "CROSS_COMPILE=%s" % KVMTOOL_CROSS_COMPILE,
     ]
-    print(args)
     make(EVENTFD_MANAGER, args)
+    run(["cp", "%s/%s" % (EVENTFD_MANAGER, "client"), OUT], cwd=ROOT)
+    run(["cp", "%s/%s" % (EVENTFD_MANAGER, "server"), OUT], cwd=ROOT)
     run(["cp", "%s/%s" % (EVENTFD_MANAGER, "eventfd_manager"), OUT], cwd=ROOT)
 
 
@@ -530,6 +531,8 @@ def place_realm_at_shared(rmm, realm_ip, fvp_tap_ip, host_ip, no_kvm_unit_tests,
     run(["mv", "%s/realm/linux.realm" % OUT, SHARED_PATH], cwd=ROOT)
     run(["mv", "%s/lkvm" % OUT, SHARED_PATH], cwd=ROOT)
     run(["mv", "%s/eventfd_manager" % OUT, SHARED_PATH], cwd=ROOT)
+    run(["mv", "%s/client" % OUT, SHARED_PATH], cwd=ROOT)
+    run(["mv", "%s/server" % OUT, SHARED_PATH], cwd=ROOT)
     place_script_at_shared()
     if no_kvm_unit_tests == False:
         run(["cp", "-R", "%s/kvm-unit-tests" % OUT, SHARED_PATH], cwd=ROOT)

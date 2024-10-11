@@ -23,19 +23,17 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     listen!(mainloop, rmi::GRANULE_DELEGATE, |arg, _, rmm| {
         let addr = arg[0];
 
-        {
-            // Avoid deadlock in get_granule() in smc
-            #[cfg(feature = "gst_page_table")]
-            let mut granule = match get_granule_if!(addr, GranuleState::Undelegated) {
-                Err(MmError::MmNoEntry) => {
-                    set_state_and_get_granule!(addr, GranuleState::Undelegated)
-                }
-                other => other,
-            }?;
+        #[cfg(feature = "gst_page_table")]
+        let mut granule = match get_granule_if!(addr, GranuleState::Undelegated) {
+            Err(MmError::MmNoEntry) => set_state_and_get_granule!(addr, GranuleState::Undelegated),
+            other => other,
+        }?;
+        #[cfg(not(feature = "gst_page_table"))]
+        let mut granule = get_granule_if!(addr, GranuleState::Undelegated)?;
 
-            #[cfg(not(feature = "gst_page_table"))]
-            let _granule = get_granule_if!(addr, GranuleState::Undelegated)?;
-        }
+        // Avoid deadlock in get_granule() in smc() on {miri, test} mode
+        #[cfg(any(miri, test))]
+        core::mem::drop(granule);
 
         if smc(MARK_REALM, &[addr])[0] != SMC_SUCCESS {
             return Err(Error::RmiErrorInput);
@@ -45,6 +43,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.map(addr, true);
 
+        #[cfg(any(miri, test))]
         let mut granule = get_granule_if!(addr, GranuleState::Undelegated)?;
         set_granule(&mut granule, GranuleState::Delegated).map_err(|e| {
             #[cfg(not(kani))]
@@ -61,10 +60,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     #[cfg(any(not(kani), feature = "mc_rmi_granule_undelegate"))]
     listen!(mainloop, rmi::GRANULE_UNDELEGATE, |arg, _, rmm| {
         let addr = arg[0];
-        {
-            // Avoid deadlock in get_granule() in smc
-            let _granule = get_granule_if!(addr, GranuleState::Delegated)?;
-        }
+        let mut granule = get_granule_if!(addr, GranuleState::Delegated)?;
+
+        // Avoid deadlock in get_granule() in smc() on {miri, test} mode
+        #[cfg(any(miri, test))]
+        core::mem::drop(granule);
 
         if smc(MARK_NONSECURE, &[addr])[0] != SMC_SUCCESS {
             panic!(
@@ -73,6 +73,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             );
         }
 
+        #[cfg(any(miri, test))]
         let mut granule = get_granule_if!(addr, GranuleState::Delegated)?;
 
         #[cfg(not(kani))]

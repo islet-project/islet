@@ -18,6 +18,12 @@ pub enum RmmRecAttestState {
     NoAttestInProgress,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum RmmRecEmulatableAbort {
+    EmulatableAbort,
+    NotEmulatableAbort,
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum State {
     Ready = 1,
@@ -42,6 +48,7 @@ pub struct Rec<'a> {
     attest_challenge: [u8; MAX_CHALLENGE_SIZE],
     attest_token_offset: usize,
     aux: [u64; NR_AUX], // Addresses of auxiliary Granules
+    emulatable_abort: RmmRecEmulatableAbort,
     /// PA of RD of Realm which owns this REC
     ///
     /// Safety:
@@ -65,6 +72,7 @@ impl Rec<'_> {
             attest_challenge: [0; MAX_CHALLENGE_SIZE],
             attest_token_offset: 0,
             aux: [0; NR_AUX],
+            emulatable_abort: RmmRecEmulatableAbort::NotEmulatableAbort,
             owner: OnceCell::new(),
             vcpuid: 0,
             runnable: false,
@@ -132,6 +140,10 @@ impl Rec<'_> {
         self.aux[index]
     }
 
+    pub fn emulatable_abort(&self) -> RmmRecEmulatableAbort {
+        self.emulatable_abort
+    }
+
     pub fn runnable(&self) -> bool {
         self.runnable
     }
@@ -170,6 +182,10 @@ impl Rec<'_> {
 
     pub fn set_attest_offset(&mut self, offset: usize) {
         self.attest_token_offset = offset;
+    }
+
+    pub fn set_emulatable_abort(&mut self, val: RmmRecEmulatableAbort) {
+        self.emulatable_abort = val;
     }
 
     pub fn set_host_call_pending(&mut self, val: bool) {

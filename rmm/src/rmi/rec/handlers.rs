@@ -12,8 +12,8 @@ use crate::listen;
 use crate::measurement::HashContext;
 use crate::realm::context::{set_reg, RegOffset};
 use crate::realm::rd::{Rd, State};
-use crate::rec::Rec;
 use crate::rec::State as RecState;
+use crate::rec::{Rec, RmmRecEmulatableAbort::NotEmulatableAbort};
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rsi::do_host_call;
@@ -227,6 +227,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
                 let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
                 let rd = rd_granule.content::<Rd>()?;
 
+                rec.set_emulatable_abort(NotEmulatableAbort);
                 crate::rec::run_prepare(&rd, rec.vcpuid(), &mut rec, 0)?;
                 // XXX: we explicitly release Rd's lock here, because RSI calls
                 //      would acquire the same lock again (deadlock).

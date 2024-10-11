@@ -8,7 +8,9 @@ use crate::realm::context::get_reg;
 use crate::realm::mm::rtt::RTT_PAGE_LEVEL;
 use crate::realm::mm::stage2_tte::S2TTE;
 use crate::realm::rd::Rd;
-use crate::rec::Rec;
+use crate::rec::{
+    Rec, RmmRecEmulatableAbort::EmulatableAbort, RmmRecEmulatableAbort::NotEmulatableAbort,
+};
 use crate::rmi::error::Error;
 use crate::rmi::rec::run::Run;
 use crate::Monitor;
@@ -114,10 +116,7 @@ fn handle_data_abort(
 
     let (exit_esr, exit_far) = match is_non_emulatable_data_abort(&rd, fault_ipa, esr_el2)? {
         true => {
-            // we need to clear out the ISV bit by hand in rec (the esr of the last execution) and run.exit
-            // to inform both RMM (via rec) and Host (via run.exit) that this abort is not emulatable.
-            let mut rec_esr_el2 = EsrEl2::new(rec.context.sys_regs.esr_el2);
-            rec.context.sys_regs.esr_el2 = rec_esr_el2.clear_bits(EsrEl2::ISV).get();
+            rec.set_emulatable_abort(NotEmulatableAbort);
             (esr_el2 & NON_EMULATABLE_ABORT_MASK, 0)
         }
         false => {
@@ -125,6 +124,7 @@ fn handle_data_abort(
                 let write_val = get_write_val(rec, esr_el2)?;
                 run.set_gpr(0, write_val)?;
             }
+            rec.set_emulatable_abort(EmulatableAbort);
             (
                 esr_el2 & EMULATABLE_ABORT_MASK,
                 (far_el2 & !(GRANULE_MASK as u64)),

@@ -374,7 +374,7 @@ Figure 4-1. Host Memory Modeling (Declaration)  | Figure 4-2. Host Memory Modeli
 
 ### Bugs Found
 
-We found four correctness bug and one security bug during Islet's model checking.
+We found four correctness bugs and one security bug during Islet's model checking.
 
 - RMI Features
 

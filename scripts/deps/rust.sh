@@ -20,4 +20,8 @@ rustup component add clippy
 
 cargo install cargo-bloat cbindgen mdbook
 
+# code-coverage
+rustup component add llvm-tools-preview
+cargo install grcov
+
 rustc --version --verbose

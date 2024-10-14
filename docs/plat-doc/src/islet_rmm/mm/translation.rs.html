@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/mm/translation.rs`."><title>translation.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-47e7ab555ef2818a.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0-nightly (ec08a0337 2023-09-04)" data-channel="nightly" data-search-js="search-5d3eaacf19ebf04f.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-f194925aa375ae96.css" data-theme-dark-css="dark-1dd4d1ce031e15de.css" data-theme-ayu-css="ayu-49e58d069f567085.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-ef3a2de404864b0b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-f194925aa375ae96.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1dd4d1ce031e15de.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../islet_rmm/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/mm/translation.rs`."><title>translation.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (dbce3b43b 2024-04-20)" data-channel="nightly" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../islet_rmm/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -192,12 +192,6 @@
 <a href="#192" id="192">192</a>
 <a href="#193" id="193">193</a>
 <a href="#194" id="194">194</a>
-<a href="#195" id="195">195</a>
-<a href="#196" id="196">196</a>
-<a href="#197" id="197">197</a>
-<a href="#198" id="198">198</a>
-<a href="#199" id="199">199</a>
-<a href="#200" id="200">200</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">super</span>::page_table::entry::Entry;
 <span class="kw">use </span><span class="kw">super</span>::page_table::{attr, L1Table};
 <span class="kw">use </span><span class="kw">crate</span>::config::{PAGE_SIZE, RMM_SHARED_BUFFER_START};
@@ -207,7 +201,7 @@
 <span class="kw">use </span>vmsa::address::{PhysAddr, VirtAddr};
 <span class="kw">use </span>vmsa::page::Page;
 <span class="kw">use </span>vmsa::page_table::PageTable <span class="kw">as </span>RootPageTable;
-<span class="kw">use </span>vmsa::page_table::{Level, PageTableMethods};
+<span class="kw">use </span>vmsa::page_table::{DefaultMemAlloc, Level, PageTableMethods};
 
 <span class="kw">use </span>armv9a::bits_in_reg;
 <span class="kw">use </span>core::ffi::c_void;
@@ -215,14 +209,14 @@
 <span class="kw">use </span>lazy_static::lazy_static;
 <span class="kw">use </span>spin::mutex::Mutex;
 
-<span class="kw">extern </span><span class="string">&quot;C&quot; </span>{
+<span class="kw">extern </span><span class="string">"C" </span>{
     <span class="kw">static </span>__RMM_BASE__: u64;
     <span class="kw">static </span>__RW_START__: u64;
     <span class="kw">static </span>__RW_END__: u64;
 }
 
 <span class="kw">pub struct </span>PageTable {
-    page_table: <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>Mutex&lt;Inner&lt;<span class="lifetime">&#39;static</span>&gt;&gt;,
+    page_table: <span class="kw-2">&amp;</span><span class="lifetime">'static </span>Mutex&lt;Inner&lt;<span class="lifetime">'static</span>&gt;&gt;,
 }
 
 <span class="kw">impl </span>PageTable {
@@ -241,8 +235,8 @@
     }
 }
 
-<span class="macro">lazy_static! </span>{
-    <span class="kw">static </span><span class="kw-2">ref </span>RMM_PAGE_TABLE: Mutex&lt;Inner&lt;<span class="lifetime">&#39;static</span>&gt;&gt; = Mutex::new(Inner::new());
+<span class="macro">lazy_static!</span> {
+    <span class="kw">static </span><span class="kw-2">ref </span>RMM_PAGE_TABLE: Mutex&lt;Inner&lt;<span class="lifetime">'static</span>&gt;&gt; = Mutex::new(Inner::new());
 }
 
 <span class="kw">pub fn </span>get_page_table() -&gt; u64 {
@@ -251,30 +245,28 @@
     page_table.get_base_address() <span class="kw">as </span>u64
 }
 
-<span class="comment">// initial lookup starts at level 1 with 2 page tables concatenated
-</span><span class="kw">pub const </span>NUM_ROOT_PAGE: usize = <span class="number">1</span>;
-<span class="kw">pub const </span>ALIGN_ROOT_PAGE: usize = <span class="number">2</span>;
+<span class="kw">pub fn </span>drop_page_table() {
+    RMM_PAGE_TABLE.lock().root_pgtbl.drop();
+}
 
-<span class="kw">struct </span>Inner&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">struct </span>Inner&lt;<span class="lifetime">'a</span>&gt; {
     <span class="comment">// We will set the translation granule with 4KB.
     // To reduce the level of page lookup, initial lookup will start from L1.
-    </span>root_pgtlb:
-        <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span>RootPageTable&lt;VirtAddr, L1Table, Entry, { &lt;L1Table <span class="kw">as </span>Level&gt;::NUM_ENTRIES }&gt;,
+    </span>root_pgtbl:
+        <span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span>RootPageTable&lt;VirtAddr, L1Table, Entry, { &lt;L1Table <span class="kw">as </span>Level&gt;::NUM_ENTRIES }&gt;,
     dirty: bool,
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Inner&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Inner&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>root_pgtlb = <span class="kw">unsafe </span>{
-            <span class="kw-2">&amp;mut *</span>RootPageTable::&lt;VirtAddr, L1Table, Entry, { &lt;L1Table <span class="kw">as </span>Level&gt;::NUM_ENTRIES }&gt;::new_with_align(
-                NUM_ROOT_PAGE,
-                ALIGN_ROOT_PAGE,
+        <span class="kw">let </span>root_pgtbl =
+            RootPageTable::&lt;VirtAddr, L1Table, Entry, { &lt;L1Table <span class="kw">as </span>Level&gt;::NUM_ENTRIES }&gt;::new_in(
+                <span class="kw-2">&amp;</span>DefaultMemAlloc {},
             )
-            .unwrap()
-        };
+            .unwrap();
 
         <span class="self">Self </span>{
-            root_pgtlb,
+            root_pgtbl,
             dirty: <span class="bool-val">false</span>,
         }
     }
@@ -312,7 +304,7 @@
             </span><span class="self">self</span>.set_pages(
                 VirtAddr::from(uart_phys),
                 PhysAddr::from(uart_phys),
-                <span class="number">1</span>,
+                PAGE_SIZE,
                 rw_flags | device_flags,
             );
             <span class="self">self</span>.set_pages(
@@ -327,31 +319,27 @@
     }
 
     <span class="kw">fn </span>get_base_address(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">*const </span>c_void {
-        <span class="self">self</span>.root_pgtlb <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">_ as </span><span class="kw-2">*const </span>c_void
+        <span class="self">self</span>.root_pgtbl <span class="kw">as </span><span class="kw-2">*const </span><span class="kw">_ as </span><span class="kw-2">*const </span>c_void
     }
 
     <span class="kw">fn </span>set_pages(<span class="kw-2">&amp;mut </span><span class="self">self</span>, va: VirtAddr, phys: PhysAddr, size: usize, flags: u64) {
         <span class="kw">let </span>virtaddr = Page::&lt;BasePageSize, VirtAddr&gt;::range_with_size(va, size);
         <span class="kw">let </span>phyaddr = Page::&lt;BasePageSize, PhysAddr&gt;::range_with_size(phys, size);
 
-        <span class="kw">if </span><span class="self">self
-            </span>.root_pgtlb
-            .set_pages(virtaddr, phyaddr, flags, <span class="bool-val">false</span>)
-            .is_err()
-        {
-            <span class="macro">warn!</span>(<span class="string">&quot;set_pages error&quot;</span>);
+        <span class="kw">if </span><span class="self">self</span>.root_pgtbl.set_pages(virtaddr, phyaddr, flags).is_err() {
+            <span class="macro">warn!</span>(<span class="string">"set_pages error"</span>);
         }
     }
 
     <span class="kw">fn </span>unset_page(<span class="kw-2">&amp;mut </span><span class="self">self</span>, addr: usize) {
         <span class="kw">let </span>va = VirtAddr::from(addr);
         <span class="kw">let </span>page = Page::&lt;BasePageSize, VirtAddr&gt;::including_address(va);
-        <span class="self">self</span>.root_pgtlb.unset_page(page);
+        <span class="self">self</span>.root_pgtbl.unset_page(page);
     }
 
     <span class="kw">fn </span>set_pages_for_rmi(<span class="kw-2">&amp;mut </span><span class="self">self</span>, addr: usize, secure: bool) -&gt; bool {
         <span class="kw">if </span>addr == <span class="number">0 </span>{
-            <span class="macro">warn!</span>(<span class="string">&quot;map address is empty&quot;</span>);
+            <span class="macro">warn!</span>(<span class="string">"map address is empty"</span>);
             <span class="kw">return </span><span class="bool-val">false</span>;
         }
 
@@ -377,7 +365,7 @@
 
     <span class="kw">fn </span>unset_pages_for_rmi(<span class="kw-2">&amp;mut </span><span class="self">self</span>, addr: usize) -&gt; bool {
         <span class="kw">if </span>addr == <span class="number">0 </span>{
-            <span class="macro">warn!</span>(<span class="string">&quot;map address is empty&quot;</span>);
+            <span class="macro">warn!</span>(<span class="string">"map address is empty"</span>);
             <span class="kw">return </span><span class="bool-val">false</span>;
         }
 
@@ -386,16 +374,16 @@
     </span>}
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; fmt::Debug <span class="kw">for </span>Inner&lt;<span class="lifetime">&#39;a</span>&gt; {
-    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">&#39;_</span>&gt;) -&gt; fmt::Result {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; fmt::Debug <span class="kw">for </span>Inner&lt;<span class="lifetime">'a</span>&gt; {
+    <span class="kw">fn </span>fmt(<span class="kw-2">&amp;</span><span class="self">self</span>, f: <span class="kw-2">&amp;mut </span>fmt::Formatter&lt;<span class="lifetime">'_</span>&gt;) -&gt; fmt::Result {
         f.debug_struct(<span class="macro">stringify!</span>(<span class="self">Self</span>)).finish()
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; Drop <span class="kw">for </span>Inner&lt;<span class="lifetime">&#39;a</span>&gt; {
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; Drop <span class="kw">for </span>Inner&lt;<span class="lifetime">'a</span>&gt; {
     <span class="kw">fn </span>drop(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
-        <span class="macro">info!</span>(<span class="string">&quot;drop PageTable&quot;</span>);
-        <span class="self">self</span>.root_pgtlb.drop();
+        <span class="macro">info!</span>(<span class="string">"drop PageTable"</span>);
+        <span class="self">self</span>.root_pgtbl.drop();
     }
 }
 </code></pre></div></section></main></body></html>

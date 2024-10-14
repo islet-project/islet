@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/rsi/attestation/mod.rs`."><title>mod.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-47e7ab555ef2818a.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0-nightly (ec08a0337 2023-09-04)" data-channel="nightly" data-search-js="search-5d3eaacf19ebf04f.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-f194925aa375ae96.css" data-theme-dark-css="dark-1dd4d1ce031e15de.css" data-theme-ayu-css="ayu-49e58d069f567085.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-ef3a2de404864b0b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-f194925aa375ae96.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1dd4d1ce031e15de.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../islet_rmm/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/rsi/attestation/mod.rs`."><title>mod.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (dbce3b43b 2024-04-20)" data-channel="nightly" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../islet_rmm/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -168,6 +168,10 @@
 <a href="#168" id="168">168</a>
 <a href="#169" id="169">169</a>
 <a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
 </pre></div><pre class="rust"><code><span class="kw">pub mod </span>claims;
 
 <span class="kw">use </span>alloc::{boxed::Box, string::String, vec, vec::Vec};
@@ -184,13 +188,19 @@
 <span class="kw">use </span><span class="self">self</span>::claims::RealmClaims;
 <span class="kw">use </span><span class="kw">crate</span>::rmm_el3::{plat_token, realm_attest_key};
 
-<span class="kw">const </span>DUMMY_PERSONALIZATION_VALUE: [u8; <span class="number">64</span>] = [<span class="number">0</span>; <span class="number">64</span>];
+<span class="comment">// Arbitrary number.
+</span><span class="kw">pub const </span>MAX_CCA_TOKEN_SIZE: usize = <span class="number">4096</span>;
+<span class="comment">// This mostly depends on amount of measurement slots used.
+// In the maximum it could take around 6kB.
+// Currently platform token size is a little over 1kB.
+</span><span class="kw">pub const </span>MAX_PLATFORM_TOKEN_SIZE: usize = <span class="number">2048</span>;
+<span class="kw">pub const </span>MAX_CHALLENGE_SIZE: usize = <span class="number">64</span>;
 
 <span class="kw">const </span>CCA_TOKEN_COLLECTION: u64 = <span class="number">399</span>;
 <span class="kw">const </span>CCA_PLATFORM_TOKEN: u64 = <span class="number">44234</span>;
 <span class="kw">const </span>CCA_REALM_DELEGATED_TOKEN: u64 = <span class="number">44241</span>;
 
-<span class="kw">type </span>PlatformToken = ArrayVec&lt;[u8; <span class="number">4096</span>]&gt;;
+<span class="kw">type </span>PlatformToken = ArrayVec&lt;[u8; MAX_PLATFORM_TOKEN_SIZE]&gt;;
 <span class="comment">// 48B - the length of EC-P384 private key
 </span><span class="kw">type </span>RAKPriv = ArrayVec&lt;[u8; <span class="number">48</span>]&gt;;
 
@@ -200,7 +210,8 @@
     rak_priv: RAKPriv,
 }
 
-<span class="kw">impl </span>Attestation {
+<span class="comment">// TODO: Can we keep this context anywhere?
+</span><span class="kw">impl </span>Attestation {
     <span class="kw">pub fn </span>new(platform_token: <span class="kw-2">&amp;</span>[u8], rak_priv: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="self">Self </span>{
         <span class="kw">let </span><span class="kw-2">mut </span>at = <span class="self">Self</span>::default();
         at.set_platform_token(platform_token);
@@ -223,11 +234,13 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         challenge: <span class="kw-2">&amp;</span>[u8],
         measurements: <span class="kw-2">&amp;</span>[Measurement],
+        personalization_value: <span class="kw-2">&amp;</span>[u8],
         hash_algo: u8,
     ) -&gt; Vec&lt;u8&gt; {
         <span class="kw">let </span><span class="kw-2">mut </span>cca_token = Vec::new();
 
-        <span class="kw">let </span>realm_token = <span class="self">self</span>.create_realm_token(challenge, measurements, hash_algo);
+        <span class="kw">let </span>realm_token =
+            <span class="self">self</span>.create_realm_token(challenge, measurements, personalization_value, hash_algo);
 
         <span class="kw">let </span>realm_token_entry = (
             Value::Integer(CCA_REALM_DELEGATED_TOKEN.into()),
@@ -245,7 +258,7 @@
             <span class="kw-2">&amp;</span>Value::Tag(CCA_TOKEN_COLLECTION, Box::new(Value::Map(token_map))),
             <span class="kw-2">&amp;mut </span>cca_token,
         )
-        .expect(<span class="string">&quot;Failed to serialize CCA token&quot;</span>);
+        .expect(<span class="string">"Failed to serialize CCA token"</span>);
 
         cca_token
     }
@@ -254,27 +267,28 @@
         <span class="kw-2">&amp;</span><span class="self">self</span>,
         challenge: <span class="kw-2">&amp;</span>[u8],
         measurements: <span class="kw-2">&amp;</span>[Measurement],
+        personalization_value: <span class="kw-2">&amp;</span>[u8],
         hash_algo: u8,
     ) -&gt; Vec&lt;u8&gt; {
         <span class="kw">let </span>hash_algo_id = <span class="kw">match </span>hash_algo {
-            HASH_ALGO_SHA256 =&gt; String::from(<span class="string">&quot;sha-256&quot;</span>),
-            HASH_ALGO_SHA512 =&gt; String::from(<span class="string">&quot;sha-512&quot;</span>),
-            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">&quot;Unrecognized hash algorithm {}&quot;</span>, hash_algo),
+            HASH_ALGO_SHA256 =&gt; String::from(<span class="string">"sha-256"</span>),
+            HASH_ALGO_SHA512 =&gt; String::from(<span class="string">"sha-512"</span>),
+            <span class="kw">_ </span>=&gt; <span class="macro">panic!</span>(<span class="string">"Unrecognized hash algorithm {}"</span>, hash_algo),
         };
 
         <span class="kw">let </span>secret_key =
-            p384::SecretKey::from_slice(<span class="kw-2">&amp;</span><span class="self">self</span>.rak_priv).expect(<span class="string">&quot;Failed to import private RAK.&quot;</span>);
+            p384::SecretKey::from_slice(<span class="kw-2">&amp;</span><span class="self">self</span>.rak_priv).expect(<span class="string">"Failed to import private RAK."</span>);
 
         <span class="kw">let </span>public_key = secret_key.public_key().to_sec1_bytes().to_vec();
 
         <span class="kw">let </span>claims = RealmClaims::init(
             challenge,
-            <span class="kw-2">&amp;</span>DUMMY_PERSONALIZATION_VALUE,
+            personalization_value,
             measurements,
             hash_algo_id,
             <span class="kw-2">&amp;</span>public_key,
             <span class="comment">// TODO: should this value be stored somewhere else?
-            </span>String::from(<span class="string">&quot;sha-256&quot;</span>),
+            </span>String::from(<span class="string">"sha-256"</span>),
         );
 
         <span class="kw">let </span>claims_map: Vec&lt;(Value, Value)&gt; = <span class="macro">vec!</span>[
@@ -289,7 +303,7 @@
 
         <span class="kw">let </span><span class="kw-2">mut </span>realm_token = Vec::new();
         ser::into_writer(<span class="kw-2">&amp;</span>Value::Map(claims_map), <span class="kw-2">&amp;mut </span>realm_token)
-            .expect(<span class="string">&quot;Failed to serialize realm token&quot;</span>);
+            .expect(<span class="string">"Failed to serialize realm token"</span>);
 
         <span class="kw">let </span>protected = HeaderBuilder::new()
             .algorithm(coset::iana::Algorithm::ES384)
@@ -298,44 +312,38 @@
         <span class="kw">let </span>sign1 = CoseSign1Builder::new()
             .protected(protected)
             .payload(realm_token)
-            .create_signature(<span class="string">b&quot;&quot;</span>, |payload| <span class="self">Self</span>::sign(secret_key, payload))
+            .create_signature(<span class="string">b""</span>, |payload| <span class="self">Self</span>::sign(secret_key, payload))
             .build();
 
         sign1
             .to_tagged_vec()
-            .expect(<span class="string">&quot;Failed to create tagged signed token&quot;</span>)
+            .expect(<span class="string">"Failed to create tagged signed token"</span>)
     }
 
     <span class="kw">fn </span>sign(secret_key: p384::SecretKey, data: <span class="kw-2">&amp;</span>[u8]) -&gt; Vec&lt;u8&gt; {
         <span class="kw">let </span>signing_key = p384::ecdsa::SigningKey::from_bytes(<span class="kw-2">&amp;</span>secret_key.to_bytes())
-            .expect(<span class="string">&quot;Failed to generate signing key&quot;</span>);
+            .expect(<span class="string">"Failed to generate signing key"</span>);
 
         <span class="kw">let </span>signature: p384::ecdsa::Signature = signing_key
             .try_sign(data)
-            .expect(<span class="string">&quot;Failed to create P384 signature&quot;</span>);
+            .expect(<span class="string">"Failed to create P384 signature"</span>);
         signature.to_vec()
     }
 }
 
 <span class="kw">pub fn </span>get_token(
-    attest_pa: usize,
     challenge: <span class="kw-2">&amp;</span>[u8],
     measurements: <span class="kw-2">&amp;</span>[Measurement],
+    personalization_value: <span class="kw-2">&amp;</span>[u8],
     hash_algo: u8,
-) -&gt; usize {
+) -&gt; Vec&lt;u8&gt; {
     <span class="comment">// TODO: consider storing attestation object somewhere,
     // as RAK and token do not change during rmm lifetime.
-    </span><span class="kw">let </span>token = Attestation::new(<span class="kw-2">&amp;</span>plat_token(), <span class="kw-2">&amp;</span>realm_attest_key()).create_attestation_token(
+    </span>Attestation::new(<span class="kw-2">&amp;</span>plat_token(), <span class="kw-2">&amp;</span>realm_attest_key()).create_attestation_token(
         challenge,
         measurements,
+        personalization_value,
         hash_algo,
-    );
-
-    <span class="kw">unsafe </span>{
-        <span class="kw">let </span>pa_ptr = attest_pa <span class="kw">as </span><span class="kw-2">*mut </span>u8;
-        core::ptr::copy(token.as_ptr(), pa_ptr, token.len());
-    }
-
-    token.len()
+    )
 }
 </code></pre></div></section></main></body></html>

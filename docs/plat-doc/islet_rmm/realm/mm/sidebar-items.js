@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["address","page","page_table","stage2_translation","stage2_tte","translation_granule_4k"],"trait":["IPATranslation"]};
+window.SIDEBAR_ITEMS = {"mod":["address","attribute","entry","page","rtt","stage2_translation","stage2_tte","table_level"],"trait":["IPATranslation"]};

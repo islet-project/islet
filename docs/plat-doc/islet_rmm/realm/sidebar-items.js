@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"mod":["config","context","mm","registry","timer","vcpu"]};
+window.SIDEBAR_ITEMS = {"mod":["config","context","mm","rd","registry","timer"]};

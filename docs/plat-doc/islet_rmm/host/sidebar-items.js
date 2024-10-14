@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["copy_from","copy_to"],"struct":["DataPage"]};

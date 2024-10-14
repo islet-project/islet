@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["EMPTY","RAM"]};
+window.SIDEBAR_ITEMS = {"constant":["DESTROYED","EMPTY","RAM"]};

@@ -1,0 +1,695 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Model Checking - Islet Documentation</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="intro.html">Introduction</a></li><li class="chapter-item expanded "><a href="getting-started/index.html"><strong aria-hidden="true">1.</strong> Getting Started</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="getting-started/cca.html"><strong aria-hidden="true">1.1.</strong> About CCA</a></li><li class="chapter-item expanded "><a href="getting-started/app-dev.html"><strong aria-hidden="true">1.2.</strong> Application Developer</a></li><li class="chapter-item expanded "><a href="getting-started/plat-dev.html"><strong aria-hidden="true">1.3.</strong> Platform Developer</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="network.html"><strong aria-hidden="true">1.3.1.</strong> Network Configuration</a></li></ol></li><li class="chapter-item expanded "><a href="getting-started/verification.html"><strong aria-hidden="true">1.4.</strong> Verification</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="islet-model-checking.html" class="active"><strong aria-hidden="true">1.4.1.</strong> Model Checking</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="components/index.html"><strong aria-hidden="true">2.</strong> Components</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="components/cca_design.html"><strong aria-hidden="true">2.1.</strong> CCA platform architecture</a></li><li class="chapter-item expanded "><a href="components/rmm.html"><strong aria-hidden="true">2.2.</strong> Realm Management Monitor</a></li><li class="chapter-item expanded "><a href="components/cli.html"><strong aria-hidden="true">2.3.</strong> Command Line Interface</a></li><li class="chapter-item expanded "><a href="components/sdk.html"><strong aria-hidden="true">2.4.</strong> Software Development Kit</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="sdk-sdd.html"><strong aria-hidden="true">2.4.1.</strong> SDK Design</a></li></ol></li><li class="chapter-item expanded "><a href="components/attestation.html"><strong aria-hidden="true">2.5.</strong> Attestation</a></li><li class="chapter-item expanded "><a href="components/certifier.html"><strong aria-hidden="true">2.6.</strong> Certifier</a></li></ol></li><li class="chapter-item expanded "><a href="platform-development/index.html"><strong aria-hidden="true">3.</strong> Platform development</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="platform-development/secure-interaction.html"><strong aria-hidden="true">3.1.</strong> Secure interactions with the Host</a></li></ol></li><li class="chapter-item expanded "><a href="usecases/index.html"><strong aria-hidden="true">4.</strong> Use Cases</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="usecases/confidential_ml.html"><strong aria-hidden="true">4.1.</strong> Confidential Machine Learning</a></li><li class="chapter-item expanded "><a href="usecases/cross-platform-e2ee.html"><strong aria-hidden="true">4.2.</strong> Cross Platform E2EE</a></li><li class="chapter-item expanded "><a href="usecases/remote-attestation.html"><strong aria-hidden="true">4.3.</strong> Remote Attestation</a></li></ol></li><li class="chapter-item expanded "><a href="crates/index.html"><strong aria-hidden="true">5.</strong> Rust Crates</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="plat-doc/islet_rmm/index.html"><strong aria-hidden="true">5.1.</strong> Realm Management Monitor</a></li><li class="chapter-item expanded "><a href="app-doc/islet_sdk/index.html"><strong aria-hidden="true">5.2.</strong> Confidential Application SDK</a></li></ol></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Islet Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="islet-verification"><a class="header" href="#islet-verification">Islet Verification</a></h1>
+<h2 id="work-done-for-islets-model-checking"><a class="header" href="#work-done-for-islets-model-checking">Work done for Islet's Model Checking</a></h2>
+<h3 id="refactoring-for-overall-state-reduction"><a class="header" href="#refactoring-for-overall-state-reduction">Refactoring for Overall State Reduction</a></h3>
+<p>Reducing the overall state is a key technique for model checking,
+which often involves computationally infeasible formulas. For this purpose,
+we have refactored Islet in the following ways: Array-based Granule Status Table,
+Integration of Realm and RD as well as VCPU and REC, and Constraint
+Retrieval Modification.</p>
+<ul>
+<li>
+<p>Array-based Granule Status Table</p>
+<p>We maintain a page table-based Granule Status Table in order to reduce the
+overall memory consumption in Islet. This data structure, while being
+beneficial in terms of memory usage, was a main obstacle in modeling
+checking Islet, because using it would cause a state explosion.
+To address this issue, we added an array-based Granule Status Table which
+could be selectively chosen with conditional compilation. The intention is
+for reducing the overall complexity of page table-based one, helping to
+reason about the implementation.</p>
+<p>When the array-based Granule Status Table is chosen, the call sequence could
+be largely simplified from the caller's perspective like the below, reducing the
+overall state in model checking.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>[before]
+// Previously, the below match was used to expand the page table entry.
+let mut granule = match
+    get_granule_if!(addr, GranuleState::Undelegated) {
+        Err(MmError::MmNoEntry) =&gt; set_state_and_get_granule!(
+            addr, GranuleState::Undelegated)
+        other =&gt; other,
+}?;
+
+[after]
+// The match is no longer used, as the array will not be expanded.
+let mut granule = get_granule_if!(addr, GranuleState::Undelegated)?;
+<span class="boring">}</span></code></pre></pre>
+</li>
+<li>
+<p>Integration of Realm and RD</p>
+<p>Before the refactoring, Realm and RD (Realm Descriptor) had almost the same
+purpose and overlapped functionalities, increasing the overall complexity in
+verifying the system. To address this issue, we changed to keep only RD which
+is defined by spec.</p>
+<p>The summary of changes is like the below.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>-pub struct Realm {
+-   id: usize,
+-   pub vmid: u16,
+-   pub state: State,
+-   pub vcpus: Vec&lt;Arc&lt;Mutex&lt;VCPU&gt;&gt;&gt;,
+-   pub page_table: Arc&lt;Mutex&lt;Box&lt;dyn IPATranslation&gt;&gt;&gt;,
+-   pub measurements: [Measurement; MEASUREMENTS_SLOT_NR],
+-}
+
+pub struct Rd {
+-   realm_id: usize,
++   vmid: u16,
+    ...
++   s2_table: Arc&lt;Mutex&lt;Box&lt;dyn IPATranslation&gt;&gt;&gt;,
+    hash_algo: u8,
++   pub measurements: [Measurement; MEASUREMENTS_SLOT_NR],
++   pub vcpus: Vec&lt;Arc&lt;Mutex&lt;VCPU&gt;&gt;&gt;,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>With the change, the call sequence could be largely simplified from
+the caller's perspective, reducing the overall state in model checking.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>[before]
+   let (s2tte, last_level) = get_realm(realm_id)
+          .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+          .lock()
+          .page_table
+          .lock()
+          .ipa_to_pte(GuestPhysAddr::from(ipa), level)
+          .ok_or(error_code)?;
+
+[after]
+   let (s2tte, last_level) = rd
+          .s2_table()
+          .lock()
+          .ipa_to_pte(GuestPhysAddr::from(ipa), level)
+          .ok_or(error_code)?;
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>[before]
+   let measurements = crate::realm::registry::get_realm(realmid)
+        .ok_or(Error::RmiErrorOthers(NotExistRealm))?
+        .lock()
+        .measurements;
+
+[after]
+   let measurements = rd.measurements;
+<span class="boring">}</span></code></pre></pre>
+</li>
+<li>
+<p>Integration of VCPU and REC</p>
+<p>Before the refactoring, VCPU and REC (Realm Execution Context) had
+almost the same purpose and overlapped functionalities, increasing the
+overall complexity in verifying the system. To address this issue, we
+changed to keep only REC which is defined by spec.</p>
+<p>The summary of changes is like the below.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>-pub struct VCPU {
+-    pub context: Context,
+-    pub state: State,
+-    pub pcpu: Option&lt;usize&gt;,
+-    me: Weak&lt;Mutex&lt;Self&gt;&gt;,
+-}
+
++[repr(C)]
+pub struct Rec&lt;'a&gt; {
++   pub context: Context,
+    attest_state: RmmRecAttestState,
+...
+-   state: RecState,
++   state: State,
+    ripas: Ripas,
+    vtcr: u64,
+    host_call_pending: bool,
+}
+<span class="boring">}</span></code></pre></pre>
+<p>With the change, the call sequence could be largely simplified from the caller's
+perspective, reducing the overall state in model checking.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>[before]
+    let pa_offset = get_reg(rd, vcpuid, 2)?;
+    let buffer_size = get_reg(rd, vcpuid, 3)?;
+
+[after]
+    let pa_offset = get_reg(rec, 2)?;
+    let buffer_size = get_reg(rec, 3)?;
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>[before]
+pub fn get_reg(rd: &amp;Rd, vcpu: usize, register: usize) -&gt; Result&lt;usize, Error&gt; {
+    ...
+    let value = rd
+        .vcpus
+        .get(vcpu)
+        .ok_or(Error::RmiErrorOthers(NotExistVCPU))?
+        .lock()
+        .context
+        .elr;
+    ...
+}
+
+[after]
+pub fn get_reg(rec: &amp;Rec&lt;'_&gt;, register: usize) -&gt; Result&lt;usize, Error&gt; {
+    ...
+    let value = rec.context.elr;
+    ...
+}
+<span class="boring">}</span></code></pre></pre>
+</li>
+<li>
+<p>Constraint Retrieval Modification</p>
+<p>We refactored constraint retrieval procedure of RMI and RSI. The main motivation
+of the refactoring is that insertion and get in the map are very expensive operations
+in the formal semantic and thus avoiding them is better if possible. It is
+also beneficial for runtime performance, as the previous insertions are no longer
+involved. The change assumes that the configuration regarding constraints does not
+change at runtime.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>[before]
+lazy_static! {
+	static ref CONSTRAINTS: BTreeMap&lt;Command, Constraint&gt; = {
+    	let mut m = BTreeMap::new();
+        m.insert(rmi::VERSION, Constraint::new(rmi::VERSION, 1, 1));
+...
+(caller)
+	 if let Some(c) = CONSTRAINTS.get(&amp;cmd) {
+
+[after]
+fn pick(cmd: Command) -&gt; Option&lt;Constraint&gt; {
+	let constraint = match cmd {
+    	rmi::VERSION =&gt; Constraint::new(rmi::VERSION, 1, 1),
+...
+(caller)
+	if let Some(c) = pick(cmd) {
+<span class="boring">}</span></code></pre></pre>
+</li>
+<li>
+<p>The Summary of Refactoring</p>
+<p>Table 1 summarizes the number of physical lines of code involved
+by the refactoring.</p>
+<div class="table-wrapper"><table><thead><tr><th>The Type of Refactoring</th><th>Addition</th><th>Deletion</th><th>Total</th></tr></thead><tbody>
+<tr><td>Array-based Granule Status Table</td><td>621</td><td>367</td><td>988</td></tr>
+<tr><td>Integration of RD and Realm</td><td>342</td><td>442</td><td>784</td></tr>
+<tr><td>Integration of VCPU and REC</td><td>311</td><td>564</td><td>875</td></tr>
+<tr><td>Constraint Retrieval Modification</td><td>49</td><td>133</td><td>182</td></tr>
+<tr><td>Total</td><td>1323</td><td>1506</td><td>2829</td></tr>
+<tr><td>Table 1. Line Counts of the Refactoring</td><td></td><td></td><td></td></tr>
+</tbody></table>
+</div></li>
+</ul>
+<h3 id="writing-harnesses"><a class="header" href="#writing-harnesses">Writing Harnesses</a></h3>
+<p>A harness is an essential component in model checking as it provides the
+entry point and prepares for the system execution (e.g., global state
+initialization). It acts as a bridge between the model checker and the
+system under verification, allowing the model checker to access the the
+system's inputs and outputs. The harness ensures that the correct input
+values are provided to the system and captures the corresponding output
+responses. Also, the harness can contain the behaviors of the system to
+validate.</p>
+<p>In writing harnesses, we adopt the same input and output conditions as well
+as similar structures used in <a href="https://www.trustedfirmware.org/projects/tf-rmm/">TF-RMM</a>'s
+harnesses which are extracted from Arm's Machine Readable Specification.
+We use this approach, because it would help to check the conformance of the
+two systems, namely Islet and TF-RMM, written in different languages: Rust and C.
+While using the similar structures, we also preserve Islet's unique characteristics
+as much as possible. For example, we maintain two different versions of Islet's
+<code>Mainloop</code> and <code>Monitor</code> (one for verification and the other for execution),
+so that harnesses can help determine their target ABI's input and output
+through <code>Monitor</code>'s argument and return value as shown in Figure 1-2.
+The other examples of harnesses can be also found in Figure 2-1 and Figure 2-2,
+which describe the harnesses for RMI granule undelegate.</p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/tf-rmm-features-harness.png" alt="" /></th><th style="text-align: center"><img src="./res/model-checking/islet-features-harness.png" alt="" /></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 1-1. TF-RMM features harness</td><td style="text-align: center">Figure 1-2. Islet features harness</td></tr>
+</tbody></table>
+</div><div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/tfrmm_undelegate_harness.png" alt="" /></th><th style="text-align: center"><img src="./res/model-checking/undelegate_harness.png" alt="" /></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 2-1. TF-RMM granule undelegate harness</td><td style="text-align: center">Figure 2-2. Islet granule undelegate harness</td></tr>
+</tbody></table>
+</div>
+<h3 id="embeding-invariants"><a class="header" href="#embeding-invariants">Embeding Invariants</a></h3>
+<p>Formal verification can help to prove interesting invariants to be held
+in the entire states. We embed the invariants with <code>is_valid()</code> predicate
+in target data structures. For example, the below is the specification
+about granule's attributes.</p>
+<p><img src="./res/model-checking/granule_invariant.png" alt="Specification for Granule&#39;s attributes" /></p>
+<p>Using the specification's conditions, <code>is_valid()</code> predicate can be
+defined in <code>Granule</code> and <code>Granule Status Table</code> respectively.
+The added predicate ensures that all granule entries in Granule Status
+Table are in valid status conforming to the specification.</p>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl Granule {
+    ...
+    #[cfg(kani)]
+    pub fn is_valid(&amp;self) -&gt; bool {
+        self.state &gt;= GranuleState::Undelegated &amp;&amp;
+        self.state &lt;= GranuleState::RTT &amp;&amp;
+        // XXX: the below condition holds from beta0 to eac4
+        if self.state != GranuleState::Undelegated {
+            self.gpt == GranuleGpt::GPT_REALM
+        } else {
+            self.gpt != GranuleGpt::GPT_REALM
+        }
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>impl GranuleStatusTable {
+    ...
+    #[cfg(kani)]
+    pub fn is_valid(&amp;self) -&gt; bool {
+        self.entries
+            .iter()
+            .fold(true, |acc, x| acc &amp;&amp; x.lock().unwrap().is_valid())
+    }
+}
+<span class="boring">}</span></code></pre></pre>
+<h3 id="environment-modeling"><a class="header" href="#environment-modeling">Environment Modeling</a></h3>
+<p>Model checking requires an environment model to accurately analyze and
+verify system behaviors. By explicitly specifying the environment in
+which a system operates, one can ensure that all possible interactions
+between the system and its surroundings are considered during verification.
+During Islet's model checking, we have modeled EL3 Monitor and Host
+Memory to help verify Islet.</p>
+<ul>
+<li>
+<p>EL3 Monitor Modeling</p>
+<p><strong>Background</strong>: RMM interacts with EL3 monitor for privileged operations
+(e.g., Granule Partition Table change). While RMM itself is the target of
+verification and is translated by model checker, RMM's environment such as
+EL3 monitor is beyond the scope of verification, thus should be properly
+modeled during verification.</p>
+<p><strong>The approach we use</strong>: We insert a ghost <code>gpt</code> field in a granule's entry
+for tracking GPT's change as shown in Figure 3-1. We also embed EL3's GPT handling
+code in SMC invocation as shown in Figure 3-2.</p>
+</li>
+</ul>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/el3_modeling1.png" alt="" /></th><th style="text-align: center"><img src="./res/model-checking/el3_modeling2.png" alt="" /></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 3-1. Ghost gpt field for EL3 Modeling</td><td style="text-align: center">Figure 3-2. GPT Handling for EL3 Modeling</td></tr>
+</tbody></table>
+</div>
+<ul>
+<li>
+<p>Host Memory Modeling</p>
+<p><strong>Background</strong>: The Host delegates and undelegates is memory for Realm
+World's usage. To verify RMM, the memory region should be properly modeled.</p>
+<p><strong>The approach we use</strong>: We model the Host memory as a pre-allocated memory
+region, because it helps to avoid a false-positive related to invalid memory
+accesses. Also, instead of using the same starting address (e.g., 0x8000_0000),
+we use a mock region filled with non-deterministic contents. It helps to
+address an issue related to the backend CBMC's pointer encoding where the first
+16 bits are used for a pointer object's identifier.</p>
+<p>The relevant implementation of the Host memory is shown as dotted line in
+Figure 4-1, while the pre-allocated mock region as solid line. The checking
+logic regarding valid memory range is also adjusted from dotted line
+(original check) to solid line (modeled check) in Figure 4-2.</p>
+</li>
+</ul>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/host_mem_modeling1.png" alt="" /></th><th style="text-align: center"><img src="./res/model-checking/host_mem_modeling2.png" alt="" /></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 4-1. Host Memory Modeling (Declaration)</td><td style="text-align: center">Figure 4-2. Host Memory Modeling (Check)</td></tr>
+</tbody></table>
+</div>
+<h2 id="results"><a class="header" href="#results">Results</a></h2>
+<h3 id="steps-to-reproduce"><a class="header" href="#steps-to-reproduce">Steps to Reproduce</a></h3>
+<ul>
+<li>
+<p>Verification Dependency</p>
+<p><a href="https://github.com/zpzigi754/kani/tree/use-aarch64-latest">patched Kani</a></p>
+</li>
+<li>
+<p>Available RMI targets</p>
+<pre><code class="language-sh">rmi_features
+rmi_granule_delegate
+rmi_granule_undelegate
+rmi_realm_activate
+rmi_rec_aux_count
+rmi_rec_destroy
+rmi_version
+</code></pre>
+</li>
+<li>
+<p>Verifying Islet</p>
+<pre><code class="language-sh">(in islet/model-checking)
+
+# Choose one among the list in `Available RMI targets` for the value of `RMI_TARGET`
+$ RMI_TARGET=rmi_granule_undelegate make verify
+</code></pre>
+</li>
+</ul>
+<h3 id="bugs-found"><a class="header" href="#bugs-found">Bugs Found</a></h3>
+<p>We found four correctness bugs and one security bug during Islet's model checking.</p>
+<ul>
+<li>
+<p>RMI Features</p>
+<p>Figure 5-1 indicates the previous implementation of RMI features. When this code
+was passed as an input, the verification failed. It was because the code was
+violating the failure conditions of RMI features as shown in Figure 5-2. After
+fixing the line returning the error condition, the verification becomes successful.</p>
+</li>
+</ul>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/features_code.png" alt="" /></th><th style="text-align: center"><img src="./res/model-checking/features_spec_failure.png" alt="" /></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 5-1. Buggy RMI Features Code</td><td style="text-align: center">Figure 5-2. Failure Conditions of RMI features</td></tr>
+</tbody></table>
+</div>
+<ul>
+<li>
+<p>RMI Granule Undelegate</p>
+<p>Figure 6-1 incidates the previous implementation of <code>set_state()</code> which modifies the
+state of the target granule. It is invoked by several ABIs including RMI granule
+undelegate. When this code was used, the verification for RMI granule undelegate
+failed. It was because the code was violating the success conditions of RMI granule
+undelegate as shown in Figure 6-2. We fixed the code to zero-out the contents
+not only in the delegated state but also in the undelegated state, turning the
+verification results successful. Note that without the patch, it could have left
+sensitive information on the target granule, which might be obtained by attackers.</p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/undelegate_code.png" alt="drawing" width="450"/></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 6-1. Buggy RMI Granule Undelegate Code</td></tr>
+</tbody></table>
+</div><div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/undelegate_spec_success.png" alt="drawing" width="550"/></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 6-2. Success Conditions of RMI Granule Undelegate</td></tr>
+</tbody></table>
+</div></li>
+<li>
+<p>RMI Rec Destroy</p>
+<p>Figure 7-1 indicates the previous implementation of RMI rec destroy. When this code
+was passed as an input, two verification conditions failed. It was because the code was
+violating the failure condition as well as the success condition of RMI rec destroy as
+shown in Figure 7-2. After adding the sanitization logic and granule setting code,
+the verification becomes successful.</p>
+</li>
+</ul>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/rec_destroy_code.png" alt="" /></th><th style="text-align: center"><img src="./res/model-checking/rec_destroy_spec.png" alt="" /></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 7-1. Buggy RMI Rec Destroy Code</td><td style="text-align: center">Figure 7-2. Conditions of RMI Rec Destroy</td></tr>
+</tbody></table>
+</div>
+<ul>
+<li>
+<p>RMI Version</p>
+<p>Figure 8-1 indicates the previous implementation of RMI version. When this code
+was passed as an input, the verification failed. It was because the code was
+not satisfying the conditions for output values (lower and higher) in failure conditions
+of RMI version as shown in Figure 8-2. After setting the output values beforehand,
+the verification becomes successful.</p>
+</li>
+</ul>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/version_code.png" alt="" /></th><th style="text-align: center"><img src="./res/model-checking/version_output.png" alt="" /></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 8-1. Buggy RMI Version Code</td><td style="text-align: center">Figure 8-2. Outputs of RMI Version</td></tr>
+</tbody></table>
+</div>
+<h3 id="verification-output"><a class="header" href="#verification-output">Verification Output</a></h3>
+<ul>
+<li>
+<p>RMI Features</p>
+<p>Figure 9-1 shows the output of Islet's model checking with the target of
+RMI features. It says that the total of 5271 verification conditions and the
+total of 4 cover conditions have successfully passed.</p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/features_results.png" alt="drawing" width="450"/></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 9-1. Model Checking Output of RMI Features</td></tr>
+</tbody></table>
+</div></li>
+<li>
+<p>RMI Granule Delegate</p>
+<p>Figure 9-2 shows the output of Islet's model checking with the target of RMI
+granule delegate. It says that the total of 5557 verification conditions and the
+total of 14 cover conditions have successfully passed.</p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/delegate_results.png" alt="drawing" width="450"/></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 9-2. Model Checking Output of RMI Granule Delegate</td></tr>
+</tbody></table>
+</div></li>
+<li>
+<p>RMI Granule Undelegate</p>
+<p>Figure 9-3 shows the output of Islet's model checking with the target of RMI
+granule undelegate. It says that the total of 5559 verification conditions and
+the total of 14 cover conditions have successfully passed.</p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/undelegate_results.png" alt="drawing" width="450"/></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 9-3. Model Checking Output of RMI Granule Undelegate</td></tr>
+</tbody></table>
+</div></li>
+<li>
+<p>RMI Realm Activate</p>
+<p>Figure 9-4 shows the output of Islet's model checking with the target of RMI
+realm activate. It says that the total of 5584 verification conditions and
+the total of 12 cover conditions have successfully passed.</p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/activate_results.png" alt="drawing" width="450"/></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 9-4. Model Checking Output of RMI Realm Activate</td></tr>
+</tbody></table>
+</div></li>
+<li>
+<p>RMI Rec Aux Count</p>
+<p>Figure 9-5 shows the output of Islet's model checking with the target of RMI
+rec aux count. It says that the total of 5495 verification conditions and
+the total of 10 cover conditions have successfully passed.</p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/rec_aux_count_results.png" alt="drawing" width="450"/></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 9-5. Model Checking Output of RMI Rec Aux Count</td></tr>
+</tbody></table>
+</div></li>
+<li>
+<p>RMI Rec Destroy</p>
+<p>Figure 9-6 shows the output of Islet's model checking with the target of RMI
+rec destroy. It says that the total of 5610 verification conditions and
+the total of 14 cover conditions have successfully passed.</p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/rec_destroy_results.png" alt="drawing" width="450"/></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 9-6. Model Checking Output of RMI Rec Destroy</td></tr>
+</tbody></table>
+</div></li>
+<li>
+<p>RMI Version</p>
+<p>Figure 9-7 shows the output of Islet's model checking with the target of RMI
+version. It says that the total of 5468 verification conditions and
+the total of 3 cover conditions have successfully passed.</p>
+<div class="table-wrapper"><table><thead><tr><th style="text-align: center"><img src="./res/model-checking/version_results.png" alt="drawing" width="450"/></th></tr></thead><tbody>
+<tr><td style="text-align: center">Figure 9-7. Model Checking Output of RMI Version</td></tr>
+</tbody></table>
+</div></li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="getting-started/verification.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="components/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="getting-started/verification.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="components/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+    </div>
+    </body>
+</html>

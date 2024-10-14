@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["complete_ripas","get_ripas_state","set_ripas_state"]};

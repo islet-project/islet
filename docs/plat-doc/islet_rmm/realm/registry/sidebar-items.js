@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"static":["VMID_SET"]};
+window.SIDEBAR_ITEMS = {"fn":["remove"],"static":["VMID_SET"]};

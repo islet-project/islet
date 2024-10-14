@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["set_event_handler"],"struct":["Rd"]};
+window.SIDEBAR_ITEMS = {"fn":["set_event_handler"]};

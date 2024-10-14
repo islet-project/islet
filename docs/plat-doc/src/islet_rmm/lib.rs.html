@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/lib.rs`."><title>lib.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-47e7ab555ef2818a.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0-nightly (ec08a0337 2023-09-04)" data-channel="nightly" data-search-js="search-5d3eaacf19ebf04f.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-f194925aa375ae96.css" data-theme-dark-css="dark-1dd4d1ce031e15de.css" data-theme-ayu-css="ayu-49e58d069f567085.css" ><script src="../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-ef3a2de404864b0b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-f194925aa375ae96.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1dd4d1ce031e15de.css"><link rel="stylesheet" href="../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../islet_rmm/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/lib.rs`."><title>lib.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (dbce3b43b 2024-04-20)" data-channel="nightly" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../islet_rmm/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -171,6 +171,36 @@
 <a href="#171" id="171">171</a>
 <a href="#172" id="172">172</a>
 <a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
 </pre></div><pre class="rust"><code><span class="attr">#![no_std]
 #![allow(incomplete_features)]
 #![feature(alloc_error_handler)]
@@ -184,26 +214,26 @@
 <span class="kw">pub mod </span>asm;
 <span class="kw">pub mod </span>config;
 <span class="kw">pub mod </span>cpu;
-<span class="kw">pub mod </span>error;
-<span class="kw">pub mod </span>event;
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>event;
 <span class="kw">pub mod </span>exception;
 <span class="kw">pub mod </span>gic;
 <span class="attr">#[macro_use]
 </span><span class="kw">pub mod </span>granule;
 <span class="attr">#[macro_use]
-</span><span class="kw">pub mod </span>host;
-<span class="kw">pub mod </span>io;
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>host;
 <span class="kw">pub mod </span>logger;
 <span class="kw">pub mod </span>mm;
 <span class="kw">pub mod </span>mmio;
-<span class="attr">#[cfg(not(any(test, kani)))]
+<span class="attr">#[cfg(not(any(test, kani, miri)))]
 </span><span class="kw">pub mod </span>panic;
 <span class="kw">pub mod </span>realm;
+<span class="kw">pub mod </span>rec;
 <span class="kw">pub mod </span>rmi;
 <span class="kw">pub mod </span>rsi;
-<span class="kw">pub mod </span>rtt;
-<span class="attr">#[cfg(feature = <span class="string">&quot;stat&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"stat"</span>)]
 </span><span class="kw">pub mod </span>stat;
+<span class="attr">#[cfg(any(test, miri))]
+</span><span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">mod </span>test_utils;
 <span class="attr">#[macro_use]
 </span><span class="kw">pub mod </span>r#macro;
 <span class="kw">mod </span>measurement;
@@ -224,13 +254,13 @@
 </span><span class="kw">extern crate </span>log;
 
 <span class="kw">use </span><span class="kw">crate</span>::exception::vectors;
-<span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]
+<span class="attr">#[cfg(feature = <span class="string">"gst_page_table"</span>)]
 </span><span class="kw">use </span><span class="kw">crate</span>::granule::create_granule_status_table <span class="kw">as </span>setup_gst;
 <span class="kw">use </span><span class="kw">crate</span>::mm::translation::get_page_table;
 <span class="kw">use </span><span class="kw">crate</span>::monitor::Monitor;
 <span class="kw">use </span><span class="kw">crate</span>::rmm_el3::setup_el3_ifc;
 
-<span class="kw">use </span>armv9a::{bits_in_reg, regs::<span class="kw-2">*</span>};
+<span class="kw">use </span>aarch64_cpu::registers::<span class="kw-2">*</span>;
 <span class="kw">use </span>core::ptr::addr_of;
 
 <span class="attr">#[cfg(not(kani))]
@@ -240,7 +270,7 @@
 </span><span class="kw">pub unsafe fn </span>start(cpu_id: usize) {
     setup_mmu_cfg();
     setup_el2();
-    <span class="attr">#[cfg(feature = <span class="string">&quot;gst_page_table&quot;</span>)]
+    <span class="attr">#[cfg(feature = <span class="string">"gst_page_table"</span>)]
     </span>setup_gst();
     <span class="comment">// TODO: call once or with every start?
     </span><span class="kw">if </span>cpu_id == <span class="number">0 </span>{
@@ -250,39 +280,71 @@
     Monitor::new().run();
 }
 
-<span class="kw">unsafe fn </span>setup_el2() {
-    HCR_EL2.set(
-        HCR_EL2::FWB
-            | HCR_EL2::TEA
-            | HCR_EL2::TERR
-            | HCR_EL2::TLOR
-            | HCR_EL2::RW
-            | HCR_EL2::TSW
-            | HCR_EL2::TACR
-            | HCR_EL2::TIDCP
-            | HCR_EL2::TSC
-            | HCR_EL2::TID3
-            | (HCR_EL2::BSU &amp; <span class="number">0b01</span>)
-    <span class="comment">//        | HCR_EL2::TWI
-            </span>| HCR_EL2::FB
-            | HCR_EL2::AMO
-            | HCR_EL2::IMO
-            | HCR_EL2::FMO
-            | HCR_EL2::VM,
-    );
+<span class="doccomment">/// # Safety
+///
+/// This function performs several operations that involve writing to system control registers
+/// at the EL2.
+///
+/// The caller must ensure that:
+/// - The function is called at EL2 with the required privileges.
+/// - The `vectors` variable points to a valid exception vector table in memory.
+/// - The system is in a state where modifying these control registers is safe and will not
+///   interfere with other critical operations.
+///
+/// Failing to meet these requirements can result in system crashes, security vulnerabilities,
+/// or other undefined behavior.
+</span><span class="kw">unsafe fn </span>setup_el2() {
+    HCR_EL2.write(
+        HCR_EL2::FWB::SET
+            + HCR_EL2::TEA::SET
+            + HCR_EL2::TERR::SET
+            + HCR_EL2::TLOR::SET
+            + HCR_EL2::RW::SET
+            + HCR_EL2::TSW::SET
+            + HCR_EL2::TACR::SET
+            + HCR_EL2::TIDCP::SET
+            + HCR_EL2::TSC::SET
+            + HCR_EL2::TID3::SET
+            + HCR_EL2::BSU::InnerShareable
+            + HCR_EL2::FB::SET
+            + HCR_EL2::AMO::SET
+            + HCR_EL2::IMO::SET
+            + HCR_EL2::FMO::SET
+            + HCR_EL2::VM::SET,
+        <span class="comment">// HCR_EL2::TWI::SET,
+    </span>);
     VBAR_EL2.set(<span class="macro">addr_of!</span>(vectors) <span class="kw">as </span>u64);
-    SCTLR_EL2.set(SCTLR_EL2::C | SCTLR_EL2::I | SCTLR_EL2::M | SCTLR_EL2::EOS);
-    CPTR_EL2.set(CPTR_EL2::TAM);
-    ICC_SRE_EL2.set(ICC_SRE_EL2::ENABLE | ICC_SRE_EL2::DIB | ICC_SRE_EL2::DFB | ICC_SRE_EL2::SRE);
+    SCTLR_EL2
+        .write(SCTLR_EL2::C::SET + SCTLR_EL2::I::SET + SCTLR_EL2::M::SET + SCTLR_EL2::EOS::SET);
+    CPTR_EL2.write(CPTR_EL2::TAM::SET);
+    ICC_SRE_EL2.write(
+        ICC_SRE_EL2::ENABLE::SET
+            + ICC_SRE_EL2::DIB::SET
+            + ICC_SRE_EL2::DFB::SET
+            + ICC_SRE_EL2::SRE::SET,
+    );
 }
 
-<span class="kw">unsafe fn </span>setup_mmu_cfg() {
-    <span class="macro">core::arch::asm!</span>(<span class="string">&quot;tlbi alle2is&quot;</span>, <span class="string">&quot;dsb ish&quot;</span>, <span class="string">&quot;isb&quot;</span>,);
+<span class="doccomment">/// # Safety
+///
+/// This function configures the Memory Management Unit (MMU) at the EL2.
+///
+/// The caller must ensure:
+/// - The function is called at EL2 with the appropriate privileges.
+/// - The translation table base address (`ttbl_base`) is valid and correctly initialized.
+/// - Modifying these registers and executing these assembly instructions will not interfere
+///   with other critical operations.
+///
+/// Failing to meet these requirements can result in system crashes, memory corruption, security
+/// vulnerabilities, or other undefined behavior.
+</span><span class="kw">unsafe fn </span>setup_mmu_cfg() {
+    <span class="macro">core::arch::asm!</span>(<span class="string">"tlbi alle2is"</span>, <span class="string">"dsb ish"</span>, <span class="string">"isb"</span>,);
 
     <span class="comment">// /* Set attributes in the right indices of the MAIR. */
-    </span><span class="kw">let </span>mair_el2 = bits_in_reg(MAIR_EL2::Attr0, mair_attr::NORMAL)
-        | bits_in_reg(MAIR_EL2::Attr1, mair_attr::DEVICE_NGNRNE)
-        | bits_in_reg(MAIR_EL2::Attr2, mair_attr::DEVICE_NGNRE);
+    </span><span class="kw">let </span>mair_el2 = MAIR_EL2::Attr0_Normal_Outer::WriteBack_NonTransient_ReadWriteAlloc
+        + MAIR_EL2::Attr0_Normal_Inner::WriteBack_NonTransient_ReadWriteAlloc
+        + MAIR_EL2::Attr1_Device::nonGathering_nonReordering_noEarlyWriteAck
+        + MAIR_EL2::Attr2_Device::nonGathering_nonReordering_EarlyWriteAck;
 
     <span class="comment">/*
      * The size of the virtual address space is configured as 64 – T0SZ.
@@ -291,25 +353,23 @@
      * space is covered by a single L1 table.
      * Therefore, our starting level of translation is level 1.
      */
-    </span><span class="kw">let </span><span class="kw-2">mut </span>tcr_el2 = bits_in_reg(TCR_EL2::T0SZ, <span class="number">0x19</span>);
+    </span><span class="kw">let </span>tcr_el2 = TCR_EL2::T0SZ.val(<span class="number">0x19</span>)
+        + TCR_EL2::PS::Bits_40
+        + TCR_EL2::TG0::KiB_4
+        + TCR_EL2::SH0::Inner
+        + TCR_EL2::ORGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
+        + TCR_EL2::IRGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable;
 
-    <span class="comment">// configure the tcr_el2 attributes
-    </span>tcr_el2 |= bits_in_reg(TCR_EL2::PS, tcr_paddr_size::PS_1T)
-        | bits_in_reg(TCR_EL2::TG0, tcr_granule::G_4K)
-        | bits_in_reg(TCR_EL2::SH0, tcr_shareable::INNER)
-        | bits_in_reg(TCR_EL2::ORGN0, tcr_cacheable::WBWA)
-        | bits_in_reg(TCR_EL2::IRGN0, tcr_cacheable::WBWA);
-
-    <span class="comment">// set the ttlb base address, this is where the memory address translation
+    <span class="comment">// set the ttbl base address, this is where the memory address translation
     // table walk starts
-    </span><span class="kw">let </span>ttlb_base = get_page_table();
+    </span><span class="kw">let </span>ttbl_base = get_page_table();
 
     <span class="comment">// Invalidate the local I-cache so that any instructions fetched
     // speculatively are discarded.
-    </span>MAIR_EL2.set(mair_el2);
-    TCR_EL2.set(tcr_el2);
-    TTBR0_EL2.set(ttlb_base);
-    <span class="macro">core::arch::asm!</span>(<span class="string">&quot;dsb ish&quot;</span>, <span class="string">&quot;isb&quot;</span>,);
+    </span>MAIR_EL2.write(mair_el2);
+    TCR_EL2.write(tcr_el2);
+    TTBR0_EL2.set(ttbl_base);
+    <span class="macro">core::arch::asm!</span>(<span class="string">"dsb ish"</span>, <span class="string">"isb"</span>,);
 }
 
 <span class="doccomment">/// Call `rmm_exit` within `exception/vectors.s` and jumps to EL1.
@@ -329,11 +389,11 @@
     <span class="kw">let </span><span class="kw-2">mut </span>ret: [usize; <span class="number">4</span>] = [<span class="number">0usize</span>; <span class="number">4</span>];
 
     <span class="macro">core::arch::asm!</span>(
-        <span class="string">&quot;bl rmm_exit&quot;</span>,
-        inlateout(<span class="string">&quot;x0&quot;</span>) args[<span class="number">0</span>] =&gt; ret[<span class="number">0</span>],
-        inlateout(<span class="string">&quot;x1&quot;</span>) args[<span class="number">1</span>] =&gt; ret[<span class="number">1</span>],
-        inlateout(<span class="string">&quot;x2&quot;</span>) args[<span class="number">2</span>] =&gt; ret[<span class="number">2</span>],
-        inlateout(<span class="string">&quot;x3&quot;</span>) args[<span class="number">3</span>] =&gt; ret[<span class="number">3</span>],
+        <span class="string">"bl rmm_exit"</span>,
+        inlateout(<span class="string">"x0"</span>) args[<span class="number">0</span>] =&gt; ret[<span class="number">0</span>],
+        inlateout(<span class="string">"x1"</span>) args[<span class="number">1</span>] =&gt; ret[<span class="number">1</span>],
+        inlateout(<span class="string">"x2"</span>) args[<span class="number">2</span>] =&gt; ret[<span class="number">2</span>],
+        inlateout(<span class="string">"x3"</span>) args[<span class="number">3</span>] =&gt; ret[<span class="number">3</span>],
     );
 
     ret

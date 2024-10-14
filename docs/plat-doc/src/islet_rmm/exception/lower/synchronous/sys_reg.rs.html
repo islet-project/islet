@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/exception/lower/synchronous/sys_reg.rs`."><title>sys_reg.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-47e7ab555ef2818a.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0-nightly (ec08a0337 2023-09-04)" data-channel="nightly" data-search-js="search-5d3eaacf19ebf04f.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-f194925aa375ae96.css" data-theme-dark-css="dark-1dd4d1ce031e15de.css" data-theme-ayu-css="ayu-49e58d069f567085.css" ><script src="../../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-ef3a2de404864b0b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../../static.files/light-f194925aa375ae96.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../../static.files/dark-1dd4d1ce031e15de.css"><link rel="stylesheet" href="../../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../../islet_rmm/index.html"><img class="rust-logo" src="../../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/exception/lower/synchronous/sys_reg.rs`."><title>sys_reg.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../../" data-static-root-path="../../../../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (dbce3b43b 2024-04-20)" data-channel="nightly" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../../src-files.js"></script><script defer src="../../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../../islet_rmm/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -84,9 +84,21 @@
 <a href="#84" id="84">84</a>
 <a href="#85" id="85">85</a>
 <a href="#86" id="86">86</a>
+<a href="#87" id="87">87</a>
+<a href="#88" id="88">88</a>
+<a href="#89" id="89">89</a>
+<a href="#90" id="90">90</a>
+<a href="#91" id="91">91</a>
+<a href="#92" id="92">92</a>
+<a href="#93" id="93">93</a>
+<a href="#94" id="94">94</a>
+<a href="#95" id="95">95</a>
+<a href="#96" id="96">96</a>
+<a href="#97" id="97">97</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::exception::trap;
-<span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::VCPU;
+<span class="kw">use </span><span class="kw">crate</span>::rec::Rec;
 
+<span class="kw">use </span>aarch64_cpu::registers::<span class="kw-2">*</span>;
 <span class="kw">use </span>armv9a::regs::<span class="kw-2">*</span>;
 
 <span class="kw">fn </span>check_sysreg_id_access(esr: u64) -&gt; bool {
@@ -94,14 +106,16 @@
     (esr.get_masked(ISS::Op0) | esr.get_masked(ISS::Op1) | esr.get_masked(ISS::CRn)) == ISS::Op0
 }
 
-<span class="kw">pub fn </span>handle(vcpu: <span class="kw-2">&amp;mut </span>VCPU, esr: u64) -&gt; u64 {
+<span class="kw">pub fn </span>handle(rec: <span class="kw-2">&amp;mut </span>Rec&lt;<span class="lifetime">'_</span>&gt;, esr: u64) -&gt; u64 {
     <span class="kw">if </span>check_sysreg_id_access(esr) {
-        handle_sysreg_id(vcpu, esr);
+        handle_sysreg_id(rec, esr);
+    } <span class="kw">else </span>{
+        <span class="macro">warn!</span>(<span class="string">"Unhandled MSR/MRS instruction"</span>);
     }
     trap::RET_TO_REC
 }
 
-<span class="kw">fn </span>handle_sysreg_id(vcpu: <span class="kw-2">&amp;mut </span>VCPU, esr: u64) -&gt; u64 {
+<span class="kw">fn </span>handle_sysreg_id(rec: <span class="kw-2">&amp;mut </span>Rec&lt;<span class="lifetime">'_</span>&gt;, esr: u64) -&gt; u64 {
     <span class="kw">let </span>esr = ISS::new(esr);
     <span class="kw">let </span>il = esr.get_masked_value(ISS::IL);
     <span class="kw">let </span>rt = esr.get_masked_value(ISS::Rt) <span class="kw">as </span>usize;
@@ -109,14 +123,14 @@
     </span><span class="kw">let </span>direction = esr.get_masked_value(ISS::Direction);
 
     <span class="kw">if </span>il == <span class="number">0 </span>{
-        <span class="macro">error!</span>(<span class="string">&quot;Exception taken from 32bit arch. Realm needs to be 64bit(arm64).&quot;</span>);
+        <span class="macro">error!</span>(<span class="string">"Exception taken from 32bit arch. Realm needs to be 64bit(arm64)."</span>);
     }
     <span class="kw">if </span>direction == <span class="number">0 </span>{
-        <span class="macro">warn!</span>(<span class="string">&quot;Unable to write id system reg. Will ignore this request!&quot;</span>);
+        <span class="macro">warn!</span>(<span class="string">"Unable to write id system reg. Will ignore this request!"</span>);
         <span class="kw">return </span>trap::RET_TO_REC;
     }
     <span class="kw">if </span>rt == <span class="number">31 </span>{
-        <span class="macro">trace!</span>(<span class="string">&quot;handle_sysreg_id(): Rt = xzr&quot;</span>);
+        <span class="macro">trace!</span>(<span class="string">"handle_sysreg_id(): Rt = xzr"</span>);
         <span class="kw">return </span>trap::RET_TO_REC;
     }
 
@@ -127,45 +141,53 @@
         | esr.get_masked(ISS::Op2);
 
     <span class="kw">let </span><span class="kw-2">mut </span>mask: u64 = <span class="kw">match </span>idreg <span class="kw">as </span>u32 {
-        ISS_ID_AA64ISAR1_EL1 =&gt; AA64ISAR1::GPI | AA64ISAR1::GPA | AA64ISAR1::APA | AA64ISAR1::API,
-        ISS_ID_AA64PFR0_EL1 =&gt; AA64PFR0::AMU | AA64PFR0::SVE,
-        ISS_ID_AA64PFR1_EL1 =&gt; AA64PFR1::MTE,
+        ISS_ID_AA64ISAR1_EL1 =&gt; {
+            (ID_AA64ISAR1_EL1::GPI.mask &lt;&lt; ID_AA64ISAR1_EL1::GPI.shift)
+                + (ID_AA64ISAR1_EL1::GPA.mask &lt;&lt; ID_AA64ISAR1_EL1::GPA.shift)
+                + (ID_AA64ISAR1_EL1::API.mask &lt;&lt; ID_AA64ISAR1_EL1::API.shift)
+                + (ID_AA64ISAR1_EL1::APA.mask &lt;&lt; ID_AA64ISAR1_EL1::APA.shift)
+        }
+        ISS_ID_AA64PFR0_EL1 =&gt; {
+            (ID_AA64PFR0_EL1::AMU.mask &lt;&lt; ID_AA64PFR0_EL1::AMU.shift)
+                + (ID_AA64PFR0_EL1::SVE.mask &lt;&lt; ID_AA64PFR0_EL1::SVE.shift)
+        }
+        ISS_ID_AA64PFR1_EL1 =&gt; ID_AA64PFR1_EL1::MTE.mask &lt;&lt; ID_AA64PFR1_EL1::MTE.shift,
         ISS_ID_AA64DFR0_EL1 =&gt; {
-            AA64DFR0::BRBE
-                | AA64DFR0::MTPMU
-                | AA64DFR0::TraceBuffer
-                | AA64DFR0::TraceFilt
-                | AA64DFR0::PMSVer
-                | AA64DFR0::CTX_CMPs
-                | AA64DFR0::WRPs
-                | AA64DFR0::BRPs
-                | AA64DFR0::PMUVer
-                | AA64DFR0::TraceVer
-                | AA64DFR0::DebugVer
+            (ID_AA64DFR0_EL1::BRBE.mask &lt;&lt; ID_AA64DFR0_EL1::BRBE.shift)
+                + (ID_AA64DFR0_EL1::MTPMU.mask &lt;&lt; ID_AA64DFR0_EL1::MTPMU.shift)
+                + (ID_AA64DFR0_EL1::TraceBuffer.mask &lt;&lt; ID_AA64DFR0_EL1::TraceBuffer.shift)
+                + (ID_AA64DFR0_EL1::TraceFilt.mask &lt;&lt; ID_AA64DFR0_EL1::TraceFilt.shift)
+                + (ID_AA64DFR0_EL1::PMSVer.mask &lt;&lt; ID_AA64DFR0_EL1::PMSVer.shift)
+                + (ID_AA64DFR0_EL1::CTX_CMPs.mask &lt;&lt; ID_AA64DFR0_EL1::CTX_CMPs.shift)
+                + (ID_AA64DFR0_EL1::WRPs.mask &lt;&lt; ID_AA64DFR0_EL1::WRPs.shift)
+                + (ID_AA64DFR0_EL1::BRPs.mask &lt;&lt; ID_AA64DFR0_EL1::BRPs.shift)
+                + (ID_AA64DFR0_EL1::PMUVer.mask &lt;&lt; ID_AA64DFR0_EL1::PMUVer.shift)
+                + (ID_AA64DFR0_EL1::TraceVer.mask &lt;&lt; ID_AA64DFR0_EL1::TraceVer.shift)
+                + (ID_AA64DFR0_EL1::DebugVer.mask &lt;&lt; ID_AA64DFR0_EL1::DebugVer.shift)
         }
         <span class="kw">_ </span>=&gt; <span class="number">0</span>,
     };
     mask = !mask;
 
-    vcpu.context.gp_regs[rt] = <span class="kw">match </span>idreg <span class="kw">as </span>u32 {
-        ISS_ID_AA64PFR0_EL1 =&gt; <span class="kw">unsafe </span>{ ID_AA64PFR0_EL1.get() &amp; mask },
-        ISS_ID_AA64PFR1_EL1 =&gt; <span class="kw">unsafe </span>{ ID_AA64PFR1_EL1.get() &amp; mask },
+    rec.context.gp_regs[rt] = <span class="kw">match </span>idreg <span class="kw">as </span>u32 {
+        ISS_ID_AA64PFR0_EL1 =&gt; ID_AA64PFR0_EL1.get() &amp; mask,
+        ISS_ID_AA64PFR1_EL1 =&gt; ID_AA64PFR1_EL1.get() &amp; mask,
         <span class="comment">//ISS_ID_AA64ZFR0_EL1 =&gt; unsafe { ID_AA64ZFR0_EL1.get()  &amp; mask },
-        </span>ISS_ID_AA64DFR0_EL1 =&gt; <span class="kw">unsafe </span>{
-            <span class="kw">let </span><span class="kw-2">mut </span>dfr0_set = AA64DFR0(<span class="number">0</span>);
-            dfr0_set.set_masked_value(AA64DFR0::DebugVer, <span class="number">6</span>);
-            dfr0_set.set_masked_value(AA64DFR0::BRPs, <span class="number">1</span>);
-            dfr0_set.set_masked_value(AA64DFR0::WRPs, <span class="number">1</span>);
-            ID_AA64DFR0_EL1.get() &amp; mask | dfr0_set.get()
-        },
-        ISS_ID_AA64DFR1_EL1 =&gt; <span class="kw">unsafe </span>{ ID_AA64DFR1_EL1.get() &amp; mask },
-        ISS_ID_AA64AFR0_EL1 =&gt; <span class="kw">unsafe </span>{ ID_AA64AFR0_EL1.get() &amp; mask },
-        ISS_ID_AA64AFR1_EL1 =&gt; <span class="kw">unsafe </span>{ ID_AA64AFR1_EL1.get() &amp; mask },
-        ISS_ID_AA64ISAR0_EL1 =&gt; <span class="kw">unsafe </span>{ ID_AA64ISAR0_EL1.get() &amp; mask },
-        ISS_ID_AA64ISAR1_EL1 =&gt; <span class="kw">unsafe </span>{ ID_AA64ISAR1_EL1.get() &amp; mask },
-        ISS_ID_AA64MMFR0_EL1 =&gt; <span class="kw">unsafe </span>{ ID_AA64MMFR0_EL1.get() &amp; mask },
-        ISS_ID_AA64MMFR1_EL1 =&gt; <span class="kw">unsafe </span>{ ID_AA64MMFR1_EL1.get() &amp; mask },
-        ISS_ID_AA64MMFR2_EL1 =&gt; <span class="kw">unsafe </span>{ ID_AA64MMFR2_EL1.get() &amp; mask }, <span class="comment">//0x10211122,
+        </span>ISS_ID_AA64DFR0_EL1 =&gt; {
+            <span class="kw">let </span><span class="kw-2">mut </span>dfr0_set = <span class="number">0u64</span>;
+            dfr0_set &amp;= <span class="number">6 </span>&lt;&lt; ID_AA64DFR0_EL1::DebugVer.shift;
+            dfr0_set &amp;= <span class="number">1 </span>&lt;&lt; ID_AA64DFR0_EL1::BRPs.shift;
+            dfr0_set &amp;= <span class="number">1 </span>&lt;&lt; ID_AA64DFR0_EL1::WRPs.shift;
+            ID_AA64DFR0_EL1.get() &amp; mask | dfr0_set
+        }
+        ISS_ID_AA64DFR1_EL1 =&gt; ID_AA64DFR1_EL1.get() &amp; mask,
+        ISS_ID_AA64AFR0_EL1 =&gt; ID_AA64AFR0_EL1.get(),
+        ISS_ID_AA64AFR1_EL1 =&gt; ID_AA64AFR1_EL1.get(),
+        ISS_ID_AA64ISAR0_EL1 =&gt; ID_AA64ISAR0_EL1.get(),
+        ISS_ID_AA64ISAR1_EL1 =&gt; ID_AA64ISAR1_EL1.get() &amp; mask,
+        ISS_ID_AA64MMFR0_EL1 =&gt; ID_AA64MMFR0_EL1.get(),
+        ISS_ID_AA64MMFR1_EL1 =&gt; ID_AA64MMFR1_EL1.get(),
+        ISS_ID_AA64MMFR2_EL1 =&gt; ID_AA64MMFR2_EL1.get(), <span class="comment">//0x10211122,
         </span><span class="kw">_ </span>=&gt; <span class="number">0x0</span>,
     };
     trap::RET_TO_REC

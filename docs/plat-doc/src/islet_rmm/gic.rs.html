@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/gic.rs`."><title>gic.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-47e7ab555ef2818a.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0-nightly (ec08a0337 2023-09-04)" data-channel="nightly" data-search-js="search-5d3eaacf19ebf04f.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-f194925aa375ae96.css" data-theme-dark-css="dark-1dd4d1ce031e15de.css" data-theme-ayu-css="ayu-49e58d069f567085.css" ><script src="../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-ef3a2de404864b0b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-f194925aa375ae96.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1dd4d1ce031e15de.css"><link rel="stylesheet" href="../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../islet_rmm/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/gic.rs`."><title>gic.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (dbce3b43b 2024-04-20)" data-channel="nightly" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../islet_rmm/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -259,55 +259,76 @@
 <a href="#259" id="259">259</a>
 <a href="#260" id="260">260</a>
 <a href="#261" id="261">261</a>
-</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::VCPU;
+<a href="#262" id="262">262</a>
+<a href="#263" id="263">263</a>
+<a href="#264" id="264">264</a>
+<a href="#265" id="265">265</a>
+<a href="#266" id="266">266</a>
+<a href="#267" id="267">267</a>
+<a href="#268" id="268">268</a>
+<a href="#269" id="269">269</a>
+<a href="#270" id="270">270</a>
+<a href="#271" id="271">271</a>
+<a href="#272" id="272">272</a>
+<a href="#273" id="273">273</a>
+<a href="#274" id="274">274</a>
+<a href="#275" id="275">275</a>
+<a href="#276" id="276">276</a>
+<a href="#277" id="277">277</a>
+<a href="#278" id="278">278</a>
+<a href="#279" id="279">279</a>
+<a href="#280" id="280">280</a>
+<a href="#281" id="281">281</a>
+<a href="#282" id="282">282</a>
+<a href="#283" id="283">283</a>
+<a href="#284" id="284">284</a>
+<a href="#285" id="285">285</a>
+<a href="#286" id="286">286</a>
+<a href="#287" id="287">287</a>
+<a href="#288" id="288">288</a>
+<a href="#289" id="289">289</a>
+<a href="#290" id="290">290</a>
+<a href="#291" id="291">291</a>
+<a href="#292" id="292">292</a>
+<a href="#293" id="293">293</a>
+<a href="#294" id="294">294</a>
+<a href="#295" id="295">295</a>
+<a href="#296" id="296">296</a>
+<a href="#297" id="297">297</a>
+<a href="#298" id="298">298</a>
+<a href="#299" id="299">299</a>
+</pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::rec::Rec;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
-<span class="kw">use </span><span class="kw">crate</span>::rmi::error::InternalError::<span class="kw-2">*</span>;
-<span class="kw">use </span><span class="kw">crate</span>::rmi::realm::Rd;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::rec::run::Run;
 
-<span class="kw">use </span>armv9a::regs::<span class="kw-2">*</span>;
+<span class="kw">use </span>aarch64_cpu::registers::<span class="kw-2">*</span>;
 <span class="kw">use </span>lazy_static::lazy_static;
 
 <span class="comment">// Interrupt Controller List Registers (ICH_LR)
 </span><span class="kw">const </span>ICH_LR_PRIORITY_WIDTH: u64 = <span class="number">8</span>;
 
-<span class="comment">// Interrupt Controller Hyp Control Register (ICH_HCR)
-// Global enable bit for the virtual CPU interface.
-</span><span class="kw">const </span>ICH_HCR_EL2_EN_BIT: u64 = <span class="number">1 </span>&lt;&lt; <span class="number">0</span>;
-<span class="comment">// Underflow Interrupt Enable
-</span><span class="kw">const </span>ICH_HCR_EL2_UIE_BIT: u64 = <span class="number">1 </span>&lt;&lt; <span class="number">1</span>;
-<span class="comment">// List Register Entry Not Present Interrupt Enable
-</span><span class="kw">const </span>ICH_HCR_EL2_LRENPIE_BIT: u64 = <span class="number">1 </span>&lt;&lt; <span class="number">2</span>;
-<span class="comment">// No Pending Interrupt Enable
-</span><span class="kw">const </span>ICH_HCR_EL2_NPIE_BIT: u64 = <span class="number">1 </span>&lt;&lt; <span class="number">3</span>;
-<span class="comment">// VM Group 0 Enabled Interrupt Enable
-</span><span class="kw">const </span>ICH_HCR_EL2_VGRP0EIE_BIT: u64 = <span class="number">1 </span>&lt;&lt; <span class="number">4</span>;
-<span class="comment">// VM Group 0 Disabled Interrupt Enable
-</span><span class="kw">const </span>ICH_HCR_EL2_VGRP0DIE_BIT: u64 = <span class="number">1 </span>&lt;&lt; <span class="number">5</span>;
-<span class="comment">// VM Group 1 Enabled Interrupt Enable
-</span><span class="kw">const </span>ICH_HCR_EL2_VGRP1EIE_BIT: u64 = <span class="number">1 </span>&lt;&lt; <span class="number">6</span>;
-<span class="comment">// VM Group 1 Disabled Interrupt Enable
-</span><span class="kw">const </span>ICH_HCR_EL2_VGRP1DIE_BIT: u64 = <span class="number">1 </span>&lt;&lt; <span class="number">7</span>;
-<span class="comment">// Deactivation of virtual SGIs can increment ICH_HCR_EL2.EOIcount
-</span><span class="kw">const </span>ICH_HCR_EL2_VSGIEEOICOUNT_BIT: u64 = <span class="number">1 </span>&lt;&lt; <span class="number">8</span>;
-<span class="comment">// When FEAT_GICv3_TDIR is implemented, Trap EL1 writes to ICC_DIR_EL1 and ICV_DIR_EL1.
-</span><span class="kw">const </span>ICH_HCR_EL2_TDIR_BIT: u64 = <span class="number">1 </span>&lt;&lt; <span class="number">14</span>;
-<span class="comment">// ICH_HCR_EL2_DVIM_BIT
-</span><span class="kw">const </span>ICH_HCR_EL2_DVIM_BIT: u64 = <span class="number">1 </span>&lt;&lt; <span class="number">15</span>;
+<span class="kw">const </span>ICH_HCR_EL2_NS_MASK: u64 = (ICH_HCR_EL2::UIE.mask &lt;&lt; ICH_HCR_EL2::UIE.shift)
+    | (ICH_HCR_EL2::LRENPIE.mask &lt;&lt; ICH_HCR_EL2::LRENPIE.shift)
+    | (ICH_HCR_EL2::NPIE.mask &lt;&lt; ICH_HCR_EL2::NPIE.shift)
+    | (ICH_HCR_EL2::VGrp1DIE.mask &lt;&lt; ICH_HCR_EL2::VGrp1DIE.shift)
+    | (ICH_HCR_EL2::VGrp1EIE.mask &lt;&lt; ICH_HCR_EL2::VGrp1EIE.shift)
+    | (ICH_HCR_EL2::VGrp0DIE.mask &lt;&lt; ICH_HCR_EL2::VGrp0DIE.shift)
+    | (ICH_HCR_EL2::VGrp0EIE.mask &lt;&lt; ICH_HCR_EL2::VGrp0EIE.shift)
+    | (ICH_HCR_EL2::TDIR.mask &lt;&lt; ICH_HCR_EL2::TDIR.shift);
 
-<span class="kw">pub const </span>ICH_HCR_EL2_NS_MASK: u64 = ICH_HCR_EL2_UIE_BIT
-    | ICH_HCR_EL2_LRENPIE_BIT
-    | ICH_HCR_EL2_NPIE_BIT
-    | ICH_HCR_EL2_VGRP0EIE_BIT
-    | ICH_HCR_EL2_VGRP0DIE_BIT
-    | ICH_HCR_EL2_VGRP1EIE_BIT
-    | ICH_HCR_EL2_VGRP1DIE_BIT
-    | ICH_HCR_EL2_TDIR_BIT;
-
-<span class="kw">const </span>ICH_HCR_EL2_EOI_COUNT_SHIFT: usize = <span class="number">27</span>;
 <span class="kw">const </span>ICH_HCR_EL2_EOI_COUNT_WIDTH: usize = <span class="number">5</span>;
-<span class="kw">pub const </span>ICH_HCR_EL2_EOI_COUNT_MASK: u64 =
-    ((!<span class="number">0u64</span>) &gt;&gt; (<span class="number">64 </span>- ICH_HCR_EL2_EOI_COUNT_WIDTH)) &lt;&lt; ICH_HCR_EL2_EOI_COUNT_SHIFT;
+<span class="kw">const </span>ICH_HCR_EL2_EOI_COUNT_MASK: u64 =
+    ((!<span class="number">0u64</span>) &gt;&gt; (<span class="number">64 </span>- ICH_HCR_EL2_EOI_COUNT_WIDTH)) &lt;&lt; ICH_HCR_EL2::EOIcount.shift;
+
+<span class="kw">const </span>MAX_SPI_ID: u64 = <span class="number">1019</span>;
+
+<span class="kw">const </span>MIN_EPPI_ID: u64 = <span class="number">1056</span>;
+<span class="kw">const </span>MAX_EPPI_ID: u64 = <span class="number">1119</span>;
+
+<span class="kw">const </span>MIN_ESPI_ID: u64 = <span class="number">4096</span>;
+<span class="kw">const </span>MAX_ESPI_ID: u64 = <span class="number">5119</span>;
+
+<span class="kw">const </span>MIN_LPI_ID: u64 = <span class="number">8192</span>;
 
 <span class="attr">#[allow(dead_code)]
 </span><span class="kw">pub struct </span>GicFeatures {
@@ -315,149 +336,132 @@
     <span class="kw">pub </span>nr_aprs: usize,
     <span class="kw">pub </span>pri_res0_mask: u64,
     <span class="kw">pub </span>max_vintid: u64,
+    <span class="kw">pub </span>ext_range: bool,
 }
 
-<span class="macro">lazy_static! </span>{
+<span class="macro">lazy_static!</span> {
     <span class="kw">pub static </span><span class="kw-2">ref </span>GIC_FEATURES: GicFeatures = {
-        <span class="macro">trace!</span>(<span class="string">&quot;read gic features&quot;</span>);
-        <span class="kw">let </span>nr_lrs = <span class="kw">unsafe </span>{ ICH_VTR_EL2.get_masked_value(ICH_VTR_EL2::LIST) } <span class="kw">as </span>usize;
-        <span class="macro">trace!</span>(<span class="string">&quot;nr_lrs (LIST) {}&quot;</span>, nr_lrs);
-        <span class="kw">let </span>id = <span class="kw">unsafe </span>{ ICH_VTR_EL2.get_masked_value(ICH_VTR_EL2::ID) };
+        <span class="macro">trace!</span>(<span class="string">"read gic features"</span>);
+        <span class="kw">let </span>nr_lrs = ICH_VTR_EL2.read(ICH_VTR_EL2::ListRegs) <span class="kw">as </span>usize;
+        <span class="macro">trace!</span>(<span class="string">"nr_lrs (LIST) {}"</span>, nr_lrs);
+        <span class="kw">let </span>id = ICH_VTR_EL2.read(ICH_VTR_EL2::IDbits);
         <span class="kw">let </span>max_vintid = <span class="kw">if </span>id == <span class="number">0 </span>{
             (<span class="number">1u64 </span>&lt;&lt; <span class="number">16</span>) - <span class="number">1
         </span>} <span class="kw">else </span>{
             (<span class="number">1u64 </span>&lt;&lt; <span class="number">24</span>) - <span class="number">1
         </span>};
-        <span class="macro">trace!</span>(<span class="string">&quot;id {} max_vintid {}&quot;</span>, id, max_vintid);
-        <span class="kw">let </span>pre = <span class="kw">unsafe </span>{ ICH_VTR_EL2.get_masked_value(ICH_VTR_EL2::PRE) } + <span class="number">1</span>;
+        <span class="macro">trace!</span>(<span class="string">"id {} max_vintid {}"</span>, id, max_vintid);
+        <span class="kw">let </span>pre = ICH_VTR_EL2.read(ICH_VTR_EL2::PREbits) + <span class="number">1</span>;
         <span class="kw">let </span>nr_aprs = (<span class="number">1 </span>&lt;&lt; (pre - <span class="number">5</span>)) - <span class="number">1</span>;
-        <span class="macro">trace!</span>(<span class="string">&quot;pre {}, nr_aprs {}&quot;</span>, pre, nr_aprs);
-        <span class="kw">let </span>pri = <span class="kw">unsafe </span>{ ICH_VTR_EL2.get_masked_value(ICH_VTR_EL2::PRI) } + <span class="number">1</span>;
+        <span class="macro">trace!</span>(<span class="string">"pre {}, nr_aprs {}"</span>, pre, nr_aprs);
+        <span class="kw">let </span>pri = ICH_VTR_EL2.read(ICH_VTR_EL2::PRIbits) + <span class="number">1</span>;
         <span class="kw">let </span>pri_res0_mask = (<span class="number">1u64 </span>&lt;&lt; (ICH_LR_PRIORITY_WIDTH - pri)) - <span class="number">1</span>;
-        <span class="macro">trace!</span>(<span class="string">&quot;pri {} pri_res0_mask {}&quot;</span>, pri, pri_res0_mask);
+        <span class="macro">trace!</span>(<span class="string">"pri {} pri_res0_mask {}"</span>, pri, pri_res0_mask);
+        <span class="kw">let </span>ext_range = ICC_CTLR_EL1.read(ICC_CTLR_EL1::ExtRange) != <span class="number">0</span>;
+        <span class="macro">trace!</span>(<span class="string">"icc_ctlr ext_range {}"</span>, ext_range);
         GicFeatures {
             nr_lrs,
             nr_aprs,
             pri_res0_mask,
             max_vintid,
+            ext_range,
         }
     };
 }
 
-<span class="kw">pub fn </span>init_gic(vcpu: <span class="kw-2">&amp;mut </span>VCPU) {
-    <span class="kw">let </span>gic_state = <span class="kw-2">&amp;mut </span>vcpu.context.gic_state;
-    gic_state.ich_hcr_el2 =
-        ICH_HCR_EL2_EN_BIT | ICH_HCR_EL2_VSGIEEOICOUNT_BIT | ICH_HCR_EL2_DVIM_BIT
+<span class="kw">pub fn </span>init_gic(rec: <span class="kw-2">&amp;mut </span>Rec&lt;<span class="lifetime">'_</span>&gt;) {
+    <span class="kw">let </span>gic_state = <span class="kw-2">&amp;mut </span>rec.context.gic_state;
+    gic_state.ich_hcr_el2 = (ICH_HCR_EL2::En.mask &lt;&lt; ICH_HCR_EL2::En.shift)
+        + (ICH_HCR_EL2::vSGIEOICount.mask &lt;&lt; ICH_HCR_EL2::vSGIEOICount.shift)
+        + (ICH_HCR_EL2::DVIM.mask &lt;&lt; ICH_HCR_EL2::DVIM.shift)
 }
 
 <span class="kw">fn </span>set_lr(i: usize, val: u64) {
     <span class="kw">match </span>i {
-        <span class="number">0 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR0_EL2.set(val) },
-        <span class="number">1 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR1_EL2.set(val) },
-        <span class="number">2 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR2_EL2.set(val) },
-        <span class="number">3 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR3_EL2.set(val) },
-        <span class="number">4 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR4_EL2.set(val) },
-        <span class="number">5 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR5_EL2.set(val) },
-        <span class="number">6 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR6_EL2.set(val) },
-        <span class="number">7 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR7_EL2.set(val) },
-        <span class="number">8 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR8_EL2.set(val) },
-        <span class="number">9 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR9_EL2.set(val) },
-        <span class="number">10 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR10_EL2.set(val) },
-        <span class="number">11 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR11_EL2.set(val) },
-        <span class="number">12 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR12_EL2.set(val) },
-        <span class="number">13 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR13_EL2.set(val) },
-        <span class="number">14 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR14_EL2.set(val) },
-        <span class="number">15 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR15_EL2.set(val) },
+        <span class="number">0 </span>=&gt; ICH_LR0_EL2.set(val),
+        <span class="number">1 </span>=&gt; ICH_LR1_EL2.set(val),
+        <span class="number">2 </span>=&gt; ICH_LR2_EL2.set(val),
+        <span class="number">3 </span>=&gt; ICH_LR3_EL2.set(val),
+        <span class="number">4 </span>=&gt; ICH_LR4_EL2.set(val),
+        <span class="number">5 </span>=&gt; ICH_LR5_EL2.set(val),
+        <span class="number">6 </span>=&gt; ICH_LR6_EL2.set(val),
+        <span class="number">7 </span>=&gt; ICH_LR7_EL2.set(val),
+        <span class="number">8 </span>=&gt; ICH_LR8_EL2.set(val),
+        <span class="number">9 </span>=&gt; ICH_LR9_EL2.set(val),
+        <span class="number">10 </span>=&gt; ICH_LR10_EL2.set(val),
+        <span class="number">11 </span>=&gt; ICH_LR11_EL2.set(val),
+        <span class="number">12 </span>=&gt; ICH_LR12_EL2.set(val),
+        <span class="number">13 </span>=&gt; ICH_LR13_EL2.set(val),
+        <span class="number">14 </span>=&gt; ICH_LR14_EL2.set(val),
+        <span class="number">15 </span>=&gt; ICH_LR15_EL2.set(val),
         <span class="kw">_ </span>=&gt; {}
     }
 }
 
 <span class="kw">fn </span>set_ap0r(i: usize, val: u64) {
     <span class="kw">match </span>i {
-        <span class="number">0 </span>=&gt; <span class="kw">unsafe </span>{
-            ICH_AP0R0_EL2.set(val);
-        },
-        <span class="number">1 </span>=&gt; <span class="kw">unsafe </span>{
-            ICH_AP0R1_EL2.set(val);
-        },
-        <span class="number">2 </span>=&gt; <span class="kw">unsafe </span>{
-            ICH_AP0R2_EL2.set(val);
-        },
-        <span class="number">3 </span>=&gt; <span class="kw">unsafe </span>{
-            ICH_AP0R3_EL2.set(val);
-        },
+        <span class="number">0 </span>=&gt; ICH_AP0R0_EL2.set(val),
+        <span class="number">1 </span>=&gt; ICH_AP0R1_EL2.set(val),
+        <span class="number">2 </span>=&gt; ICH_AP0R2_EL2.set(val),
+        <span class="number">3 </span>=&gt; ICH_AP0R3_EL2.set(val),
         <span class="kw">_ </span>=&gt; {}
     }
 }
 
 <span class="kw">fn </span>set_ap1r(i: usize, val: u64) {
     <span class="kw">match </span>i {
-        <span class="number">0 </span>=&gt; <span class="kw">unsafe </span>{
-            ICH_AP1R0_EL2.set(val);
-        },
-        <span class="number">1 </span>=&gt; <span class="kw">unsafe </span>{
-            ICH_AP1R1_EL2.set(val);
-        },
-        <span class="number">2 </span>=&gt; <span class="kw">unsafe </span>{
-            ICH_AP1R2_EL2.set(val);
-        },
-        <span class="number">3 </span>=&gt; <span class="kw">unsafe </span>{
-            ICH_AP1R3_EL2.set(val);
-        },
+        <span class="number">0 </span>=&gt; ICH_AP1R0_EL2.set(val),
+        <span class="number">1 </span>=&gt; ICH_AP1R1_EL2.set(val),
+        <span class="number">2 </span>=&gt; ICH_AP1R2_EL2.set(val),
+        <span class="number">3 </span>=&gt; ICH_AP1R3_EL2.set(val),
         <span class="kw">_ </span>=&gt; {}
     }
 }
 
 <span class="kw">fn </span>get_lr(i: usize) -&gt; u64 {
     <span class="kw">match </span>i {
-        <span class="number">0 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR0_EL2.get() },
-        <span class="number">1 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR1_EL2.get() },
-        <span class="number">2 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR2_EL2.get() },
-        <span class="number">3 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR3_EL2.get() },
-        <span class="number">4 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR4_EL2.get() },
-        <span class="number">5 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR5_EL2.get() },
-        <span class="number">6 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR6_EL2.get() },
-        <span class="number">7 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR7_EL2.get() },
-        <span class="number">8 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR8_EL2.get() },
-        <span class="number">9 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR9_EL2.get() },
-        <span class="number">10 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR10_EL2.get() },
-        <span class="number">11 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR11_EL2.get() },
-        <span class="number">12 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR12_EL2.get() },
-        <span class="number">13 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR13_EL2.get() },
-        <span class="number">14 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR14_EL2.get() },
-        <span class="number">15 </span>=&gt; <span class="kw">unsafe </span>{ ICH_LR15_EL2.get() },
-        <span class="kw">_ </span>=&gt; {
-            <span class="macro">unreachable!</span>();
-        }
+        <span class="number">0 </span>=&gt; ICH_LR0_EL2.get(),
+        <span class="number">1 </span>=&gt; ICH_LR1_EL2.get(),
+        <span class="number">2 </span>=&gt; ICH_LR2_EL2.get(),
+        <span class="number">3 </span>=&gt; ICH_LR3_EL2.get(),
+        <span class="number">4 </span>=&gt; ICH_LR4_EL2.get(),
+        <span class="number">5 </span>=&gt; ICH_LR5_EL2.get(),
+        <span class="number">6 </span>=&gt; ICH_LR6_EL2.get(),
+        <span class="number">7 </span>=&gt; ICH_LR7_EL2.get(),
+        <span class="number">8 </span>=&gt; ICH_LR8_EL2.get(),
+        <span class="number">9 </span>=&gt; ICH_LR9_EL2.get(),
+        <span class="number">10 </span>=&gt; ICH_LR10_EL2.get(),
+        <span class="number">11 </span>=&gt; ICH_LR11_EL2.get(),
+        <span class="number">12 </span>=&gt; ICH_LR12_EL2.get(),
+        <span class="number">13 </span>=&gt; ICH_LR13_EL2.get(),
+        <span class="number">14 </span>=&gt; ICH_LR14_EL2.get(),
+        <span class="number">15 </span>=&gt; ICH_LR15_EL2.get(),
+        <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
     }
 }
 
 <span class="kw">fn </span>get_ap0r(i: usize) -&gt; u64 {
     <span class="kw">match </span>i {
-        <span class="number">0 </span>=&gt; <span class="kw">unsafe </span>{ ICH_AP0R0_EL2.get() },
-        <span class="number">1 </span>=&gt; <span class="kw">unsafe </span>{ ICH_AP0R1_EL2.get() },
-        <span class="number">2 </span>=&gt; <span class="kw">unsafe </span>{ ICH_AP0R2_EL2.get() },
-        <span class="number">3 </span>=&gt; <span class="kw">unsafe </span>{ ICH_AP0R3_EL2.get() },
-        <span class="kw">_ </span>=&gt; {
-            <span class="macro">unreachable!</span>();
-        }
+        <span class="number">0 </span>=&gt; ICH_AP0R0_EL2.get(),
+        <span class="number">1 </span>=&gt; ICH_AP0R1_EL2.get(),
+        <span class="number">2 </span>=&gt; ICH_AP0R2_EL2.get(),
+        <span class="number">3 </span>=&gt; ICH_AP0R3_EL2.get(),
+        <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
     }
 }
 
 <span class="kw">fn </span>get_ap1r(i: usize) -&gt; u64 {
     <span class="kw">match </span>i {
-        <span class="number">0 </span>=&gt; <span class="kw">unsafe </span>{ ICH_AP1R0_EL2.get() },
-        <span class="number">1 </span>=&gt; <span class="kw">unsafe </span>{ ICH_AP1R1_EL2.get() },
-        <span class="number">2 </span>=&gt; <span class="kw">unsafe </span>{ ICH_AP1R2_EL2.get() },
-        <span class="number">3 </span>=&gt; <span class="kw">unsafe </span>{ ICH_AP1R3_EL2.get() },
-        <span class="kw">_ </span>=&gt; {
-            <span class="macro">unreachable!</span>();
-        }
+        <span class="number">0 </span>=&gt; ICH_AP1R0_EL2.get(),
+        <span class="number">1 </span>=&gt; ICH_AP1R1_EL2.get(),
+        <span class="number">2 </span>=&gt; ICH_AP1R2_EL2.get(),
+        <span class="number">3 </span>=&gt; ICH_AP1R3_EL2.get(),
+        <span class="kw">_ </span>=&gt; <span class="macro">unreachable!</span>(),
     }
 }
 
-<span class="kw">pub fn </span>restore_state(vcpu: <span class="kw-2">&amp;</span>VCPU) {
-    <span class="kw">let </span>gic_state = <span class="kw-2">&amp;</span>vcpu.context.gic_state;
+<span class="kw">pub fn </span>restore_state(rec: <span class="kw-2">&amp;</span>Rec&lt;<span class="lifetime">'_</span>&gt;) {
+    <span class="kw">let </span>gic_state = <span class="kw-2">&amp;</span>rec.context.gic_state;
     <span class="kw">let </span>nr_lrs = GIC_FEATURES.nr_lrs;
     <span class="kw">let </span>nr_aprs = GIC_FEATURES.nr_aprs;
 
@@ -468,12 +472,12 @@
         set_ap0r(i, gic_state.ich_ap0r_el2[i]);
         set_ap1r(i, gic_state.ich_ap1r_el2[i]);
     }
-    <span class="kw">unsafe </span>{ ICH_VMCR_EL2.set(gic_state.ich_vmcr_el2) };
-    <span class="kw">unsafe </span>{ ICH_HCR_EL2.set(gic_state.ich_hcr_el2) };
+    ICH_VMCR_EL2.set(gic_state.ich_vmcr_el2);
+    ICH_HCR_EL2.set(gic_state.ich_hcr_el2);
 }
 
-<span class="kw">pub fn </span>save_state(vcpu: <span class="kw-2">&amp;mut </span>VCPU) {
-    <span class="kw">let </span>gic_state = <span class="kw-2">&amp;mut </span>vcpu.context.gic_state;
+<span class="kw">pub fn </span>save_state(rec: <span class="kw-2">&amp;mut </span>Rec&lt;<span class="lifetime">'_</span>&gt;) {
+    <span class="kw">let </span>gic_state = <span class="kw-2">&amp;mut </span>rec.context.gic_state;
     <span class="kw">let </span>nr_lrs = GIC_FEATURES.nr_lrs;
     <span class="kw">let </span>nr_aprs = GIC_FEATURES.nr_aprs;
 
@@ -485,19 +489,15 @@
         gic_state.ich_ap1r_el2[i] = get_ap1r(i);
     }
 
-    gic_state.ich_vmcr_el2 = <span class="kw">unsafe </span>{ ICH_VMCR_EL2.get() };
-    gic_state.ich_hcr_el2 = <span class="kw">unsafe </span>{ ICH_HCR_EL2.get() };
-    gic_state.ich_misr_el2 = <span class="kw">unsafe </span>{ ICH_MISR_EL2.get() };
+    gic_state.ich_vmcr_el2 = ICH_VMCR_EL2.get();
+    gic_state.ich_hcr_el2 = ICH_HCR_EL2.get();
+    gic_state.ich_misr_el2 = ICH_MISR_EL2.get();
 
-    <span class="kw">unsafe </span>{ ICH_HCR_EL2.set(gic_state.ich_hcr_el2 &amp; !ICH_HCR_EL2_EN_BIT) };
+    ICH_HCR_EL2.set(gic_state.ich_hcr_el2 &amp; !(ICH_HCR_EL2::En.mask &lt;&lt; ICH_HCR_EL2::En.shift));
 }
 
-<span class="kw">pub fn </span>receive_state_from_host(rd: <span class="kw-2">&amp;</span>Rd, vcpu: usize, run: <span class="kw-2">&amp;</span>Run) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-    <span class="kw">let </span>vcpu = rd
-        .vcpus
-        .get(vcpu)
-        .ok_or(Error::RmiErrorOthers(NotExistVCPU))<span class="question-mark">?</span>;
-    <span class="kw">let </span>gic_state = <span class="kw-2">&amp;mut </span>vcpu.lock().context.gic_state;
+<span class="kw">pub fn </span>receive_state_from_host(rec: <span class="kw-2">&amp;mut </span>Rec&lt;<span class="lifetime">'_</span>&gt;, run: <span class="kw-2">&amp;</span>Run) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">let </span>gic_state = <span class="kw-2">&amp;mut </span>rec.context.gic_state;
     <span class="kw">let </span>nr_lrs = GIC_FEATURES.nr_lrs;
 
     gic_state.ich_lr_el2[..nr_lrs].copy_from_slice(<span class="kw-2">&amp;</span>run.entry_gic_lrs()[..nr_lrs]);
@@ -506,12 +506,8 @@
     <span class="prelude-val">Ok</span>(())
 }
 
-<span class="kw">pub fn </span>send_state_to_host(rd: <span class="kw-2">&amp;mut </span>Rd, vcpu: usize, run: <span class="kw-2">&amp;mut </span>Run) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
-    <span class="kw">let </span>vcpu = rd
-        .vcpus
-        .get_mut(vcpu)
-        .ok_or(Error::RmiErrorOthers(NotExistVCPU))<span class="question-mark">?</span>;
-    <span class="kw">let </span>gic_state = <span class="kw-2">&amp;mut </span>vcpu.lock().context.gic_state;
+<span class="kw">pub fn </span>send_state_to_host(rec: <span class="kw-2">&amp;</span>Rec&lt;<span class="lifetime">'_</span>&gt;, run: <span class="kw-2">&amp;mut </span>Run) -&gt; <span class="prelude-ty">Result</span>&lt;(), Error&gt; {
+    <span class="kw">let </span>gic_state = <span class="kw-2">&amp;</span>rec.context.gic_state;
     <span class="kw">let </span>nr_lrs = GIC_FEATURES.nr_lrs;
 
     run.exit_gic_lrs_mut()[..nr_lrs].copy_from_slice(<span class="kw-2">&amp;</span>gic_state.ich_lr_el2[..nr_lrs]);
@@ -520,4 +516,84 @@
     run.set_gic_hcr(gic_state.ich_hcr_el2 &amp; (ICH_HCR_EL2_EOI_COUNT_MASK | ICH_HCR_EL2_NS_MASK));
     <span class="prelude-val">Ok</span>(())
 }
+
+<span class="kw">fn </span>valid_vintid(intid: u64) -&gt; bool {
+    <span class="comment">/* Check for INTID [0..1019] and [8192..] */
+    </span><span class="kw">if </span>intid &lt;= MAX_SPI_ID || (intid &gt;= MIN_LPI_ID &amp;&amp; intid &lt;= GIC_FEATURES.max_vintid) {
+        <span class="kw">return </span><span class="bool-val">true</span>;
+    }
+
+    <span class="comment">/*
+     * If extended INTID range sopported, check for
+     * Extended PPI [1056..1119] and Extended SPI [4096..5119]
+     */
+    </span><span class="kw">if </span>GIC_FEATURES.ext_range {
+        <span class="kw">return </span>(intid &gt;= MIN_EPPI_ID &amp;&amp; intid &lt;= MAX_EPPI_ID)
+            || (intid &gt;= MIN_ESPI_ID &amp;&amp; intid &lt;= MAX_ESPI_ID);
+    }
+
+    <span class="bool-val">false
+</span>}
+
+<span class="kw">pub fn </span>validate_state(run: <span class="kw-2">&amp;</span>Run) -&gt; bool {
+    <span class="kw">let </span>hcr = run.entry_gic_hcr();
+
+    <span class="comment">/* Validate rec_entry.gicv3_hcr MBZ bits */
+    </span><span class="kw">if </span>(hcr &amp; !ICH_HCR_EL2_NS_MASK) != <span class="number">0 </span>{
+        <span class="kw">return </span><span class="bool-val">false</span>;
+    }
+
+    <span class="kw">for </span>i <span class="kw">in </span><span class="number">0</span>..GIC_FEATURES.nr_lrs {
+        <span class="kw">let </span>lrs = run.entry_gic_lrs();
+        <span class="kw">let </span>lr = lrs[i];
+
+        <span class="kw">let </span>state = (lr &gt;&gt; ICH_LR0_EL2::State.shift) &amp; ICH_LR0_EL2::State.mask;
+        <span class="kw">let </span>vintid = (lr &gt;&gt; ICH_LR0_EL2::vINTID.shift) &amp; ICH_LR0_EL2::vINTID.mask;
+        <span class="kw">let </span>priority = (lr &gt;&gt; ICH_LR0_EL2::Priority.shift) &amp; ICH_LR0_EL2::Priority.mask;
+
+        <span class="kw">let </span>pintid_mask = ICH_LR0_EL2::pINTID.mask &lt;&lt; ICH_LR0_EL2::pINTID.shift;
+        <span class="kw">let </span>eoi_mask = ICH_LR0_EL2::EOI.mask &lt;&lt; ICH_LR0_EL2::EOI.shift;
+        <span class="kw">let </span>only_eoi = pintid_mask &amp; !eoi_mask;
+
+        <span class="kw">let </span>hw = (lr &gt;&gt; ICH_LR0_EL2::HW.shift) &amp; ICH_LR0_EL2::HW.mask;
+
+        <span class="kw">if </span>state == ICH_LR0_EL2::State::Invalid.into() {
+            <span class="kw">continue</span>;
+        }
+
+        <span class="comment">/* The RMM Specification imposes the constraint that HW == '0' */
+        </span><span class="kw">if </span>hw != <span class="number">0
+            </span><span class="comment">/* Check RES0 bits in the Priority field */
+            </span>|| priority &amp; GIC_FEATURES.pri_res0_mask != <span class="number">0
+            </span><span class="comment">/* Only the EOI bit in the pINTID is allowed to be set */
+            </span>|| lr &amp; only_eoi != <span class="number">0
+            </span><span class="comment">/* Check if vINTID is in the valid range */
+            </span>|| !valid_vintid(vintid)
+        {
+            <span class="kw">return </span><span class="bool-val">false</span>;
+        }
+
+        <span class="comment">/*
+         * Behavior is UNPREDICTABLE if two or more List Registers
+         * specify the same vINTID.
+         */
+        </span><span class="kw">for </span>j <span class="kw">in </span>i + <span class="number">1</span>..=GIC_FEATURES.nr_lrs {
+            <span class="kw">let </span>lrs = run.entry_gic_lrs();
+            <span class="kw">let </span>lr = lrs[j];
+
+            <span class="kw">let </span>vintid_2 = (lr &gt;&gt; ICH_LR0_EL2::vINTID.shift) &amp; ICH_LR0_EL2::vINTID.mask;
+            <span class="kw">let </span>state = (lr &gt;&gt; ICH_LR0_EL2::State.shift) &amp; ICH_LR0_EL2::State.mask;
+
+            <span class="kw">if </span>state == ICH_LR0_EL2::State::Invalid.into() {
+                <span class="kw">continue</span>;
+            }
+
+            <span class="kw">if </span>vintid == vintid_2 {
+                <span class="kw">return </span><span class="bool-val">false</span>;
+            }
+        }
+    }
+
+    <span class="bool-val">true
+</span>}
 </code></pre></div></section></main></body></html>

@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["ALIGN_ROOT_PAGE","NUM_ROOT_PAGE"],"fn":["get_page_table"],"struct":["PageTable"]};
+window.SIDEBAR_ITEMS = {"fn":["drop_page_table","get_page_table"],"struct":["PageTable"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["mainloop","realmexit","rsihandle"],"struct":["Context"],"type":["Argument","Command","Return"]};

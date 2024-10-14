@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/granule/array/entry.rs`."><title>entry.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-47e7ab555ef2818a.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0-nightly (ec08a0337 2023-09-04)" data-channel="nightly" data-search-js="search-5d3eaacf19ebf04f.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-f194925aa375ae96.css" data-theme-dark-css="dark-1dd4d1ce031e15de.css" data-theme-ayu-css="ayu-49e58d069f567085.css" ><script src="../../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-ef3a2de404864b0b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../../static.files/light-f194925aa375ae96.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../../static.files/dark-1dd4d1ce031e15de.css"><link rel="stylesheet" href="../../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../../islet_rmm/index.html"><img class="rust-logo" src="../../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/granule/array/entry.rs`."><title>entry.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../../" data-static-root-path="../../../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (dbce3b43b 2024-04-20)" data-channel="nightly" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../../src-files.js"></script><script defer src="../../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../../islet_rmm/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -172,27 +172,73 @@
 <a href="#172" id="172">172</a>
 <a href="#173" id="173">173</a>
 <a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
+<a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
+<a href="#203" id="203">203</a>
+<a href="#204" id="204">204</a>
+<a href="#205" id="205">205</a>
+<a href="#206" id="206">206</a>
+<a href="#207" id="207">207</a>
+<a href="#208" id="208">208</a>
+<a href="#209" id="209">209</a>
+<a href="#210" id="210">210</a>
+<a href="#211" id="211">211</a>
+<a href="#212" id="212">212</a>
+<a href="#213" id="213">213</a>
+<a href="#214" id="214">214</a>
+<a href="#215" id="215">215</a>
+<a href="#216" id="216">216</a>
+<a href="#217" id="217">217</a>
+<a href="#218" id="218">218</a>
+<a href="#219" id="219">219</a>
 </pre></div><pre class="rust"><code><span class="kw">use </span><span class="kw">crate</span>::granule::array::GRANULE_STATUS_TABLE;
 <span class="kw">use </span><span class="kw">crate</span>::rmi::error::Error;
 
 <span class="kw">use super</span>::{GranuleState, GRANULE_SIZE};
+<span class="kw">use </span>safe_abstraction::raw_ptr;
 <span class="kw">use </span>spinning_top::{Spinlock, SpinlockGuard};
 <span class="kw">use </span>vmsa::guard::Content;
 
-<span class="attr">#[cfg(not(kani))]
+<span class="attr">#[cfg(not(any(kani, miri, test)))]
 </span><span class="kw">use </span><span class="kw">crate</span>::granule::{FVP_DRAM0_REGION, FVP_DRAM1_IDX, FVP_DRAM1_REGION};
 
 <span class="comment">// Safety: concurrency safety
-//  - For a granule status table that manages granules, it doesn&#39;t use a big lock for efficiency.
-//    So, we need to associate &quot;lock&quot; with each granule entry.
+//  - For a granule status table that manages granules, it doesn't use a big lock for efficiency.
+//    So, we need to associate "lock" with each granule entry.
 
-</span><span class="attr">#[cfg(not(kani))]
+</span><span class="attr">#[cfg(not(any(kani, miri, test)))]
 </span><span class="kw">pub struct </span>Granule {
     <span class="doccomment">/// granule state
     </span>state: u8,
 }
-<span class="attr">#[cfg(kani)]
-</span><span class="comment">// DIFF: `gpt` ghost field is added to track GPT entry&#39;s status
+<span class="attr">#[cfg(any(kani, miri, test))]
+</span><span class="comment">// DIFF: `gpt` ghost field is added to track GPT entry's status
 </span><span class="kw">pub struct </span>Granule {
     <span class="doccomment">/// granule state
     </span>state: u8,
@@ -208,35 +254,54 @@
     GPT_REALM,
 }
 
+<span class="attr">#[cfg(any(miri, test))]
+#[derive(Copy, Clone, PartialEq)]
+</span><span class="kw">pub enum </span>GranuleGpt {
+    GPT_NS,
+    GPT_OTHER,
+    GPT_REALM,
+}
+
 <span class="kw">impl </span>Granule {
-    <span class="attr">#[cfg(not(kani))]
+    <span class="attr">#[cfg(not(any(kani, miri, test)))]
     </span><span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>state = GranuleState::Undelegated;
         Granule { state }
     }
-    <span class="attr">#[cfg(kani)]
+    <span class="attr">#[cfg(any(kani, miri, test))]
     </span><span class="comment">// DIFF: `state` and `gpt` are filled with non-deterministic values
     </span><span class="kw">fn </span>new() -&gt; <span class="self">Self </span>{
-        <span class="kw">let </span>state = kani::any();
-        kani::assume(state &gt;= GranuleState::Undelegated &amp;&amp; state &lt;= GranuleState::RTT);
-        <span class="kw">let </span>gpt = {
-            <span class="kw">if </span>state != GranuleState::Undelegated {
-                GranuleGpt::GPT_REALM
-            } <span class="kw">else </span>{
-                <span class="kw">let </span>gpt = kani::any();
-                kani::assume(gpt != GranuleGpt::GPT_REALM);
-                gpt
+        <span class="attr">#[cfg(kani)]
+        </span>{
+            <span class="kw">let </span>state = kani::any();
+            kani::assume(state &gt;= GranuleState::Undelegated &amp;&amp; state &lt;= GranuleState::RTT);
+            <span class="kw">let </span>gpt = {
+                <span class="kw">if </span>state != GranuleState::Undelegated {
+                    GranuleGpt::GPT_REALM
+                } <span class="kw">else </span>{
+                    <span class="kw">let </span>gpt = kani::any();
+                    kani::assume(gpt != GranuleGpt::GPT_REALM);
+                    gpt
+                }
+            };
+            Granule { state, gpt }
+        }
+
+        <span class="attr">#[cfg(any(miri, test))]
+        </span>{
+            <span class="self">Self </span>{
+                state: GranuleState::Undelegated,
+                gpt: GranuleGpt::GPT_NS,
             }
-        };
-        Granule { state, gpt }
+        }
     }
 
-    <span class="attr">#[cfg(kani)]
+    <span class="attr">#[cfg(any(kani, miri, test))]
     </span><span class="kw">pub fn </span>set_gpt(<span class="kw-2">&amp;mut </span><span class="self">self</span>, gpt: GranuleGpt) {
         <span class="self">self</span>.gpt = gpt;
     }
 
-    <span class="attr">#[cfg(kani)]
+    <span class="attr">#[cfg(any(kani, miri, test))]
     </span><span class="kw">pub fn </span>is_valid(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
         <span class="self">self</span>.state &gt;= GranuleState::Undelegated &amp;&amp;
         <span class="self">self</span>.state &lt;= GranuleState::RTT &amp;&amp;
@@ -263,14 +328,28 @@
         <span class="prelude-val">Ok</span>(())
     }
 
-    <span class="kw">pub fn </span>content_mut&lt;T: Content&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>T {
+    <span class="kw">pub fn </span>content_mut&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;raw_ptr::SafetyAssumed&lt;T&gt;, Error&gt;
+    <span class="kw">where
+        </span>T: Content + raw_ptr::SafetyChecked + raw_ptr::SafetyAssured,
+    {
         <span class="kw">let </span>addr = <span class="self">self</span>.index_to_addr();
-        <span class="kw">unsafe </span>{ <span class="kw-2">&amp;mut *</span>(addr <span class="kw">as </span><span class="kw-2">*mut </span>T) }
+        <span class="prelude-val">Ok</span>(raw_ptr::assume_safe::&lt;T&gt;(addr)<span class="question-mark">?</span>)
     }
 
-    <span class="kw">pub fn </span>content&lt;T: Content&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>T {
+    <span class="kw">pub fn </span>new_uninit_with&lt;T&gt;(<span class="kw-2">&amp;mut </span><span class="self">self</span>, value: T) -&gt; <span class="prelude-ty">Result</span>&lt;raw_ptr::SafetyAssumed&lt;T&gt;, Error&gt;
+    <span class="kw">where
+        </span>T: Content + raw_ptr::SafetyChecked + raw_ptr::SafetyAssured,
+    {
         <span class="kw">let </span>addr = <span class="self">self</span>.index_to_addr();
-        <span class="kw">unsafe </span>{ <span class="kw-2">&amp;*</span>(addr <span class="kw">as </span><span class="kw-2">*const </span>T) }
+        <span class="prelude-val">Ok</span>(raw_ptr::assume_safe_uninit_with::&lt;T&gt;(addr, value)<span class="question-mark">?</span>)
+    }
+
+    <span class="kw">pub fn </span>content&lt;T&gt;(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;raw_ptr::SafetyAssumed&lt;T&gt;, Error&gt;
+    <span class="kw">where
+        </span>T: Content + raw_ptr::SafetyChecked + raw_ptr::SafetyAssured,
+    {
+        <span class="kw">let </span>addr = <span class="self">self</span>.index_to_addr();
+        <span class="prelude-val">Ok</span>(raw_ptr::assume_safe::&lt;T&gt;(addr)<span class="question-mark">?</span>)
     }
 
     <span class="kw">fn </span>index(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
@@ -287,7 +366,7 @@
         (entry_addr - table_base) / core::mem::size_of::&lt;Entry&gt;()
     }
 
-    <span class="attr">#[cfg(not(kani))]
+    <span class="attr">#[cfg(not(any(kani, miri, test)))]
     </span><span class="kw">fn </span>index_to_addr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
         <span class="kw">let </span>idx = <span class="self">self</span>.index();
         <span class="kw">if </span>idx &lt; FVP_DRAM1_IDX {
@@ -295,28 +374,39 @@
         }
         FVP_DRAM1_REGION.start + ((idx - FVP_DRAM1_IDX) * GRANULE_SIZE)
     }
-    <span class="attr">#[cfg(kani)]
+    <span class="attr">#[cfg(any(kani, miri, test))]
     </span><span class="comment">// DIFF: calculate addr using GRANULE_REGION
     </span><span class="kw">pub fn </span>index_to_addr(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; usize {
-        <span class="kw">use </span><span class="kw">crate</span>::granule::GRANULE_REGION;
+        <span class="kw">use </span><span class="kw">crate</span>::granule::{GRANULE_REGION, GRANULE_STATUS_TABLE_SIZE};
         <span class="kw">let </span>idx = <span class="self">self</span>.index();
-        <span class="macro">assert!</span>(idx &gt;= <span class="number">0 </span>&amp;&amp; idx &lt; <span class="number">8</span>);
-        <span class="kw">return </span>GRANULE_REGION.as_ptr() <span class="kw">as </span>usize + (idx * GRANULE_SIZE);
+        <span class="macro">assert!</span>(idx &lt; GRANULE_STATUS_TABLE_SIZE);
+
+        <span class="attr">#[cfg(any(miri, test))]
+        </span><span class="kw">return </span><span class="kw">crate</span>::test_utils::align_up(<span class="kw">unsafe </span>{
+            GRANULE_REGION.as_ptr() <span class="kw">as </span>usize + (idx * GRANULE_SIZE)
+        });
+
+        <span class="attr">#[cfg(kani)]
+        </span><span class="kw">return unsafe </span>{ GRANULE_REGION.as_ptr() <span class="kw">as </span>usize + (idx * GRANULE_SIZE) };
     }
 
-    <span class="attr">#[cfg(not(kani))]
+    <span class="attr">#[cfg(not(any(kani, miri, test)))]
     </span><span class="kw">fn </span>zeroize(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span>addr = <span class="self">self</span>.index_to_addr();
-        <span class="kw">unsafe </span>{
+
+        <span class="comment">// Safety: This operation writes to a Granule outside the RMM Memory region,
+        //         thus not violating RMM's Memory Safety.
+        //         (ref. RMM Specification A2.2.4 Granule Wiping)
+        </span><span class="kw">unsafe </span>{
             core::ptr::write_bytes(addr <span class="kw">as </span><span class="kw-2">*mut </span>u8, <span class="number">0x0</span>, GRANULE_SIZE);
         }
     }
-    <span class="attr">#[cfg(kani)]
+    <span class="attr">#[cfg(any(kani, miri, test))]
     </span><span class="comment">// DIFF: assertion is added to reduce the proof burden
     //       `write_bytes()` uses a small count value
     </span><span class="kw">fn </span>zeroize(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span>addr = <span class="self">self</span>.index_to_addr();
-        <span class="kw">let </span>g_start = <span class="kw">crate</span>::granule::array::GRANULE_REGION.as_ptr() <span class="kw">as </span>usize;
+        <span class="kw">let </span>g_start = <span class="kw">unsafe </span>{ <span class="kw">crate</span>::granule::array::GRANULE_REGION.as_ptr() <span class="kw">as </span>usize };
         <span class="kw">let </span>g_end = g_start + <span class="kw">crate</span>::granule::array::GRANULE_MEM_SIZE;
         <span class="macro">assert!</span>(addr &gt;= g_start &amp;&amp; addr &lt; g_end);
 
@@ -329,11 +419,11 @@
 
 <span class="kw">pub struct </span>Entry(Spinlock&lt;Granule&gt;);
 <span class="kw">impl </span>Entry {
-    <span class="attr">#[cfg(not(kani))]
+    <span class="attr">#[cfg(not(any(kani, miri, test)))]
     </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="self">Self</span>(Spinlock::new(Granule::new()))
     }
-    <span class="attr">#[cfg(kani)]
+    <span class="attr">#[cfg(any(kani, miri, test))]
     </span><span class="comment">// DIFF: assertion is added to reduce the proof burden
     </span><span class="kw">pub fn </span>new() -&gt; <span class="self">Self </span>{
         <span class="kw">let </span>granule = Granule::new();
@@ -341,7 +431,7 @@
         <span class="self">Self</span>(Spinlock::new(granule))
     }
 
-    <span class="kw">pub fn </span>lock(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;SpinlockGuard&lt;<span class="lifetime">&#39;_</span>, Granule&gt;, Error&gt; {
+    <span class="kw">pub fn </span>lock(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;SpinlockGuard&lt;<span class="lifetime">'_</span>, Granule&gt;, Error&gt; {
         <span class="kw">let </span>granule = <span class="self">self</span>.<span class="number">0</span>.lock();
         <span class="prelude-val">Ok</span>(granule)
     }

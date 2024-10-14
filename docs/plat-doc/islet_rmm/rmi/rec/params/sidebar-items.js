@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"struct":["Params"]};
+window.SIDEBAR_ITEMS = {"constant":["NR_AUX"],"struct":["Params"]};

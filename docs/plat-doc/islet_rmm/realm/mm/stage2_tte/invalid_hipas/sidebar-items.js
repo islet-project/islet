@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"constant":["ASSIGNED","DESTROYED","UNASSIGNED"]};
+window.SIDEBAR_ITEMS = {"constant":["ASSIGNED","UNASSIGNED"]};

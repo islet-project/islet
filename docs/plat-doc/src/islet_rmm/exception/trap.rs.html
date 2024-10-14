@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/exception/trap.rs`."><title>trap.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-47e7ab555ef2818a.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0-nightly (ec08a0337 2023-09-04)" data-channel="nightly" data-search-js="search-5d3eaacf19ebf04f.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-f194925aa375ae96.css" data-theme-dark-css="dark-1dd4d1ce031e15de.css" data-theme-ayu-css="ayu-49e58d069f567085.css" ><script src="../../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-ef3a2de404864b0b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../../static.files/light-f194925aa375ae96.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../../static.files/dark-1dd4d1ce031e15de.css"><link rel="stylesheet" href="../../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../../islet_rmm/index.html"><img class="rust-logo" src="../../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/exception/trap.rs`."><title>trap.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (dbce3b43b 2024-04-20)" data-channel="nightly" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../../src-files.js"></script><script defer src="../../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../../islet_rmm/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -235,15 +235,6 @@
 <a href="#235" id="235">235</a>
 <a href="#236" id="236">236</a>
 <a href="#237" id="237">237</a>
-<a href="#238" id="238">238</a>
-<a href="#239" id="239">239</a>
-<a href="#240" id="240">240</a>
-<a href="#241" id="241">241</a>
-<a href="#242" id="242">242</a>
-<a href="#243" id="243">243</a>
-<a href="#244" id="244">244</a>
-<a href="#245" id="245">245</a>
-<a href="#246" id="246">246</a>
 </pre></div><pre class="rust"><code><span class="kw">mod </span>frame;
 <span class="kw">pub mod </span>syndrome;
 
@@ -254,9 +245,9 @@
 <span class="kw">use </span><span class="kw">crate</span>::cpu;
 <span class="kw">use </span><span class="kw">crate</span>::event::realmexit::{ExitSyncType, RecExitReason};
 <span class="kw">use </span><span class="kw">crate</span>::mm::translation::PageTable;
-<span class="kw">use </span><span class="kw">crate</span>::realm::vcpu::VCPU;
+<span class="kw">use </span><span class="kw">crate</span>::rec::Rec;
 
-<span class="kw">use </span>armv9a::regs::<span class="kw-2">*</span>;
+<span class="kw">use </span>aarch64_cpu::registers::<span class="kw-2">*</span>;
 
 <span class="attr">#[repr(u16)]
 #[derive(Debug, Copy, Clone)]
@@ -291,67 +282,66 @@
 /// The `tf` has the TrapFrame of current context.
 </span><span class="attr">#[no_mangle]
 #[allow(unused_variables)]
-</span><span class="kw">pub extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn </span>handle_exception(info: Info, esr: u32, tf: <span class="kw-2">&amp;mut </span>TrapFrame) {
+</span><span class="kw">pub extern </span><span class="string">"C" </span><span class="kw">fn </span>handle_exception(info: Info, esr: u32, tf: <span class="kw-2">&amp;mut </span>TrapFrame) {
     <span class="kw">match </span>info.kind {
         Kind::Synchronous =&gt; <span class="kw">match </span>Syndrome::from(esr) {
             Syndrome::Brk(b) =&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;brk #{}&quot;</span>, b);
-                <span class="macro">debug!</span>(<span class="string">&quot;{:?}\nESR: {:X}\n{:#X?}&quot;</span>, info, esr, tf);
+                <span class="macro">debug!</span>(<span class="string">"brk #{}"</span>, b);
+                <span class="macro">debug!</span>(<span class="string">"{:?}\nESR: {:X}\n{:#X?}"</span>, info, esr, tf);
                 tf.elr += <span class="number">4</span>; <span class="comment">//continue
             </span>}
             Syndrome::PCAlignmentFault =&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;PCAlignmentFault&quot;</span>);
+                <span class="macro">debug!</span>(<span class="string">"PCAlignmentFault"</span>);
             }
             Syndrome::DataAbort(fault) =&gt; {
-                <span class="kw">let </span>far = <span class="kw">unsafe </span>{ FAR_EL2.get() };
-                <span class="macro">debug!</span>(<span class="string">&quot;Data Abort (higher), far:{:X}&quot;</span>, far);
+                <span class="kw">let </span>far = FAR_EL2.get();
+                <span class="macro">debug!</span>(<span class="string">"Data Abort (higher), far:{:X}"</span>, far);
                 <span class="kw">match </span>fault {
                     Fault::AddressSize { level } =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;address size, level:{}&quot;</span>, level);
+                        <span class="macro">debug!</span>(<span class="string">"address size, level:{}"</span>, level);
                     }
                     Fault::Translation { level } =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;translation, level:{}, esr:{:X}&quot;</span>, level, esr);
+                        <span class="macro">debug!</span>(<span class="string">"translation, level:{}, esr:{:X}"</span>, level, esr);
                         PageTable::get_ref().map(far <span class="kw">as </span>usize, <span class="bool-val">true</span>);
-                        tf.elr += <span class="number">4</span>; <span class="comment">//continue
-                    </span>}
+                    }
                     Fault::AccessFlag { level } =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;access flag, level:{}&quot;</span>, level);
+                        <span class="macro">debug!</span>(<span class="string">"access flag, level:{}"</span>, level);
                     }
                     Fault::Permission { level } =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;permission, level:{}&quot;</span>, level);
+                        <span class="macro">debug!</span>(<span class="string">"permission, level:{}"</span>, level);
                     }
                     Fault::Alignment =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;alignment&quot;</span>);
+                        <span class="macro">debug!</span>(<span class="string">"alignment"</span>);
                     }
                     Fault::TLBConflict =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;tlb conflict&quot;</span>);
+                        <span class="macro">debug!</span>(<span class="string">"tlb conflict"</span>);
                     }
                     Fault::Other(_x) =&gt; {
-                        <span class="macro">debug!</span>(<span class="string">&quot;other&quot;</span>);
+                        <span class="macro">debug!</span>(<span class="string">"other"</span>);
                     }
                 }
             }
             Syndrome::InstructionAbort(v) =&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;Instruction Abort (higher)&quot;</span>);
+                <span class="macro">debug!</span>(<span class="string">"Instruction Abort (higher)"</span>);
             }
             Syndrome::HVC =&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;HVC&quot;</span>);
+                <span class="macro">debug!</span>(<span class="string">"HVC"</span>);
             }
             Syndrome::SMC =&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;SMC&quot;</span>);
+                <span class="macro">debug!</span>(<span class="string">"SMC"</span>);
             }
             Syndrome::SysRegInst =&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;SysRegInst&quot;</span>);
+                <span class="macro">debug!</span>(<span class="string">"SysRegInst"</span>);
             }
             Syndrome::WFX =&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;WFX&quot;</span>);
+                <span class="macro">debug!</span>(<span class="string">"WFX"</span>);
             }
             Syndrome::Other(v) =&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;Other&quot;</span>);
+                <span class="macro">debug!</span>(<span class="string">"Other"</span>);
             }
             undefined =&gt; {
                 <span class="macro">panic!</span>(
-                    <span class="string">&quot;{:?} and esr {:x}, TrapFrame: {:?} on cpu::id {:?}&quot;</span>,
+                    <span class="string">"{:?} and esr {:x}, TrapFrame: {:?} on cpu::id {:?}"</span>,
                     info,
                     esr,
                     tf,
@@ -361,7 +351,7 @@
         },
         <span class="kw">_ </span>=&gt; {
             <span class="macro">panic!</span>(
-                <span class="string">&quot;Unknown exception! Info={:?}, ESR={:x} on CPU {:?}&quot;</span>,
+                <span class="string">"Unknown exception! Info={:?}, ESR={:x} on CPU {:?}"</span>,
                 info,
                 esr,
                 cpu::id()
@@ -378,97 +368,89 @@
 /// bits) of the exception.
 /// The `esr` has the value of a syndrome register (ESR_ELx) holding the cause
 /// of the Synchronous and SError exception.
-/// The `vcpu` has the VCPU context.
+/// The `rec` has the Rec context.
 /// The `tf` has the TrapFrame of current context.
 ///
-/// Do not write sys_regs of VCPU here. (ref. HANDLE_LOWER in vectors.s)
+/// Do not write sys_regs of Rec here. (ref. HANDLE_LOWER in vectors.s)
 </span><span class="attr">#[no_mangle]
 #[allow(unused_variables)]
-</span><span class="kw">pub extern </span><span class="string">&quot;C&quot; </span><span class="kw">fn </span>handle_lower_exception(
+</span><span class="kw">pub extern </span><span class="string">"C" </span><span class="kw">fn </span>handle_lower_exception(
     info: Info,
     esr: u32,
-    vcpu: <span class="kw-2">&amp;mut </span>VCPU,
+    rec: <span class="kw-2">&amp;mut </span>Rec&lt;<span class="lifetime">'_</span>&gt;,
     tf: <span class="kw-2">&amp;mut </span>TrapFrame,
 ) -&gt; u64 {
     <span class="kw">match </span>info.kind {
         <span class="comment">// TODO: adjust elr according to the decision that kvm made
         </span>Kind::Synchronous =&gt; <span class="kw">match </span>Syndrome::from(esr) {
             Syndrome::HVC =&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;Synchronous: HVC: {:#X}&quot;</span>, vcpu.context.gp_regs[<span class="number">0</span>]);
+                <span class="macro">debug!</span>(<span class="string">"Synchronous: HVC: {:#X}"</span>, rec.context.gp_regs[<span class="number">0</span>]);
 
                 <span class="comment">// Inject undefined exception to the realm
-                </span><span class="kw">unsafe </span>{
-                    SPSR_EL1.set(vcpu.context.spsr);
-                    ELR_EL1.set(vcpu.context.elr);
+                </span>SPSR_EL1.set(rec.context.spsr);
+                ELR_EL1.set(rec.context.elr);
+                ESR_EL1.write(ESR_EL1::EC::Unknown + ESR_EL1::IL::SET);
 
-                    <span class="kw">let </span>esr = EsrEl1::new(<span class="number">0</span>)
-                        .set_masked_value(EsrEl1::EC, ESR_EL1_EC_UNKNOWN)
-                        .set_bits(EsrEl1::IL)
-                        .get();
-
-                    ESR_EL1.set(esr);
-                }
-
-                <span class="comment">// Return to realm&#39;s exception handler
-                </span><span class="kw">let </span>vbar = vcpu.context.sys_regs.vbar;
+                <span class="comment">// Return to realm's exception handler
+                </span><span class="kw">let </span>vbar = rec.context.sys_regs.vbar;
                 <span class="kw">const </span>SPSR_EL2_MODE_EL1H_OFFSET: u64 = <span class="number">0x200</span>;
-                vcpu.context.elr = vbar + SPSR_EL2_MODE_EL1H_OFFSET;
+                rec.context.elr = vbar + SPSR_EL2_MODE_EL1H_OFFSET;
 
                 tf.regs[<span class="number">0</span>] = RecExitReason::Sync(ExitSyncType::Undefined).into();
                 tf.regs[<span class="number">1</span>] = esr <span class="kw">as </span>u64;
                 tf.regs[<span class="number">2</span>] = <span class="number">0</span>;
-                tf.regs[<span class="number">3</span>] = <span class="kw">unsafe </span>{ FAR_EL2.get() };
+                tf.regs[<span class="number">3</span>] = FAR_EL2.get();
                 RET_TO_REC
             }
             Syndrome::SMC =&gt; {
                 tf.regs[<span class="number">0</span>] = RecExitReason::Sync(ExitSyncType::RSI).into();
-                tf.regs[<span class="number">1</span>] = vcpu.context.gp_regs[<span class="number">0</span>]; <span class="comment">// RSI command
-                </span>advance_pc(vcpu);
+                tf.regs[<span class="number">1</span>] = rec.context.gp_regs[<span class="number">0</span>]; <span class="comment">// RSI command
+                </span>advance_pc(rec);
                 RET_TO_RMM
             }
             Syndrome::InstructionAbort(<span class="kw">_</span>) | Syndrome::DataAbort(<span class="kw">_</span>) =&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;Synchronous: InstructionAbort | DataAbort&quot;</span>);
+                <span class="macro">debug!</span>(<span class="string">"Synchronous: InstructionAbort | DataAbort"</span>);
                 <span class="kw">if let </span>Syndrome::InstructionAbort(<span class="kw">_</span>) = Syndrome::from(esr) {
                     tf.regs[<span class="number">0</span>] = RecExitReason::Sync(ExitSyncType::InstAbort).into()
                 } <span class="kw">else </span>{
                     tf.regs[<span class="number">0</span>] = RecExitReason::Sync(ExitSyncType::DataAbort).into();
                 }
                 tf.regs[<span class="number">1</span>] = esr <span class="kw">as </span>u64;
-                tf.regs[<span class="number">2</span>] = <span class="kw">unsafe </span>{ HPFAR_EL2.get() };
-                tf.regs[<span class="number">3</span>] = <span class="kw">unsafe </span>{ FAR_EL2.get() };
-                <span class="kw">let </span>fipa = <span class="kw">unsafe </span>{ HPFAR_EL2.get_masked(HPFAR_EL2::FIPA) } &lt;&lt; <span class="number">8</span>;
-                <span class="macro">debug!</span>(<span class="string">&quot;fipa: {:X}&quot;</span>, fipa);
-                <span class="macro">debug!</span>(<span class="string">&quot;esr_el2: {:X}&quot;</span>, esr);
+                tf.regs[<span class="number">2</span>] = HPFAR_EL2.get();
+                tf.regs[<span class="number">3</span>] = FAR_EL2.get();
+                <span class="kw">let </span>fipa = HPFAR_EL2.read(HPFAR_EL2::FIPA) &lt;&lt; <span class="number">8</span>;
+                <span class="macro">debug!</span>(<span class="string">"fipa: {:X}"</span>, fipa);
+                <span class="macro">debug!</span>(<span class="string">"esr_el2: {:X}"</span>, esr);
                 RET_TO_RMM
             }
             Syndrome::SysRegInst =&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;Synchronous: MRS, MSR System Register Instruction&quot;</span>);
-                <span class="kw">let </span>ret = synchronous::sys_reg::handle(vcpu, esr <span class="kw">as </span>u64);
-                advance_pc(vcpu);
+                <span class="macro">debug!</span>(<span class="string">"Synchronous: MRS, MSR System Register Instruction"</span>);
+                <span class="kw">let </span>ret = synchronous::sys_reg::handle(rec, esr <span class="kw">as </span>u64);
+                advance_pc(rec);
                 ret
             }
             Syndrome::WFX =&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;Synchronous: WFx&quot;</span>);
+                <span class="macro">debug!</span>(<span class="string">"Synchronous: WFx"</span>);
                 tf.regs[<span class="number">0</span>] = RecExitReason::Sync(ExitSyncType::Undefined).into();
                 tf.regs[<span class="number">1</span>] = esr <span class="kw">as </span>u64;
-                tf.regs[<span class="number">2</span>] = <span class="kw">unsafe </span>{ HPFAR_EL2.get() };
-                tf.regs[<span class="number">3</span>] = <span class="kw">unsafe </span>{ FAR_EL2.get() };
-                advance_pc(vcpu);
+                tf.regs[<span class="number">2</span>] = HPFAR_EL2.get();
+                tf.regs[<span class="number">3</span>] = FAR_EL2.get();
+                advance_pc(rec);
                 RET_TO_RMM
             }
             undefined =&gt; {
-                <span class="macro">debug!</span>(<span class="string">&quot;Synchronous: Other&quot;</span>);
+                <span class="macro">debug!</span>(<span class="string">"Synchronous: Other"</span>);
                 tf.regs[<span class="number">0</span>] = RecExitReason::Sync(ExitSyncType::Undefined).into();
                 tf.regs[<span class="number">1</span>] = esr <span class="kw">as </span>u64;
-                tf.regs[<span class="number">2</span>] = <span class="kw">unsafe </span>{ HPFAR_EL2.get() };
-                tf.regs[<span class="number">3</span>] = <span class="kw">unsafe </span>{ FAR_EL2.get() };
+                tf.regs[<span class="number">2</span>] = HPFAR_EL2.get();
+                tf.regs[<span class="number">3</span>] = FAR_EL2.get();
                 RET_TO_RMM
             }
         },
         Kind::Irq =&gt; {
-            <span class="macro">debug!</span>(<span class="string">&quot;IRQ&quot;</span>);
+            <span class="macro">debug!</span>(<span class="string">"IRQ"</span>);
             tf.regs[<span class="number">0</span>] = RecExitReason::IRQ.into();
-            <span class="comment">// IRQ isn&#39;t interpreted with esr. It just hold previsou info. Void them out.
+            <span class="comment">// IRQ isn't interpreted with esr. It just hold previsou info. Void them out.
             </span>tf.regs[<span class="number">1</span>] = <span class="number">0</span>;
             tf.regs[<span class="number">2</span>] = <span class="number">0</span>;
             tf.regs[<span class="number">3</span>] = <span class="number">0</span>;
@@ -476,7 +458,7 @@
         }
         <span class="kw">_ </span>=&gt; {
             <span class="macro">error!</span>(
-                <span class="string">&quot;Unknown exception! Info={:?}, ESR={:x} on CPU {:?}&quot;</span>,
+                <span class="string">"Unknown exception! Info={:?}, ESR={:x} on CPU {:?}"</span>,
                 info,
                 esr,
                 cpu::id()
@@ -487,7 +469,7 @@
 }
 
 <span class="attr">#[inline(always)]
-</span><span class="kw">fn </span>advance_pc(vcpu: <span class="kw-2">&amp;mut </span>VCPU) {
-    vcpu.context.elr += <span class="number">4</span>;
+</span><span class="kw">fn </span>advance_pc(rec: <span class="kw-2">&amp;mut </span>Rec&lt;<span class="lifetime">'_</span>&gt;) {
+    rec.context.elr += <span class="number">4</span>;
 }
 </code></pre></div></section></main></body></html>

@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/macro.rs`."><title>macro.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-47e7ab555ef2818a.css" id="mainThemeStyle"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.74.0-nightly (ec08a0337 2023-09-04)" data-channel="nightly" data-search-js="search-5d3eaacf19ebf04f.js" data-settings-js="settings-de11bff964e9d4e5.js" data-settings-css="settings-8c76f75bfb6bd192.css" data-theme-light-css="light-f194925aa375ae96.css" data-theme-dark-css="dark-1dd4d1ce031e15de.css" data-theme-ayu-css="ayu-49e58d069f567085.css" ><script src="../../static.files/storage-db41da1a38ea3cb8.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-ef3a2de404864b0b.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-f194925aa375ae96.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-1dd4d1ce031e15de.css"><link rel="stylesheet" href="../../static.files/noscript-cffde32267a19fd6.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../islet_rmm/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `rmm/src/macro.rs`."><title>macro.rs - source</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-46f98efaafac5295.ttf.woff2,FiraSans-Regular-018c141bf0843ffd.woff2,FiraSans-Medium-8f9a781e4970d388.woff2,SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2,SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-081576b923113409.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="islet_rmm" data-themes="" data-resource-suffix="" data-rustdoc-version="1.79.0-nightly (dbce3b43b 2024-04-20)" data-channel="nightly" data-search-js="search-bf21c90c8c1d92b1.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-e32f0c247825364d.js"></script><script defer src="../../static.files/src-script-e66d777a5a92e9b2.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-20a3ad099b048cf2.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-09095024cf37855e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="src-sidebar-title"><h2>Files</h2></div></nav><div class="sidebar-resizer"></div><main><nav class="sub"><form class="search-form"><span></span><div id="sidebar-button" tabindex="-1"><a href="../../islet_rmm/all.html" title="show sidebar"></a></div><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Type ‘S’ or ‘/’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings">Settings</a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -166,56 +166,90 @@
 <a href="#166" id="166">166</a>
 <a href="#167" id="167">167</a>
 <a href="#168" id="168">168</a>
+<a href="#169" id="169">169</a>
+<a href="#170" id="170">170</a>
+<a href="#171" id="171">171</a>
+<a href="#172" id="172">172</a>
+<a href="#173" id="173">173</a>
+<a href="#174" id="174">174</a>
+<a href="#175" id="175">175</a>
+<a href="#176" id="176">176</a>
+<a href="#177" id="177">177</a>
+<a href="#178" id="178">178</a>
+<a href="#179" id="179">179</a>
+<a href="#180" id="180">180</a>
+<a href="#181" id="181">181</a>
+<a href="#182" id="182">182</a>
+<a href="#183" id="183">183</a>
+<a href="#184" id="184">184</a>
+<a href="#185" id="185">185</a>
+<a href="#186" id="186">186</a>
+<a href="#187" id="187">187</a>
+<a href="#188" id="188">188</a>
+<a href="#189" id="189">189</a>
+<a href="#190" id="190">190</a>
+<a href="#191" id="191">191</a>
+<a href="#192" id="192">192</a>
+<a href="#193" id="193">193</a>
+<a href="#194" id="194">194</a>
+<a href="#195" id="195">195</a>
+<a href="#196" id="196">196</a>
+<a href="#197" id="197">197</a>
+<a href="#198" id="198">198</a>
+<a href="#199" id="199">199</a>
+<a href="#200" id="200">200</a>
 </pre></div><pre class="rust"><code><span class="comment">// TODO: Expands to cover args, ret
 </span><span class="attr">#[macro_export]
-</span><span class="macro">macro_rules! </span>define_interface {
+</span><span class="macro">macro_rules!</span> define_interface {
     (command {$(<span class="macro-nonterminal">$variant</span>:ident = <span class="macro-nonterminal">$val</span>:expr),<span class="kw-2">*</span>,}) =&gt; {
         $(<span class="kw">pub const </span><span class="macro-nonterminal">$variant</span>: usize = <span class="macro-nonterminal">$val</span>;)*
-        <span class="kw">pub fn </span>to_str(code: usize) -&gt; <span class="kw-2">&amp;</span><span class="lifetime">&#39;static </span>str {
+        <span class="kw">pub fn </span>to_str(code: usize) -&gt;  alloc::string::String {
+            <span class="kw">use </span>alloc::string::ToString;
+            <span class="kw">use </span>alloc::format;
             <span class="kw">match </span>code {
-                $(<span class="macro-nonterminal">$variant </span>=&gt; <span class="macro">stringify!</span>(<span class="macro-nonterminal">$variant</span>)),<span class="kw-2">*</span>,
-                <span class="kw">_ </span>=&gt; <span class="string">&quot;Undefined&quot;</span>,
+                $(<span class="macro-nonterminal">$variant </span>=&gt; <span class="macro">stringify!</span>(<span class="macro-nonterminal">$variant</span>).to_string()),<span class="kw-2">*</span>,
+                <span class="kw">_ </span>=&gt;  <span class="macro">format!</span>(<span class="string">"Undefined {}"</span>, code)
             }
         }
     };
 }
 
 <span class="attr">#[macro_export]
-</span><span class="macro">macro_rules! </span>print {
+</span><span class="macro">macro_rules!</span> print {
     ($(<span class="macro-nonterminal">$arg</span>:tt)<span class="kw-2">*</span>) =&gt; {
         <span class="kw">let </span>buffer = <span class="macro">alloc::format!</span>($(<span class="macro-nonterminal">$arg</span>)<span class="kw-2">*</span>);
-        <span class="kw">let _ </span>= <span class="kw">crate</span>::io::stdout().write_all(buffer.as_bytes());
+        <span class="kw">let _ </span>= io::stdout().write_all(buffer.as_bytes());
     };
 }
 
 <span class="attr">#[macro_export]
-</span><span class="macro">macro_rules! </span>println {
-    () =&gt; {<span class="macro">crate::print!</span>(<span class="string">&quot;\n&quot;</span>)};
-    (<span class="macro-nonterminal">$fmt</span>:expr) =&gt; {<span class="macro">crate::print!</span>(<span class="macro">concat!</span>(<span class="macro-nonterminal">$fmt</span>, <span class="string">&quot;\n&quot;</span>))};
-    (<span class="macro-nonterminal">$fmt</span>:expr, $(<span class="macro-nonterminal">$arg</span>:tt)<span class="kw-2">*</span>) =&gt; {<span class="macro">crate::print!</span>(<span class="macro">concat!</span>(<span class="macro-nonterminal">$fmt</span>, <span class="string">&quot;\n&quot;</span>), $(<span class="macro-nonterminal">$arg</span>)<span class="kw-2">*</span>)};
+</span><span class="macro">macro_rules!</span> println {
+    () =&gt; {<span class="macro">crate::print!</span>(<span class="string">"\n"</span>)};
+    (<span class="macro-nonterminal">$fmt</span>:expr) =&gt; {<span class="macro">crate::print!</span>(<span class="macro">concat!</span>(<span class="macro-nonterminal">$fmt</span>, <span class="string">"\n"</span>))};
+    (<span class="macro-nonterminal">$fmt</span>:expr, $(<span class="macro-nonterminal">$arg</span>:tt)<span class="kw-2">*</span>) =&gt; {<span class="macro">crate::print!</span>(<span class="macro">concat!</span>(<span class="macro-nonterminal">$fmt</span>, <span class="string">"\n"</span>), $(<span class="macro-nonterminal">$arg</span>)<span class="kw-2">*</span>)};
 }
 
 <span class="attr">#[macro_export]
-</span><span class="macro">macro_rules! </span>eprint {
+</span><span class="macro">macro_rules!</span> eprint {
     (<span class="macro-nonterminal">$fmt</span>:expr) =&gt; {
-        <span class="kw">let </span>buffer = <span class="macro">concat!</span>(<span class="string">&quot;\x1b[0;31m&quot;</span>, <span class="macro-nonterminal">$fmt</span>, <span class="string">&quot;\x1b[0m&quot;</span>);
-        <span class="kw">let _ </span>= <span class="kw">crate</span>::io::stdout().write_all(buffer.as_bytes());
+        <span class="kw">let </span>buffer = <span class="macro">concat!</span>(<span class="string">"\x1b[0;31m"</span>, <span class="macro-nonterminal">$fmt</span>, <span class="string">"\x1b[0m"</span>);
+        <span class="kw">let _ </span>= io::stdout().write_all(buffer.as_bytes());
     };
     (<span class="macro-nonterminal">$fmt</span>:expr, $(<span class="macro-nonterminal">$arg</span>:tt)<span class="kw-2">*</span>) =&gt; {{
-        <span class="kw">let </span>buffer = <span class="macro">alloc::format!</span>(<span class="macro">concat!</span>(<span class="string">&quot;\x1b[0;31m&quot;</span>, <span class="macro-nonterminal">$fmt</span>, <span class="string">&quot;\x1b[0m&quot;</span>), $(<span class="macro-nonterminal">$arg</span>)<span class="kw-2">*</span>);
-        <span class="kw">let _ </span>= <span class="kw">crate</span>::io::stdout().write_all(buffer.as_bytes());
+        <span class="kw">let </span>buffer = <span class="macro">alloc::format!</span>(<span class="macro">concat!</span>(<span class="string">"\x1b[0;31m"</span>, <span class="macro-nonterminal">$fmt</span>, <span class="string">"\x1b[0m"</span>), $(<span class="macro-nonterminal">$arg</span>)<span class="kw-2">*</span>);
+        <span class="kw">let _ </span>= io::stdout().write_all(buffer.as_bytes());
     }};
 }
 
 <span class="attr">#[macro_export]
-</span><span class="macro">macro_rules! </span>eprintln {
-    () =&gt; {<span class="macro">crate::eprint!</span>(<span class="string">&quot;\n&quot;</span>)};
-    (<span class="macro-nonterminal">$fmt</span>:expr) =&gt; {<span class="macro">crate::eprint!</span>(<span class="macro">concat!</span>(<span class="macro-nonterminal">$fmt</span>, <span class="string">&quot;\n&quot;</span>))};
-    (<span class="macro-nonterminal">$fmt</span>:expr, $(<span class="macro-nonterminal">$arg</span>:tt)<span class="kw-2">*</span>) =&gt; {<span class="macro">crate::eprint!</span>(<span class="macro">concat!</span>(<span class="macro-nonterminal">$fmt</span>, <span class="string">&quot;\n&quot;</span>), $(<span class="macro-nonterminal">$arg</span>)<span class="kw-2">*</span>)};
+</span><span class="macro">macro_rules!</span> eprintln {
+    () =&gt; {<span class="macro">crate::eprint!</span>(<span class="string">"\n"</span>)};
+    (<span class="macro-nonterminal">$fmt</span>:expr) =&gt; {<span class="macro">crate::eprint!</span>(<span class="macro">concat!</span>(<span class="macro-nonterminal">$fmt</span>, <span class="string">"\n"</span>))};
+    (<span class="macro-nonterminal">$fmt</span>:expr, $(<span class="macro-nonterminal">$arg</span>:tt)<span class="kw-2">*</span>) =&gt; {<span class="macro">crate::eprint!</span>(<span class="macro">concat!</span>(<span class="macro-nonterminal">$fmt</span>, <span class="string">"\n"</span>), $(<span class="macro-nonterminal">$arg</span>)<span class="kw-2">*</span>)};
 }
 
 <span class="attr">#[macro_export]
-</span><span class="macro">macro_rules! </span>const_assert {
+</span><span class="macro">macro_rules!</span> const_assert {
     (<span class="macro-nonterminal">$cond</span>:expr) =&gt; {
         <span class="comment">// Causes overflow if condition is false
         </span><span class="kw">let _ </span>= [(); <span class="number">0 </span>- (!(<span class="macro-nonterminal">$cond</span>) <span class="kw">as </span>usize)];
@@ -223,7 +257,7 @@
 }
 
 <span class="attr">#[macro_export]
-</span><span class="macro">macro_rules! </span>const_assert_eq {
+</span><span class="macro">macro_rules!</span> const_assert_eq {
     (<span class="macro-nonterminal">$left</span>:expr, <span class="macro-nonterminal">$right</span>:expr) =&gt; {
         <span class="kw">const _</span>: () = {
             <span class="macro">crate::const_assert!</span>(<span class="macro-nonterminal">$left </span>== <span class="macro-nonterminal">$right</span>);
@@ -232,31 +266,61 @@
 }
 
 <span class="attr">#[macro_export]
-</span><span class="macro">macro_rules! </span>const_assert_size {
+</span><span class="macro">macro_rules!</span> const_assert_size {
     (<span class="macro-nonterminal">$</span><span class="kw">struct</span>:<span class="macro-nonterminal">ty</span>, <span class="macro-nonterminal">$size</span>:expr) =&gt; {
         <span class="macro">crate::const_assert_eq!</span>(core::mem::size_of::&lt;<span class="macro-nonterminal">$</span><span class="kw">struct</span>&gt;(), (<span class="macro-nonterminal">$size</span>));
     };
 }
 
-<span class="attr">#[macro_export]
-</span><span class="macro">macro_rules! </span>offset_of {
-    (<span class="macro-nonterminal">$</span><span class="kw">type</span>:<span class="macro-nonterminal">ty</span>, <span class="macro-nonterminal">$field</span>:tt) =&gt; {{
-        <span class="kw">let </span>dummy = core::mem::MaybeUninit::&lt;<span class="macro-nonterminal">$</span><span class="kw">type</span>&gt;<span class="macro-nonterminal">::uninit</span>();
-        <span class="kw">let </span>dummy_ptr = dummy.as_ptr();
-        <span class="kw">let </span>member_ptr = <span class="kw">unsafe </span>{ <span class="macro">::core::ptr::addr_of!</span>((<span class="kw-2">*</span>dummy_ptr).<span class="macro-nonterminal">$field</span>) };
-
-        member_ptr <span class="kw">as </span>usize - dummy_ptr <span class="kw">as </span>usize
-    }};
-}
-
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test {
-    <span class="kw">use </span><span class="kw">crate</span>::io::test::MockDevice;
-    <span class="kw">use </span><span class="kw">crate</span>::io::{stdout, Write <span class="kw">as </span>IoWrite};
+    <span class="kw">extern crate </span>alloc;
+
     <span class="kw">use crate</span>::{eprintln, println};
     <span class="kw">use </span>alloc::boxed::Box;
+    <span class="kw">use </span>alloc::string::String;
+    <span class="kw">use </span>alloc::vec::Vec;
+    <span class="kw">use </span>core::cell::RefCell;
+    <span class="kw">use </span>io::{stdout, Write <span class="kw">as </span>IoWrite};
+    <span class="kw">use </span>io::{ConsoleWriter, Device, <span class="prelude-ty">Result</span>, Write};
 
-    <span class="kw">extern crate </span>alloc;
+    <span class="kw">pub struct </span>MockDevice {
+        buffer: RefCell&lt;Vec&lt;u8&gt;&gt;,
+        ready: bool,
+    }
+
+    <span class="kw">impl </span>MockDevice {
+        <span class="kw">pub const fn </span>new() -&gt; <span class="self">Self </span>{
+            MockDevice {
+                buffer: RefCell::new(Vec::new()),
+                ready: <span class="bool-val">false</span>,
+            }
+        }
+
+        <span class="kw">pub fn </span>output(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; String {
+            String::from_utf8(<span class="self">self</span>.buffer.borrow().to_vec()).unwrap()
+        }
+    }
+
+    <span class="kw">impl </span>Device <span class="kw">for </span>MockDevice {
+        <span class="kw">fn </span>initialize(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+            <span class="self">self</span>.ready = <span class="bool-val">true</span>;
+            <span class="prelude-val">Ok</span>(())
+        }
+
+        <span class="kw">fn </span>initialized(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; bool {
+            <span class="self">self</span>.ready
+        }
+    }
+
+    <span class="kw">impl </span>Write <span class="kw">for </span>MockDevice {
+        <span class="kw">fn </span>write_all(<span class="kw-2">&amp;mut </span><span class="self">self</span>, buf: <span class="kw-2">&amp;</span>[u8]) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+            <span class="self">self</span>.buffer.borrow_mut().extend_from_slice(buf);
+            <span class="prelude-val">Ok</span>(())
+        }
+    }
+
+    <span class="kw">impl </span>ConsoleWriter <span class="kw">for </span>MockDevice {}
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>println_without_arg() {
@@ -266,7 +330,7 @@
 
         <span class="macro">println!</span>();
 
-        <span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ (<span class="kw-2">*</span>mock_ptr).output() }, <span class="string">&quot;\n&quot;</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ (<span class="kw-2">*</span>mock_ptr).output() }, <span class="string">"\n"</span>);
     }
 
     <span class="attr">#[test]
@@ -275,8 +339,8 @@
         <span class="kw">let </span>mock_ptr = mock.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>MockDevice;
         stdout().attach(mock).ok().unwrap();
 
-        <span class="macro">println!</span>(<span class="string">&quot;hello&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ (<span class="kw-2">*</span>mock_ptr).output() }, <span class="string">&quot;hello\n&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"hello"</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ (<span class="kw-2">*</span>mock_ptr).output() }, <span class="string">"hello\n"</span>);
     }
 
     <span class="attr">#[test]
@@ -285,8 +349,8 @@
         <span class="kw">let </span>mock_ptr = mock.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>MockDevice;
         stdout().attach(mock).ok().unwrap();
 
-        <span class="macro">println!</span>(<span class="string">&quot;number {}&quot;</span>, <span class="number">1234</span>);
-        <span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ (<span class="kw-2">*</span>mock_ptr).output() }, <span class="string">&quot;number 1234\n&quot;</span>);
+        <span class="macro">println!</span>(<span class="string">"number {}"</span>, <span class="number">1234</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ (<span class="kw-2">*</span>mock_ptr).output() }, <span class="string">"number 1234\n"</span>);
     }
 
     <span class="attr">#[test]
@@ -296,7 +360,7 @@
         stdout().attach(mock).ok().unwrap();
 
         <span class="macro">eprintln!</span>();
-        <span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ (<span class="kw-2">*</span>mock_ptr).output() }, <span class="string">&quot;\x1b[0;31m\n\x1b[0m&quot;</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ (<span class="kw-2">*</span>mock_ptr).output() }, <span class="string">"\x1b[0;31m\n\x1b[0m"</span>);
     }
 
     <span class="attr">#[test]
@@ -305,8 +369,8 @@
         <span class="kw">let </span>mock_ptr = mock.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>MockDevice;
         stdout().attach(mock).ok().unwrap();
 
-        <span class="macro">eprintln!</span>(<span class="string">&quot;hello&quot;</span>);
-        <span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ (<span class="kw-2">*</span>mock_ptr).output() }, <span class="string">&quot;\x1b[0;31mhello\n\x1b[0m&quot;</span>);
+        <span class="macro">eprintln!</span>(<span class="string">"hello"</span>);
+        <span class="macro">assert_eq!</span>(<span class="kw">unsafe </span>{ (<span class="kw-2">*</span>mock_ptr).output() }, <span class="string">"\x1b[0;31mhello\n\x1b[0m"</span>);
     }
 
     <span class="attr">#[test]
@@ -315,10 +379,10 @@
         <span class="kw">let </span>mock_ptr = mock.as_ref() <span class="kw">as </span><span class="kw-2">*const </span>MockDevice;
         stdout().attach(mock).ok().unwrap();
 
-        <span class="macro">eprintln!</span>(<span class="string">&quot;number {}&quot;</span>, <span class="number">4321</span>);
+        <span class="macro">eprintln!</span>(<span class="string">"number {}"</span>, <span class="number">4321</span>);
         <span class="macro">assert_eq!</span>(
             <span class="kw">unsafe </span>{ (<span class="kw-2">*</span>mock_ptr).output() },
-            <span class="string">&quot;\x1b[0;31mnumber 4321\n\x1b[0m&quot;
+            <span class="string">"\x1b[0;31mnumber 4321\n\x1b[0m"
         </span>);
     }
 

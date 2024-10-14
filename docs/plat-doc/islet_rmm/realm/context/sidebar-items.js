@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"fn":["get_reg","set_reg"],"struct":["Context","GICRegister","SystemRegister","TimerRegister"]};
+window.SIDEBAR_ITEMS = {"fn":["get_reg","set_reg"],"struct":["Context","GICRegister","RegOffset","SystemRegister","TimerRegister"]};

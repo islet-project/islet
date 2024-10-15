@@ -181,6 +181,20 @@ For details see https://github.com/islet-project/realm-metadata-tool
     tar xf example_app.tar
     rm example_app.tar
 
+> [!NOTE]
+> It is assumed that the recent versions of Docker are used, which by default produce OCI images.
+> To generate OCI images on older docker version firstly you need to install docker-buildx package on your system (e.g. "apt install docker-buildx").
+> Then, create a builder:
+>
+>	docker buildx create --use
+>
+> Next, run the build process:
+>
+>	docker buildx build --output type=oci,dest=example_app.tar . -f Dockerfile --tag=latest
+>
+> When signing the application using the `$ROOT/image-registry/ir-sign` tool, you need to
+> add write permission to files located in the blobs/sha256 folder.
+
 ### Compile example app #2
 
 You need ubuntu's aarch64 compiler and bear (`sudo apt install bear gcc-aarch64-linux-gnu`)

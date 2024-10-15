@@ -16,13 +16,18 @@ $ git rebase main
 $ ./scripts/make_doc.sh
 ```
 
-### 4. Commit the result docs
+### 4. Remove the line containing `docs/` in .gitignore temporarily
+```sh
+$ grep -v 'docs/' .gitignore > tmp.txt && mv tmp.txt .gitignore
+```
+
+### 5. Commit the result docs
 ```sh
 $ git add docs/*
 $ git commit -s -m "Bump to latest main branch"
 ```
 
-### 5. Deploy the docs to the remote site
+### 6. Deploy the docs to the remote site
 ```sh
 $ git push origin gh-pages --force
 ```

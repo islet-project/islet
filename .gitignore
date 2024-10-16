@@ -10,6 +10,7 @@ third-party/*
 cli/islet
 sdk/sdk-example-c
 
+code-coverage/
 docs/
 
 rusty-tags.vi*

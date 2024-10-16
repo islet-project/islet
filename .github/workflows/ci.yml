@@ -256,3 +256,28 @@ jobs:
         path: |
           unsafe-call-trace.log
           unsafe-items-list.log
+
+  code-coverage:
+    runs-on: ubuntu-22.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/cache@v3
+      with:
+        path: .git/modules/assets
+        key: ${{ runner.os }}-assets-${{ hashFiles('.gitmodules', 'assets') }}
+
+    - name: Install dependencies
+      run: |
+        ./scripts/deps/assets.sh
+        ./scripts/deps/rust.sh
+        ./scripts/deps/docker.sh
+        ./scripts/deps/cross.sh
+
+    - name: Measure code coverage
+      run: ./scripts/code-coverage.sh
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: code-coverage
+        path: code-coverage

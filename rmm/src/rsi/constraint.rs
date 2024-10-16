@@ -18,6 +18,7 @@ fn pick(cmd: Command) -> Option<Constraint> {
         rsi::PSCI_SYSTEM_RESET => Constraint::new(rsi::PSCI_SYSTEM_RESET, 2, 1),
         rsi::PSCI_FEATURES => Constraint::new(rsi::PSCI_FEATURES, 2, 1),
         rsi::SMCCC_VERSION => Constraint::new(rsi::SMCCC_VERSION, 2, 1),
+        rsi::ISLET_REALM_SEALING_KEY => Constraint::new(rsi::ISLET_REALM_SEALING_KEY, 2, 5),
         _ => return None,
     };
     Some(constraint)

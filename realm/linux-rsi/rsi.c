@@ -3,6 +3,7 @@
 #include <linux/init.h>      // included for __init and __exit macros
 #include <linux/mutex.h>
 #include <linux/slab.h>
+#include <linux/mm.h>
 
 #include <linux/fs.h>
 #include <linux/cdev.h>
@@ -19,6 +20,9 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Havner");
 MODULE_DESCRIPTION("Linux RSI playground");
 
+/* Non standard RSIs used for sealing and handling realm metadata */
+#define RSI_ISLET_REALM_METADATA 0xC7000190
+#define RSI_ISLET_REALM_SEALING_KEY 0xC7000191
 
 #define RSI_TAG   "rsi: "
 #define RSI_INFO  KERN_INFO  RSI_TAG
@@ -76,6 +80,8 @@ static void rsi_playground(void)
 {
 	unsigned long ret = 0;
 	bool realm = false;
+	struct page	*config_page;
+	struct realm_config *config;
 
 	// creative use of an RSI API, rsi_present is static, this is a workaround
 	realm = cc_platform_has(CC_ATTR_MEM_ENCRYPT);
@@ -89,10 +95,20 @@ static void rsi_playground(void)
 	       RSI_ABI_VERSION_GET_MAJOR(lower), RSI_ABI_VERSION_GET_MINOR(lower),
 	       RSI_ABI_VERSION_GET_MAJOR(higher), RSI_ABI_VERSION_GET_MINOR(higher));
 
+	config_page = alloc_page(GFP_KERNEL);
+	if (config_page == NULL) {
+		printk(RSI_ALERT "Couldn't allocate page for realm_config!\n");
+		return;
+	}
+
+	static_assert(sizeof(struct realm_config) <= PAGE_SIZE);
+	config = (struct realm_config *)page_to_virt(config_page);
+
 	// get config, just for info/test
-	ret = rsi_get_realm_config(&config);
+	ret = rsi_get_realm_config(config);
 	printk(RSI_INFO "RSI config, ret: %s, ipa_width_in_bits: %lu\n",
-	       rsi_ret_to_str(ret), config.ipa_bits);
+	       rsi_ret_to_str(ret), config->ipa_bits);
+	__free_page(config_page);
 }
 
 #if 0
@@ -269,9 +285,18 @@ static int do_attestation_continue(phys_addr_t granule, unsigned long *read)
 
 static int do_attestation(struct rsi_attestation *attest)
 {
+	struct page	*aux_page;
+	phys_addr_t	aux_phys;
+	void *aux_buf;
 	int ret, err;
-	phys_addr_t granule = virt_to_phys(rsi_page_buf);
 	unsigned long total = 0;
+
+	aux_page = alloc_page(GFP_KERNEL);
+	if (aux_page == NULL)
+		return -ENOMEM;
+
+	aux_phys = page_to_phys(aux_page);
+	aux_buf = page_to_virt(aux_page);
 
 	mutex_lock(&attestation_call);
 
@@ -282,12 +307,12 @@ static int do_attestation(struct rsi_attestation *attest)
 	if (attest->token == NULL)
 		return -EINVAL;
 
-	// fill as much into granule as possible,
+	// fill as much into auxillary buffer as possible,
 	// either till the buffer is full or we have the whole token
 	do {
 		unsigned long read = 0;
-		ret = do_attestation_continue(granule, &read);
-		err = copy_to_user(attest->token + total, rsi_page_buf, read);
+		ret = do_attestation_continue(aux_phys, &read);
+		err = copy_to_user(attest->token + total, aux_buf, read);
 		if (err != 0) {
 			printk(RSI_ALERT "ioctl: copy_to_user failed: %d\n", ret);
 			ret = err;
@@ -299,11 +324,81 @@ static int do_attestation(struct rsi_attestation *attest)
 unlock:
 	mutex_unlock(&attestation_call);
 
+	__free_page(aux_page);
+
 	if (ret == 0) {
 		attest->token_len = total;
 	}
 
 	return ret;
+}
+
+static int do_sealing_key(struct rsi_sealing_key *sealing)
+{
+	union {
+		unsigned char key[SHA256_HKDF_OUTPUT_SIZE];
+		struct {
+			uint64_t k0;
+			uint64_t k1;
+			uint64_t k2;
+			uint64_t k3;
+		} dw;
+	} slk;
+
+	struct arm_smccc_1_2_regs input = {
+		.a0 = RSI_ISLET_REALM_SEALING_KEY,
+		.a1 = sealing->flags,
+		.a2 = sealing->svn
+	};
+	struct arm_smccc_1_2_regs output = {0};
+
+	arm_smccc_1_2_smc(&input, &output);
+
+	if (output.a0 == RSI_SUCCESS) {
+		slk.dw.k0 = output.a1;
+		slk.dw.k1 = output.a2;
+		slk.dw.k2 = output.a3;
+		slk.dw.k3 = output.a4;
+
+		(void)memcpy(&sealing->realm_sealing_key, slk.key, sizeof(sealing->realm_sealing_key));
+		memzero_explicit(slk.key, sizeof(slk.key));
+		memzero_explicit(&output, sizeof(output));
+	}
+
+	return -rsi_ret_to_errno(output.a0);
+}
+
+
+static int do_realm_metadata(struct rsi_realm_metadata *metadata)
+{
+	struct page	*aux_page;
+	phys_addr_t	aux_phys;
+	void *aux_buf;
+
+	struct arm_smccc_1_2_regs input = {0}, output = {0};
+
+	aux_page = alloc_page(GFP_KERNEL);
+	if (aux_page == NULL)
+		return -ENOMEM;
+
+	aux_phys = page_to_phys(aux_page);
+
+	input.a0 = RSI_ISLET_REALM_METADATA;
+	input.a1 = aux_phys;
+
+	arm_smccc_1_2_smc(&input, &output);
+
+	printk(RSI_INFO "RSI realm metadata, ret: %s\n",
+		    rsi_ret_to_str(output.a0));
+
+	if (output.a0 == RSI_SUCCESS) {
+		aux_buf = page_to_virt(aux_page);
+		memcpy(metadata->metadata, aux_buf, sizeof(metadata->metadata));
+	}
+
+	__free_page(aux_page);
+
+	return -rsi_ret_to_errno(output.a0);
 }
 
 static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
@@ -313,6 +408,8 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	uint64_t version = 0;
 	struct rsi_measurement *measur = NULL;
 	struct rsi_attestation *attest = NULL;
+	struct rsi_sealing_key *sealing = NULL;
+	struct rsi_realm_metadata *metadata = NULL;
 
 	switch (cmd) {
 	case RSIIO_ABI_VERSION:
@@ -332,7 +429,7 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	case RSIIO_MEASUREMENT_READ:
 		measur = kmalloc(sizeof(struct rsi_measurement), GFP_KERNEL);
 		if (measur == NULL) {
-			printk("ioctl: failed to allocate");
+			printk(RSI_ALERT "ioctl: failed to allocate\n");
 			return -ENOMEM;
 		}
 
@@ -360,7 +457,7 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	case RSIIO_MEASUREMENT_EXTEND:
 		measur = kmalloc(sizeof(struct rsi_measurement), GFP_KERNEL);
 		if (measur == NULL) {
-			printk("ioctl: failed to allocate");
+			printk(RSI_ALERT "ioctl: failed to allocate\n");
 			return -ENOMEM;
 		}
 
@@ -382,7 +479,7 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	case RSIIO_ATTESTATION_TOKEN:
 		attest = kmalloc(sizeof(struct rsi_attestation), GFP_KERNEL);
 		if (attest == NULL) {
-			printk("ioctl: failed to allocate");
+			printk(RSI_ALERT "ioctl: failed to allocate\n");
 			return -ENOMEM;
 		}
 
@@ -411,8 +508,54 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 		}
 
 		break;
+	case RSIIO_SEALING_KEY:
+		sealing = kmalloc(sizeof(struct rsi_sealing_key), GFP_KERNEL);
+		if (sealing == NULL) {
+			printk(RSI_ALERT "ioctl: failed to allocate\n");
+			return -ENOMEM;
+		}
+
+		ret = copy_from_user(sealing, (struct rsi_sealing_key*)arg, sizeof(struct rsi_sealing_key));
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: copy_from_user failed: %d\n", ret);
+			goto end;
+		}
+
+		printk(RSI_INFO "ioctl: sealing_key\n");
+		ret = do_sealing_key(sealing);
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: realm_sealing_key failed: %d\n", ret);
+			goto end;
+		}
+
+		ret = copy_to_user((struct rsi_sealing_key*)arg, sealing, sizeof(struct rsi_sealing_key));
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: copy_to_user failed: %d\n", ret);
+			goto end;
+		}
+		break;
+	case RSIIO_REALM_METADATA:
+		metadata = kmalloc(sizeof(struct rsi_realm_metadata), GFP_KERNEL);
+		if (metadata == NULL) {
+			printk(RSI_ALERT "ioctl: failed to allocate\n");
+			return -ENOMEM;
+		}
+
+		printk(RSI_INFO "ioctl: sealing_key\n");
+		ret = do_realm_metadata(metadata);
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: realm_metadata failed: %d\n", ret);
+			goto end;
+		}
+
+		ret = copy_to_user((struct rsi_realm_metadata*)arg, metadata, sizeof(struct rsi_realm_metadata));
+		if (ret != 0) {
+			printk(RSI_ALERT "ioctl: copy_to_user failed: %d\n", ret);
+			goto end;
+		}
+		break;
 	default:
-		printk(RSI_ALERT "ioctl: unknown ioctl cmd\n");
+		printk(RSI_ALERT "ioctl: unknown ioctl cmd: %u\n", cmd);
 		return -EINVAL;
 	}
 
@@ -421,6 +564,8 @@ static long device_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 end:
 	kfree(attest);
 	kfree(measur);
+	kfree_sensitive(sealing);
+	kfree(metadata);
 
 	// token not taken, inform more space is needed
 	if (retry)

@@ -23,7 +23,6 @@ pub struct Granule {
     ref_count: AtomicU8,
 }
 #[cfg(any(kani, miri, test))]
-#[derive(Debug)]
 // DIFF: `gpt` ghost field is added to track GPT entry's status
 pub struct Granule {
     /// granule state

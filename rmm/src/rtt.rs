@@ -229,7 +229,7 @@ pub fn read_entry(id: usize, ipa: usize, level: usize) -> Result<[usize; 4], Err
 
 pub fn map_unprotected(rd: &Rd, ipa: usize, level: usize, host_s2tte: usize) -> Result<(), Error> {
     if rd.no_shared_region() {
-        error!("map_unprotected called under no_shared_region enabled!");
+        //error!("map_unprotected called under no_shared_region enabled!");
         //return Err(Error::RmiErrorInput);
     }
     if rd.addr_in_par(ipa) {

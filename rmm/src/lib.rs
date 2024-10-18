@@ -50,10 +50,11 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 
+use crate::config::PlatformMemoryLayout;
 use crate::exception::vectors;
 #[cfg(feature = "gst_page_table")]
 use crate::granule::create_granule_status_table as setup_gst;
-use crate::mm::translation::get_page_table;
+use crate::mm::translation::{get_page_table, init_page_table};
 use crate::monitor::Monitor;
 use crate::rmm_el3::setup_el3_ifc;
 
@@ -64,8 +65,8 @@ use core::ptr::addr_of;
 // model checking harnesses do not use this function, instead
 // they use their own entry points marked with #[kani::proof]
 // where slightly adjusted `Monitor` is used
-pub unsafe fn start(cpu_id: usize) {
-    setup_mmu_cfg();
+pub unsafe fn start(cpu_id: usize, layout: PlatformMemoryLayout) {
+    setup_mmu_cfg(layout);
     setup_el2();
     #[cfg(feature = "gst_page_table")]
     setup_gst();
@@ -134,7 +135,7 @@ unsafe fn setup_el2() {
 ///
 /// Failing to meet these requirements can result in system crashes, memory corruption, security
 /// vulnerabilities, or other undefined behavior.
-unsafe fn setup_mmu_cfg() {
+unsafe fn setup_mmu_cfg(layout: PlatformMemoryLayout) {
     core::arch::asm!("tlbi alle2is", "dsb ish", "isb",);
 
     // /* Set attributes in the right indices of the MAIR. */
@@ -159,6 +160,7 @@ unsafe fn setup_mmu_cfg() {
 
     // set the ttbl base address, this is where the memory address translation
     // table walk starts
+    init_page_table(layout);
     let ttbl_base = get_page_table();
 
     // Invalidate the local I-cache so that any instructions fetched

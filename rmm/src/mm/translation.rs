@@ -1,6 +1,6 @@
 use super::page_table::entry::Entry;
 use super::page_table::{attr, L1Table};
-use crate::config::{PAGE_SIZE, RMM_SHARED_BUFFER_START};
+use crate::config::{PlatformMemoryLayout, PAGE_SIZE, RMM_SHARED_BUFFER_START};
 use crate::mm::page::BasePageSize;
 use crate::mm::page_table::entry::PTDesc;
 
@@ -14,12 +14,6 @@ use core::ffi::c_void;
 use core::fmt;
 use lazy_static::lazy_static;
 use spin::mutex::Mutex;
-
-extern "C" {
-    static __RMM_BASE__: u64;
-    static __RW_START__: u64;
-    static __RW_END__: u64;
-}
 
 pub struct PageTable {
     page_table: &'static Mutex<Inner<'static>>,
@@ -45,10 +39,13 @@ lazy_static! {
     static ref RMM_PAGE_TABLE: Mutex<Inner<'static>> = Mutex::new(Inner::new());
 }
 
-pub fn get_page_table() -> u64 {
+pub fn init_page_table(layout: PlatformMemoryLayout) {
     let mut page_table = RMM_PAGE_TABLE.lock();
-    page_table.fill();
-    page_table.get_base_address() as u64
+    page_table.fill(layout);
+}
+
+pub fn get_page_table() -> u64 {
+    RMM_PAGE_TABLE.lock().get_base_address() as u64
 }
 
 pub fn drop_page_table() {
@@ -77,7 +74,7 @@ impl<'a> Inner<'a> {
         }
     }
 
-    fn fill(&mut self) {
+    fn fill(&mut self, layout: PlatformMemoryLayout) {
         if self.dirty {
             return;
         }
@@ -86,40 +83,38 @@ impl<'a> Inner<'a> {
         let rw_flags = bits_in_reg(PTDesc::AP, attr::permission::RW);
         let rmm_flags = bits_in_reg(PTDesc::INDX, attr::mair_idx::RMM_MEM);
         let device_flags = bits_in_reg(PTDesc::INDX, attr::mair_idx::DEVICE_MEM);
+        let base_address = layout.rmm_base;
+        let rw_start = layout.rw_start;
+        let ro_size = rw_start - base_address;
+        let rw_size = layout.rw_end - rw_start;
+        let uart_phys = layout.uart_phys;
+        let shared_start = RMM_SHARED_BUFFER_START;
+        self.set_pages(
+            VirtAddr::from(base_address),
+            PhysAddr::from(base_address),
+            ro_size as usize,
+            ro_flags | rmm_flags,
+        );
+        self.set_pages(
+            VirtAddr::from(rw_start),
+            PhysAddr::from(rw_start),
+            rw_size as usize,
+            rw_flags | rmm_flags,
+        );
+        // UART
+        self.set_pages(
+            VirtAddr::from(uart_phys),
+            PhysAddr::from(uart_phys),
+            PAGE_SIZE,
+            rw_flags | device_flags,
+        );
+        self.set_pages(
+            VirtAddr::from(shared_start),
+            PhysAddr::from(shared_start),
+            PAGE_SIZE,
+            rw_flags | rmm_flags,
+        );
 
-        unsafe {
-            let base_address = &__RMM_BASE__ as *const u64 as u64;
-            let rw_start = &__RW_START__ as *const u64 as u64;
-            let ro_size = rw_start - base_address;
-            let rw_size = &__RW_END__ as *const u64 as u64 - rw_start;
-            let uart_phys: u64 = 0x1c0c_0000;
-            let shared_start = RMM_SHARED_BUFFER_START;
-            self.set_pages(
-                VirtAddr::from(base_address),
-                PhysAddr::from(base_address),
-                ro_size as usize,
-                ro_flags | rmm_flags,
-            );
-            self.set_pages(
-                VirtAddr::from(rw_start),
-                PhysAddr::from(rw_start),
-                rw_size as usize,
-                rw_flags | rmm_flags,
-            );
-            // UART
-            self.set_pages(
-                VirtAddr::from(uart_phys),
-                PhysAddr::from(uart_phys),
-                PAGE_SIZE,
-                rw_flags | device_flags,
-            );
-            self.set_pages(
-                VirtAddr::from(shared_start),
-                PhysAddr::from(shared_start),
-                PAGE_SIZE,
-                rw_flags | rmm_flags,
-            );
-        }
         //TODO Set dirty only if pages are updated, not added
         self.dirty = true;
     }

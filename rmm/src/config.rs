@@ -15,3 +15,10 @@ pub const STACK_ALIGN: usize = 16;
 
 // TODO: Acquire this address properly.
 pub const RMM_SHARED_BUFFER_START: usize = 0xFFBFF000;
+
+pub struct PlatformMemoryLayout {
+    pub rmm_base: u64,
+    pub rw_start: u64,
+    pub rw_end: u64,
+    pub uart_phys: u64,
+}

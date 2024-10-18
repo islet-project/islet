@@ -12,7 +12,14 @@ mod entry;
 
 use aarch64_cpu::registers::*;
 use islet_rmm::allocator;
+use islet_rmm::config::PlatformMemoryLayout;
 use islet_rmm::cpu;
+
+extern "C" {
+    static __RMM_BASE__: u64;
+    static __RW_START__: u64;
+    static __RW_END__: u64;
+}
 
 #[no_mangle]
 pub unsafe fn main() -> ! {
@@ -22,7 +29,15 @@ pub unsafe fn main() -> ! {
         CurrentEL.read(CurrentEL::EL) as u8
     );
 
-    islet_rmm::start(cpu::get_cpu_id());
+    let layout = unsafe {
+        PlatformMemoryLayout {
+            rmm_base: &__RMM_BASE__ as *const u64 as u64,
+            rw_start: &__RW_START__ as *const u64 as u64,
+            rw_end: &__RW_END__ as *const u64 as u64,
+            uart_phys: 0x1c0c_0000,
+        }
+    };
+    islet_rmm::start(cpu::get_cpu_id(), layout);
 
     panic!("failed to run the mainloop");
 }

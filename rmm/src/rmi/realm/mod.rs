@@ -223,6 +223,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
             let mut rd_granule = get_granule_if!(rd_addr, GranuleState::RD)?;
             let mut rd = rd_granule.content_mut::<Rd>()?;
+
+            if !rd.at_state(State::New) {
+                error!("Metadata can only be set for new realms");
+                Err(Error::RmiErrorRealm(0))?;
+            }
+
             if rd.metadata().is_some() {
                 error!("Metadata is already set");
                 Err(Error::RmiErrorRealm(0))?;

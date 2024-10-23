@@ -222,21 +222,10 @@ For detailed instructions see: https://github.com/islet-project/image-registry/t
     cd $ROOT/islet
     ./scripts/fvp-cca --normal=linux-net --realm=linux --rmm=islet --rmm-log-level info --hes
 
-## After launching islet (on the host, enough to do once per reboot)
-
-    sudo iptables -A FORWARD --src 192.168.10.0/24 -j ACCEPT
-    sudo iptables -A FORWARD --dst 192.168.10.0/24 -j ACCEPT
-    sudo iptables -t nat -A POSTROUTING -j MASQUERADE -s 192.168.10.0/24
-    sudo ip addr del 193.168.10.15/24 dev ARM${USER}
-    sudo ip addr add 192.168.10.15/24 dev ARM${USER}
-
 ## Setup network in normal world linux (paste this in telnet 5000 console)
 
 Replace `106.10.9.180` with some DNS server that works for you.
 
-    ip link set eth0 up
-    ip addr add 192.168.10.40/24 dev eth0
-    ip route add default via 192.168.10.15
     echo 1 > /proc/sys/net/ipv4/ip_forward
     echo 'nameserver 106.10.9.180' > /etc/resolv.conf
     ping -c 3 1.1.1.1
@@ -247,7 +236,7 @@ Replace `106.10.9.180` with some DNS server that works for you.
 ### Start warden daemon
 
     export RUST_LOG=debug
-    ./warden/warden_daemon -p 1337 -v ./lkvm -u /tmp/usocket12344 -d ./warden/dnsmasq -w /tmp/workdir -t 3200 --lkvm-runner --cca-enable --dns-records /image-registry.net/192.168.10.15 &
+    ./warden/warden_daemon -p 1337 -v ./lkvm -u /tmp/usocket12344 -d ./warden/dnsmasq -w /tmp/workdir -t 3200 --lkvm-runner --cca-enable --dns-records /image-registry.net/192.168.10.1 &
 
 After seeing: `[SOME_DATE INFO warden_daemon::socket::unix_socket_server] Starting Unix Socket Server`
 

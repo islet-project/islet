@@ -28,7 +28,5 @@ sudo sysctl net.ipv4.ip_forward=1
 sudo sysctl net.ipv6.conf.default.forwarding=1
 sudo sysctl net.ipv6.conf.all.forwarding=1
 
-# 3. set SNAT to allow FVP/Realm to connect internet through the host's network interface
-sudo iptables -A FORWARD -i ${ifname} -j ACCEPT
-sudo iptables -A FORWARD -o ${ifname} -j ACCEPT
-sudo iptables -t nat -A POSTROUTING -s ${host_tap_ip}/24 -o ${ifname} -j SNAT --to ${host_ip}
+# 3. set MASQUERADE to allow FVP/Realm to connect internet through the host's network interface
+sudo iptables -t nat -A POSTROUTING -j MASQUERADE -s 192.168.10.0/24

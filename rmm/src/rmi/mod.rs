@@ -2,6 +2,7 @@ pub mod constraint;
 pub mod error;
 pub mod features;
 pub mod gpt;
+pub mod metadata;
 pub mod realm;
 pub mod rec;
 pub mod rtt;
@@ -34,13 +35,16 @@ define_interface! {
          REC_AUX_COUNT          = 0xc400_0167,
          RTT_INIT_RIPAS         = 0xc400_0168,
          RTT_SET_RIPAS          = 0xc400_0169,
+         // vendor calls
+         ISLET_REALM_SET_METADATA = 0xc700_0150,
     }
 }
 
 pub const REQ_COMPLETE: usize = 0xc400_018f;
 
-pub const GET_REALM_ATTEST_KEY: usize = 0xC400_01B2;
-pub const GET_PLAT_TOKEN: usize = 0xC400_01B3;
+pub const RMM_GET_REALM_ATTEST_KEY: usize = 0xC400_01B2;
+pub const RMM_GET_PLAT_TOKEN: usize = 0xC400_01B3;
+pub const RMM_ISLET_GET_VHUK: usize = 0xC700_01B0;
 
 pub const BOOT_COMPLETE: usize = 0xC400_01CF;
 pub const BOOT_SUCCESS: usize = 0x0;

@@ -3,17 +3,21 @@
 
 extern crate alloc;
 
-/// Submodule implementing the attestation functionality.
+// Submodule implementing the attestation functionality.
 mod attestation;
-/// Submodule containing hardware data trait.
+// Submodule containing hardware data trait.
 mod hw;
-/// Submodule implementing the measured boot functionality.
+// Submodule implementing the measured boot functionality.
 mod measured_boot;
+// Common functionality.
+pub(crate) mod utils;
 
 use core::{fmt::Debug, str::from_utf8};
 
 use alloc::{string::ToString, vec::Vec};
+use ciborium::into_writer;
 use coset::CoseSign1;
+use key_derivation::generate_seed;
 use tinyvec::ArrayVec;
 
 pub use measured_boot::{
@@ -48,6 +52,8 @@ pub mod security_lifecycle {
 pub struct IsletHES {
     measured_boot_mgr: MeasurementMgr,
     attestation_mgr: AttestationMgr,
+    lcs: u32,
+    huk: Vec<u8>,
 }
 
 #[derive(Debug)]
@@ -124,6 +130,10 @@ impl IsletHES {
             None => None,
         };
 
+        let security_lifecycle = hw_data
+            .security_lifecycle()
+            .map_err(|_| IsletHESError::InvalidArgument)?;
+
         let attestation_mgr = AttestationMgr::init(
             KeyMaterialData {
                 hash: hw_data
@@ -137,9 +147,7 @@ impl IsletHES {
                 implementation_id: hw_data
                     .implementation_id()
                     .map_err(|_| IsletHESError::InvalidArgument)?,
-                security_lifecycle: hw_data
-                    .security_lifecycle()
-                    .map_err(|_| IsletHESError::InvalidArgument)?,
+                security_lifecycle,
                 profile_definition,
                 verification_service_url,
                 platform_config: hw_data
@@ -151,6 +159,8 @@ impl IsletHES {
         Ok(IsletHES {
             measured_boot_mgr,
             attestation_mgr,
+            lcs: security_lifecycle,
+            huk: hw_data.huk().map_err(|_| IsletHESError::InvalidArgument)?.to_vec(),
         })
     }
 
@@ -240,5 +250,44 @@ impl IsletHES {
         Ok(self
             .attestation_mgr
             .get_platform_token(dak_pub_hash, &measurements)?)
+    }
+
+    /// Creates an authority based Virtual HUK (VHUK_A).
+    /// This key is bound to the authority data, the type of firmware components
+    /// and HUK. This makes it immune to firmware updates.
+    /// This function should not return an error.
+    pub fn get_authority_vhuk(
+        &mut self,
+    ) -> Result<Vec<u8>, IsletHESError> {
+        let measurements = self.fetch_current_measurements()?;
+
+        let mut authority_info = Vec::new();
+        for Measurement { metadata, .. } in measurements {
+            let MeasurementMetaData { signer_id, sw_type, .. } = metadata;
+            authority_info.extend_from_slice(signer_id.as_slice());
+            authority_info.extend_from_slice(sw_type.as_bytes());
+        }
+
+        let mut context = Vec::new();
+        context.extend(&authority_info);
+        context.extend(self.lcs.to_ne_bytes());
+
+        Ok(generate_seed(&context, &self.huk, b"VHUK_A"))
+    }
+
+    /// Creates a measurement based Virtual HUK (VHUK_M).
+    /// This key is bound to the boot measurements of firmware components and HUK.
+    /// It is bound to a specific version of CCA Platform firmware.
+    pub fn get_measurement_vhuk(
+        &mut self,
+    ) -> Result<Vec<u8>, IsletHESError> {
+        let measurements = self.fetch_current_measurements()?;
+        let encoded_measurements = utils::encode_measurements(&measurements);
+
+        let mut context = Vec::new();
+        into_writer(&encoded_measurements, &mut context).map_err(|_| IsletHESError::GenericError)?;
+        context.extend(self.lcs.to_ne_bytes());
+
+        Ok(generate_seed(&context, &self.huk, b"VHUK_M"))
     }
 }

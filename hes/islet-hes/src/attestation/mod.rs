@@ -7,7 +7,8 @@ use p384::ecdsa::{signature::Signer, Signature as P384Signature};
 use sha2::{Digest, Sha256, Sha384, Sha512};
 use tinyvec::ArrayVec;
 
-use crate::{HWHash, HWSymmetricKey, Measurement, MeasurementType};
+use crate::utils::token_tag;
+use crate::{utils, HWHash, HWSymmetricKey, Measurement, MeasurementType};
 
 /// Supported ecc family types.
 #[derive(Copy, Clone, Debug)]
@@ -157,27 +158,6 @@ pub fn calculate_public_key_hash(sec1_public_key: Vec<u8>, hash_algo: HashAlgo) 
     }
 }
 
-/// Keeps all platform token tag values based on RSS
-mod token_tag {
-    /* Claims */
-    pub const CCA_PLAT_CHALLENGE: u32 = 10;
-    pub const CCA_PLAT_INSTANCE_ID: u32 = 256;
-    pub const CCA_PLAT_PROFILE: u32 = 265;
-    pub const CCA_PLAT_SECURITY_LIFECYCLE: u32 = 2395;
-    pub const CCA_PLAT_IMPLEMENTATION_ID: u32 = 2396;
-    pub const CCA_PLAT_SW_COMPONENTS: u32 = 2399;
-    pub const CCA_PLAT_VERIFICATION_SERVICE: u32 = 2400;
-    pub const CCA_PLAT_CONFIGURATION: u32 = 2401;
-    pub const CCA_PLAT_HASH_ALGO_DESC: u32 = 2402;
-
-    /* Software components */
-    pub const CCA_SW_COMP_TITLE: u32 = 1;
-    pub const CCA_SW_COMP_MEASUREMENT_VALUE: u32 = 2;
-    pub const CCA_SW_COMP_VERSION: u32 = 4;
-    pub const CCA_SW_COMP_SIGNER_ID: u32 = 5;
-    pub const CCA_SW_COMP_HASH_ALGORITHM: u32 = 6;
-}
-
 impl AttestationMgr {
     const CPAK_SEED_LABEL: &'static [u8] = b"BL1_CPAK_SEED_DERIVATION";
     const DAK_SEED_LABEL: &'static [u8] = b"BL1_DAK_SEED_DERIVATION";
@@ -246,43 +226,6 @@ impl AttestationMgr {
         self.dak = None;
     }
 
-    fn encode_measurement(measurement: &Measurement) -> Value {
-        let mut map: Vec<(Value, Value)> = Vec::with_capacity(5);
-
-        map.push((
-            Value::Integer(token_tag::CCA_SW_COMP_TITLE.into()),
-            Value::Text(measurement.metadata.sw_type.clone()),
-        ));
-        map.push((
-            Value::Integer(token_tag::CCA_SW_COMP_HASH_ALGORITHM.into()),
-            Value::Text(measurement.metadata.algorithm.into()),
-        ));
-        map.push((
-            Value::Integer(token_tag::CCA_SW_COMP_MEASUREMENT_VALUE.into()),
-            Value::Bytes(measurement.value.to_vec()),
-        ));
-        map.push((
-            Value::Integer(token_tag::CCA_SW_COMP_VERSION.into()),
-            Value::Text(measurement.metadata.sw_version.clone()),
-        ));
-        map.push((
-            Value::Integer(token_tag::CCA_SW_COMP_SIGNER_ID.into()),
-            Value::Bytes(measurement.metadata.signer_id.to_vec()),
-        ));
-
-        Value::Map(map)
-    }
-
-    fn encode_measurements(measurements: &[Measurement]) -> Value {
-        let mut array: Vec<Value> = Vec::with_capacity(measurements.len());
-
-        for measurement in measurements {
-            array.push(Self::encode_measurement(measurement));
-        }
-
-        Value::Array(array)
-    }
-
     /// Generates DAK with [`ECCFamily`] and uses `measurements` ([`Measurement`])
     /// as salt in the process.
     /// Returns bytes of a scalar primitive, which can be used to recreate DAK Private Key.
@@ -295,13 +238,18 @@ impl AttestationMgr {
         hash_algo: HashAlgo,
         measurements: &[Measurement],
     ) -> Result<Vec<u8>, AttestationError> {
+        let mut context = Vec::new();
+        context.extend(&self.derivation_material.hash);
+        context.extend(&self.claims.security_lifecycle.to_ne_bytes());
+        context.extend(&0u32.to_ne_bytes());
+
         let seed = generate_seed(
-            &self.derivation_material.hash,
+            &context,
             &self.derivation_material.guk,
             &Self::DAK_SEED_LABEL,
         );
 
-        let salt = Self::encode_measurements(measurements);
+        let salt = utils::encode_measurements(measurements);
         let mut salt_bytes: Vec<u8> = Vec::new();
         ser::into_writer(&salt, &mut salt_bytes).map_err(|_| AttestationError::GenericError)?;
 
@@ -352,7 +300,7 @@ impl AttestationMgr {
         ));
         map.push((
             Value::Integer(token_tag::CCA_PLAT_SW_COMPONENTS.into()),
-            Self::encode_measurements(measurements),
+            utils::encode_measurements(measurements),
         ));
         if let Some(verification_service_url) = &self.claims.verification_service_url {
             map.push((

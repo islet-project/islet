@@ -52,7 +52,9 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             return Err(Error::RmiErrorInput);
         }
 
+        rmm.page_table.map(params_ptr, false);
         let params = host::copy_from::<Params>(params_ptr).ok_or(Error::RmiErrorInput)?;
+        rmm.page_table.unmap(params_ptr);
         params.verify_compliance(rec, rd, params_ptr)?;
 
         let rec_index = MPIDR::from(params.mpidr).index();
@@ -172,7 +174,9 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         let mut rec = rec_granule.content_mut::<Rec<'_>>()?;
 
         // read Run
+        rmm.page_table.map(run_pa, false);
         let mut run = host::copy_from::<Run>(run_pa).ok_or(Error::RmiErrorInput)?;
+        rmm.page_table.unmap(run_pa);
         run.verify_compliance()?;
         trace!("{:?}", run);
 
@@ -279,7 +283,10 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         crate::realm::timer::send_state_to_host(&rec, &mut run)?;
 
         // NOTICE: do not modify `run` after copy_to_ptr(). it won't have any effect.
-        host::copy_to_ptr::<Run>(&run, run_pa).ok_or(Error::RmiErrorInput)
+        rmm.page_table.map(run_pa, false);
+        let ret = host::copy_to_ptr::<Run>(&run, run_pa).ok_or(Error::RmiErrorInput);
+        rmm.page_table.unmap(run_pa);
+        ret
     });
 
     #[cfg(not(kani))]

@@ -3,7 +3,6 @@ use crate::granule::validate_addr;
 use crate::granule::{is_not_in_realm, GRANULE_SIZE};
 #[cfg(not(feature = "gst_page_table"))]
 use crate::granule::{GranuleState, GRANULE_SIZE};
-use crate::mm::translation::PageTable;
 #[cfg(not(feature = "gst_page_table"))]
 use crate::{get_granule, get_granule_if};
 
@@ -20,10 +19,7 @@ pub fn copy_from<T: SafetyChecked + SafetyAssured + Copy>(addr: usize) -> Option
         return None;
     }
 
-    PageTable::get_ref().map(addr, false);
     let ret = assume_safe::<T>(addr).map(|safety_assumed| *safety_assumed);
-    PageTable::get_ref().unmap(addr);
-
     match ret {
         Ok(obj) => Some(obj),
         Err(err) => {
@@ -43,10 +39,7 @@ pub fn copy_to_obj<T: SafetyChecked + SafetyAssured + Copy>(src: usize, dst: &mu
         return None;
     }
 
-    PageTable::get_ref().map(src, false);
     let ret = assume_safe::<T>(src).map(|safety_assumed| *dst = *safety_assumed);
-    PageTable::get_ref().unmap(src);
-
     match ret {
         Ok(_) => Some(()),
         Err(err) => {
@@ -66,10 +59,7 @@ pub fn copy_to_ptr<T: SafetyChecked + SafetyAssured + Copy>(src: &T, dst: usize)
         return None;
     }
 
-    PageTable::get_ref().map(dst, false);
     let ret = assume_safe::<T>(dst).map(|mut safety_assumed| *safety_assumed = *src);
-    PageTable::get_ref().unmap(dst);
-
     match ret {
         Ok(_) => Some(()),
         Err(err) => {

@@ -36,7 +36,7 @@ fn is_valid_rtt_cmd(rd: &Rd, ipa: usize, level: usize) -> bool {
 }
 
 pub fn set_event_handler(rmi: &mut RmiHandle) {
-    listen!(rmi, rmi::RTT_CREATE, |arg, _ret, _rmm| {
+    listen!(rmi, rmi::RTT_CREATE, |arg, _ret, rmm| {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rtt_addr = arg[1];
         let rd = rd_granule.content::<Rd>()?;
@@ -53,6 +53,10 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             return Err(Error::RmiErrorInput);
         }
         let mut rtt_granule = get_granule_if!(rtt_addr, GranuleState::Delegated)?;
+
+        // The below is added to avoid a fault regarding the RTT entry
+        // during the `create_pgtbl_at()` in `rtt::create()`.
+        rmm.page_table.map(rtt_addr, true);
         rtt::create(&rd, rtt_addr, ipa, level)?;
         set_granule(&mut rtt_granule, GranuleState::RTT)?;
         Ok(())
@@ -193,7 +197,9 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         rmm.page_table.map(target_pa, true);
 
         // copy src to target
+        rmm.page_table.map(src_pa, false);
         host::copy_to_obj::<DataPage>(src_pa, &mut target_page).ok_or(Error::RmiErrorInput)?;
+        rmm.page_table.unmap(src_pa);
 
         // map ipa to taget_pa in S2 table
         rtt::data_create(&rd, ipa, target_pa, false)?;

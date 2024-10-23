@@ -7,7 +7,6 @@ use crate::granule::{set_granule, GranuleState};
 use crate::host;
 use crate::listen;
 use crate::measurement::{HashContext, MEASUREMENTS_SLOT_RIM};
-use crate::mm::translation::PageTable;
 use crate::realm::mm::stage2_translation::Stage2Translation;
 use crate::realm::mm::IPATranslation;
 use crate::realm::rd::State;
@@ -68,7 +67,9 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.map(rd, true);
 
+        rmm.page_table.map(params_ptr, false);
         let params = host::copy_from::<Params>(params_ptr).ok_or(Error::RmiErrorInput)?;
+        rmm.page_table.unmap(params_ptr);
         params.verify_compliance(rd)?;
 
         for i in 0..params.rtt_num_start as usize {
@@ -76,7 +77,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             let _ = get_granule_if!(rtt, GranuleState::Delegated)?;
             // The below is added to avoid a fault regarding the RTT entry
             // during the below stage 2 page table creation
-            PageTable::get_ref().map(rtt, true);
+            rmm.page_table.map(rtt, true);
         }
 
         // revisit rmi.create_realm() (is it necessary?)

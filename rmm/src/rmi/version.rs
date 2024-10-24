@@ -1,4 +1,4 @@
-use crate::event::Mainloop;
+use crate::event::RmiHandle;
 use crate::listen;
 use crate::rmi::{self, error::Error};
 
@@ -15,8 +15,8 @@ fn encode_version() -> usize {
     (rmi::ABI_MAJOR_VERSION << 16) | rmi::ABI_MINOR_VERSION
 }
 
-pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::VERSION, |arg, ret, _| {
+pub fn set_event_handler(rmi: &mut RmiHandle) {
+    listen!(rmi, rmi::VERSION, |arg, ret, _| {
         let req = arg[0];
 
         let lower = encode_version();

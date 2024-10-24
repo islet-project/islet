@@ -341,6 +341,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // target_phys: location where realm data is created.
         let target_pa = arg[0];
         let ipa = arg[2];
+        let level = arg[3];
         if target_pa == arg[1] {
             return Err(Error::RmiErrorInput);
         }
@@ -353,6 +354,11 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         // rd granule lock
         let rd_granule = get_granule_if!(arg[1], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>();
+
+        if !is_valid_rtt_cmd(ipa, level) {
+            error!("ipa {:x} with level {} is not valid", ipa, level);
+            return Err(Error::RmiErrorInput);
+        }
 
         let shrm_token = rd.shrm_token(ShrmType::RW as usize)?;
         if shrm_token.is_none() {
@@ -370,7 +376,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         rmm.page_table.map(target_pa, true);
 
         // 1. map ipa to target_pa in S2 table
-        crate::rtt::shared_data_create(rd, ipa, target_pa)?;
+        crate::rtt::shared_data_create(rd, ipa, level, target_pa)?;
 
         // TODO: 2. perform measure
         // L0czek - not needed here see: tf-rmm/runtime/rmi/rtt.c:883

@@ -8,8 +8,8 @@ use crate::realm::mm::stage2_tte::{desc_type, invalid_hipas, invalid_ripas};
 use crate::realm::mm::stage2_tte::{RttPage, INVALID_UNPROTECTED, S2TTE};
 use crate::rmi::error::Error;
 use crate::rmi::realm::Rd;
-use crate::rmi::rtt::RTT_PAGE_LEVEL;
 use crate::rmi::rtt::S2TTE_STRIDE;
+use crate::rmi::rtt::{RTT_MIN_BLOCK_LEVEL, RTT_PAGE_LEVEL};
 use crate::rmi::rtt_entry_state;
 use crate::{get_granule, get_granule_if};
 use armv9a::bits_in_reg;
@@ -349,7 +349,14 @@ pub fn make_shared_ripas(rd: &Rd, ipa: usize, level: usize) -> Result<(), Error>
         */
         invalid_ripas::EMPTY => {
             warn!("ripas empty. s2tte {:x}", new_s2tte);
-            flags |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
+            if level == RTT_PAGE_LEVEL {
+                flags |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
+            } else if level == RTT_MIN_BLOCK_LEVEL {
+                flags |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_BLOCK);
+            } else {
+                error!("invalid level {}", level);
+                return Err(Error::RmiErrorInput);
+            }
             flags |= bits_in_reg(S2TTE::MEMATTR, attribute::NORMAL_FWB);
             flags |= bits_in_reg(S2TTE::AP, permission::RW);
             flags |= bits_in_reg(S2TTE::SH, shareable::INNER);
@@ -438,16 +445,22 @@ pub fn unmap_shared_realm_memory(rd: &Rd, ipa: usize, target_pa: usize) -> Resul
     Ok(())
 }
 
-pub fn shared_data_create(rd: &Rd, ipa: usize, target_pa: usize) -> Result<(), Error> {
-    let level = RTT_PAGE_LEVEL;
+pub fn shared_data_create(
+    rd: &Rd,
+    ipa: usize,
+    level: usize,
+    target_pa: usize,
+) -> Result<(), Error> {
     let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
 
     if level != last_level {
+        error!("level {} != last_level {}", level, last_level);
         return Err(Error::RmiErrorRtt(last_level));
     }
 
     if !s2tte.is_unassigned() {
-        return Err(Error::RmiErrorRtt(RTT_PAGE_LEVEL));
+        error!("s2tte is already assigned {:x}", s2tte.get());
+        return Err(Error::RmiErrorRtt(level));
     }
 
     let mut new_s2tte = target_pa as u64;
@@ -464,7 +477,14 @@ pub fn shared_data_create(rd: &Rd, ipa: usize, target_pa: usize) -> Result<(), E
 
     if ripas == invalid_ripas::SHARED {
         // S2TTE_PAGE  : S2TTE_ATTRS | S2TTE_L3_PAGE
-        new_s2tte |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
+        if level == RTT_PAGE_LEVEL {
+            new_s2tte |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
+        } else if level == RTT_MIN_BLOCK_LEVEL {
+            new_s2tte |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_BLOCK);
+        } else {
+            error!("invalid level {}", level);
+            return Err(Error::RmiErrorInput);
+        }
         // S2TTE_ATTRS : S2TTE_MEMATTR_FWB_NORMAL_WB | S2TTE_AP_RW | S2TTE_SH_IS | S2TTE_AF
         new_s2tte |= bits_in_reg(S2TTE::MEMATTR, attribute::NORMAL_FWB);
         new_s2tte |= bits_in_reg(S2TTE::AP, permission::RW);

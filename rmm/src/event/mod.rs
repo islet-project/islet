@@ -1,10 +1,12 @@
 pub mod mainloop;
 pub mod realmexit;
+pub mod rmihandle;
 pub mod rsihandle;
 
 pub use crate::rmi::error::Error;
 pub use crate::{rmi, rsi};
 pub use mainloop::Mainloop;
+pub use rmihandle::RmiHandle;
 pub use rsihandle::RsiHandle;
 
 extern crate alloc;

@@ -2,7 +2,7 @@ use super::mpidr::MPIDR;
 use super::params::Params;
 use super::run::{Run, REC_ENTRY_FLAG_TRAP_WFE, REC_ENTRY_FLAG_TRAP_WFI};
 use super::vtcr::{activate_stage2_mmu, prepare_vtcr};
-use crate::event::Mainloop;
+use crate::event::RmiHandle;
 #[cfg(feature = "gst_page_table")]
 use crate::granule::{set_granule, set_granule_with_parent, GranuleState};
 #[cfg(not(feature = "gst_page_table"))]
@@ -40,9 +40,9 @@ fn prepare_args(rd: &mut Rd, mpidr: u64) -> Result<(usize, u64, u64), Error> {
     Ok((vcpuid, vttbr, vmpidr))
 }
 
-pub fn set_event_handler(mainloop: &mut Mainloop) {
+pub fn set_event_handler(rmi: &mut RmiHandle) {
     #[cfg(not(kani))]
-    listen!(mainloop, rmi::REC_CREATE, |arg, ret, rmm| {
+    listen!(rmi, rmi::REC_CREATE, |arg, ret, rmm| {
         let rd = arg[0];
         let rec = arg[1];
         let params_ptr = arg[2];
@@ -110,7 +110,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     #[cfg(any(not(kani), feature = "mc_rmi_rec_destroy"))]
-    listen!(mainloop, rmi::REC_DESTROY, |arg, _ret, rmm| {
+    listen!(rmi, rmi::REC_DESTROY, |arg, _ret, rmm| {
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
 
         let rec = rec_granule.content::<Rec<'_>>()?;
@@ -162,7 +162,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     #[cfg(not(kani))]
-    listen!(mainloop, rmi::REC_ENTER, |arg, ret, rmm| {
+    listen!(rmi, rmi::REC_ENTER, |arg, ret, rmm| {
         let run_pa = arg[1];
 
         // grab the lock for Rec
@@ -281,7 +281,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     #[cfg(not(kani))]
-    listen!(mainloop, rmi::PSCI_COMPLETE, |arg, _ret, _rmm| {
+    listen!(rmi, rmi::PSCI_COMPLETE, |arg, _ret, _rmm| {
         let caller_pa = arg[0];
         let target_pa = arg[1];
 

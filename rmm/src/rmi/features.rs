@@ -1,4 +1,4 @@
-use crate::event::Mainloop;
+use crate::event::RmiHandle;
 use crate::listen;
 use crate::rmi;
 
@@ -41,8 +41,8 @@ fn mask(shift: usize, width: usize) -> usize {
     (!0usize >> (64usize - width)) << shift
 }
 
-pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::FEATURES, |arg, ret, _| {
+pub fn set_event_handler(rmi: &mut RmiHandle) {
+    listen!(rmi, rmi::FEATURES, |arg, ret, _| {
         if arg[0] != FEATURE_REGISTER_0_INDEX {
             ret[1] = 0;
             return Ok(());

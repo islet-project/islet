@@ -1,6 +1,6 @@
 extern crate alloc;
 
-use crate::event::Mainloop;
+use crate::event::RmiHandle;
 use crate::granule::{
     is_granule_aligned, is_not_in_realm, set_granule, GranuleState, GRANULE_SIZE,
 };
@@ -35,8 +35,8 @@ fn is_valid_rtt_cmd(rd: &Rd, ipa: usize, level: usize) -> bool {
     true
 }
 
-pub fn set_event_handler(mainloop: &mut Mainloop) {
-    listen!(mainloop, rmi::RTT_CREATE, |arg, _ret, _rmm| {
+pub fn set_event_handler(rmi: &mut RmiHandle) {
+    listen!(rmi, rmi::RTT_CREATE, |arg, _ret, _rmm| {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rtt_addr = arg[1];
         let rd = rd_granule.content::<Rd>()?;
@@ -58,7 +58,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::RTT_DESTROY, |arg, ret, _rmm| {
+    listen!(rmi, rmi::RTT_DESTROY, |arg, ret, _rmm| {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>()?;
         let ipa = arg[1];
@@ -78,7 +78,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::RTT_INIT_RIPAS, |arg, ret, _rmm| {
+    listen!(rmi, rmi::RTT_INIT_RIPAS, |arg, ret, _rmm| {
         let mut rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let mut rd = rd_granule.content_mut::<Rd>()?;
         let base = arg[1];
@@ -106,7 +106,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::RTT_SET_RIPAS, |arg, ret, _rmm| {
+    listen!(rmi, rmi::RTT_SET_RIPAS, |arg, ret, _rmm| {
         let base = arg[2];
         let top = arg[3];
 
@@ -142,7 +142,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::RTT_READ_ENTRY, |arg, ret, _rmm| {
+    listen!(rmi, rmi::RTT_READ_ENTRY, |arg, ret, _rmm| {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>()?;
         let ipa = arg[1];
@@ -157,7 +157,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::DATA_CREATE, |arg, _ret, rmm| {
+    listen!(rmi, rmi::DATA_CREATE, |arg, _ret, rmm| {
         // target_pa: location where realm data is created.
         let rd = arg[0];
         let target_pa = arg[1];
@@ -206,7 +206,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::DATA_CREATE_UNKNOWN, |arg, _ret, rmm| {
+    listen!(rmi, rmi::DATA_CREATE_UNKNOWN, |arg, _ret, rmm| {
         // rd granule lock
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>()?;
@@ -236,7 +236,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    listen!(mainloop, rmi::DATA_DESTROY, |arg, ret, _rmm| {
+    listen!(rmi, rmi::DATA_DESTROY, |arg, ret, _rmm| {
         // rd granule lock
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>()?;
@@ -266,7 +266,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     // Map an unprotected IPA to a non-secure PA.
-    listen!(mainloop, rmi::RTT_MAP_UNPROTECTED, |arg, _ret, _rmm| {
+    listen!(rmi, rmi::RTT_MAP_UNPROTECTED, |arg, _ret, _rmm| {
         let ipa = arg[1];
         let level = arg[2];
         let host_s2tte = arg[3];
@@ -287,7 +287,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     // Unmap a non-secure PA at an unprotected IPA
-    listen!(mainloop, rmi::RTT_UNMAP_UNPROTECTED, |arg, ret, _rmm| {
+    listen!(rmi, rmi::RTT_UNMAP_UNPROTECTED, |arg, ret, _rmm| {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>()?;
 
@@ -310,7 +310,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     // Destroy a homogeneous RTT and map as a bigger block at its parent RTT
-    listen!(mainloop, rmi::RTT_FOLD, |arg, ret, _rmm| {
+    listen!(rmi, rmi::RTT_FOLD, |arg, ret, _rmm| {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>()?;
         let ipa = arg[1];

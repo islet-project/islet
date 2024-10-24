@@ -1,5 +1,5 @@
 use crate::asm::{smc, SMC_SUCCESS};
-use crate::event::Mainloop;
+use crate::event::RmiHandle;
 use crate::granule::{set_granule, GranuleState};
 use crate::listen;
 use crate::rmi;
@@ -18,9 +18,9 @@ extern crate alloc;
 pub const MARK_REALM: usize = 0xc400_01b0;
 pub const MARK_NONSECURE: usize = 0xc400_01b1;
 
-pub fn set_event_handler(mainloop: &mut Mainloop) {
+pub fn set_event_handler(rmi: &mut RmiHandle) {
     #[cfg(any(not(kani), feature = "mc_rmi_granule_delegate"))]
-    listen!(mainloop, rmi::GRANULE_DELEGATE, |arg, _, rmm| {
+    listen!(rmi, rmi::GRANULE_DELEGATE, |arg, _, rmm| {
         let addr = arg[0];
 
         #[cfg(feature = "gst_page_table")]
@@ -58,7 +58,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     #[cfg(any(not(kani), feature = "mc_rmi_granule_undelegate"))]
-    listen!(mainloop, rmi::GRANULE_UNDELEGATE, |arg, _, rmm| {
+    listen!(rmi, rmi::GRANULE_UNDELEGATE, |arg, _, rmm| {
         let addr = arg[0];
         let mut granule = get_granule_if!(addr, GranuleState::Delegated)?;
 

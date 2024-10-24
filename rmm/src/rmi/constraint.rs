@@ -1,4 +1,4 @@
-use crate::event::Command;
+use crate::event::{Command, Context};
 use crate::rmi;
 
 #[allow(dead_code)]
@@ -56,15 +56,13 @@ fn pick(cmd: Command) -> Option<Constraint> {
     Some(constraint)
 }
 
-pub fn validate<T, G>(cmd: Command, ok_func: T, else_func: G)
-where
-    T: Fn(usize, usize),
-    G: FnOnce(), // TODO: error command?
-{
+pub fn validate(cmd: Command, arg: &[usize]) -> Context {
     if let Some(c) = pick(cmd) {
-        // TODO: command-specific validation routine if needed
-        ok_func(c.arg_num, c.ret_num);
+        let mut ctx = Context::new(cmd);
+        ctx.init_arg(&arg[..c.arg_num]);
+        ctx.resize_ret(c.ret_num);
+        ctx
     } else {
-        else_func();
+        Context::new(rmi::NOT_SUPPORTED_YET)
     }
 }

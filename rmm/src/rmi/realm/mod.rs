@@ -1,7 +1,7 @@
 pub(crate) mod params;
 pub(crate) use self::params::Params;
 use super::error::Error;
-use crate::event::Mainloop;
+use crate::event::RmiHandle;
 use crate::granule::GRANULE_SIZE;
 use crate::granule::{set_granule, GranuleState};
 use crate::host;
@@ -22,9 +22,9 @@ use spin::mutex::Mutex;
 
 extern crate alloc;
 
-pub fn set_event_handler(mainloop: &mut Mainloop) {
+pub fn set_event_handler(rmi: &mut RmiHandle) {
     #[cfg(any(not(kani), feature = "mc_rmi_realm_activate"))]
-    listen!(mainloop, rmi::REALM_ACTIVATE, |arg, _, _| {
+    listen!(rmi, rmi::REALM_ACTIVATE, |arg, _, _| {
         let rd = arg[0];
         let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
         let mut rd = rd_granule.content_mut::<Rd>()?;
@@ -54,7 +54,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     #[cfg(not(kani))]
-    listen!(mainloop, rmi::REALM_CREATE, |arg, _, rmm| {
+    listen!(rmi, rmi::REALM_CREATE, |arg, _, rmm| {
         let rd = arg[0];
         let params_ptr = arg[1];
 
@@ -125,14 +125,14 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     });
 
     #[cfg(any(not(kani), feature = "mc_rmi_rec_aux_count"))]
-    listen!(mainloop, rmi::REC_AUX_COUNT, |arg, ret, _| {
+    listen!(rmi, rmi::REC_AUX_COUNT, |arg, ret, _| {
         let _ = get_granule_if!(arg[0], GranuleState::RD)?;
         ret[1] = rmi::MAX_REC_AUX_GRANULES;
         Ok(())
     });
 
     #[cfg(any(not(kani), feature = "mc_rmi_realm_destroy"))]
-    listen!(mainloop, rmi::REALM_DESTROY, |arg, _ret, rmm| {
+    listen!(rmi, rmi::REALM_DESTROY, |arg, _ret, rmm| {
         // get the lock for Rd
         let mut rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         if rd_granule.num_children() > 0 {
@@ -206,51 +206,47 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
     // x1: rd - a physicall address of the RD for the target Realm
     // x2: mdg - a physicall address of the delegated granule used for storage of the metadata
     // x3: meta_ptr - a physicall address of the host provided (NS) metadata granule
-    listen!(
-        mainloop,
-        rmi::ISLET_REALM_SET_METADATA,
-        |arg, _ret, _rmm| {
-            let rd_addr = arg[0];
-            let mdg_addr = arg[1];
-            let meta_ptr = arg[2];
+    listen!(rmi, rmi::ISLET_REALM_SET_METADATA, |arg, _ret, _rmm| {
+        let rd_addr = arg[0];
+        let mdg_addr = arg[1];
+        let meta_ptr = arg[2];
 
-            let realm_metadata = Box::new(IsletRealmMetadata::from_ns(meta_ptr)?);
-            realm_metadata.dump();
+        let realm_metadata = Box::new(IsletRealmMetadata::from_ns(meta_ptr)?);
+        realm_metadata.dump();
 
-            if let Err(e) = realm_metadata.verify_signature() {
-                error!("Verification of realm metadata signature has failed");
-                Err(e)?;
-            }
-
-            if let Err(e) = realm_metadata.validate() {
-                error!("The content of realm metadata is not valid");
-                Err(e)?;
-            }
-
-            let mut rd_granule = get_granule_if!(rd_addr, GranuleState::RD)?;
-            let mut rd = rd_granule.content_mut::<Rd>()?;
-
-            if !rd.at_state(State::New) {
-                error!("Metadata can only be set for new realms");
-                Err(Error::RmiErrorRealm(0))?;
-            }
-
-            if rd.metadata().is_some() {
-                error!("Metadata is already set");
-                Err(Error::RmiErrorRealm(0))?;
-            }
-
-            let mut g_metadata = get_granule_if!(mdg_addr, GranuleState::Delegated)?;
-            let mut meta = g_metadata.content_mut::<IsletRealmMetadata>()?;
-            *meta = *realm_metadata.clone();
-
-            set_granule(&mut g_metadata, GranuleState::Metadata)?;
-
-            rd.set_metadata(Some(mdg_addr));
-
-            Ok(())
+        if let Err(e) = realm_metadata.verify_signature() {
+            error!("Verification of realm metadata signature has failed");
+            Err(e)?;
         }
-    );
+
+        if let Err(e) = realm_metadata.validate() {
+            error!("The content of realm metadata is not valid");
+            Err(e)?;
+        }
+
+        let mut rd_granule = get_granule_if!(rd_addr, GranuleState::RD)?;
+        let mut rd = rd_granule.content_mut::<Rd>()?;
+
+        if !rd.at_state(State::New) {
+            error!("Metadata can only be set for new realms");
+            Err(Error::RmiErrorRealm(0))?;
+        }
+
+        if rd.metadata().is_some() {
+            error!("Metadata is already set");
+            Err(Error::RmiErrorRealm(0))?;
+        }
+
+        let mut g_metadata = get_granule_if!(mdg_addr, GranuleState::Delegated)?;
+        let mut meta = g_metadata.content_mut::<IsletRealmMetadata>()?;
+        *meta = *realm_metadata.clone();
+
+        set_granule(&mut g_metadata, GranuleState::Metadata)?;
+
+        rd.set_metadata(Some(mdg_addr));
+
+        Ok(())
+    });
 }
 
 fn create_realm(vmid: usize) -> Result<(), Error> {

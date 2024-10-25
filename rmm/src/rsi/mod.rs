@@ -363,6 +363,17 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
     listen!(rsi, IPA_STATE_GET, get_ripas_state);
     listen!(rsi, IPA_STATE_SET, set_ripas_state);
 
+    // ISLET_REALM_SEALING_KEY is a vendor specific RSI for derivation and retrieval of Sealing Keys
+    // Input registers:
+    // x0: function id (0xC7000191)
+    // x1: flags - a bit field, where:
+    //    bit 0: if not set, VHUK_A i used (default), otherwise VHUK_M is used as an input key material
+    //    bit 1: if set, RIM is used as a key metarial
+    //    bit 2: if set, the realm_id is used as a key material
+    //    bit 3: if set, provided SVN is used as a key material
+    // x2: svn - Security Version Number
+    // The resulting key is returned 256 bit long key is returned
+    // in x1, x2, x3, x4 registers
     listen!(rsi, ISLET_REALM_SEALING_KEY, |_arg, ret, _rmm, rec, _| {
         let flags = get_reg(rec, 1)?;
         let svn = get_reg(rec, 2)?;

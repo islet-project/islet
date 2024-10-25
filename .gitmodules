@@ -12,7 +12,7 @@
 [submodule "third-party/realm-linux"]
 	path = third-party/realm-linux
 	url = https://github.com/islet-project/assets
-	branch = devel/p.sawicki2/eac5-3rd-realm-linux-revert-rsi-workaround
+	branch = eac5/3rd-realm-linux
 [submodule "third-party/tf-a-tests"]
 	path = third-party/tf-a-tests
 	url = https://git.trustedfirmware.org/TF-A/tf-a-tests.git
@@ -32,7 +32,7 @@
 [submodule "third-party/kvmtool"]
 	path = third-party/kvmtool
 	url = https://github.com/islet-project/assets
-	branch = eac5/3rd-kvmtool-realm-metadata
+	branch = eac5/3rd-kvmtool
 [submodule "third-party/kvm-unit-tests"]
 	path = third-party/kvm-unit-tests
 	url = https://git.gitlab.arm.com/linux-arm/kvm-unit-tests-cca.git
@@ -61,7 +61,7 @@
 [submodule "third-party/tf-a-rss"]
 	path = third-party/tf-a-rss
 	url = https://github.com/islet-project/arm-trusted-firmware
-	branch = eac5-rss-realm-metadata
+	branch = eac5-rss
 [submodule "third-party/ciborium"]
 	path = third-party/ciborium
 	url = https://github.com/islet-project/ciborium.git

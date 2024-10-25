@@ -47,7 +47,7 @@
 [submodule "third-party/kvmtool-rim-measurer"]
 	path = third-party/kvmtool-rim-measurer
 	url = https://github.com/islet-project/assets
-	branch = 3rd-kvmtool-rim-measurer
+	branch = eac5/3rd-kvmtool-rim-measurer
 [submodule "third-party/certifier"]
 	path = third-party/certifier
 	url = https://github.com/ccc-certifier-framework/certifier-framework-for-confidential-computing
@@ -70,3 +70,6 @@
 	path = third-party/coset
 	url = https://github.com/islet-project/coset.git
 	branch = 3rd-coset
+[submodule "third-party/dtc"]
+	path = third-party/dtc
+	url = https://git.kernel.org/pub/scm/utils/dtc/dtc.git

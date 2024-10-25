@@ -52,26 +52,19 @@ referenced here as `$ROOT`.
 To obtain the RIM we can use the lkvm-rim-measurer tool.
 Firstly, clone the lkvm-rim-measurer tool repository.
 
-    cd $ROOT
-    git clone --single-branch -b eac5/3rd-kvmtool-realm-metadata-rim-measurer git@github.com:islet-project/assets.git  rim-measurer
-
-Clone the libfdt library
-
-    git clone git://git.kernel.org/pub/scm/utils/dtc/dtc.git
-
 Build the libfdt library
 
-    cd $ROOT/dtc
+    cd $ROOT/islet/third-party/dtc
     make
 
 Build the lkvm-rim-measurer tool
 
-    cd $ROOT/rim-measurer
+    cd $ROOT/islet/third-party/kvmtool-rim-measurer/
     ./build-rim-measurer.sh
 
-This should compile the lkvm-rim-measurer executable (located in $ROOT/rim-measurer directory).
+This should compile the lkvm-rim-measurer executable (located in $ROOT/islet/third-party/kvmtool-rim-measurer/ directory).
 
-Copy the linux and initramfs images to the rim-measurer directory:
+Copy the linux and initramfs images to the rkvmtool-rim-measurer directory:
 
 	cp $ROOT/realm-manager/realm/out/Image .
 	cp $ROOT/realm-manager/realm/out/initramfs.cpio.gz .

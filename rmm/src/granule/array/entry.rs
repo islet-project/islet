@@ -2,6 +2,7 @@ use crate::granule::array::GRANULE_STATUS_TABLE;
 use crate::rmi::error::Error;
 
 use super::{GranuleState, GRANULE_SIZE};
+use core::sync::atomic::{AtomicU8, Ordering};
 use safe_abstraction::raw_ptr;
 use spinning_top::{Spinlock, SpinlockGuard};
 use vmsa::guard::Content;
@@ -17,6 +18,8 @@ use crate::granule::{FVP_DRAM0_REGION, FVP_DRAM1_IDX, FVP_DRAM1_REGION};
 pub struct Granule {
     /// granule state
     state: u8,
+    /// granule ref count
+    ref_count: AtomicU8,
 }
 #[cfg(any(kani, miri, test))]
 // DIFF: `gpt` ghost field is added to track GPT entry's status
@@ -47,7 +50,8 @@ impl Granule {
     #[cfg(not(any(kani, miri, test)))]
     fn new() -> Self {
         let state = GranuleState::Undelegated;
-        Granule { state }
+        let ref_count = AtomicU8::new(0);
+        Granule { state, ref_count }
     }
     #[cfg(any(kani, miri, test))]
     // DIFF: `state` and `gpt` are filled with non-deterministic values
@@ -75,6 +79,22 @@ impl Granule {
                 gpt: GranuleGpt::GPT_NS,
             }
         }
+    }
+
+    pub fn inc_count(&mut self) {
+        let _ = self.ref_count.fetch_add(1, Ordering::SeqCst);
+    }
+
+    pub fn dec_count(&mut self) {
+        let _ = self.ref_count.fetch_sub(1, Ordering::SeqCst);
+    }
+
+    pub fn load_count(&self) -> u8 {
+        self.ref_count.load(Ordering::SeqCst)
+    }
+
+    pub fn num_children(&self) -> usize {
+        self.ref_count.load(Ordering::SeqCst) as usize
     }
 
     #[cfg(any(kani, miri, test))]

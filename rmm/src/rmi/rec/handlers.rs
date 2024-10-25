@@ -100,6 +100,9 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             set_granule(&mut rec_aux_granule, GranuleState::RecAux)?;
         }
 
+        #[cfg(not(feature = "gst_page_table"))]
+        rd_granule.inc_count();
+
         #[cfg(feature = "gst_page_table")]
         return set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec);
         #[cfg(not(feature = "gst_page_table"))]
@@ -130,6 +133,13 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
             kani::assume(crate::granule::validate_addr(rec_aux));
             let mut rec_aux_granule = get_granule!(rec_aux)?;
             set_granule(&mut rec_aux_granule, GranuleState::Delegated)?;
+        }
+
+        #[cfg(not(feature = "gst_page_table"))]
+        {
+            let rd = rec.owner()?;
+            let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
+            rd_granule.dec_count();
         }
 
         set_granule(&mut rec_granule, GranuleState::Delegated).map_err(|e| {

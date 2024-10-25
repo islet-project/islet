@@ -170,6 +170,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
+    // ISLET_REALM_SET_METADATA is a vendor specific RMI for provisioning the realm metadata to the Realm
+    // Input registers
+    // x0: function id (0xC7000150)
+    // x1: rd - a physicall address of the RD for the target Realm
+    // x2: mdg - a physicall address of the delegated granule used for storage of the metadata
+    // x3: meta_ptr - a physicall address of the host provided (NS) metadata granule
     listen!(
         mainloop,
         rmi::ISLET_REALM_SET_METADATA,

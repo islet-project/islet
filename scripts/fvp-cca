@@ -163,7 +163,6 @@ def prepare_bootloaders(rmm, bl33, hes):
             "CFLAGS=-DARM_COT_cca=1",
             "FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts",
             "DEBUG=0",
-            "ENABLE_LTO=1",
             "BL33=%s" % bl33,
             "PLAT_RSS_COMMS_USE_SERIAL=1",
             "MEASURED_BOOT=1",

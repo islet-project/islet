@@ -26,6 +26,8 @@ pub struct Granule {
 pub struct Granule {
     /// granule state
     state: u8,
+    /// granule ref count
+    ref_count: AtomicU8,
     /// granule protection table (ghost field)
     pub gpt: GranuleGpt,
 }
@@ -59,6 +61,7 @@ impl Granule {
         #[cfg(kani)]
         {
             let state = kani::any();
+            let ref_count = AtomicU8::new(kani::any());
             kani::assume(state >= GranuleState::Undelegated && state <= GranuleState::RTT);
             let gpt = {
                 if state != GranuleState::Undelegated {
@@ -69,13 +72,18 @@ impl Granule {
                     gpt
                 }
             };
-            Granule { state, gpt }
+            Granule {
+                state,
+                ref_count,
+                gpt,
+            }
         }
 
         #[cfg(any(miri, test))]
         {
             Self {
                 state: GranuleState::Undelegated,
+                ref_count: AtomicU8::new(0),
                 gpt: GranuleGpt::GPT_NS,
             }
         }

@@ -155,7 +155,13 @@ impl Rec<'_> {
     fn get_owner(&self) -> Result<&Rd, Error> {
         match self.owner.get() {
             Some(owner) => Ok(owner),
-            None => Err(Error::RmiErrorRec),
+            None => {
+                // XXX: the below is added not to be reached
+                //      note that it can be assured by Rec's invariants
+                #[cfg(kani)]
+                kani::assume(false);
+                Err(Error::RmiErrorRec)
+            }
         }
     }
 

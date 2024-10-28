@@ -19,3 +19,4 @@ hex = "*"
 openssl = "0.10.60"
 rsi_el0 = { path = "../lib/rsi-el0" }
 serde = { version = "1.0", features = ["derive"] }
+zeroize = "*"

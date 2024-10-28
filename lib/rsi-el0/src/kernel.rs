@@ -5,15 +5,16 @@
  * the upstream kernel like the version split below.
  */
 
-use super::{CHALLENGE_LEN, MAX_MEASUREMENT_LEN, MAX_TOKEN_LEN};
+use super::{CHALLENGE_LEN, MAX_MEASUREMENT_LEN, SEALING_KEY_LEN};
 
 mod internal {
-    use super::{RsiAttestation, RsiMeasurement};
+    use super::{RsiAttestation, RsiMeasurement, RsiSealingKey};
 
     nix::ioctl_read!(abi_version, b'x', 190u8, u32);
     nix::ioctl_readwrite_buf!(measurement_read, b'x', 192u8, RsiMeasurement);
     nix::ioctl_write_buf!(measurement_extend, b'x', 193u8, RsiMeasurement);
     nix::ioctl_readwrite_buf!(attestation_token, b'x', 194u8, RsiAttestation);
+    nix::ioctl_readwrite_buf!(sealing_key, b'x', 200u8, RsiSealingKey);
 }
 
 // should be pub(super) but nix leaks the type through pub ioctl definitions
@@ -49,19 +50,37 @@ impl RsiMeasurement {
 
 // should be pub(super) but nix leaks the type through pub ioctl definitions
 #[repr(C)]
-pub struct RsiAttestation {
+#[repr(C)]
+pub struct RsiAttestation
+{
     pub(super) challenge: [u8; CHALLENGE_LEN as usize],
-    pub(super) token_len: u32,
-    pub(super) token: [u8; MAX_TOKEN_LEN as usize],
+    pub(super) token_len: u64,
+    pub(super) token: *mut u8,
 }
 
-impl RsiAttestation {
-    pub(super) fn new(src: &[u8; CHALLENGE_LEN as usize]) -> Self {
-        Self {
-            challenge: src.clone(),
-            token_len: 0,
-            token: [0; MAX_TOKEN_LEN as usize],
-        }
+impl RsiAttestation
+{
+    pub(super) fn new(src: &[u8; CHALLENGE_LEN as usize], token_len: u64) -> Self
+    {
+        Self { challenge: src.clone(), token_len, token: std::ptr::null_mut() }
+    }
+}
+
+pub(super) const RSI_SEALING_KEY_FLAGS_MASK:     u64 = 0x0F;
+
+#[repr(C)]
+pub struct RsiSealingKey
+{
+    pub(super) flags: u64,
+    pub(super) svn: u64,
+    pub(super) realm_sealing_key: [u8; SEALING_KEY_LEN]
+}
+
+impl RsiSealingKey
+{
+    pub(super) fn new(flags: u64, svn: u64) -> Self
+    {
+        Self { flags: flags & RSI_SEALING_KEY_FLAGS_MASK, svn, realm_sealing_key: [0u8; SEALING_KEY_LEN] }
     }
 }
 
@@ -87,4 +106,9 @@ pub(super) fn measurement_extend(fd: i32, data: &[RsiMeasurement]) -> nix::Resul
 
 pub(super) fn attestation_token(fd: i32, data: &mut [RsiAttestation]) -> nix::Result<()> {
     unsafe { internal::attestation_token(fd, data) }.map(|_| ())
+}
+
+pub(super) fn sealing_key(fd: i32, data: &mut [RsiSealingKey]) -> nix::Result<()>
+{
+    unsafe { internal::sealing_key(fd, data) }.map(|_| ())
 }

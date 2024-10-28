@@ -620,6 +620,7 @@ dependencies = [
  "openssl",
  "rsi_el0",
  "serde",
+ "zeroize",
 ]
 
 [[package]]

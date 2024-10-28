@@ -126,11 +126,6 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let rd = rd_granule.content::<Rd>()?;
         let vmid = rd.id();
 
-        #[cfg(feature = "gst_page_table")]
-        if rd_granule.num_children() > 0 {
-            return Err(Error::RmiErrorRealm(0));
-        }
-
         let rtt_base = rd.rtt_base();
         for i in 0..rd.rtt_num_start() {
             let rtt = rtt_base + i * GRANULE_SIZE;

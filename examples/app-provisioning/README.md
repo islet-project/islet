@@ -37,6 +37,8 @@ referenced here as `$ROOT`.
 
 ### Build warden daemon
 
+Warden daemon is responsible for providing resources such as disks and networking to realms. It manages realm lifetime by starting and stopping kvmtool. More details are available at [realm-manager/warden/warden_daemon](https://github.com/islet-project/realm-manager/tree/main/warden/warden_daemon).
+
     cd $ROOT/realm-manager/warden
     make
 

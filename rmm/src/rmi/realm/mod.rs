@@ -126,6 +126,23 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let vmid = rd.id();
 
         let rtt_base = rd.rtt_base();
+
+        #[cfg(not(feature = "gst_page_table"))]
+        {
+            for i in 0..rd.rtt_num_start() {
+                let rtt = rtt_base + i * GRANULE_SIZE;
+
+                // XXX: the below can be guaranteed by Rd's invariants
+                #[cfg(kani)]
+                kani::assume(crate::granule::validate_addr(rtt));
+
+                let rtt_granule = get_granule!(rtt)?;
+                if rtt_granule.num_children() > 0 {
+                    return Err(Error::RmiErrorRealm(0));
+                }
+            }
+        }
+
         for i in 0..rd.rtt_num_start() {
             let rtt = rtt_base + i * GRANULE_SIZE;
             let mut rtt_granule = get_granule_if!(rtt, GranuleState::RTT)?;

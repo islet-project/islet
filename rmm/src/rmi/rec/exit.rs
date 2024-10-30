@@ -1,5 +1,5 @@
 use crate::event::realmexit::*;
-use crate::event::{Context, RsiHandle};
+use crate::event::RsiHandle;
 use crate::get_granule;
 use crate::get_granule_if;
 use crate::granule::GranuleState;
@@ -31,24 +31,19 @@ pub fn handle_realm_exit(
         // `rsi` is currently not reachable in model checking harnesses
         RecExitReason::Sync(ExitSyncType::RSI) => {
             trace!("REC_ENTER ret: {:#X?}", realm_exit_res);
-            let rsi = &rmm.rsi;
             let cmd = realm_exit_res[1];
             let mut ret = rmi::SUCCESS;
 
-            rsi::constraint::validate(cmd, |_, ret_num| {
-                let mut rsi_ctx = Context::new(cmd);
-                rsi_ctx.resize_ret(ret_num);
-
-                // set default value
-                if rsi.dispatch(&mut rsi_ctx, rmm, rec, run) == RsiHandle::RET_SUCCESS {
-                    if rsi_ctx.ret_slice()[0] == rmi::SUCCESS_REC_ENTER {
-                        return_to_ns = false;
-                    }
-                    ret = rsi_ctx.ret_slice()[0];
-                } else {
+            let mut rsi_ctx = rsi::constraint::validate(cmd);
+            // set default value
+            if rmm.handle_rsi(&mut rsi_ctx, rec, run) == RsiHandle::RET_SUCCESS {
+                if rsi_ctx.ret_slice()[0] == rmi::SUCCESS_REC_ENTER {
                     return_to_ns = false;
                 }
-            });
+                ret = rsi_ctx.ret_slice()[0];
+            } else {
+                return_to_ns = false;
+            }
             ret
         }
         RecExitReason::Sync(ExitSyncType::DataAbort) => {

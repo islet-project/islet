@@ -1,14 +1,11 @@
 extern crate alloc;
 
-use super::Context;
-
 use crate::rec::Rec;
 use crate::rmi::rec::run::Run;
 use crate::rsi;
 use crate::rsi::psci;
 use crate::Monitor;
 // TODO: Change this into rsi::error::Error
-use crate::realm::context::set_reg;
 use crate::rmi::error::Error;
 
 use alloc::boxed::Box;
@@ -32,33 +29,6 @@ impl RsiHandle {
         };
         rsi.set_event_handlers();
         rsi
-    }
-
-    pub fn dispatch(
-        &self,
-        ctx: &mut Context,
-        monitor: &Monitor,
-        rec: &mut Rec<'_>,
-        run: &mut Run,
-    ) -> usize {
-        match self.on_event.get(&ctx.cmd) {
-            Some(handler) => {
-                ctx.do_rsi(|arg, ret| handler(arg, ret, monitor, rec, run));
-            }
-            None => {
-                ctx.init_ret(&[RsiHandle::NOT_SUPPORTED]);
-                error!(
-                    "Not registered event: {:X} returning {:X}",
-                    ctx.cmd,
-                    RsiHandle::NOT_SUPPORTED
-                );
-                // TODO: handle the error properly
-                let _ = set_reg(rec, 0, RsiHandle::NOT_SUPPORTED);
-
-                return RsiHandle::RET_FAIL;
-            }
-        }
-        RsiHandle::RET_SUCCESS
     }
 
     fn set_event_handlers(&mut self) {

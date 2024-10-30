@@ -16,6 +16,7 @@ rmi_features
 rmi_granule_delegate
 rmi_granule_undelegate
 rmi_realm_activate
+rmi_realm_destroy
 rmi_rec_aux_count
 rmi_rec_destroy
 rmi_version

@@ -118,6 +118,28 @@ pub fn post_rd_state(addr: usize) -> State {
     rd.state()
 }
 
+pub fn post_rtt_state(addr: usize) -> u8 {
+    let valid_addr = pre_valid_addr(addr);
+    let rd = content::<Rd>(valid_addr);
+    // XXX: we currently check only the first entry to
+    //      reduce the overall verification time
+    let rtt_base = rd.rtt_base();
+    post_granule_state(rtt_base)
+}
+
+pub fn pre_realm_is_live(addr: usize) -> bool {
+    let res = get_granule!(addr).map(|guard| guard.num_children());
+    let rd_num_children = if let Ok(v) = res { v } else { kani::any() };
+    let valid_addr = pre_valid_addr(addr);
+    let rd = content::<Rd>(valid_addr);
+    // XXX: we currently check only the first entry to
+    //      reduce the overall verification time
+    let rtt_base = rd.rtt_base();
+    let rtt_res = get_granule!(rtt_base).map(|guard| guard.num_children());
+    let rtt_num_children = if let Ok(v) = rtt_res { v } else { kani::any() };
+    rd_num_children > 0 || rtt_num_children > 0
+}
+
 pub fn pre_rec_state(addr: usize) -> RecState {
     let valid_addr = pre_valid_addr(addr);
     let rec = content::<Rec>(valid_addr);

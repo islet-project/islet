@@ -115,7 +115,7 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         Ok(())
     });
 
-    #[cfg(not(kani))]
+    #[cfg(any(not(kani), feature = "mc_rmi_realm_destroy"))]
     listen!(mainloop, rmi::REALM_DESTROY, |arg, _ret, rmm| {
         // get the lock for Rd
         let mut rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
@@ -124,8 +124,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         }
         let rd = rd_granule.content::<Rd>()?;
         let vmid = rd.id();
-
         let rtt_base = rd.rtt_base();
+
+        // XXX: we use the below assumption to reduce the overall
+        //      verification time
+        #[cfg(kani)]
+        kani::assume(rd.rtt_num_start() == 1);
 
         #[cfg(not(feature = "gst_page_table"))]
         {
@@ -145,7 +149,12 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
 
         for i in 0..rd.rtt_num_start() {
             let rtt = rtt_base + i * GRANULE_SIZE;
-            let mut rtt_granule = get_granule_if!(rtt, GranuleState::RTT)?;
+
+            // XXX: the below can be guaranteed by Rd's invariants instead
+            #[cfg(kani)]
+            kani::assume(crate::granule::validate_addr(rtt));
+
+            let mut rtt_granule = get_granule!(rtt)?;
             set_granule(&mut rtt_granule, GranuleState::Delegated)?;
         }
 
@@ -154,6 +163,8 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         #[cfg(not(kani))]
         // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.unmap(arg[0]);
+        // TODO: remove the below after modeling `VmidIsFree()`
+        #[cfg(not(kani))]
         remove(vmid)?;
 
         Ok(())

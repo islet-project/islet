@@ -1,4 +1,4 @@
-use crate::event::Command;
+use crate::event::{Command, Context};
 use crate::rmi::constraint::Constraint; // TODO: we might need rsi's own constraint struct in the future
 use crate::rsi;
 
@@ -24,15 +24,14 @@ fn pick(cmd: Command) -> Option<Constraint> {
     Some(constraint)
 }
 
-pub fn validate<T>(cmd: Command, mut ok_func: T)
-where
-    T: FnMut(usize, usize),
-{
+pub fn validate(cmd: Command) -> Context {
+    let mut ctx = Context::new(cmd);
     if let Some(c) = pick(cmd) {
-        ok_func(c.arg_num, c.ret_num);
+        ctx.resize_ret(c.ret_num);
     } else {
-        // rsi.dispatch takes care of unregistered command.
+        // rmm.handle_rsi takes care of unregistered command.
         // Just limit the array size here.
-        ok_func(2, 1);
+        ctx.resize_ret(1);
     }
+    ctx
 }

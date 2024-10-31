@@ -126,35 +126,43 @@ pub fn set_event_handler(mainloop: &mut Mainloop) {
         let vmid = rd.id();
         let rtt_base = rd.rtt_base();
 
-        // XXX: we use the below assumption to reduce the overall
-        //      verification time
         #[cfg(kani)]
-        kani::assume(rd.rtt_num_start() == 1);
+        // XXX: the below can be guaranteed by Rd's invariants
+        kani::assume(crate::granule::validate_addr(rtt_base));
 
         #[cfg(not(feature = "gst_page_table"))]
         {
+            #[cfg(not(kani))]
             for i in 0..rd.rtt_num_start() {
                 let rtt = rtt_base + i * GRANULE_SIZE;
-
-                // XXX: the below can be guaranteed by Rd's invariants
-                #[cfg(kani)]
-                kani::assume(crate::granule::validate_addr(rtt));
 
                 let rtt_granule = get_granule!(rtt)?;
                 if rtt_granule.num_children() > 0 {
                     return Err(Error::RmiErrorRealm(0));
                 }
             }
+            #[cfg(kani)]
+            {
+                // XXX: we remove the loop and consider only the first iteration
+                //      to reduce the overall verification time
+                let rtt_granule = get_granule!(rtt_base)?;
+                if rtt_granule.num_children() > 0 {
+                    return Err(Error::RmiErrorRealm(0));
+                }
+            }
         }
 
+        #[cfg(not(kani))]
         for i in 0..rd.rtt_num_start() {
             let rtt = rtt_base + i * GRANULE_SIZE;
-
-            // XXX: the below can be guaranteed by Rd's invariants instead
-            #[cfg(kani)]
-            kani::assume(crate::granule::validate_addr(rtt));
-
             let mut rtt_granule = get_granule!(rtt)?;
+            set_granule(&mut rtt_granule, GranuleState::Delegated)?;
+        }
+        #[cfg(kani)]
+        {
+            // XXX: we remove the loop and consider only the first iteration
+            //      to reduce the overall verification time
+            let mut rtt_granule = get_granule!(rtt_base)?;
             set_granule(&mut rtt_granule, GranuleState::Delegated)?;
         }
 

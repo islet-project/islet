@@ -395,13 +395,6 @@ mod test {
             assert!(rd_obj.at_state(State::New));
         };
 
-        // This seems that it should be a failure condition
-        unsafe {
-            let rd_obj = &mut *(rd as *mut Rd);
-            rd_obj.set_state(State::SystemOff);
-            assert!(rd_obj.at_state(State::SystemOff));
-        };
-
         for (rtt, ipa, level) in &test_data {
             let ret = rmi::<RTT_CREATE>(&[rd, *rtt, *ipa, *level]);
             assert_eq!(ret[0], SUCCESS);

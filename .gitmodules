@@ -19,8 +19,8 @@
 	branch = master
 [submodule "third-party/tf-rmm"]
 	path = third-party/tf-rmm
-	url = git@github.com:p-sawicki2/tf-rmm.git
-	branch = devel/p.sawicki2/eac5-realm-metadata-sealing
+	url = https://git.trustedfirmware.org/TF-RMM/tf-rmm.git
+	branch = rmm-spec-v1.0-eac5
 [submodule "third-party/android-kernel"]
 	path = third-party/android-kernel
 	url = https://github.com/islet-project/assets

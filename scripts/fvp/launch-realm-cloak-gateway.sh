@@ -11,8 +11,8 @@ cd /shared
 	--irqchip=gicv3 \
 	--realm-pv="gateway" \
 	--vcpu-affinity 2-3 \
-	-m 256M \
+	-m 512M \
 	-c 1 \
-	-k acs_realm.bin \
+	-k cvm_gateway.bin \
 	-i rootfs-realm.cpio.gz \
 	-p "earlycon=ttyS0 printk.devkmsg=on"

@@ -63,19 +63,19 @@ impl KdfInfo {
     }
 
     fn dump(&self) {
-        info!("KDF info");
-        info!("public_key: {}", hex::encode(self.public_key));
-        info!(
+        debug!("KDF info");
+        debug!("public_key: {}", hex::encode(self.public_key));
+        debug!(
             "realm_id: {}",
             self.realm_id_as_str().unwrap_or("INVALID REALM ID")
         );
-        info!("rpv: {}", hex::encode(self.rpv));
+        debug!("rpv: {}", hex::encode(self.rpv));
         let flags = self.flags; // not aligned
-        info!("flags: {:#010x}", flags);
-        info!("rim: {}", hex::encode(self.rim));
-        info!("hash_algo: {:#04x}", self.hash_algo);
+        debug!("flags: {:#010x}", flags);
+        debug!("rim: {}", hex::encode(self.rim));
+        debug!("hash_algo: {:#04x}", self.hash_algo);
         let svn = self.svn; // not aligned
-        info!("svn: {:#010x}", svn);
+        debug!("svn: {:#010x}", svn);
     }
 
     fn as_u8_slice(&self) -> &[u8] {
@@ -108,7 +108,7 @@ pub fn realm_sealing_key(
     svn: usize,
     buf: &mut [u8; SEALING_KEY_SIZE],
 ) -> core::result::Result<(), Error> {
-    info!("flags: {:#010x}, svn: {:#010x}", flags, svn);
+    debug!("flags: {:#010x}, svn: {:#010x}", flags, svn);
 
     let mut info = KdfInfo::new();
 
@@ -145,7 +145,7 @@ pub fn realm_sealing_key(
     }
 
     info.dump();
-    info!(
+    debug!(
         "ikm type: {}",
         if flags & RSI_ISLET_USE_VHUK_M != 0 {
             "VHUK_M"

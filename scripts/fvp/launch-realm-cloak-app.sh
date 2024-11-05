@@ -14,7 +14,8 @@ cd /shared
 	--network virtio \
 	--realm-pv="no_shared_region" \
 	--vcpu-affinity 0-1 \
-	-m 256M \
+    --9p /shared,FMR \
+	-m 512M \
 	-c 1 \
 	-k linux.realm \
 	-i rootfs-realm.cpio.gz \

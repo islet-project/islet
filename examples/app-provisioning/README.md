@@ -12,7 +12,7 @@ referenced here as `$ROOT`.
 ## Prepare islet (the branch is important)
 
     cd $ROOT
-    git clone -b app-provisioning https://github.com/islet-project/islet.git
+    git clone https://github.com/islet-project/islet.git
 
 ### Initialize islet
 

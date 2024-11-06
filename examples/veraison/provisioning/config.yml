@@ -19,9 +19,7 @@ validity:
   not-before: "2021-12-31T00:00:00Z"
   not-after: "2025-12-31T00:00:00Z"
 
-profiles:
-  - "http://arm.com/cca/ssd/1"
-  - "http://arm.com/CCA-SSD/1.0.0"
+profile: "http://arm.com/cca/ssd/1"
 
 environment:
   vendor: "ACME"

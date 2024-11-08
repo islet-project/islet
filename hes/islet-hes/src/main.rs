@@ -6,7 +6,7 @@ use islet_hes::{
 use coset::TaggedCborSerializable;
 use tinyvec::ArrayVec;
 
-use std::fs::{self, File};
+use std::fs::{self, create_dir_all, File};
 use std::io::{Read, Result as IOResult, Write};
 struct DummyHW();
 
@@ -138,12 +138,12 @@ fn _load_binary_file(filename: &str) -> IOResult<Vec<u8>> {
 }
 
 fn save_binary_file(filename: &str, data: &[u8]) -> IOResult<()> {
+    println!("Saving file {filename}");
     let mut f = File::create(filename)?;
     f.write_all(data)
 }
 
 fn main() {
-    println!("Creating test token in out/platform.bin");
     let hw_data = DummyHW();
 
     // let guk = load_binary_file("res/dummy_guk.bin").unwrap();
@@ -216,18 +216,23 @@ fn main() {
         .to_tagged_vec()
         .expect("Couldn't export CoseSign1 to tagged cbor");
 
+    let out_dir = concat!(env!("CARGO_MANIFEST_DIR"), "/../out/");
+
+    println!("{out_dir}");
+    create_dir_all(&out_dir).unwrap();
+
     save_binary_file(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../out/", "platform_token.bin"),
+        &format!("{}/{}", out_dir, "platform_token.bin"),
         &token,
     )
     .unwrap();
     save_binary_file(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../out/", "dak_priv.bin"),
+        &format!("{}/{}", out_dir, "dak_priv.bin"),
         &dak_scalar_bytes,
     )
     .unwrap();
     save_binary_file(
-        concat!(env!("CARGO_MANIFEST_DIR"), "/../out/", "dak_pub.bin"),
+        &format!("{}/{}", out_dir, "dak_pub.bin"),
         &priv_dak.public_key().to_sec1_bytes(),
     )
     .unwrap();

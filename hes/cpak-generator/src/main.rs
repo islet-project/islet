@@ -1,8 +1,9 @@
 use clap::Parser;
 use p384::pkcs8::{EncodePublicKey, LineEnding};
-use std::fs::{self, File};
+use std::fs::{self, create_dir_all, File};
 use std::io::{Read, Result as IOResult, Write};
 use std::mem;
+use clean_path::clean;
 
 /// Creates a path to a resource file
 macro_rules! resource_file {
@@ -53,6 +54,8 @@ fn load_binary_file(filename: &str) -> IOResult<Vec<u8>> {
 }
 
 fn save_binary_file(filename: &str, data: &[u8]) -> IOResult<()> {
+    let filename = clean(&filename);
+    println!("Saving file {}", filename.display());
     let mut f = File::create(filename)?;
     f.write_all(data)
 }
@@ -65,8 +68,6 @@ fn main() -> std::io::Result<()> {
 
     let bl2_hash = load_binary_file(&args.hash_file)?;
     let guk = load_binary_file(&args.guk_file)?;
-
-    fs::create_dir_all(args.output_dir.clone())?;
 
     const CPAK_SEED_LABEL: &[u8] = b"BL1_CPAK_SEED_DERIVATION";
     let lcs: u32 = 3;
@@ -81,6 +82,11 @@ fn main() -> std::io::Result<()> {
     let seed = key_derivation::generate_seed(&context, &guk, &CPAK_SEED_LABEL);
 
     let public_key = key_derivation::derive_p384_key(&seed, None).public_key();
+
+    if args.output_dir == default_output_dir!() {
+        println!("Creating out dir");
+        create_dir_all(&args.output_dir).unwrap();
+    }
 
     save_binary_file(
         &format!("{}/{}", args.output_dir.clone(), PUBLIC_KEY_BIN),

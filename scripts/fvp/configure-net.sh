@@ -17,6 +17,6 @@ ip addr flush tap0
 ip addr add FVP_TAP_IP/24 dev tap0
 
 # 4. set SNAT for packet forwarding between tap0 and eth0
-/shared/iptables -A FORWARD -i eth0 -j ACCEPT
-/shared/iptables -A FORWARD -o eth0 -j ACCEPT
-/shared/iptables -t nat -A POSTROUTING -s FVP_TAP_IP/24 -o eth0 -j SNAT --to FVP_IP
+/usr/sbin/iptables -A FORWARD -i eth0 -j ACCEPT
+/usr/sbin/iptables -A FORWARD -o eth0 -j ACCEPT
+/usr/sbin/iptables -t nat -A POSTROUTING -s FVP_TAP_IP/24 -o eth0 -j SNAT --to FVP_IP

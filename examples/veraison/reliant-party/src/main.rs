@@ -66,7 +66,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let server = RaTlsServer::new(ratls::ServerMode::AttestedClient {
         client_token_verifier: Arc::new(ChainVerifier::new(vec![
-            Arc::new(VeraisonTokenVerifer::new(args.veraison_url, pubkey)),
+            Arc::new(VeraisonTokenVerifer::new(args.veraison_url, pubkey, None).unwrap()),
             Arc::new(RealmVerifier::init(reference_measurements)),
         ])),
         server_certificate_path: args.server_cert,

@@ -1,3 +1,5 @@
+use core::mem;
+
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use ciborium::{ser, Value};
@@ -204,12 +206,22 @@ impl AttestationMgr {
     /// Initialize AttestationMgr using [`KeyMaterialData`] and [`HWClaims`].
     /// Generates a CPAK using `key_material_data`.
     pub fn init(key_derivation_material: KeyMaterialData, claims: HWClaims) -> Self {
+        let lcs: u32 = 3;
+        let reprovisioning_bits: u32 = 0;
+        let input = key_derivation_material.hash.as_slice();
+
+        let mut context = Vec::with_capacity(input.len() + mem::size_of::<u32>() * 2);
+        context.extend(input);
+        context.extend(&lcs.to_ne_bytes());
+        context.extend(&reprovisioning_bits.to_ne_bytes());
+
         let seed = generate_seed(
-            &key_derivation_material.hash,
+            &context,
             &key_derivation_material.guk,
             Self::CPAK_SEED_LABEL,
         );
         let cpak = derive_p384_key(&seed, None);
+
         Self {
             cpak: CPAK {
                 instance_id: Self::generate_instance_id(&cpak).into_iter().collect(),

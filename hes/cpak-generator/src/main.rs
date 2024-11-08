@@ -73,11 +73,10 @@ fn main() -> std::io::Result<()> {
     let reprovisioning_bits: u32 = 0;
     let input = bl2_hash.as_slice();
 
-    let mut context = vec![0; input.len() + mem::size_of::<u32>() * 2];
-    context[..input.len()].copy_from_slice(&input);
-    context[input.len()..input.len() + mem::size_of::<u32>()].copy_from_slice(&lcs.to_ne_bytes());
-    context[input.len() + mem::size_of::<u32>()..]
-        .copy_from_slice(&reprovisioning_bits.to_ne_bytes());
+    let mut context = Vec::with_capacity(input.len() + mem::size_of::<u32>() * 2);
+    context.extend(input);
+    context.extend(&lcs.to_ne_bytes());
+    context.extend(&reprovisioning_bits.to_ne_bytes());
 
     let seed = key_derivation::generate_seed(&context, &guk, &CPAK_SEED_LABEL);
 

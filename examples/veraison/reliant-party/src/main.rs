@@ -40,12 +40,14 @@ struct Cli {
     server_privkey: String,
 
     /// Veraison verification service host
-    #[arg(short = 'v', long, default_value = "http://localhost:8080")]
+    #[arg(short = 'v', long, default_value = "https://localhost:8080")]
     veraison_url: String,
 
     /// Veraisons public key to verify attestation results
     #[arg(short = 'p', long, default_value = resource_file!("keys/pkey.jwk"))]
     veraison_pubkey: String,
+
+
 }
 
 fn main() -> Result<(), Box<dyn Error>> {

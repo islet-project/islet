@@ -57,12 +57,25 @@ pub trait Entry {
     fn points_to_table_or_page(&self) -> bool;
 }
 
-/// Safety: the caller must do proper error handling if it's failed to allocate memory
 pub trait MemAlloc {
+    /// Allocates memory according to the given layout.
+    ///
+    /// # Safety
+    ///
+    /// - The `layout` must have a non-zero size.
+    /// - The caller must ensure that the returned pointer is properly deallocated using `deallocate`.
+    /// - If allocation fails, a null pointer is returned; the caller must handle this case.
     unsafe fn allocate(&self, layout: Layout) -> *mut u8 {
         alloc::alloc::alloc(layout)
     }
 
+    /// Deallocates memory at the given pointer and layout.
+    ///
+    /// # Safety
+    ///
+    /// - `ptr` must have been allocated by `allocate` with the same `layout`.
+    /// - `ptr` must be non-null and properly aligned.
+    /// - The memory at `ptr` must not have been deallocated already.
     unsafe fn deallocate(&self, ptr: *mut u8, layout: Layout) {
         alloc::alloc::dealloc(ptr, layout);
     }

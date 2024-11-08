@@ -72,12 +72,24 @@ impl Context {
         }
     }
 
+    /// Restores the current execution context from the given `Rec`.
+    ///
+    /// # Safety
+    ///
+    /// - This function modifies processor-specific registers and state;
+    ///   ensure that this is safe in the current execution context.
     pub unsafe fn into_current(rec: &Rec<'_>) {
         TPIDR_EL2.set(rec as *const _ as u64);
         gic::restore_state(rec);
         timer::restore_state(rec);
     }
 
+    /// Saves the current execution context into the given `Rec` record.
+    ///
+    /// # Safety
+    ///
+    /// - This function reads and modifies processor-specific registers and state;
+    ///   ensure that this is appropriate in the current execution context.
     pub unsafe fn from_current(rec: &mut Rec<'_>) {
         gic::save_state(rec);
         timer::save_state(rec);

@@ -65,6 +65,14 @@ use core::ptr::addr_of;
 // model checking harnesses do not use this function, instead
 // they use their own entry points marked with #[kani::proof]
 // where slightly adjusted `Monitor` is used
+/// Starts the RMM on the specified CPU with the given memory layout.
+///
+/// # Safety
+///
+/// The caller must ensure that:
+/// - The caller must ensure that `cpu_id` corresponds to a valid and initialized CPU.
+/// - The `layout` must be a valid `PlatformMemoryLayout` appropriate for the platform.
+/// - Calling this function may alter system-level configurations and should be done with caution.
 pub unsafe fn start(cpu_id: usize, layout: PlatformMemoryLayout) {
     setup_mmu_cfg(layout);
     setup_el2();
@@ -183,6 +191,11 @@ unsafe fn setup_mmu_cfg(layout: PlatformMemoryLayout) {
 /// The return value encodes: [rmi::RET_XXX, ret_val1, ret_val2]
 /// In most cases, the function returns [rmi::RET_SUCCESS, _, _]
 /// pagefault returns [rmi::RET_PAGE_FAULT, faulted address, _]
+///
+/// # Safety
+///
+/// - This function alters the processor's execution level by jumping to EL1;
+///   the caller must ensure that the system is in a correct state for this transition.
 #[cfg(not(kani))]
 pub unsafe fn rmm_exit(args: [usize; 4]) -> [usize; 4] {
     let mut ret: [usize; 4] = [0usize; 4];

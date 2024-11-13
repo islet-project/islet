@@ -15,7 +15,7 @@ then
     rm -rf "$SERVICES_DIR";
 fi
 
-go install github.com/veraison/ear/arc@latest
+go install github.com/veraison/ear/arc@e895c1e
 
 git clone --depth=1 "$SERVICES_REPO" "$SERVICES_DIR"
 pushd "$SERVICES_DIR"
@@ -31,5 +31,8 @@ make -C "$DOCKER_DIR"
 source "$DOCKER_DIR/env.bash"
 
 veraison start
-sleep 15
-pocli create ARM_CCA accept-all.rego -i
+
+echo "Waiting for the services to be available:"
+until pocli create ARM_CCA provisioning/accept-all.rego -i >/dev/null; do
+    sleep 2
+done

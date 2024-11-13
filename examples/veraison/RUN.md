@@ -242,7 +242,7 @@ This is how it looks:
 
 # Running and provisioning verification services (Veraison, realm-verifier)
 
-To bootstrap the Veraison services use the `CCA/islet/examples/version/bootstrap.sh`:
+To bootstrap the Veraison services use the `CCA/islet/examples/veraison/bootstrap.sh`:
 
     CCA/islet/examples/veraison $ ./bootstrap.sh
 
@@ -253,9 +253,9 @@ In details, it does a couple of things:
 * Start `Veraison` by running `veraison start`.
 * Inserts the `./accept-all.rego` policy which makes `Veraison` accept all implementation IDs etc. (normally you are supposed to create a set of rules checking various parts of the attestation token).
 
-To get access to the `verasion` cli interface source:
-* `CCA/islet/exmaples/version $ source services/deployments/docker/env.zsh` for zsh,
-* `CCA/islet/exmaples/version $ source services/deployments/docker/env.bash` for bash.
+To get access to the `veraison` cli interface source:
+* `CCA/islet/exmaples/veraison $ source services/deployments/docker/env.zsh` for zsh,
+* `CCA/islet/exmaples/veraison $ source services/deployments/docker/env.bash` for bash.
 
 Check if all 5 veraison services are running:
 
@@ -276,15 +276,6 @@ Veraison verification.
 It's possible to see current values stored in Veraison:
 
     $ veraison stores
-
-And if required, they also should be cleared before they can be
-provisioned again:
-
-    $ veraison clear-stores
-
-__WARNING__: after running this command you must reimport the `./accept-all.rego` policy by running:
-
-    CCA/islet/examples/veraison $ pocli create ARM_CCA accept-all.rego -i
 
 Run reliant-party, which is provisioned with `reference.json` and
 acts as Reliant Party with communication to realm and Veraison

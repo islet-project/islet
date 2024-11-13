@@ -14,6 +14,7 @@ CPAK_TYPE="pkix-base64-key"
 CONFIG="$PROV/config.yml"
 
 source "$DOCKER_DIR/env.bash"
+export PATH="$HOME/go/bin:$PATH"
 
 while getopts "ht:c:e:" arg; do
   case $arg in
@@ -43,6 +44,14 @@ done
 function loginfo () {
     echo -e "\e[0;32m$1\e[0m"
 }
+
+###### Remove existing policy
+loginfo "Clearing existing policy"
+veraison clear-stores
+
+###### Import policy
+loginfo "Importing policy"
+pocli create ARM_CCA accept-all.rego -i
 
 ######  Generating Comids and Corim
 loginfo "Creating Endorsements"

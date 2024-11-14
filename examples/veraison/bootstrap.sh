@@ -17,7 +17,7 @@ fi
 
 go install github.com/veraison/ear/arc@e895c1e
 
-git clone --depth=1 "$SERVICES_REPO" "$SERVICES_DIR"
+git clone "$SERVICES_REPO" "$SERVICES_DIR"
 pushd "$SERVICES_DIR"
 git checkout -b freeze "$REVISION"
 popd

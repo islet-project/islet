@@ -96,6 +96,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
 
         for i in 0..rmi::MAX_REC_AUX_GRANULES {
             let rec_aux = rec.aux(i) as usize;
+            rmm.page_table.map(rec_aux, true);
             let mut rec_aux_granule = get_granule_if!(rec_aux, GranuleState::Delegated)?;
             set_granule(&mut rec_aux_granule, GranuleState::RecAux)?;
         }
@@ -123,6 +124,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             let rec_aux = rec.aux(i) as usize;
             let mut rec_aux_granule = get_granule_if!(rec_aux, GranuleState::RecAux)?;
             set_granule(&mut rec_aux_granule, GranuleState::Delegated)?;
+            rmm.page_table.unmap(rec_aux);
         }
         #[cfg(kani)]
         {

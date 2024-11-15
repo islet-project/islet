@@ -18,7 +18,6 @@ rusty-tags.vi*
 .crates.toml
 .crates2.json
 
-/examples/veraison/bin
 /hes/out
 
 examples/cross-platform-e2ee/gflags/

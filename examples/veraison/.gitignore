@@ -1,0 +1,14 @@
+# repositories/binaries
+bin/
+services/
+
+# intermediate files
+provisioning/corim.cbor
+provisioning/corim.json
+provisioning/cpak_public.pem
+provisioning/ear.jwt
+provisioning/endorsements.cbor
+provisioning/endorsements.json
+provisioning/refvals.cbor
+provisioning/refvals.json
+provisioning/token.bin

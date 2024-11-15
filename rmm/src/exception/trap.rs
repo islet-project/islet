@@ -7,7 +7,6 @@ use self::syndrome::Syndrome;
 use super::lower::synchronous;
 use crate::cpu;
 use crate::event::realmexit::{ExitSyncType, RecExitReason};
-use crate::mm::translation::PageTable;
 use crate::rec::Rec;
 
 use aarch64_cpu::registers::*;
@@ -65,7 +64,6 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
                     }
                     Fault::Translation { level } => {
                         debug!("translation, level:{}, esr:{:X}", level, esr);
-                        PageTable::get_ref().map(far as usize, true);
                     }
                     Fault::AccessFlag { level } => {
                         debug!("access flag, level:{}", level);

@@ -1,0 +1,17 @@
+# repositories/binaries
+veraison/bin/
+veraison/services/
+veraison/remote-attestation/
+
+# intermediate files
+metadata.yaml
+reference.json
+veraison/provision/corim.cbor
+veraison/provision/corim.json
+veraison/provision/cpak_public.pem
+veraison/provision/ear.jwt
+veraison/provision/endorsements.cbor
+veraison/provision/endorsements.json
+veraison/provision/refvals.cbor
+veraison/provision/refvals.json
+veraison/provision/token.bin

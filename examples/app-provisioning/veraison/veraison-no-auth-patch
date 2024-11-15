@@ -1,0 +1,13 @@
+diff --git a/deployments/docker/src/config.yaml.template b/deployments/docker/src/config.yaml.template
+index 795c32e..7366dba 100644
+--- a/deployments/docker/src/config.yaml.template
++++ b/deployments/docker/src/config.yaml.template
+@@ -36,7 +36,7 @@ po-store:
+ po-agent:
+     backend: opa
+ auth:
+-  backend: keycloak
++  backend: none
+   host: keycloak-service
+   port: ${KEYCLOAK_PORT}
+ # vim: set ft=yaml:

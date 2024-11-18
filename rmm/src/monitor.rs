@@ -12,6 +12,7 @@ pub struct Monitor<'a> {
     pub rmi: RmiHandle,
     page_table: PageTable<'a>,
     mainloop: Mainloop,
+    layout: PlatformMemoryLayout,
 }
 
 #[cfg(kani)]
@@ -29,8 +30,9 @@ impl<'a> Monitor<'a> {
         Self {
             rsi: RsiHandle::new(),
             rmi: RmiHandle::new(),
-            page_table: PageTable::new(layout),
+            page_table: PageTable::new(),
             mainloop: Mainloop::new(),
+            layout: layout,
         }
     }
 
@@ -52,14 +54,14 @@ impl<'a> Monitor<'a> {
 
     #[cfg(kani)]
     // DIFF: `symbolic` parameter is added to pass symbolic input
-    pub fn boot_complete(&mut self, symbolic: [usize; 8]) -> Context {
+    pub fn boot_complete(&self, symbolic: [usize; 8]) -> Context {
         let mut ctx = Context::new(rmi::BOOT_COMPLETE);
         ctx.init_arg(&[rmi::BOOT_SUCCESS]);
         self.mainloop.dispatch(ctx, symbolic)
     }
 
     #[cfg(not(kani))]
-    pub fn run(&mut self) {
+    pub fn run(&self) {
         let mut ctx = self.boot_complete();
 
         loop {
@@ -72,7 +74,7 @@ impl<'a> Monitor<'a> {
     // DIFF: `symbolic` parameter is added to pass symbolic input
     //       return value is added to track output
     //       infinite loop is removed
-    pub fn run(&mut self, symbolic: [usize; 8]) -> [usize; 5] {
+    pub fn run(&self, symbolic: [usize; 8]) -> [usize; 5] {
         let mut ctx = self.boot_complete(symbolic);
         let mut result = [0; 5];
 
@@ -83,7 +85,7 @@ impl<'a> Monitor<'a> {
         result
     }
 
-    pub fn handle_rmi(&mut self, ctx: &mut Context) {
+    pub fn handle_rmi(&self, ctx: &mut Context) {
         if let Some(handler) = self.rmi.on_event.get(&ctx.cmd) {
             #[cfg(feature = "stat")]
             {
@@ -186,5 +188,9 @@ impl<'a> Monitor<'a> {
 
         #[cfg(kani)]
         0
+    }
+
+    pub fn init_page_table(&self) {
+        self.page_table.init(&self.layout);
     }
 }

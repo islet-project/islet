@@ -11,33 +11,37 @@ use vmsa::page_table::{DefaultMemAlloc, Level, PageTableMethods};
 
 use alloc::boxed::Box;
 use armv9a::bits_in_reg;
-use core::cell::RefCell;
 use core::ffi::c_void;
 use core::fmt;
 use core::pin::Pin;
+use core::sync::atomic::{AtomicU64, Ordering};
+use spin::mutex::Mutex;
 
 pub struct PageTable<'a> {
-    inner: Pin<Box<RefCell<Inner<'a>>>>,
+    inner: Mutex<Pin<Box<Inner<'a>>>>,
 }
 
 impl<'a> PageTable<'a> {
-    pub fn new(layout: PlatformMemoryLayout) -> Self {
-        let inner = Pin::new(Box::new(RefCell::new(Inner::new())));
-        #[cfg(not(any(miri, test)))]
-        inner.borrow_mut().fill(layout);
-        Self { inner }
+    pub fn new() -> Self {
+        Self {
+            inner: Mutex::new(Pin::new(Box::new(Inner::new()))),
+        }
     }
 
     pub fn map(&self, addr: usize, secure: bool) -> bool {
-        self.inner.borrow_mut().set_pages_for_rmi(addr, secure)
+        self.inner.lock().set_pages_for_rmi(addr, secure)
     }
 
     pub fn unmap(&self, addr: usize) -> bool {
-        self.inner.borrow_mut().unset_pages_for_rmi(addr)
+        self.inner.lock().unset_pages_for_rmi(addr)
     }
 
     pub fn base(&self) -> u64 {
-        self.inner.borrow_mut().get_base_address() as u64
+        self.inner.lock().get_base_address() as u64
+    }
+
+    pub fn init(&self, layout: &PlatformMemoryLayout) {
+        self.inner.lock().fill(layout);
     }
 }
 
@@ -51,19 +55,39 @@ struct Inner<'a> {
 
 impl<'a> Inner<'a> {
     pub fn new() -> Self {
-        let root_pgtbl =
-            RootPageTable::<VirtAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>::new_in(
-                &DefaultMemAlloc {},
-            )
+        static BASE: AtomicU64 = AtomicU64::new(0);
+        if BASE.load(Ordering::Relaxed) == 0 {
+            let root_pgtbl = RootPageTable::<
+                VirtAddr,
+                L1Table,
+                Entry,
+                { <L1Table as Level>::NUM_ENTRIES },
+            >::new_in(&DefaultMemAlloc {})
             .unwrap();
 
-        Self {
-            root_pgtbl,
-            dirty: false,
+            BASE.store(root_pgtbl as *const _ as u64, Ordering::Relaxed);
+            Self {
+                root_pgtbl,
+                dirty: false,
+            }
+        } else {
+            let base: u64 = BASE.load(Ordering::Relaxed);
+            let ptr = base as *mut RootPageTable<
+                VirtAddr,
+                L1Table,
+                Entry,
+                { <L1Table as Level>::NUM_ENTRIES },
+            >;
+            // TODO: Safe Abstraction
+            let root_pgtbl = unsafe { &mut *ptr };
+            Self {
+                root_pgtbl,
+                dirty: true,
+            }
         }
     }
 
-    fn fill(&mut self, layout: PlatformMemoryLayout) {
+    fn fill(&mut self, layout: &PlatformMemoryLayout) {
         if self.dirty {
             return;
         }

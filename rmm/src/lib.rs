@@ -73,9 +73,9 @@ use core::ptr::addr_of;
 /// - The `layout` must be a valid `PlatformMemoryLayout` appropriate for the platform.
 /// - Calling this function may alter system-level configurations and should be done with caution.
 pub unsafe fn start(cpu_id: usize, layout: PlatformMemoryLayout) {
-    let mut rmm = Monitor::new(layout);
+    let rmm = Monitor::new(layout);
 
-    setup_mmu_cfg(rmm.page_table_base());
+    setup_mmu_cfg(&rmm);
     setup_el2();
     #[cfg(feature = "gst_page_table")]
     setup_gst();
@@ -144,7 +144,7 @@ unsafe fn setup_el2() {
 ///
 /// Failing to meet these requirements can result in system crashes, memory corruption, security
 /// vulnerabilities, or other undefined behavior.
-unsafe fn setup_mmu_cfg(ttbl_base: u64) {
+unsafe fn setup_mmu_cfg(monitor: &Monitor<'_>) {
     core::arch::asm!("tlbi alle2is", "dsb ish", "isb",);
 
     // /* Set attributes in the right indices of the MAIR. */
@@ -173,6 +173,9 @@ unsafe fn setup_mmu_cfg(ttbl_base: u64) {
     TCR_EL2.write(tcr_el2);
     // Set the ttbl base address, this is where the memory address translation
     // table walk starts
+    monitor.init_page_table();
+    let ttbl_base = monitor.page_table_base();
+    debug!("Set TTBT0_EL2 {:X}", ttbl_base);
     TTBR0_EL2.set(ttbl_base);
     core::arch::asm!("dsb ish", "isb",);
 }

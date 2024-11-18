@@ -56,8 +56,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
 
         // The below is added to avoid a fault regarding the RTT entry
         // during the `create_pgtbl_at()` in `rtt::create()`.
-        #[cfg(not(kani))]
-        rmm.page_table.map(rtt_addr, true);
+        rmm.map(rtt_addr, true);
         rtt::create(&rd, rtt_addr, ipa, level)?;
         set_granule(&mut rtt_granule, GranuleState::RTT)?;
         Ok(())
@@ -193,16 +192,12 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         // data granule lock for the target page
         let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
         let mut target_page = target_page_granule.content_mut::<DataPage>()?;
-        #[cfg(not(kani))]
-        // `page_table` is currently not reachable in model checking harnesses
-        rmm.page_table.map(target_pa, true);
+        rmm.map(target_pa, true);
 
         // copy src to target
-        #[cfg(not(kani))]
-        rmm.page_table.map(src_pa, false);
+        rmm.map(src_pa, false);
         host::copy_to_obj::<DataPage>(src_pa, &mut target_page).ok_or(Error::RmiErrorInput)?;
-        #[cfg(not(kani))]
-        rmm.page_table.unmap(src_pa);
+        rmm.unmap(src_pa);
 
         // map ipa to taget_pa in S2 table
         rtt::data_create(&rd, ipa, target_pa, false)?;
@@ -232,9 +227,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         // 0. Make sure granule state can make a transition to DATA
         // data granule lock for the target page
         let mut target_page_granule = get_granule_if!(target_pa, GranuleState::Delegated)?;
-        #[cfg(not(kani))]
-        // `page_table` is currently not reachable in model checking harnesses
-        rmm.page_table.map(target_pa, true);
+        rmm.map(target_pa, true);
 
         // 1. map ipa to target_pa in S2 table
         rtt::data_create(&rd, ipa, target_pa, true)?;

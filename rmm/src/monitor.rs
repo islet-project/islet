@@ -10,7 +10,7 @@ use crate::rmi::rec::run::Run;
 pub struct Monitor<'a> {
     pub rsi: RsiHandle,
     pub rmi: RmiHandle,
-    pub page_table: PageTable<'a>,
+    page_table: PageTable<'a>,
     mainloop: Mainloop,
 }
 
@@ -160,5 +160,31 @@ impl<'a> Monitor<'a> {
             }
         }
         RsiHandle::RET_SUCCESS
+    }
+
+    pub fn map(&self, addr: usize, secure: bool) -> bool {
+        // `page_table` is currently not reachable in model checking harnesses
+        #[cfg(not(kani))]
+        return self.page_table.map(addr, secure);
+
+        #[cfg(kani)]
+        true
+    }
+
+    pub fn unmap(&self, addr: usize) -> bool {
+        // `page_table` is currently not reachable in model checking harnesses
+        #[cfg(not(kani))]
+        return self.page_table.unmap(addr);
+
+        #[cfg(kani)]
+        true
+    }
+
+    pub fn page_table_base(&self) -> u64 {
+        #[cfg(not(kani))]
+        return self.page_table.base();
+
+        #[cfg(kani)]
+        0
     }
 }

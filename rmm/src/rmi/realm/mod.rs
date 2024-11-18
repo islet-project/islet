@@ -63,13 +63,11 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
 
         let mut rd_granule = get_granule_if!(rd, GranuleState::Delegated)?;
         let mut rd_obj = rd_granule.content_mut::<Rd>()?;
-        #[cfg(not(kani))]
-        // `page_table` is currently not reachable in model checking harnesses
-        rmm.page_table.map(rd, true);
+        rmm.map(rd, true);
 
-        rmm.page_table.map(params_ptr, false);
+        rmm.map(params_ptr, false);
         let params = host::copy_from::<Params>(params_ptr).ok_or(Error::RmiErrorInput)?;
-        rmm.page_table.unmap(params_ptr);
+        rmm.unmap(params_ptr);
         params.verify_compliance(rd)?;
 
         for i in 0..params.rtt_num_start as usize {
@@ -77,7 +75,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             let _ = get_granule_if!(rtt, GranuleState::Delegated)?;
             // The below is added to avoid a fault regarding the RTT entry
             // during the below stage 2 page table creation
-            rmm.page_table.map(rtt, true);
+            rmm.map(rtt, true);
         }
 
         // revisit rmi.create_realm() (is it necessary?)
@@ -117,9 +115,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         };
 
         epilogue().map_err(|e| {
-            #[cfg(not(kani))]
-            // `page_table` is currently not reachable in model checking harnesses
-            rmm.page_table.unmap(rd);
+            rmm.unmap(rd);
             remove(params.vmid as usize).expect("Realm should be created before.");
             e
         })
@@ -191,9 +187,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
 
         // change state when everything goes fine.
         set_granule(&mut rd_granule, GranuleState::Delegated)?;
-        #[cfg(not(kani))]
-        // `page_table` is currently not reachable in model checking harnesses
-        rmm.page_table.unmap(arg[0]);
+        rmm.unmap(arg[0]);
         // TODO: remove the below after modeling `VmidIsFree()`
         #[cfg(not(kani))]
         remove(vmid)?;

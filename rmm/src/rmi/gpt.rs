@@ -39,21 +39,15 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             return Err(Error::RmiErrorInput);
         }
 
-        #[cfg(not(kani))]
-        // `page_table` is currently not reachable in model checking harnesses
-        rmm.page_table.map(addr, true);
+        rmm.map(addr, true);
 
         #[cfg(any(miri, test))]
         let mut granule = get_granule_if!(addr, GranuleState::Undelegated)?;
         set_granule(&mut granule, GranuleState::Delegated).map_err(|e| {
-            #[cfg(not(kani))]
-            // `page_table` is currently not reachable in model checking harnesses
-            rmm.page_table.unmap(addr);
+            rmm.unmap(addr);
             e
         })?;
-        #[cfg(not(kani))]
-        // `page_table` is currently not reachable in model checking harnesses
-        rmm.page_table.unmap(addr);
+        rmm.unmap(addr);
         Ok(())
     });
 
@@ -76,18 +70,12 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         #[cfg(any(miri, test))]
         let mut granule = get_granule_if!(addr, GranuleState::Delegated)?;
 
-        #[cfg(not(kani))]
-        // `page_table` is currently not reachable in model checking harnesses
-        rmm.page_table.map(addr, false);
+        rmm.map(addr, false);
         set_granule(&mut granule, GranuleState::Undelegated).map_err(|e| {
-            #[cfg(not(kani))]
-            // `page_table` is currently not reachable in model checking harnesses
-            rmm.page_table.unmap(addr);
+            rmm.unmap(addr);
             e
         })?;
-        #[cfg(not(kani))]
-        // `page_table` is currently not reachable in model checking harnesses
-        rmm.page_table.unmap(addr);
+        rmm.unmap(addr);
         Ok(())
     });
 }

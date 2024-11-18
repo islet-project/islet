@@ -75,7 +75,7 @@ use core::ptr::addr_of;
 pub unsafe fn start(cpu_id: usize, layout: PlatformMemoryLayout) {
     let mut rmm = Monitor::new(layout);
 
-    setup_mmu_cfg(rmm.page_table.base());
+    setup_mmu_cfg(rmm.page_table_base());
     setup_el2();
     #[cfg(feature = "gst_page_table")]
     setup_gst();

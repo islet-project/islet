@@ -52,9 +52,9 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             return Err(Error::RmiErrorInput);
         }
 
-        rmm.page_table.map(params_ptr, false);
+        rmm.map(params_ptr, false);
         let params = host::copy_from::<Params>(params_ptr).ok_or(Error::RmiErrorInput)?;
-        rmm.page_table.unmap(params_ptr);
+        rmm.unmap(params_ptr);
         params.verify_compliance(rec, rd, params_ptr)?;
 
         let rec_index = MPIDR::from(params.mpidr).index();
@@ -69,9 +69,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         }
         // set Rec_state and grab the lock for Rec granule
         let mut rec_granule = get_granule_if!(rec, GranuleState::Delegated)?;
-        #[cfg(not(kani))]
-        // `page_table` is currently not reachable in model checking harnesses
-        rmm.page_table.map(rec, true);
+        rmm.map(rec, true);
         let mut rec = rec_granule.new_uninit_with::<Rec<'_>>(Rec::new())?;
         match prepare_args(&mut rd, params.mpidr) {
             Ok((vcpuid, vttbr, vmpidr)) => {
@@ -98,7 +96,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
 
         for i in 0..rmi::MAX_REC_AUX_GRANULES {
             let rec_aux = rec.aux(i) as usize;
-            rmm.page_table.map(rec_aux, true);
+            rmm.map(rec_aux, true);
             let mut rec_aux_granule = get_granule_if!(rec_aux, GranuleState::Delegated)?;
             set_granule(&mut rec_aux_granule, GranuleState::RecAux)?;
         }
@@ -126,7 +124,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             let rec_aux = rec.aux(i) as usize;
             let mut rec_aux_granule = get_granule_if!(rec_aux, GranuleState::RecAux)?;
             set_granule(&mut rec_aux_granule, GranuleState::Delegated)?;
-            rmm.page_table.unmap(rec_aux);
+            rmm.unmap(rec_aux);
         }
         #[cfg(kani)]
         {
@@ -154,14 +152,10 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         }
 
         set_granule(&mut rec_granule, GranuleState::Delegated).map_err(|e| {
-            #[cfg(not(kani))]
-            // `page_table` is currently not reachable in model checking harnesses
-            rmm.page_table.unmap(arg[0]);
+            rmm.unmap(arg[0]);
             e
         })?;
-        #[cfg(not(kani))]
-        // `page_table` is currently not reachable in model checking harnesses
-        rmm.page_table.unmap(arg[0]);
+        rmm.unmap(arg[0]);
         Ok(())
     });
 
@@ -174,9 +168,9 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         let mut rec = rec_granule.content_mut::<Rec<'_>>()?;
 
         // read Run
-        rmm.page_table.map(run_pa, false);
+        rmm.map(run_pa, false);
         let mut run = host::copy_from::<Run>(run_pa).ok_or(Error::RmiErrorInput)?;
-        rmm.page_table.unmap(run_pa);
+        rmm.unmap(run_pa);
         run.verify_compliance()?;
         trace!("{:?}", run);
 
@@ -283,9 +277,9 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         crate::realm::timer::send_state_to_host(&rec, &mut run)?;
 
         // NOTICE: do not modify `run` after copy_to_ptr(). it won't have any effect.
-        rmm.page_table.map(run_pa, false);
+        rmm.map(run_pa, false);
         let ret = host::copy_to_ptr::<Run>(&run, run_pa).ok_or(Error::RmiErrorInput);
-        rmm.page_table.unmap(run_pa);
+        rmm.unmap(run_pa);
         ret
     });
 

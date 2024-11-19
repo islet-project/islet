@@ -56,6 +56,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
 
         // The below is added to avoid a fault regarding the RTT entry
         // during the `create_pgtbl_at()` in `rtt::create()`.
+        #[cfg(not(kani))]
         rmm.page_table.map(rtt_addr, true);
         rtt::create(&rd, rtt_addr, ipa, level)?;
         set_granule(&mut rtt_granule, GranuleState::RTT)?;
@@ -197,8 +198,10 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         rmm.page_table.map(target_pa, true);
 
         // copy src to target
+        #[cfg(not(kani))]
         rmm.page_table.map(src_pa, false);
         host::copy_to_obj::<DataPage>(src_pa, &mut target_page).ok_or(Error::RmiErrorInput)?;
+        #[cfg(not(kani))]
         rmm.page_table.unmap(src_pa);
 
         // map ipa to taget_pa in S2 table

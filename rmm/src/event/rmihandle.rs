@@ -7,7 +7,7 @@ use crate::Monitor;
 use alloc::boxed::Box;
 use alloc::collections::btree_map::BTreeMap;
 
-pub type Handler = Box<dyn Fn(&[usize], &mut [usize], &Monitor) -> Result<(), Error>>;
+pub type Handler = Box<dyn Fn(&[usize], &mut [usize], &Monitor<'_>) -> Result<(), Error>>;
 
 pub struct RmiHandle {
     pub on_event: BTreeMap<usize, Handler>,

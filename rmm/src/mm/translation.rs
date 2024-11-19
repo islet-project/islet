@@ -9,47 +9,36 @@ use vmsa::page::Page;
 use vmsa::page_table::PageTable as RootPageTable;
 use vmsa::page_table::{DefaultMemAlloc, Level, PageTableMethods};
 
+use alloc::boxed::Box;
 use armv9a::bits_in_reg;
+use core::cell::RefCell;
 use core::ffi::c_void;
 use core::fmt;
-use lazy_static::lazy_static;
-use spin::mutex::Mutex;
+use core::pin::Pin;
 
-pub struct PageTable {
-    page_table: &'static Mutex<Inner<'static>>,
+pub struct PageTable<'a> {
+    inner: Pin<Box<RefCell<Inner<'a>>>>,
 }
 
-impl PageTable {
-    pub fn get_ref() -> Self {
-        Self {
-            page_table: &RMM_PAGE_TABLE,
-        }
+impl<'a> PageTable<'a> {
+    pub fn new(layout: PlatformMemoryLayout) -> Self {
+        let inner = Pin::new(Box::new(RefCell::new(Inner::new())));
+        #[cfg(not(any(miri, test)))]
+        inner.borrow_mut().fill(layout);
+        Self { inner }
     }
 
     pub fn map(&self, addr: usize, secure: bool) -> bool {
-        self.page_table.lock().set_pages_for_rmi(addr, secure)
+        self.inner.borrow_mut().set_pages_for_rmi(addr, secure)
     }
 
     pub fn unmap(&self, addr: usize) -> bool {
-        self.page_table.lock().unset_pages_for_rmi(addr)
+        self.inner.borrow_mut().unset_pages_for_rmi(addr)
     }
-}
 
-lazy_static! {
-    static ref RMM_PAGE_TABLE: Mutex<Inner<'static>> = Mutex::new(Inner::new());
-}
-
-pub fn init_page_table(layout: PlatformMemoryLayout) {
-    let mut page_table = RMM_PAGE_TABLE.lock();
-    page_table.fill(layout);
-}
-
-pub fn get_page_table() -> u64 {
-    RMM_PAGE_TABLE.lock().get_base_address() as u64
-}
-
-pub fn drop_page_table() {
-    RMM_PAGE_TABLE.lock().root_pgtbl.drop();
+    pub fn base(&self) -> u64 {
+        self.inner.borrow_mut().get_base_address() as u64
+    }
 }
 
 struct Inner<'a> {

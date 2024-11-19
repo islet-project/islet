@@ -16,7 +16,7 @@ use crate::{get_granule, get_granule_if};
 pub fn get_ripas_state(
     _arg: &[usize],
     ret: &mut [usize],
-    _rmm: &Monitor,
+    _rmm: &Monitor<'_>,
     rec: &mut Rec<'_>,
     _run: &mut Run,
 ) -> core::result::Result<(), Error> {
@@ -54,7 +54,7 @@ pub fn get_ripas_state(
 pub fn set_ripas_state(
     _arg: &[usize],
     ret: &mut [usize],
-    _rmm: &Monitor,
+    _rmm: &Monitor<'_>,
     rec: &mut Rec<'_>,
     run: &mut Run,
 ) -> core::result::Result<(), Error> {

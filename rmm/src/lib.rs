@@ -54,7 +54,6 @@ use crate::config::PlatformMemoryLayout;
 use crate::exception::vectors;
 #[cfg(feature = "gst_page_table")]
 use crate::granule::create_granule_status_table as setup_gst;
-use crate::mm::translation::{get_page_table, init_page_table};
 use crate::monitor::Monitor;
 use crate::rmm_el3::setup_el3_ifc;
 
@@ -74,7 +73,9 @@ use core::ptr::addr_of;
 /// - The `layout` must be a valid `PlatformMemoryLayout` appropriate for the platform.
 /// - Calling this function may alter system-level configurations and should be done with caution.
 pub unsafe fn start(cpu_id: usize, layout: PlatformMemoryLayout) {
-    setup_mmu_cfg(layout);
+    let mut rmm = Monitor::new(layout);
+
+    setup_mmu_cfg(rmm.page_table.base());
     setup_el2();
     #[cfg(feature = "gst_page_table")]
     setup_gst();
@@ -83,7 +84,7 @@ pub unsafe fn start(cpu_id: usize, layout: PlatformMemoryLayout) {
         setup_el3_ifc();
     }
 
-    Monitor::new().run();
+    rmm.run();
 }
 
 /// # Safety
@@ -143,7 +144,7 @@ unsafe fn setup_el2() {
 ///
 /// Failing to meet these requirements can result in system crashes, memory corruption, security
 /// vulnerabilities, or other undefined behavior.
-unsafe fn setup_mmu_cfg(layout: PlatformMemoryLayout) {
+unsafe fn setup_mmu_cfg(ttbl_base: u64) {
     core::arch::asm!("tlbi alle2is", "dsb ish", "isb",);
 
     // /* Set attributes in the right indices of the MAIR. */
@@ -166,15 +167,12 @@ unsafe fn setup_mmu_cfg(layout: PlatformMemoryLayout) {
         + TCR_EL2::ORGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable
         + TCR_EL2::IRGN0::WriteBack_ReadAlloc_WriteAlloc_Cacheable;
 
-    // set the ttbl base address, this is where the memory address translation
-    // table walk starts
-    init_page_table(layout);
-    let ttbl_base = get_page_table();
-
     // Invalidate the local I-cache so that any instructions fetched
     // speculatively are discarded.
     MAIR_EL2.write(mair_el2);
     TCR_EL2.write(tcr_el2);
+    // Set the ttbl base address, this is where the memory address translation
+    // table walk starts
     TTBR0_EL2.set(ttbl_base);
     core::arch::asm!("dsb ish", "isb",);
 }

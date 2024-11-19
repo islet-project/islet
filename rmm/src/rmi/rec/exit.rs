@@ -21,7 +21,7 @@ use aarch64_cpu::registers::HPFAR_EL2;
 
 pub fn handle_realm_exit(
     realm_exit_res: [usize; 4],
-    rmm: &Monitor,
+    rmm: &Monitor<'_>,
     rec: &mut Rec<'_>,
     run: &mut Run,
 ) -> Result<(bool, usize), Error> {

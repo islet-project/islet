@@ -1,3 +1,4 @@
+use crate::config::PlatformMemoryLayout;
 use crate::event::{Context, Mainloop, RmiHandle, RsiHandle};
 use crate::mm::translation::PageTable;
 use crate::realm::context::set_reg;
@@ -6,28 +7,29 @@ use crate::rmi;
 use crate::rmi::rec::run::Run;
 
 #[cfg(not(kani))]
-pub struct Monitor {
+pub struct Monitor<'a> {
     pub rsi: RsiHandle,
     pub rmi: RmiHandle,
-    pub page_table: PageTable,
+    pub page_table: PageTable<'a>,
     mainloop: Mainloop,
 }
 
 #[cfg(kani)]
 // `rsi` and `page_table` are removed in model checking harnesses
 // to reduce overall state space
-pub struct Monitor {
+pub struct Monitor<'a> {
     pub rmi: RmiHandle,
     mainloop: Mainloop,
+    phantom: core::marker::PhantomData<&'a bool>,
 }
 
-impl Monitor {
+impl<'a> Monitor<'a> {
     #[cfg(not(kani))]
-    pub fn new() -> Self {
+    pub fn new(layout: PlatformMemoryLayout) -> Self {
         Self {
             rsi: RsiHandle::new(),
             rmi: RmiHandle::new(),
-            page_table: PageTable::get_ref(),
+            page_table: PageTable::new(layout),
             mainloop: Mainloop::new(),
         }
     }
@@ -37,6 +39,7 @@ impl Monitor {
         Self {
             rmi: RmiHandle::new(),
             mainloop: Mainloop::new(),
+            phantom: core::marker::PhantomData,
         }
     }
 

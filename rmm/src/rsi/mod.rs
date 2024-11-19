@@ -73,7 +73,7 @@ extern crate alloc;
 pub fn do_host_call(
     _arg: &[usize],
     ret: &mut [usize],
-    _rmm: &Monitor,
+    _rmm: &Monitor<'_>,
     rec: &mut Rec<'_>,
     run: &mut Run,
 ) -> core::result::Result<(), Error> {

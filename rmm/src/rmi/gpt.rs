@@ -111,8 +111,6 @@ mod test {
         let ret = rmi::<GRANULE_UNDELEGATE>(&[mocking_addr]);
         assert_eq!(ret[0], SUCCESS);
         assert!(get_granule_if!(mocking_addr, GranuleState::Undelegated).is_ok());
-
-        miri_teardown();
     }
 
     // Source: https://github.com/ARM-software/cca-rmm-acs
@@ -170,7 +168,5 @@ mod test {
             let ret = rmi::<GRANULE_UNDELEGATE>(&[input]);
             assert_eq!(output, ret[0]);
         }
-
-        miri_teardown();
     }
 }

@@ -16,36 +16,38 @@ The following repos will be used:
 
 * Islet: https://github.com/islet-project/islet that provides:
 
-	* the whole SW/FW stack and scripts for running the emulated environment under the FVP
-	* Islet HES https://github.com/islet-project/islet/tree/main/hes
-	* kvmtool-rim-measurer from https://github.com/islet-project/islet/tree/main/third-party/
+    * the whole SW/FW stack and scripts for running the emulated environment under the FVP
+    * Islet HES https://github.com/islet-project/islet/tree/main/hes
+    * kvmtool-rim-measurer from https://github.com/islet-project/islet/tree/main/third-party/
 
-* Islet Remote Attestation: https://github.com/islet-project/remote-attestation that provides:
+* Various miscelanous tools and libraries for Remote Attestation
 
-	* rocli: https://github.com/islet-project/remote-attestation/tree/main/tools/rocli
-	  Tool for provisioning reference token and CPAK to the Veraison services.
-	* realm-verifier: https://github.com/islet-project/remote-attestation/tree/main/lib/realm-verifier
-      A library for veryfing RIM and REMs with reference values.
-    * ratls: https://github.com/islet-project/remote-attestation/tree/main/lib/ratls
+    * rust-rsi: https://github.com/islet-project/rust-rsi
+      A library implementing token and RSI related functionalities (fetching, parsing).
+    * rsictl: https://github.com/islet-project/rsictl
+      Tool for performing RSI operations from user space.
+    * rocli: https://github.com/islet-project/rocli
+      Tool for provisioning reference token and CPAK to the Veraison services.
+    * ratls: https://github.com/islet-project/ratls
       A library implementing RaTLS protocol for attestation purposes.
-    * rust-rsi: https://github.com/islet-project/remote-attestation/tree/main/lib/rust-rsi
-	  A library implementing token and RSI related functionalities (fetching, parsing).
+    * realm-verifier: https://github.com/islet-project/realm-verifier
+      A library for verifying RIM and REMs with reference values.
+    * veraison-verifier: https://github.com/islet-project/veraison-verifier
+      A library for verifying platform token with reference values using Veraison service.
 
 * veraison: https://github.com/veraison/services
 
 # Preparation
 
-The 3 aforementioned repositories should be checked out on the same level so it
-should look like following:
+Only the Islet repository should be checked manually:
 
     CCA/islet
-	CCA/remote-attestation
 
 Now run `make` inside the `CCA/islet/examples/veraison` directory. This compiles
 some tools that will be used for this demo and places them inside proper
 directories. It also copies the `root-ca.crt` used by `realm-application`.
 
-	CCA/islet/examples/veraison $ make
+    CCA/islet/examples/veraison $ make
 
 The files installed are:
 
@@ -128,7 +130,7 @@ The generated token is saved as the following file:
 Realm measurement is done by generating a json file containing realm information
 that will be fed to realm verifier.
 
-### Using kvmtool-rim-measurer
+### Using kvmtool-rim-measurer (TODO: this needs simplification)
 
 This is performed by a small helper program called `kvmtool-rim-measurer`. It basically
 runs a modified lkvm tool that calculates and displays the RIM
@@ -155,7 +157,8 @@ RIM value is between `[]` characters.
 ### Create a refence measurement values file
 
 Create a `reference.json` file using the commands below (replace the
-`PASTE_THE_OBTAINED_RIM_HEX_STRING_HERE` with the RIM obtained from one of the previous steps:
+`PASTE_THE_OBTAINED_RIM_HEX_STRING_HERE` with the RIM obtained from one of the
+previous steps):
 
 ```
 export RIM="PASTE_THE_OBTAINED_RIM_HEX_STRING_HERE"
@@ -236,9 +239,9 @@ This is how it looks:
     buildroot login: root
 
     # cd /shared
-	shared # ./set-realm-ip.sh
+    shared # ./set-realm-ip.sh
     shared # insmod rsi.ko
-	shared # date 120512002023
+    shared # date 120512002023
 
 # Running and provisioning verification services (Veraison, realm-verifier)
 

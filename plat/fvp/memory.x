@@ -1,51 +1,73 @@
-PAGE_SIZE_4K = 4096;
-ENTRY(rmm_entry)
+SIZE_4MB = 0x400000;
+SIZE_32MB = 0x2000000;
+SIZE_4KB = 0x1000;
+SIZE_2GB = 0x80000000;
+
+ENTRY(rmm_entry);
+
+/* Memory layout description
+ *
+ * Partition            | Origin      | Length
+ * ---------------------|-------------|-----------
+ * NS PAS (Non-Secure)  | 0x80000000  | 0x7C000000 (2GB - 64MB)
+ * Secure PAS           | 0xFC000000  | 0x01C00000 (28MB)
+ * Realm PAS            | 0xFDC00000  | 0x02000000 (32MB)
+ * Root PAS             | 0xFFC00000  | 0x00400000 (4MB)
+ * ---------------------|-------------|-----------
+ */
 
 MEMORY {
- RAM (rwx): ORIGIN = (((0x80000000) + (0x80000000) - ((0x0) + (0x00300000) + (0x02000000) + (0x00100000)))), LENGTH = ((((0x80000000) + (0x80000000) - ((0x0) + (0x00300000) + (0x02000000) + (0x00100000)))) + (0x02000000)) - (((0x80000000) + (0x80000000) - ((0x0) + (0x00300000) + (0x02000000) + (0x00100000))))
+    RAM (rwx)      : ORIGIN = 0x80000000, LENGTH = SIZE_2GB
+    ROOT_PAS (rwx) : ORIGIN = ORIGIN(RAM) + LENGTH(RAM) - SIZE_4MB, LENGTH = SIZE_4MB
+    REALM_PAS (rxw): ORIGIN = ORIGIN(ROOT_PAS) - SIZE_32MB, LENGTH = SIZE_32MB
 }
 
-SECTIONS
-{
- . = (((0x80000000) + (0x80000000) - ((0x0) + (0x00300000) + (0x02000000) + (0x00100000))));
- __RMM_BASE__ = .;
- .text : {
-  KEEP(*(.head.text))
-  . = ALIGN(16);
-  *(.text*)
- } >RAM
- .rodata : {
-  . = ALIGN(PAGE_SIZE_4K);
-  *(.rodata*)
- } >RAM
- .data : {
-  . = ALIGN(PAGE_SIZE_4K);
-   __RW_START__ = . ;
-  *(.data*)
- } >RAM
- .bss (NOLOAD) : {
- . = ALIGN(16);
-  __BSS_START__ = .;
-  *(.bss*)
- . = ALIGN(16);
-  __BSS_END__ = .;
- } >RAM
- __BSS_SIZE__ = SIZEOF(.bss);
- .stacks (NOLOAD) : {
-  __RMM_STACK_START__ = .;
-  KEEP(*(.stack))
-  __RMM_STACK_END__ = .;
- } >RAM
- __RW_END__ = .;
+SECTIONS {
+    . = ORIGIN(REALM_PAS);
+    __RMM_BASE__ = .;
 
- /DISCARD/ : {
-  *(.comment*)
-  *(.dynamic*)
-  *(.dynstr*)
-  *(.eh_frame*)
-  *(.gnu*)
-  *(.interp*)
-  *(.note*)
-  *(.plt*)
- }
+    .text : {
+        KEEP(*(.head.text));
+        . = ALIGN(16);
+        *(.text*);
+    } >REALM_PAS
+
+    .rodata : {
+        . = ALIGN(SIZE_4KB);
+        *(.rodata*);
+    } >REALM_PAS
+
+    .data : {
+        . = ALIGN(SIZE_4KB);
+        __RW_START__ = .;
+        *(.data*);
+    } >REALM_PAS
+
+    .bss (NOLOAD) : {
+        . = ALIGN(16);
+        __BSS_START__ = .;
+        *(.bss*);
+        . = ALIGN(16);
+        __BSS_END__ = .;
+    } >REALM_PAS
+    __BSS_SIZE__ = SIZEOF(.bss);
+
+    .stacks (NOLOAD) : {
+        __RMM_STACK_START__ = .;
+        KEEP(*(.stack));
+        __RMM_STACK_END__ = .;
+    } >REALM_PAS
+
+    __RW_END__ = .;
+
+    /DISCARD/ : {
+        *(.comment*);
+        *(.dynamic*);
+        *(.dynstr*);
+        *(.eh_frame*);
+        *(.gnu*);
+        *(.interp*);
+        *(.note*);
+        *(.plt*);
+    }
 }

@@ -17,6 +17,6 @@ cfg-if = "1.0"
 cose = { path = "../lib/cose" }
 hex = "*"
 openssl = "0.10.60"
-rsi_el0 = { path = "../lib/rsi-el0" }
+rust-rsi = { git = "https://github.com/islet-project/rust-rsi.git" }
 serde = { version = "1.0", features = ["derive"] }
 zeroize = "*"

@@ -19,14 +19,15 @@ use zeroize::Zeroizing;
 // as a key material during the sealing key derivation process
 #[cfg(target_arch = "aarch64")]
 const UNIQUE_SEALING_KEY: u64 =
-    rsi_el0::RSI_SEALING_KEY_FLAGS_KEY | rsi_el0::RSI_SEALING_KEY_FLAGS_RIM;
+    rust_rsi::RSI_SEALING_KEY_FLAGS_KEY | rust_rsi::RSI_SEALING_KEY_FLAGS_RIM;
 
 const AES_GCM_256_IV_LEN: usize = 12;
 const AES_GCM_256_TAG_LEN: usize = 16;
+const SEALING_KEY_LEN: usize = 32;
 
 // An embedded sealing key used on the simulated platform
 #[cfg(target_arch = "x86_64")]
-const SEALING_KEY: [u8; rsi_el0::SEALING_KEY_LEN] = [
+const SEALING_KEY: [u8; SEALING_KEY_LEN] = [
     0x63, 0x10, 0xc1, 0xf0, 0x53, 0xd5, 0x52, 0x40, 0x29, 0xfa, 0x7f, 0x7d, 0xcd, 0x9e, 0x28, 0x2c,
     0x4a, 0x93, 0x9d, 0x55, 0xb9, 0x89, 0x15, 0x44, 0x45, 0xa3, 0x86, 0x1e, 0x1f, 0xa1, 0xe2, 0xce,
 ];
@@ -54,13 +55,13 @@ struct SealedData {
     ciphertext: Vec<u8>,
 }
 
-fn sealing_key() -> Result<[u8; rsi_el0::SEALING_KEY_LEN], Error> {
+fn sealing_key() -> Result<[u8; SEALING_KEY_LEN], Error> {
     cfg_if::cfg_if! {
         // Return the embedded sealing key for simulated platform
         if #[cfg(target_arch="x86_64")] {
             Ok(SEALING_KEY)
         } else {
-            rsi_el0::sealing_key(UNIQUE_SEALING_KEY, 0).or(Err(Error::SealingKey))
+            rust_rsi::sealing_key(UNIQUE_SEALING_KEY, 0).or(Err(Error::SealingKey))
         }
     }
 }

@@ -14,7 +14,7 @@ fn attest_x86_64(user_data: &[u8]) -> Result<Report, Error> {
 fn attest_aarch64(user_data: &[u8]) -> Result<Report, Error> {
     println!("Getting an attestation report on aarch64.");
 
-    const LEN: usize = rsi_el0::CHALLENGE_LEN as usize;
+    const LEN: usize = rust_rsi::CHALLENGE_LEN as usize;
     if user_data.len() > LEN {
         println!("Length of user_data cannot over CHALLENGE_LEN[{}]", LEN);
         return Err(Error::InvalidArgument);
@@ -23,7 +23,7 @@ fn attest_aarch64(user_data: &[u8]) -> Result<Report, Error> {
     let mut challenge: [u8; LEN] = [0; LEN];
     challenge[..user_data.len()].clone_from_slice(&user_data);
 
-    match rsi_el0::attestation_token(&challenge) {
+    match rust_rsi::attestation_token(&challenge) {
         Ok(token) => Ok(Report {
             buffer: token,
             user_data: Vec::new(), // Dummy field

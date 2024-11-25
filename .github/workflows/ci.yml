@@ -149,7 +149,7 @@ jobs:
     - name: Check local packages and all of its dependencies for errors
       run: >
         cargo check --workspace
-        --exclude islet_sdk --exclude rsi_el0
+        --exclude islet_sdk
         --exclude cose --exclude cca_token
         --exclude ciborium
         --exclude islet_mc_harnesses
@@ -209,25 +209,6 @@ jobs:
 
     - name: Test Certifier compatibility
       run: ./scripts/tests/certifier-compatibility.sh
-
-  cli:
-    runs-on: ubuntu-22.04
-    steps:
-    - uses: actions/checkout@v3
-
-    - uses: actions/cache@v3
-      with:
-        path: .git/modules/assets
-        key: ${{ runner.os }}-assets-${{ hashFiles('.gitmodules', 'assets') }}
-
-    - name: Install dependencies
-      run: |
-        ./scripts/deps/assets.sh
-        ./scripts/deps/rust.sh
-
-    - name: Run cli build (x86_64, aarch64)
-      working-directory: cli
-      run: make
 
   rust-unsafe-analysis:
     runs-on: ubuntu-22.04

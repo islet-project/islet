@@ -73,3 +73,6 @@
 [submodule "third-party/dtc"]
 	path = third-party/dtc
 	url = https://git.kernel.org/pub/scm/utils/dtc/dtc.git
+[submodule "tools/rsictl"]
+	path = tools/rsictl
+	url = https://github.com/islet-project/rsictl.git

@@ -43,13 +43,13 @@ policies by editing the `provisioning.sh` script and
 specifying your own values for the following variables:
 *Those instructions are quoted from [well-descripted document](https://github.com/vmware-research/certifier-framework-for-confidential-computing/blob/main/sample_apps/simple_app_under_islet/instructions.md)*
 
-You can get the server measurement with cli on the host machine:
+You can get the server measurement with sdk on the host machine:
 ```sh
-$ cd $(islet)/cli
-$ make x86_64
-$ ./islet measurement-read --index 0
+$ cd $(islet)/sdk
+$ make run-simulated
 Simulated attestation operation on x86_64.
-"580bd77074f789f34841ea9920579ff29a59b9452b606f73811132b31c689da9"
+...
+Realm initial measurement: "580bd77074f789f34841ea9920579ff29a59b9452b606f73811132b31c689da9"
 ```
 
 You also can get the client measurement with cli on the realm:
@@ -60,11 +60,13 @@ $ telnet localhost 5000
 $ ./launch-realm.sh
 # cd /shared
 # insmod rsi.ko
-# ./islet measurement-read --index 0
-[ 2533.544864] rsi: device rsi open
-[ 2533.664676] rsi: ioctl: measurement_read: 0
-[ 2533.831443] rsi: device rsi released
-"8a1d5cd26a0ee477067d18e2ff051687d18e1450b513508ba98910fa262b1fa3"
+# cd /shared/bin
+# ./rsictl attest
+[ 3477.026964] rsi: device rsi open
+[ 3477.056437] rsi: ioctl: attestation_token
+....
+== Realm Token:
+Realm initial measurement      (#44238) = [8a1d5cd26a0ee477067d18e2ff051687d18e1450b513508ba98910fa262b1fa3]
 ```
 
 After getting measurments,

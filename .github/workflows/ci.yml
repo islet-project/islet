@@ -149,7 +149,7 @@ jobs:
     - name: Check local packages and all of its dependencies for errors
       run: >
         cargo check --workspace
-        --exclude islet_sdk
+        --exclude islet_sdk --exclude rsictl
         --exclude cose --exclude cca_token
         --exclude ciborium
         --exclude islet_mc_harnesses

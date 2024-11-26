@@ -4,15 +4,16 @@ members = [
     "lib/armv9a",
     "lib/cca-token", # To be deprecated
     "lib/cose",
-    "lib/safe-abstraction",
-    "lib/vmsa",
-    "lib/uart",
     "lib/io",
+    "lib/safe-abstraction",
+    "lib/uart",
+    "lib/vmsa",
+    "model-checking",
     "plat/fvp",
     "realm/rsi-test",
     "rmm/",
     "sdk",
-    "model-checking",
+    "tools/rsictl",
 ]
 
 [profile.dev]

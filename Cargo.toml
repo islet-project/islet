@@ -2,8 +2,6 @@
 resolver = "2"
 members = [
     "lib/armv9a",
-    "lib/cca-token", # To be deprecated
-    "lib/cose",
     "lib/io",
     "lib/safe-abstraction",
     "lib/uart",

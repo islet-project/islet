@@ -4,6 +4,11 @@ use bincode::{deserialize, serialize};
 use std::ffi::{c_char, c_int, c_uchar, CStr};
 use std::slice::{from_raw_parts, from_raw_parts_mut};
 
+const STR_REALM_CHALLENGE: &str = "Realm challenge";
+const STR_REALM_INITIAL_MEASUREMENT: &str = "Realm initial measurement";
+const STR_USER_DATA: &str = "User data";
+const STR_PLAT_PROFILE: &str = "Profile";
+
 #[allow(non_camel_case_types)]
 #[repr(C)]
 pub enum islet_status_t {
@@ -94,21 +99,21 @@ pub unsafe extern "C" fn islet_parse(
 
         let claims = verify(&decoded)?;
         let title = CStr::from_ptr(title).to_str().or(Err(Error::Decoding))?;
-        match parse(&claims, title) {
-            Some(ClaimData::Bstr(value)) => {
-                *value_out_len = value.len() as c_int;
-                let out = from_raw_parts_mut(value_out, value.len());
-                out.copy_from_slice(&value[..]);
-            }
-            Some(ClaimData::Text(value)) => {
-                let value = value.as_bytes();
-                *value_out_len = value.len() as c_int;
-                let out = from_raw_parts_mut(value_out, value.len());
-                out.copy_from_slice(value);
-            }
-            None => return Err(Error::Claims),
-            _ => return Err(Error::NotSupported),
-        };
+
+        let (realm_claims, plat_claims) = parse(&claims)?;
+        let value = if title == STR_USER_DATA || title == STR_REALM_CHALLENGE {
+            Ok(realm_claims.challenge.clone())
+        } else if title == STR_REALM_INITIAL_MEASUREMENT {
+            Ok(realm_claims.rim.clone())
+        } else if title == STR_PLAT_PROFILE {
+            Ok(plat_claims.profile.as_bytes().to_vec())
+        } else {
+            Err(Error::NotSupported)
+        }?;
+        *value_out_len = value.len() as c_int;
+        let out = from_raw_parts_mut(value_out, value.len());
+        out.copy_from_slice(&value[..]);
+
         Ok(())
     };
 
@@ -131,7 +136,7 @@ pub unsafe extern "C" fn islet_print_claims(claims: *const c_uchar, claims_len: 
     }
 
     match verify(&decoded.unwrap()) {
-        Ok(claims) => cca_token::dumper::print_token(&claims),
+        Ok(claims) => crate::parser::print_claims(&claims),
         Err(error) => println!("Wrong claims {:?}", error),
     }
 }

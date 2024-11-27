@@ -25,6 +25,8 @@ Currently Islet SDK provides `Attestation` and `Sealing`. You can check referenc
 
 ### Attestation
 #### Rust code snippet
+The data types for `RealmClaims` and `PlatformClaims` are defined [rust-rsi](https://github.com/islet-project/rust-rsi/blob/main/src/token/parser.rs).
+
 ```rust
 use islet_sdk::prelude::*;
 
@@ -34,23 +36,9 @@ let claims = verify(&report)?;
 
 print_claim(&claims);
 
-if let Some(ClaimData::Bstr(data)) = parse(&claims, config::STR_USER_DATA) {
-    assert_eq!(user_data, &data[..user_data.len()]);
-} else {
-    assert!(false, "Wrong user data");
-}
-
-if let Some(ClaimData::Text(data)) = parse(&claims, config::STR_PLAT_PROFILE) {
-    assert_eq!(data, "http://arm.com/CCA-SSD/1.0.0");
-} else {
-    assert!(false, "Wrong platform profile");
-}
-
-if let Some(ClaimData::Bstr(data)) = parse(&claims, config::STR_REALM_INITIAL_MEASUREMENT) {
-    println!("Realm initial measurement: {:X?}", &data);
-} else {
-    assert!(false, "Wrong RIM");
-}
+let (realm_claims, plat_claims) = parse(&claims)?;
+println!("Realm initial measurement: {:X?}", &realm_claims.challenge);
+println!("Platform profile: {}", &plat_claims.profile);
 ```
 
 #### C++ code snippet

@@ -1,4 +1,4 @@
-use cca_token::TokenError;
+use rust_rsi::TokenError;
 
 #[derive(Debug)]
 pub enum Error {

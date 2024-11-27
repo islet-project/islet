@@ -52,13 +52,12 @@ SECTIONS {
     } >REALM_PAS
     __BSS_SIZE__ = SIZEOF(.bss);
 
-    .stacks (NOLOAD) : {
-        __RMM_STACK_START__ = .;
-        KEEP(*(.stack));
-        __RMM_STACK_END__ = .;
-    } >REALM_PAS
-
     __RW_END__ = .;
+
+    .stacks ALIGN(SIZE_4KB) (NOLOAD) : {
+        __RMM_STACK_BASE__ = .;
+        KEEP(*(.stack));
+    } >REALM_PAS
 
     /DISCARD/ : {
         *(.comment*);
@@ -70,4 +69,8 @@ SECTIONS {
         *(.note*);
         *(.plt*);
     }
+
+    __RMM_END__ = .;
+
+    ASSERT((__RMM_END__ < ORIGIN(REALM_PAS) + LENGTH(REALM_PAS)), "REALM_PAS size exceeded!")
 }

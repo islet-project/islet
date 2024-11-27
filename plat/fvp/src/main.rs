@@ -19,6 +19,7 @@ extern "C" {
     static __RMM_BASE__: u64;
     static __RW_START__: u64;
     static __RW_END__: u64;
+    static __RMM_STACK_BASE__: u64;
 }
 
 #[no_mangle]
@@ -34,6 +35,7 @@ pub unsafe fn main() -> ! {
             rmm_base: &__RMM_BASE__ as *const u64 as u64,
             rw_start: &__RW_START__ as *const u64 as u64,
             rw_end: &__RW_END__ as *const u64 as u64,
+            stack_base: &__RMM_STACK_BASE__ as *const u64 as u64,
             uart_phys: 0x1c0c_0000,
         }
     };

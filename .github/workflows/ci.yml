@@ -150,7 +150,6 @@ jobs:
       run: >
         cargo check --workspace
         --exclude islet_sdk --exclude rsictl
-        --exclude cose --exclude cca_token
         --exclude ciborium
         --exclude islet_mc_harnesses
 

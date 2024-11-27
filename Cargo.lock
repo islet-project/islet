@@ -136,18 +136,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "96c51067fd44124faa7f870b4b1c969379ad32b2ba805aa959430ceaa384f695"
 
 [[package]]
-name = "cca_token"
-version = "0.1.0"
-dependencies = [
- "ciborium 0.2.2",
- "cose",
- "coset 0.3.6",
- "ecdsa",
- "hex",
- "serde",
-]
-
-[[package]]
 name = "cexpr"
 version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -273,17 +261,6 @@ name = "const-oid"
 version = "0.9.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2459377285ad874054d797f3ccebf984978aa39129f6eafde5cdc8315b612f8"
-
-[[package]]
-name = "cose"
-version = "0.0.1"
-dependencies = [
- "ciborium 0.2.2",
- "coset 0.3.6",
- "hex",
- "p256",
- "p384",
-]
 
 [[package]]
 name = "coset"
@@ -711,9 +688,7 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "cbindgen",
- "cca_token",
  "cfg-if",
- "cose",
  "hex",
  "openssl",
  "rust-rsi",

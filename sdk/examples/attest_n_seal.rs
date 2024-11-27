@@ -6,23 +6,9 @@ fn attestation() -> Result<(), Error> {
     let claims = verify(&report)?;
     print_claims(&claims);
 
-    if let Some(ClaimData::Bstr(data)) = parse(&claims, config::STR_USER_DATA) {
-        assert_eq!(user_data, &data[..user_data.len()]);
-    } else {
-        assert!(false, "Wrong user data");
-    }
-
-    if let Some(ClaimData::Text(data)) = parse(&claims, config::STR_PLAT_PROFILE) {
-        assert_eq!(data, "http://arm.com/CCA-SSD/1.0.0");
-    } else {
-        assert!(false, "Wrong platform profile");
-    }
-
-    if let Some(ClaimData::Bstr(data)) = parse(&claims, config::STR_REALM_INITIAL_MEASUREMENT) {
-        println!("Realm initial measurement: {:X?}", hex::encode(&data));
-    } else {
-        assert!(false, "Wrong RIM");
-    }
+    let (realm_claims, plat_claims) = parse(&claims).unwrap();
+    assert_eq!(&realm_claims.challenge[..user_data.len()], user_data);
+    assert_eq!(plat_claims.profile, "http://arm.com/CCA-SSD/1.0.0");
 
     Ok(())
 }

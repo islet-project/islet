@@ -4,8 +4,6 @@
 
 pub mod attester;
 pub mod c_api;
-/// cbindgen:ignore
-pub mod config;
 pub mod error;
 pub mod prelude;
 pub mod report;
@@ -16,6 +14,17 @@ pub mod verifier;
 mod mock;
 mod parser;
 
+cfg_if::cfg_if! {
+    if #[cfg(target_arch = "x86_64")] {
+        pub struct AttestationClaims {
+            pub origin: rust_rsi::AttestationClaims,
+            pub user_data: Vec<u8>, // The requirement of Certifier: Simulated Version on x86
+        }
+    } else {
+        pub use rust_rsi::AttestationClaims;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::prelude::*;
@@ -25,18 +34,9 @@ mod tests {
         let user_data = b"User data";
         let report = attest(user_data).unwrap();
         let claims = verify(&report).unwrap();
-
-        if let Some(ClaimData::Bstr(data)) = parse(&claims, config::STR_USER_DATA) {
-            assert_eq!(&data[..user_data.len()], user_data);
-        } else {
-            assert!(false, "Claims parsing error.");
-        }
-
-        if let Some(ClaimData::Text(data)) = parse(&claims, config::STR_PLAT_PROFILE) {
-            assert_eq!(data, "http://arm.com/CCA-SSD/1.0.0");
-        } else {
-            assert!(false, "Claims parsing error.");
-        }
+        let (realm_claims, plat_claims) = parse(&claims).unwrap();
+        assert_eq!(user_data, &realm_claims.challenge[..user_data.len()]);
+        assert_eq!("http://arm.com/CCA-SSD/1.0.0", plat_claims.profile);
     }
 
     #[test]

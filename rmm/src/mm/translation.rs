@@ -1,6 +1,8 @@
 use super::page_table::entry::Entry;
 use super::page_table::{attr, L1Table};
-use crate::config::{PlatformMemoryLayout, PAGE_SIZE, RMM_SHARED_BUFFER_START};
+use crate::config::{
+    PlatformMemoryLayout, PAGE_SIZE, RMM_SHARED_BUFFER_START, RMM_STACK_GUARD_SIZE, RMM_STACK_SIZE,
+};
 use crate::mm::page::BasePageSize;
 use crate::mm::page_table::entry::PTDesc;
 
@@ -101,6 +103,16 @@ impl<'a> Inner<'a> {
             rw_size as usize,
             rw_flags | rmm_flags,
         );
+        let per_cpu = RMM_STACK_GUARD_SIZE + RMM_STACK_SIZE;
+        for i in 0..crate::config::NUM_OF_CPU {
+            let stack_base = layout.stack_base + (per_cpu * i) as u64;
+            self.set_pages(
+                VirtAddr::from(stack_base),
+                PhysAddr::from(stack_base),
+                RMM_STACK_SIZE,
+                rw_flags | rmm_flags,
+            );
+        }
         // UART
         self.set_pages(
             VirtAddr::from(uart_phys),

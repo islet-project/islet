@@ -4,25 +4,35 @@ use crate::log::LevelFilter;
 use aarch64_cpu::registers::*;
 use core::ptr::{addr_of, addr_of_mut};
 use io::stdout;
-use islet_rmm::config::{NUM_OF_CPU, RMM_STACK_SIZE};
+use islet_rmm::config::{NUM_OF_CPU, RMM_STACK_GUARD_SIZE, RMM_STACK_SIZE};
 use islet_rmm::logger;
 
+/// Configure the first page of the stack section as a stack guard page
 #[no_mangle]
 #[link_section = ".stack"]
-static mut RMM_STACK: [u8; RMM_STACK_SIZE * NUM_OF_CPU] = [0; RMM_STACK_SIZE * NUM_OF_CPU];
+static mut RMM_STACK: [[u8; RMM_STACK_SIZE + RMM_STACK_GUARD_SIZE]; NUM_OF_CPU] =
+    [[0; RMM_STACK_SIZE + RMM_STACK_GUARD_SIZE]; NUM_OF_CPU];
+
+/// # Safety
+///
+/// This function only reads the address of the stack.
+#[no_mangle]
+pub unsafe extern "C" fn current_cpu_stack() -> usize {
+    let cpu_id = get_cpu_id();
+    if cpu_id >= NUM_OF_CPU {
+        panic!("Invalid CPU ID!");
+    }
+    &RMM_STACK[cpu_id] as *const u8 as usize + RMM_STACK_SIZE
+}
 
 #[naked]
 #[link_section = ".head.text"]
 #[no_mangle]
 unsafe extern "C" fn rmm_entry() -> ! {
-    core::arch::asm!("
+    core::arch::asm!(
+        "
         msr spsel, #1
-        bl get_cpu_id
-
-        ldr x1, =__RMM_STACK_END__
-        mov x2, {}
-        mul x0, x0, x2
-        sub x0, x1, x0
+        bl current_cpu_stack
         mov sp, x0
 
         bl setup
@@ -30,12 +40,12 @@ unsafe extern "C" fn rmm_entry() -> ! {
         1:
         bl main
         b 1b",
-        const RMM_STACK_SIZE,
         options(noreturn)
     )
 }
 
 extern "C" {
+    fn get_cpu_id() -> usize;
     static __BSS_START__: usize;
     static __BSS_SIZE__: usize;
 }

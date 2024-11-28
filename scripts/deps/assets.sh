@@ -7,4 +7,3 @@ ROOT=$(git rev-parse --show-toplevel)
 cd $ROOT && git submodule update --init --depth 1 assets
 git submodule update --init --depth 1 $ROOT/third-party/ciborium
 git submodule update --init --depth 1 $ROOT/third-party/coset
-git submodule update --init --depth 1 $ROOT/tools/rsictl

@@ -13,7 +13,6 @@ git submodule update --init --depth 1 $ROOT/third-party/tf-a
 git submodule update --init --depth 1 $ROOT/third-party/cca-rmm-acs
 git submodule update --init --depth 1 $ROOT/third-party/ciborium
 git submodule update --init --depth 1 $ROOT/third-party/coset
-git submodule update --init --depth 1 $ROOT/tools/rsictl
 
 # Install rust (min)
 $HERE/deps/rust_min.sh

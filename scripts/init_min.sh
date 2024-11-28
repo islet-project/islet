@@ -12,7 +12,6 @@ git submodule update --init --depth 1 $ROOT/assets
 git submodule update --init --depth 1 $ROOT/third-party/tf-a
 git submodule update --init --depth 1 $ROOT/third-party/ciborium
 git submodule update --init --depth 1 $ROOT/third-party/coset
-git submodule update --init --depth 1 $ROOT/tools/rsictl
 
 # Install rust
 $HERE/deps/rust.sh

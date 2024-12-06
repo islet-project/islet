@@ -3,3 +3,7 @@ name = "armv9a"
 version = "0.0.1"
 authors = ["Islet Contributors"]
 edition = "2021"
+
+[dependencies]
+aarch64-cpu = { version = "10.0.0" }
+tock-registers = { version = "0.9.0" }

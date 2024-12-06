@@ -2,6 +2,7 @@ use vmsa::guard::Content;
 
 use crate::measurement::{Measurement, MEASUREMENTS_SLOT_NR};
 use crate::realm::mm::IPATranslation;
+use crate::simd::SimdConfig;
 use alloc::boxed::Box;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::sync::Arc;
@@ -34,9 +35,11 @@ pub struct Rd {
     pub measurements: [Measurement; MEASUREMENTS_SLOT_NR],
     pub vcpu_index: usize,
     metadata: Option<usize>,
+    simd_cfg: SimdConfig,
 }
 
 impl Rd {
+    #[allow(clippy::too_many_arguments)]
     pub fn init(
         &mut self,
         vmid: u16,
@@ -45,6 +48,8 @@ impl Rd {
         ipa_bits: usize,
         s2_starting_level: isize,
         rpv: [u8; 64],
+        sve_en: bool,
+        sve_vl: u64,
     ) {
         self.vmid = vmid;
         self.state = State::New;
@@ -57,6 +62,10 @@ impl Rd {
         self.vcpu_index = 0;
         self.rpv.copy_from_slice(rpv.as_slice());
         self.metadata = None;
+        self.simd_cfg.sve_en = sve_en;
+        if sve_en {
+            self.simd_cfg.sve_vq = sve_vl;
+        }
     }
 
     pub fn id(&self) -> usize {
@@ -133,6 +142,10 @@ impl Rd {
 
     pub fn set_metadata(&mut self, metadata: Option<usize>) {
         self.metadata = metadata
+    }
+
+    pub fn simd_config(&self) -> &SimdConfig {
+        &self.simd_cfg
     }
 }
 

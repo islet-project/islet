@@ -5,6 +5,7 @@ use crate::realm::mm::rtt::{RTT_PAGE_LEVEL, RTT_STRIDE};
 use crate::rmi::error::Error;
 use crate::rmi::features;
 use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
+use crate::simd;
 
 use armv9a::{define_bitfield, define_bits, define_mask};
 use autopadding::*;
@@ -21,7 +22,7 @@ pad_struct_and_impl_default!(
 pub struct Params {
     0x0    pub flags: u64,
     0x8    pub s2sz: u8,
-    0x10   pub sve_v1: u8,
+    0x10   pub sve_vl: u8,
     0x18   pub num_bps: u8,
     0x20   pub num_wps: u8,
     0x28   pub pmu_num_ctrs: u8,
@@ -36,6 +37,7 @@ pub struct Params {
 );
 
 const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
+const SUPPORTED: u64 = 1;
 
 impl core::fmt::Debug for Params {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -50,7 +52,7 @@ impl core::fmt::Debug for Params {
                 ),
             )
             .field("s2sz", &self.s2sz)
-            .field("sve_v1", &self.sve_v1)
+            .field("sve_vl", &self.sve_vl)
             .field("num_bps", &self.num_bps)
             .field("num_wps", &self.num_wps)
             .field("pmu_num_ctrs", &self.pmu_num_ctrs)
@@ -75,8 +77,8 @@ impl Hashable for Params {
             alg.hash(self._padflags);
             alg.hash_u8(self.s2sz);
             alg.hash(self._pads2sz);
-            alg.hash_u8(self.sve_v1);
-            alg.hash(self._padsve_v1);
+            alg.hash_u8(self.sve_vl);
+            alg.hash(self._padsve_vl);
             alg.hash_u8(self.num_bps);
             alg.hash(self._padnum_bps);
             alg.hash_u8(self.num_wps);
@@ -101,7 +103,12 @@ impl Hashable for Params {
 
 impl Params {
     pub fn ipa_bits(&self) -> usize {
-        features::ipa_bits(self.s2sz as usize)
+        self.s2sz as usize
+    }
+
+    pub fn sve_en(&self) -> bool {
+        let flags = RmiRealmFlags::new(self.flags);
+        flags.get_masked_value(RmiRealmFlags::Sve) == SUPPORTED
     }
 
     pub fn verify_compliance(&self, rd: usize) -> Result<(), Error> {
@@ -142,12 +149,12 @@ impl Params {
             return Err(Error::RmiErrorInput);
         }
 
-        // TODO: We don't support pmu, sve, lpa2
+        // TODO: We don't support pmu, lpa2
         let flags = RmiRealmFlags::new(self.flags);
         if flags.get_masked_value(RmiRealmFlags::Lpa2) != 0 {
             return Err(Error::RmiErrorInput);
         }
-        if flags.get_masked_value(RmiRealmFlags::Sve) != 0 {
+        if !simd::validate(self.sve_en(), self.sve_vl as u64) {
             return Err(Error::RmiErrorInput);
         }
         if flags.get_masked_value(RmiRealmFlags::Pmu) != 0 {

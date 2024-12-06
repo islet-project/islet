@@ -53,15 +53,10 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
     });
 }
 
-pub fn ipa_bits(val: usize) -> usize {
-    let feat_reg0 = FeatureReg0::new(val as u64);
-    feat_reg0.get_masked_value(FeatureReg0::S2SZ) as usize
-}
-
 //TODO: locate validate() in armv9a to check against AA64MMFR_EL1 register
-pub fn validate(s2sz: u64) -> bool {
-    const MIN_IPA_SIZE: u64 = 32;
-    if !(MIN_IPA_SIZE..=S2SZ_VALUE).contains(&s2sz) {
+pub fn validate(s2sz: usize) -> bool {
+    const MIN_IPA_SIZE: usize = 32;
+    if !(MIN_IPA_SIZE..=S2SZ_VALUE as usize).contains(&s2sz) {
         return false;
     }
 

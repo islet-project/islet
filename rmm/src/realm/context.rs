@@ -2,6 +2,8 @@ use super::timer;
 use crate::gic;
 use crate::rec::Rec;
 use crate::rmi::error::Error;
+use crate::simd;
+use crate::simd::SimdRegister;
 
 use aarch64_cpu::registers::*;
 
@@ -14,7 +16,7 @@ pub struct Context {
     pub sys_regs: SystemRegister,
     pub gic_state: GICRegister,
     pub timer: TimerRegister,
-    pub fp_regs: [u128; 32],
+    pub simd: SimdRegister,
 }
 
 pub struct RegOffset;
@@ -82,6 +84,7 @@ impl Context {
         TPIDR_EL2.set(rec as *const _ as u64);
         gic::restore_state(rec);
         timer::restore_state(rec);
+        simd::restore_state(rec);
     }
 
     /// Saves the current execution context into the given `Rec` record.
@@ -93,6 +96,7 @@ impl Context {
     pub unsafe fn from_current(rec: &mut Rec<'_>) {
         gic::save_state(rec);
         timer::save_state(rec);
+        simd::save_state(rec);
     }
 }
 

@@ -6,6 +6,7 @@ use crate::rmi::error::Error;
 use crate::rmi::rec::params::NR_AUX;
 use crate::rmm_exit;
 use crate::rsi::attestation::MAX_CHALLENGE_SIZE;
+use crate::simd;
 
 use aarch64_cpu::registers::*;
 
@@ -120,6 +121,7 @@ impl Rec<'_> {
         self.aux.copy_from_slice(&aux);
         timer::init_timer(self);
         gic::init_gic(self);
+        simd::init_simd(self)?;
 
         Ok(())
     }

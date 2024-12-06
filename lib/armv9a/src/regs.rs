@@ -1,3 +1,20 @@
+#![allow(unused_attributes)]
+
+#[macro_use]
+mod macros;
+
+mod cptr_el2;
+mod id_aa64pfr1_el1;
+mod smcr_el2;
+mod zcr_el1;
+mod zcr_el2;
+
+pub use cptr_el2::CPTR_EL2;
+pub use id_aa64pfr1_el1::ID_AA64PFR1_SME_EL1;
+pub use smcr_el2::SMCR_EL2;
+pub use zcr_el1::ZCR_EL1;
+pub use zcr_el2::ZCR_EL2;
+
 use crate::bits_in_reg;
 
 define_bits!(

@@ -3,16 +3,16 @@
 	url = https://github.com/islet-project/assets
 [submodule "third-party/nw-linux"]
 	path = third-party/nw-linux
-	url = https://github.com/islet-project/assets
-	branch = eac5/3rd-nw-linux-realm-metadata
+	url = https://github.com/islet-project/3rd-linux
+	branch = nw-linux/eac5
 [submodule "third-party/optee-build"]
 	path = third-party/optee-build
 	url = https://github.com/islet-project/assets
 	branch = 3rd-optee-build
 [submodule "third-party/realm-linux"]
 	path = third-party/realm-linux
-	url = https://github.com/islet-project/assets
-	branch = eac5/3rd-realm-linux
+	url = https://github.com/islet-project/3rd-linux
+	branch = realm-linux/eac5
 [submodule "third-party/tf-a-tests"]
 	path = third-party/tf-a-tests
 	url = https://git.trustedfirmware.org/TF-A/tf-a-tests.git
@@ -23,16 +23,16 @@
 	branch = rmm-spec-v1.0-eac5
 [submodule "third-party/android-kernel"]
 	path = third-party/android-kernel
-	url = https://github.com/islet-project/assets
-	branch = 3rd-android-kernel
+	url = https://github.com/islet-project/3rd-android-kernel
+	branch = main
 [submodule "third-party/gki-build"]
 	path = third-party/gki-build
-	url = https://github.com/islet-project/assets
-	branch = 3rd-gki-build
+	url = https://github.com/islet-project/3rd-gki-build
+	branch = main
 [submodule "third-party/kvmtool"]
 	path = third-party/kvmtool
-	url = https://github.com/islet-project/assets
-	branch = eac5/3rd-kvmtool
+	url = https://github.com/islet-project/3rd-kvmtool
+	branch = kvmtool/eac5
 [submodule "third-party/kvm-unit-tests"]
 	path = third-party/kvm-unit-tests
 	url = https://git.gitlab.arm.com/linux-arm/kvm-unit-tests-cca.git
@@ -46,8 +46,8 @@
 	branch = v3.4.1
 [submodule "third-party/kvmtool-rim-measurer"]
 	path = third-party/kvmtool-rim-measurer
-	url = https://github.com/islet-project/assets
-	branch = eac5/3rd-kvmtool-rim-measurer
+	url = https://github.com/islet-project/3rd-kvmtool
+	branch = kvmtool-rim-measurer/eac5
 [submodule "third-party/certifier"]
 	path = third-party/certifier
 	url = https://github.com/ccc-certifier-framework/certifier-framework-for-confidential-computing

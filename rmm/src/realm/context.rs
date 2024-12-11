@@ -84,6 +84,7 @@ impl Context {
         TPIDR_EL2.set(rec as *const _ as u64);
         gic::restore_state(rec);
         timer::restore_state(rec);
+        #[cfg(not(any(test, miri)))]
         simd::restore_state(rec);
     }
 
@@ -96,6 +97,7 @@ impl Context {
     pub unsafe fn from_current(rec: &mut Rec<'_>) {
         gic::save_state(rec);
         timer::save_state(rec);
+        #[cfg(not(any(test, miri)))]
         simd::save_state(rec);
     }
 }

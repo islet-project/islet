@@ -84,6 +84,7 @@ lazy_static! {
         let mut sme_en: bool = false;
 
         trace!("Reading simd features");
+        #[cfg(not(any(test, miri)))]
         if ID_AA64PFR0_EL1.is_set(ID_AA64PFR0_EL1::SVE) {
             trace!("SVE is set");
             // Get effective vl
@@ -101,6 +102,7 @@ lazy_static! {
         }
 
         // init sme
+        #[cfg(not(any(test, miri)))]
         if ID_AA64PFR1_SME_EL1.is_set(ID_AA64PFR1_SME_EL1::SME) {
             trace!("SME is set");
             // Find the architecturally permitted SVL
@@ -258,6 +260,7 @@ pub fn save_state(rec: &mut Rec<'_>) {
         rec_simd.sve.zcr_el2 = ZCR_EL2.get();
         rec_simd.sve.zcr_el12 = ZCR_EL1.get();
         ZCR_EL2.set(ns_simd.sve.zcr_el2);
+        unimplemented!();
     } else {
         unsafe {
             if rec_simd.is_used {

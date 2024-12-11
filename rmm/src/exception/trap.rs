@@ -8,8 +8,10 @@ use super::lower::synchronous;
 use crate::cpu;
 use crate::event::realmexit::{ExitSyncType, RecExitReason};
 use crate::rec::Rec;
+use crate::simd;
 
 use aarch64_cpu::registers::*;
+use armv9a::regs::CPTR_EL2;
 
 #[repr(u16)]
 #[derive(Debug, Copy, Clone)]
@@ -96,6 +98,10 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
             }
             Syndrome::WFX => {
                 debug!("WFX");
+            }
+            Syndrome::FPU | Syndrome::SVE | Syndrome::SME => {
+                // Islet RMM is not supposed to use simd.
+                panic!("RMM is using SIMD instruction");
             }
             Syndrome::Other(v) => {
                 debug!("Other");
@@ -198,6 +204,48 @@ pub extern "C" fn handle_lower_exception(
                 tf.regs[3] = FAR_EL2.get();
                 advance_pc(rec);
                 RET_TO_RMM
+            }
+            Syndrome::FPU | Syndrome::SVE | Syndrome::SME => {
+                debug!("Synchronous: SIMD");
+                let abort: bool = match Syndrome::from(esr) {
+                    Syndrome::SVE => !rec.context.simd.cfg.sve_en,
+                    Syndrome::SME => !rec.context.simd.cfg.sme_en,
+                    _ => false,
+                };
+                if abort {
+                    // Inject undefined exception to the realm
+                    SPSR_EL1.set(rec.context.spsr);
+                    ELR_EL1.set(rec.context.elr);
+                    ESR_EL1.write(ESR_EL1::EC::Unknown + ESR_EL1::IL::SET);
+
+                    // Return to realm's exception handler
+                    let vbar = rec.context.sys_regs.vbar;
+                    const SPSR_EL2_MODE_EL1H_OFFSET: u64 = 0x200;
+                    rec.context.elr = vbar + SPSR_EL2_MODE_EL1H_OFFSET;
+
+                    tf.regs[0] = RecExitReason::Sync(ExitSyncType::Undefined).into();
+                    tf.regs[1] = esr as u64;
+                    tf.regs[2] = 0;
+                    tf.regs[3] = FAR_EL2.get();
+                    debug!("Unsupported feature access. Inject abort");
+                    return RET_TO_REC;
+                }
+                // Note: To avoid being trapped from RMM's access to simd,
+                //       setting cptr_el2 should come prior to the context restoration.
+                CPTR_EL2.write(CPTR_EL2::TAM::SET);
+                rec.context.simd.is_used = true;
+                unsafe {
+                    if rec.context.simd.is_saved {
+                        match Syndrome::from(esr) {
+                            Syndrome::FPU => simd::restore_fpu(&rec.context.simd.fpu),
+                            Syndrome::SVE | Syndrome::SME => {
+                                unimplemented!();
+                            }
+                            _ => (),
+                        }
+                    }
+                }
+                RET_TO_REC
             }
             undefined => {
                 debug!("Synchronous: Other");

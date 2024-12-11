@@ -97,6 +97,8 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
                 params.ipa_bits(),
                 params.rtt_level_start as isize,
                 params.rpv,
+                params.sve_en(),
+                params.sve_vl as u64,
             )
         })?;
 

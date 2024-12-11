@@ -52,8 +52,8 @@
 	stp x1, x2, [x18, #REC_GP_REGS + 8 * 31]
 .endm
 
-.global restore_all_from_rec_and_run
-restore_all_from_rec_and_run:
+.global restore_all_from_rec
+restore_all_from_rec:
 	mrs x0, tpidr_el2
 
 	/* Restore system registers */
@@ -117,18 +117,8 @@ restore_all_from_rec_and_run:
 	/* TODO: invalidate TLB */
 
 	/* Intentional fallthrough */
-.global restore_nonvolatile_from_rec_and_run
-restore_nonvolatile_from_rec_and_run:
-	/* Restore non-volatile registers. */
-	ldp x19, x20, [x0, #REC_GP_REGS + 8 * 19]
-	ldp x21, x22, [x0, #REC_GP_REGS + 8 * 21]
-	ldp x23, x24, [x0, #REC_GP_REGS + 8 * 23]
-	ldp x25, x26, [x0, #REC_GP_REGS + 8 * 25]
-	ldp x27, x28, [x0, #REC_GP_REGS + 8 * 27]
-
-	/* Intentional fallthrough */
-.global restore_volatile_from_rec_and_run
-restore_volatile_from_rec_and_run:
+.global restore_volatile_from_rec
+restore_volatile_from_rec:
 	ldp x4, x5, [x0, #REC_GP_REGS + 8 * 4]
 	ldp x6, x7, [x0, #REC_GP_REGS + 8 * 6]
 	ldp x8, x9, [x0, #REC_GP_REGS + 8 * 8]
@@ -136,8 +126,13 @@ restore_volatile_from_rec_and_run:
 	ldp x12, x13, [x0, #REC_GP_REGS + 8 * 12]
 	ldp x14, x15, [x0, #REC_GP_REGS + 8 * 14]
 	ldp x16, x17, [x0, #REC_GP_REGS + 8 * 16]
-	ldr x18, [x0, #REC_GP_REGS + 8 * 18]
-	ldp x29, x30, [x0, #REC_GP_REGS + 8 * 29]
+    ldp x18, x19, [x0, #REC_GP_REGS + 8 * 18]
+	ldp x20, x21, [x0, #REC_GP_REGS + 8 * 20]
+	ldp x22, x23, [x0, #REC_GP_REGS + 8 * 22]
+	ldp x24, x25, [x0, #REC_GP_REGS + 8 * 24]
+	ldp x26, x27, [x0, #REC_GP_REGS + 8 * 26]
+	ldp x28, x29, [x0, #REC_GP_REGS + 8 * 28]
+	ldr x30, [x0, #REC_GP_REGS + 8 * 30]
 
 	ldp x1, x2, [x0, #REC_GP_REGS + 8 * 31]
 	msr elr_el2, x1
@@ -200,7 +195,7 @@ restore_volatile_from_stack_and_return:
 	cbnz x0, rmm_enter
 
 	mrs x0, tpidr_el2
-	b restore_nonvolatile_from_rec_and_run
+	b restore_volatile_from_rec
 .endm
 
 .global rmm_enter
@@ -319,7 +314,7 @@ rmm_exit:
 	str xzr, [SP, #-8]!
 	str xzr, [SP, #-8]!
 
-	b restore_all_from_rec_and_run
+	b restore_all_from_rec
 
 .align 11
 .global vectors

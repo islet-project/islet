@@ -42,6 +42,9 @@ pub enum Syndrome {
     SMC,
     SysRegInst,
     WFX,
+    FPU,
+    SVE,
+    SME,
     Other(u32),
 }
 
@@ -50,11 +53,14 @@ impl From<u32> for Syndrome {
         match (origin >> ESR_EL2::EC.shift) & ESR_EL2::EC.mask as u32 {
             0b00_0000 => Syndrome::Unknown,
             0b00_0001 => Syndrome::WFX,
+            0b00_0111 => Syndrome::FPU,
             0b01_0010 => Syndrome::HVC,
             0b01_0110 => Syndrome::HVC,
             0b01_0011 => Syndrome::SMC,
             0b01_0111 => Syndrome::SMC,
             0b01_1000 => Syndrome::SysRegInst,
+            0b01_1001 => Syndrome::SVE,
+            0b01_1101 => Syndrome::SME,
             0b10_0000 => {
                 debug!("Instruction Abort from a lower Exception level");
                 Syndrome::InstructionAbort(Fault::from(origin))

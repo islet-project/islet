@@ -23,6 +23,10 @@ dependencies = [
 [[package]]
 name = "armv9a"
 version = "0.0.1"
+dependencies = [
+ "aarch64-cpu",
+ "tock-registers",
+]
 
 [[package]]
 name = "atty"

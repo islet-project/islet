@@ -89,7 +89,7 @@ pub struct Stage2Translation<'a> {
     dirty: bool,
 }
 
-impl<'a> Stage2Translation<'a> {
+impl Stage2Translation<'_> {
     pub fn new(rtt_base: usize, root_level: usize, root_pages: usize) -> Self {
         // Concatenated translation tables
         // For stage 2 address translations, for the initial lookup,
@@ -295,7 +295,7 @@ macro_rules! set_pte {
     };
 }
 
-impl<'a> IPATranslation for Stage2Translation<'a> {
+impl IPATranslation for Stage2Translation<'_> {
     fn get_base_address(&self) -> *const c_void {
         match &self.root_pgtbl {
             Root::L2N8(c) => *c as *const _ as *const c_void, // most likely first, for linux-realm
@@ -456,7 +456,7 @@ impl<'a> IPATranslation for Stage2Translation<'a> {
     }
 }
 
-impl<'a> fmt::Debug for Stage2Translation<'a> {
+impl fmt::Debug for Stage2Translation<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(stringify!(Self)).finish()
     }

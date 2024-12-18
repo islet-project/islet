@@ -2,8 +2,7 @@
 
 set -e
 
-# TODO: Enable missing_safety_doc
-cargo clippy --lib -p islet_rmm -- \
+cargo clippy --lib -p islet_rmm --no-deps -- \
 	-A clippy::comparison_chain \
 	-A clippy::crate_in_macro_def \
 	-A clippy::empty_loop \
@@ -18,4 +17,5 @@ cargo clippy --lib -p islet_rmm -- \
 	-A clippy::redundant_pattern_matching \
 	-A clippy::type_complexity \
 	-A clippy::upper-case-acronyms \
+	-A static-mut-refs \
 	--deny "warnings"

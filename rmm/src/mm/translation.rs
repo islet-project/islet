@@ -62,7 +62,7 @@ struct Inner<'a> {
     dirty: bool,
 }
 
-impl<'a> Inner<'a> {
+impl Inner<'_> {
     pub fn new() -> Self {
         let root_pgtbl =
             RootPageTable::<VirtAddr, L1Table, Entry, { <L1Table as Level>::NUM_ENTRIES }>::new_in(
@@ -187,13 +187,13 @@ impl<'a> Inner<'a> {
     }
 }
 
-impl<'a> fmt::Debug for Inner<'a> {
+impl fmt::Debug for Inner<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(stringify!(Self)).finish()
     }
 }
 
-impl<'a> Drop for Inner<'a> {
+impl Drop for Inner<'_> {
     fn drop(&mut self) {
         info!("drop PageTable");
         self.root_pgtbl.drop();

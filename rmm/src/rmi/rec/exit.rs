@@ -4,10 +4,10 @@ use crate::get_granule;
 use crate::get_granule_if;
 use crate::granule::GranuleState;
 use crate::granule::GRANULE_MASK;
-use crate::realm::context::get_reg;
 use crate::realm::mm::rtt::RTT_PAGE_LEVEL;
 use crate::realm::mm::stage2_tte::S2TTE;
 use crate::realm::rd::Rd;
+use crate::rec::context::get_reg;
 use crate::rec::{
     Rec, RmmRecEmulatableAbort::EmulatableAbort, RmmRecEmulatableAbort::NotEmulatableAbort,
 };

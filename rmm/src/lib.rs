@@ -11,7 +11,6 @@ pub mod config;
 pub mod cpu;
 pub(crate) mod event;
 pub mod exception;
-pub mod gic;
 #[macro_use]
 pub mod granule;
 #[macro_use]
@@ -25,7 +24,6 @@ pub mod realm;
 pub mod rec;
 pub mod rmi;
 pub mod rsi;
-pub mod simd;
 #[cfg(feature = "stat")]
 pub mod stat;
 #[cfg(any(test, miri))]

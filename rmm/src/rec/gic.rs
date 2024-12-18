@@ -1,4 +1,4 @@
-use crate::rec::Rec;
+use super::Rec;
 use crate::rmi::error::Error;
 use crate::rmi::rec::run::Run;
 

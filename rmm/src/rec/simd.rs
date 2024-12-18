@@ -6,10 +6,10 @@ use core::array::from_fn;
 use lazy_static::lazy_static;
 use spin::mutex::Mutex;
 
+use super::Rec;
 use crate::config::NUM_OF_CPU;
 use crate::cpu::get_cpu_id;
 use crate::realm::rd::Rd;
-use crate::rec::Rec;
 use crate::rmi::error::Error;
 
 // Vector length (VL) = size of a Z-register in bytes

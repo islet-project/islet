@@ -304,7 +304,7 @@ pub mod mock {
     pub mod realm {
         use super::super::*;
         use crate::event::realmexit::RecExitReason;
-        use crate::realm::context::set_reg;
+        use crate::rec::context::set_reg;
         use crate::rec::Rec;
         use crate::rmi::rec::run::Run;
         use crate::rsi::PSCI_CPU_ON;

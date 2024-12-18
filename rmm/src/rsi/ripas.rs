@@ -1,9 +1,9 @@
 use crate::granule::is_granule_aligned;
 use crate::granule::GranuleState;
-use crate::realm::context::{get_reg, set_reg};
 use crate::realm::mm::rtt::RTT_PAGE_LEVEL;
 use crate::realm::mm::stage2_tte::invalid_ripas;
 use crate::realm::rd::Rd;
+use crate::rec::context::{get_reg, set_reg};
 use crate::rec::Rec;
 use crate::rmi;
 use crate::rmi::error::Error;

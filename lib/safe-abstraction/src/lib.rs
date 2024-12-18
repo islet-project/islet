@@ -17,19 +17,19 @@
 //! ## Features
 //!
 //! - **Encapsulation of Unsafe Code**: Offers a way to safely abstract `unsafe` operations,
-//! allowing for lower-level operations like memory access to be performed more safely.
+//!   allowing for lower-level operations like memory access to be performed more safely.
 //!
 //! - **Runtime Safety Checks**: Provides methods to perform crucial safety checks at runtime,
-//! such as verifying if a pointer is null and checking whether a pointer is properly aligned.
-//! These checks happen when the methods are called during the execution of a program.
+//!   such as verifying if a pointer is null and checking whether a pointer is properly aligned.
+//!   These checks happen when the methods are called during the execution of a program.
 //!
 //! - **Compile-Time Type Safety Checks**: Enforces certain safety guarantees at compile time.
-//! For example, the use of Rust's type system can ensure that only pointers
-//! to types with known sizes are used, leveraging the `Sized` trait bound.
+//!   For example, the use of Rust's type system can ensure that only pointers
+//!   to types with known sizes are used, leveraging the `Sized` trait bound.
 //!
 //! - **Developer-Driven Safety Verification**: Introduces traits that allow developers
-//! to explicitly mark parts of `unsafe` code that still require manual safety guarantees,
-//! making it clear which parts of the code need careful review.
+//!   to explicitly mark parts of `unsafe` code that still require manual safety guarantees,
+//!   making it clear which parts of the code need careful review.
 
 pub mod raw_ptr {
     //! # Raw Pointer Safety Abstraction Module
@@ -48,15 +48,15 @@ pub mod raw_ptr {
     //!
     //! ## Traits Overview
     //! - `RawPtr`: Ensures that the size of the structure
-    //! pointed to by the raw pointer is determined at compile time,
-    //! enabling safe memory operations.
+    //!   pointed to by the raw pointer is determined at compile time,
+    //!   enabling safe memory operations.
     //!
     //! - `SafetyChecked`: Implements checks to ensure that the raw pointer
-    //! is not null and properly aligned.
+    //!   is not null and properly aligned.
     //!
     //! - `SafetyAssured`: Provides guarantees that the instance
-    //! pointed to by the raw pointer is properly initialized,
-    //! adheres to Rust's ownership rules.
+    //!   pointed to by the raw pointer is properly initialized,
+    //!   adheres to Rust's ownership rules.
 
     pub trait RawPtr: Sized {
         /// # Safety

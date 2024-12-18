@@ -45,11 +45,10 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
 
         #[cfg(any(miri, test))]
         let mut granule = get_granule_if!(addr, GranuleState::Undelegated)?;
-        set_granule(&mut granule, GranuleState::Delegated).map_err(|e| {
+        set_granule(&mut granule, GranuleState::Delegated).inspect_err(|_| {
             #[cfg(not(kani))]
             // `page_table` is currently not reachable in model checking harnesses
             rmm.page_table.unmap(addr);
-            e
         })?;
         #[cfg(not(kani))]
         // `page_table` is currently not reachable in model checking harnesses
@@ -79,11 +78,10 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         #[cfg(not(kani))]
         // `page_table` is currently not reachable in model checking harnesses
         rmm.page_table.map(addr, false);
-        set_granule(&mut granule, GranuleState::Undelegated).map_err(|e| {
+        set_granule(&mut granule, GranuleState::Undelegated).inspect_err(|_| {
             #[cfg(not(kani))]
             // `page_table` is currently not reachable in model checking harnesses
             rmm.page_table.unmap(addr);
-            e
         })?;
         #[cfg(not(kani))]
         // `page_table` is currently not reachable in model checking harnesses

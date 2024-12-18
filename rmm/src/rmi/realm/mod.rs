@@ -118,12 +118,11 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             set_granule(&mut rd_granule, GranuleState::RD)
         };
 
-        epilogue().map_err(|e| {
+        epilogue().inspect_err(|_| {
             #[cfg(not(kani))]
             // `page_table` is currently not reachable in model checking harnesses
             rmm.page_table.unmap(rd);
             remove(params.vmid as usize).expect("Realm should be created before.");
-            e
         })
     });
 

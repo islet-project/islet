@@ -153,11 +153,10 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             rd_granule.dec_count();
         }
 
-        set_granule(&mut rec_granule, GranuleState::Delegated).map_err(|e| {
+        set_granule(&mut rec_granule, GranuleState::Delegated).inspect_err(|_| {
             #[cfg(not(kani))]
             // `page_table` is currently not reachable in model checking harnesses
             rmm.page_table.unmap(arg[0]);
-            e
         })?;
         #[cfg(not(kani))]
         // `page_table` is currently not reachable in model checking harnesses

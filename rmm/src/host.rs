@@ -1,4 +1,3 @@
-use crate::granule::validate_addr;
 #[cfg(feature = "gst_page_table")]
 use crate::granule::{is_not_in_realm, GRANULE_SIZE};
 #[cfg(not(feature = "gst_page_table"))]
@@ -11,11 +10,11 @@ use vmsa::guard::Content;
 
 pub fn copy_from<T: SafetyChecked + SafetyAssured + Copy>(addr: usize) -> Option<T> {
     #[cfg(feature = "gst_page_table")]
-    if !validate_addr(addr) || !is_not_in_realm(addr) {
+    if !is_not_in_realm(addr) {
         return None;
     }
     #[cfg(not(feature = "gst_page_table"))]
-    if !validate_addr(addr) || get_granule_if!(addr, GranuleState::Undelegated).is_err() {
+    if get_granule_if!(addr, GranuleState::Undelegated).is_err() {
         return None;
     }
 
@@ -31,11 +30,11 @@ pub fn copy_from<T: SafetyChecked + SafetyAssured + Copy>(addr: usize) -> Option
 
 pub fn copy_to_obj<T: SafetyChecked + SafetyAssured + Copy>(src: usize, dst: &mut T) -> Option<()> {
     #[cfg(feature = "gst_page_table")]
-    if !validate_addr(src) || !is_not_in_realm(src) {
+    if !is_not_in_realm(src) {
         return None;
     }
     #[cfg(not(feature = "gst_page_table"))]
-    if !validate_addr(src) || get_granule_if!(src, GranuleState::Undelegated).is_err() {
+    if get_granule_if!(src, GranuleState::Undelegated).is_err() {
         return None;
     }
 
@@ -51,11 +50,11 @@ pub fn copy_to_obj<T: SafetyChecked + SafetyAssured + Copy>(src: usize, dst: &mu
 
 pub fn copy_to_ptr<T: SafetyChecked + SafetyAssured + Copy>(src: &T, dst: usize) -> Option<()> {
     #[cfg(feature = "gst_page_table")]
-    if !validate_addr(dst) || !is_not_in_realm(dst) {
+    if !is_not_in_realm(dst) {
         return None;
     }
     #[cfg(not(feature = "gst_page_table"))]
-    if !validate_addr(dst) || get_granule_if!(dst, GranuleState::Undelegated).is_err() {
+    if get_granule_if!(dst, GranuleState::Undelegated).is_err() {
         return None;
     }
 

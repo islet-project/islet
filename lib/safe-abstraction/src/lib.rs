@@ -1,7 +1,6 @@
 #![warn(rust_2018_idioms)]
 #![deny(warnings)]
 #![no_std]
-#![feature(error_in_core)]
 
 //! # Safe Abstraction Crate
 //!

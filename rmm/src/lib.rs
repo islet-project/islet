@@ -1,8 +1,6 @@
 #![no_std]
 #![allow(incomplete_features)]
 #![feature(alloc_error_handler)]
-#![feature(asm_const)]
-#![feature(const_mut_refs)]
 #![feature(specialization)]
 #![warn(rust_2018_idioms)]
 

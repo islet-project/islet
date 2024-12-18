@@ -29,7 +29,7 @@ pub unsafe extern "C" fn current_cpu_stack() -> usize {
 #[link_section = ".head.text"]
 #[no_mangle]
 unsafe extern "C" fn rmm_entry() -> ! {
-    core::arch::asm!(
+    core::arch::naked_asm!(
         "
         msr spsel, #1
         bl current_cpu_stack
@@ -39,8 +39,7 @@ unsafe extern "C" fn rmm_entry() -> ! {
 
         1:
         bl main
-        b 1b",
-        options(noreturn)
+        b 1b"
     )
 }
 

@@ -48,3 +48,6 @@ mc_rmi_realm_destroy = []
 mc_rmi_rec_aux_count = []
 mc_rmi_rec_destroy = []
 mc_rmi_version = []
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }

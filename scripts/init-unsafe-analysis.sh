@@ -9,7 +9,7 @@ TOOL=$ROOT/third-party/utrace
 $HERE/deps/rust.sh
 
 # MIRI Setup
-rustup component add --toolchain nightly-2024-04-21-x86_64-unknown-linux-gnu miri
+rustup component add --toolchain nightly-2024-11-28-x86_64-unknown-linux-gnu miri
 
 # Utrace Setup
 rm -rf $TOOL

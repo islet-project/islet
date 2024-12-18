@@ -1,6 +1,6 @@
 use crate::event::{Context, Mainloop, RmiHandle, RsiHandle};
 use crate::mm::translation::PageTable;
-use crate::realm::context::set_reg;
+use crate::rec::context::set_reg;
 use crate::rec::Rec;
 use crate::rmi;
 use crate::rmi::rec::run::Run;

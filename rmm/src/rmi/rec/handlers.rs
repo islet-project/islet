@@ -10,8 +10,8 @@ use crate::granule::{set_granule, GranuleState};
 use crate::host;
 use crate::listen;
 use crate::measurement::HashContext;
-use crate::realm::context::{set_reg, RegOffset};
 use crate::realm::rd::{Rd, State};
+use crate::rec::context::{set_reg, RegOffset};
 use crate::rec::State as RecState;
 use crate::rec::{Rec, RmmRecEmulatableAbort::NotEmulatableAbort};
 use crate::rmi;
@@ -211,7 +211,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         }
 
         #[cfg(not(any(miri, test)))]
-        if !crate::gic::validate_state(&run) {
+        if !crate::rec::gic::validate_state(&run) {
             return Err(Error::RmiErrorRec);
         }
 
@@ -221,7 +221,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         }
 
         #[cfg(not(any(miri, test)))]
-        crate::gic::receive_state_from_host(&mut rec, &run)?;
+        crate::rec::gic::receive_state_from_host(&mut rec, &run)?;
         crate::mmio::emulate_mmio(&mut rec, &run)?;
 
         crate::rsi::ripas::complete_ripas(&mut rec, &run)?;
@@ -278,8 +278,8 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         }
 
         #[cfg(not(any(miri, test)))]
-        crate::gic::send_state_to_host(&rec, &mut run)?;
-        crate::realm::timer::send_state_to_host(&rec, &mut run)?;
+        crate::rec::gic::send_state_to_host(&rec, &mut run)?;
+        crate::rec::timer::send_state_to_host(&rec, &mut run)?;
 
         // NOTICE: do not modify `run` after copy_to_ptr(). it won't have any effect.
         rmm.page_table.map(run_pa, false);

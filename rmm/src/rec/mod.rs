@@ -1,13 +1,14 @@
-use crate::gic;
-use crate::realm::context::Context;
+pub mod context;
+pub mod gic;
+pub mod simd;
+pub mod timer;
+
 use crate::realm::rd::Rd;
-use crate::realm::timer;
+use crate::rec::context::Context;
 use crate::rmi::error::Error;
 use crate::rmi::rec::params::NR_AUX;
 use crate::rmm_exit;
 use crate::rsi::attestation::MAX_CHALLENGE_SIZE;
-use crate::simd;
-
 use aarch64_cpu::registers::*;
 
 use core::cell::OnceCell;

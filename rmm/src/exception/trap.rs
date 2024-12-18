@@ -7,8 +7,8 @@ use self::syndrome::Syndrome;
 use super::lower::synchronous;
 use crate::cpu;
 use crate::event::realmexit::{ExitSyncType, RecExitReason};
+use crate::rec::simd;
 use crate::rec::Rec;
-use crate::simd;
 
 use aarch64_cpu::registers::*;
 use armv9a::regs::CPTR_EL2;

@@ -1,8 +1,8 @@
 use crate::event::RsiHandle;
 use crate::granule::GranuleState;
 use crate::listen;
-use crate::realm::context::{get_reg, set_reg, RegOffset};
 use crate::realm::rd::{Rd, State};
+use crate::rec::context::{get_reg, set_reg, RegOffset};
 use crate::rec::Rec;
 use crate::rmi;
 use crate::rmi::error::Error;

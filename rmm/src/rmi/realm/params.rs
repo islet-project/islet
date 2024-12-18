@@ -2,10 +2,10 @@ use crate::const_assert_eq;
 use crate::granule::{GRANULE_SHIFT, GRANULE_SIZE};
 use crate::measurement::Hashable;
 use crate::realm::mm::rtt::{RTT_PAGE_LEVEL, RTT_STRIDE};
+use crate::rec::simd;
 use crate::rmi::error::Error;
 use crate::rmi::features;
 use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
-use crate::simd;
 
 use armv9a::{define_bitfield, define_bits, define_mask};
 use autopadding::*;

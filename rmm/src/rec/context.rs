@@ -1,9 +1,9 @@
+use super::gic;
+use super::simd;
+use super::simd::SimdRegister;
 use super::timer;
-use crate::gic;
-use crate::rec::Rec;
+use super::Rec;
 use crate::rmi::error::Error;
-use crate::simd;
-use crate::simd::SimdRegister;
 
 use aarch64_cpu::registers::*;
 

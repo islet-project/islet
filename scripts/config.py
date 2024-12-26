@@ -73,3 +73,8 @@ FVP_BIN = os.path.join(FVP_DIR, "./FVP_Base_RevC-2xAEMvA")
 PLUGIN_PATH = os.path.join(THIRD_PARTY, "fvp/Base_RevC_AEMvA_pkg/plugins/Linux64_GCC-9.3/")
 TRACE_LIB = os.path.join(PLUGIN_PATH, "TarmacTrace.so")
 TOGGLE_LIB = os.path.join(PLUGIN_PATH, "ToggleMTIPlugin.so")
+
+AOSP_DIR = os.path.join(ROOT, "android_on_qemu/aosp-15.0.0_r8")
+AOSP_KERNEL_OUT = os.path.join(ROOT, "android_on_qemu/android15-6.6/out/virtual_device_aarch64/dist/")
+AOSP_KERNEL_INITRAMFS_PATH = os.path.join(AOSP_KERNEL_OUT, "initramfs.img")
+AOSP_KERNEL_IMAGE_PATH = os.path.join(AOSP_KERNEL_OUT, "Image")

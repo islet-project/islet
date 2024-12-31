@@ -27,3 +27,4 @@ examples/cross-platform-e2ee/third-party-arm/
 
 unsafe-call-trace.log
 unsafe-items-list.log
+/venv

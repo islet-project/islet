@@ -21,4 +21,7 @@ sudo apt-get install -y -qq --no-install-recommends --fix-missing \
 	inotify-tools \
 	pylint
 
+python3 -m venv venv
+source venv/bin/activate
 pip3 install toml
+deactivate

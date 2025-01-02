@@ -1,6 +1,4 @@
-# Platform Developer
-Platform developers are who want to develop Confidential Computing Platform Components.
-Platform components include from Realm Management Monitor(RMM) to Realm.
+# How to build and run Islet
 
 `Islet` provides Rust-based RMM and scripts to compose Confidential Computing Platform.
 You can explore CCA platform with our scripts and
@@ -40,7 +38,7 @@ $ LD_LIBRARY_PATH=./ ./sdk-example-c
 
 ## Running a linux realm with a networking support and prebuilt examples
 See [examples](https://github.com/islet-project/islet/tree/main/examples).
-To get details about its network configuration, see [network.md](https://github.com/islet-project/islet/blob/main/doc/network.md)
+To get details about its network configuration, see [network.md](./network.md)
 
 ## Testing the realm features
 ```bash

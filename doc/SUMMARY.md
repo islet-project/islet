@@ -4,9 +4,10 @@
 
 - [Getting Started](./getting-started/index.md)
   - [About CCA](./getting-started/cca.md)
+  - [How to Build and Run Islet](./getting-started/islet-how-to.md)
+    - [Network Configuration](./getting-started/network.md)
+    - [Command Shortcut](./getting-started/run-shortcut.md)
   - [Application Developer](./getting-started/app-dev.md)
-  - [Platform Developer](./getting-started/plat-dev.md)
-    - [Network Configuration](./network.md)
   - [Verification](./getting-started/verification.md)
     - [Model Checking](./islet-model-checking.md)
 - [Components](./components/index.md)

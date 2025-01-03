@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PARENT_DIR="android_on_qemu"
+PARENT_DIR="third-party/android_on_qemu"
 
 AOSP_VER="aosp-15.0.0_r8"
 AOSP_DIR="$PARENT_DIR/$AOSP_VER"

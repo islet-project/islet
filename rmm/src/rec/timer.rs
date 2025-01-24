@@ -14,6 +14,7 @@ pub fn set_cnthctl(rec: &mut Rec<'_>, val: u64) {
     timer.cnthctl_el2 = val;
 }
 
+#[cfg(not(fuzzing))]
 pub fn restore_state(rec: &Rec<'_>) {
     let timer = &rec.context.timer;
 
@@ -26,6 +27,7 @@ pub fn restore_state(rec: &Rec<'_>) {
     CNTHCTL_EL2.set(timer.cnthctl_el2);
 }
 
+#[cfg(not(fuzzing))]
 pub fn save_state(rec: &mut Rec<'_>) {
     let timer = &mut rec.context.timer;
 

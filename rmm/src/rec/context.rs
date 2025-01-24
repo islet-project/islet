@@ -83,8 +83,9 @@ impl Context {
     pub unsafe fn into_current(rec: &Rec<'_>) {
         TPIDR_EL2.set(rec as *const _ as u64);
         gic::restore_state(rec);
+        #[cfg(not(fuzzing))]
         timer::restore_state(rec);
-        #[cfg(not(any(test, miri)))]
+        #[cfg(not(any(test, miri, fuzzing)))]
         simd::restore_state(rec);
     }
 
@@ -96,8 +97,9 @@ impl Context {
     ///   ensure that this is appropriate in the current execution context.
     pub unsafe fn from_current(rec: &mut Rec<'_>) {
         gic::save_state(rec);
+        #[cfg(not(fuzzing))]
         timer::save_state(rec);
-        #[cfg(not(any(test, miri)))]
+        #[cfg(not(any(test, miri, fuzzing)))]
         simd::save_state(rec);
     }
 }

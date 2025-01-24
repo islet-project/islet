@@ -50,4 +50,4 @@ mc_rmi_rec_destroy = []
 mc_rmi_version = []
 
 [lints.rust]
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)', 'cfg(fuzzing)'] }

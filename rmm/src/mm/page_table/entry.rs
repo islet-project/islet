@@ -70,7 +70,7 @@ impl page_table::Entry for Entry {
     fn set(&mut self, addr: PhysAddr, flags: u64) -> Result<(), Error> {
         self.0.set(addr.as_u64() | flags);
 
-        #[cfg(not(any(miri, test)))]
+        #[cfg(not(any(miri, test, fuzzing)))]
         unsafe {
             core::arch::asm!(
                 "dsb ishst",

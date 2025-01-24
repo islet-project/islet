@@ -7,14 +7,14 @@ use safe_abstraction::raw_ptr;
 use spinning_top::{Spinlock, SpinlockGuard};
 use vmsa::guard::Content;
 
-#[cfg(not(any(kani, miri, test)))]
+#[cfg(not(any(kani, miri, test, fuzzing)))]
 use crate::granule::{FVP_DRAM0_REGION, FVP_DRAM1_IDX, FVP_DRAM1_REGION};
 
 // Safety: concurrency safety
 //  - For a granule status table that manages granules, it doesn't use a big lock for efficiency.
 //    So, we need to associate "lock" with each granule entry.
 
-#[cfg(not(any(kani, miri, test)))]
+#[cfg(not(any(kani, miri, test, fuzzing)))]
 #[derive(Debug)]
 pub struct Granule {
     /// granule state
@@ -22,7 +22,7 @@ pub struct Granule {
     /// granule ref count
     ref_count: AtomicU8,
 }
-#[cfg(any(kani, miri, test))]
+#[cfg(any(kani, miri, test, fuzzing))]
 // DIFF: `gpt` ghost field is added to track GPT entry's status
 pub struct Granule {
     /// granule state
@@ -41,7 +41,7 @@ pub enum GranuleGpt {
     GPT_REALM,
 }
 
-#[cfg(any(miri, test))]
+#[cfg(any(miri, test, fuzzing))]
 #[derive(Copy, Clone, PartialEq)]
 pub enum GranuleGpt {
     GPT_NS,
@@ -50,13 +50,13 @@ pub enum GranuleGpt {
 }
 
 impl Granule {
-    #[cfg(not(any(kani, miri, test)))]
+    #[cfg(not(any(kani, miri, test, fuzzing)))]
     fn new() -> Self {
         let state = GranuleState::Undelegated;
         let ref_count = AtomicU8::new(0);
         Granule { state, ref_count }
     }
-    #[cfg(any(kani, miri, test))]
+    #[cfg(any(kani, miri, test, fuzzing))]
     // DIFF: `state` and `gpt` are filled with non-deterministic values
     fn new() -> Self {
         #[cfg(kani)]
@@ -80,7 +80,7 @@ impl Granule {
             }
         }
 
-        #[cfg(any(miri, test))]
+        #[cfg(any(miri, test, fuzzing))]
         {
             Self {
                 state: GranuleState::Undelegated,
@@ -106,12 +106,12 @@ impl Granule {
         self.ref_count.load(Ordering::SeqCst) as usize
     }
 
-    #[cfg(any(kani, miri, test))]
+    #[cfg(any(kani, miri, test, fuzzing))]
     pub fn set_gpt(&mut self, gpt: GranuleGpt) {
         self.gpt = gpt;
     }
 
-    #[cfg(any(kani, miri, test))]
+    #[cfg(any(kani, miri, test, fuzzing))]
     pub fn is_valid(&self) -> bool {
         self.state >= GranuleState::Undelegated &&
         self.state <= GranuleState::RTT &&
@@ -176,7 +176,7 @@ impl Granule {
         (entry_addr - table_base) / core::mem::size_of::<Entry>()
     }
 
-    #[cfg(not(any(kani, miri, test)))]
+    #[cfg(not(any(kani, miri, test, fuzzing)))]
     fn index_to_addr(&self) -> usize {
         let idx = self.index();
         if idx < FVP_DRAM1_IDX {
@@ -184,14 +184,14 @@ impl Granule {
         }
         FVP_DRAM1_REGION.start + ((idx - FVP_DRAM1_IDX) * GRANULE_SIZE)
     }
-    #[cfg(any(kani, miri, test))]
+    #[cfg(any(kani, miri, test, fuzzing))]
     // DIFF: calculate addr using GRANULE_REGION
     pub fn index_to_addr(&self) -> usize {
         use crate::granule::{GRANULE_REGION, GRANULE_STATUS_TABLE_SIZE};
         let idx = self.index();
         assert!(idx < GRANULE_STATUS_TABLE_SIZE);
 
-        #[cfg(any(miri, test))]
+        #[cfg(any(miri, test, fuzzing))]
         return crate::test_utils::align_up(unsafe {
             GRANULE_REGION.as_ptr() as usize + (idx * GRANULE_SIZE)
         });
@@ -200,7 +200,7 @@ impl Granule {
         return unsafe { GRANULE_REGION.as_ptr() as usize + (idx * GRANULE_SIZE) };
     }
 
-    #[cfg(not(any(kani, miri, test)))]
+    #[cfg(not(any(kani, miri, test, fuzzing)))]
     fn zeroize(&mut self) {
         let addr = self.index_to_addr();
 
@@ -211,7 +211,7 @@ impl Granule {
             core::ptr::write_bytes(addr as *mut u8, 0x0, GRANULE_SIZE);
         }
     }
-    #[cfg(any(kani, miri, test))]
+    #[cfg(any(kani, miri, test, fuzzing))]
     // DIFF: assertion is added to reduce the proof burden
     //       `write_bytes()` uses a small count value
     fn zeroize(&mut self) {
@@ -229,11 +229,11 @@ impl Granule {
 
 pub struct Entry(Spinlock<Granule>);
 impl Entry {
-    #[cfg(not(any(kani, miri, test)))]
+    #[cfg(not(any(kani, miri, test, fuzzing)))]
     pub fn new() -> Self {
         Self(Spinlock::new(Granule::new()))
     }
-    #[cfg(any(kani, miri, test))]
+    #[cfg(any(kani, miri, test, fuzzing))]
     // DIFF: assertion is added to reduce the proof burden
     pub fn new() -> Self {
         let granule = Granule::new();

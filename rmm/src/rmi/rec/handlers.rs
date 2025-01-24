@@ -210,7 +210,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             return Err(Error::RmiErrorRec);
         }
 
-        #[cfg(not(any(miri, test)))]
+        #[cfg(not(any(miri, test, fuzzing)))]
         if !crate::rec::gic::validate_state(&run) {
             return Err(Error::RmiErrorRec);
         }
@@ -220,7 +220,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             do_host_call(arg, ret, rmm, &mut rec, &mut run)?;
         }
 
-        #[cfg(not(any(miri, test)))]
+        #[cfg(not(any(miri, test, fuzzing)))]
         crate::rec::gic::receive_state_from_host(&mut rec, &run)?;
         crate::mmio::emulate_mmio(&mut rec, &run)?;
 
@@ -232,7 +232,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             warn!("TWI(E) in HCR_EL2 is currently fixed to 'no trap'");
         }
 
-        #[cfg(not(any(miri, test)))]
+        #[cfg(not(any(miri, test, fuzzing)))]
         activate_stage2_mmu(&rec);
 
         let mut ret_ns;
@@ -242,7 +242,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
 
             rec.set_state(RecState::Running);
 
-            #[cfg(not(any(miri, test)))]
+            #[cfg(not(any(miri, test, fuzzing)))]
             {
                 use crate::rmi::rec::exit::handle_realm_exit;
 
@@ -263,7 +263,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
                 }
             }
 
-            #[cfg(any(miri, test))]
+            #[cfg(any(miri, test, fuzzing))]
             {
                 use crate::test_utils::mock;
                 mock::realm::setup_psci_complete(&mut rec, &mut run);
@@ -277,7 +277,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             }
         }
 
-        #[cfg(not(any(miri, test)))]
+        #[cfg(not(any(miri, test, fuzzing)))]
         crate::rec::gic::send_state_to_host(&rec, &mut run)?;
         crate::rec::timer::send_state_to_host(&rec, &mut run)?;
 

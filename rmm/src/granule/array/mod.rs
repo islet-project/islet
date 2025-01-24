@@ -24,9 +24,9 @@ pub(super) const FVP_DRAM1_REGION: core::ops::Range<usize> = core::ops::Range {
 pub(super) const FVP_DRAM1_IDX: usize =
     (FVP_DRAM0_REGION.end - FVP_DRAM0_REGION.start) / GRANULE_SIZE;
 
-#[cfg(any(kani, miri, test))]
+#[cfg(any(kani, miri, test, fuzzing))]
 pub const GRANULE_MEM_SIZE: usize = GRANULE_SIZE * GRANULE_STATUS_TABLE_SIZE;
-#[cfg(any(kani, miri, test))]
+#[cfg(any(kani, miri, test, fuzzing))]
 // We model the Host memory as a pre-allocated memory region which
 // can avoid a false positive related to invalid memory accesses
 // in model checking. Also, instead of using the same starting
@@ -39,7 +39,7 @@ pub const GRANULE_MEM_SIZE: usize = GRANULE_SIZE * GRANULE_STATUS_TABLE_SIZE;
 //       so the last region cannot be utilized.
 pub static mut GRANULE_REGION: [u8; GRANULE_MEM_SIZE] = [0; GRANULE_MEM_SIZE];
 
-#[cfg(not(any(kani, miri, test)))]
+#[cfg(not(any(kani, miri, test, fuzzing)))]
 pub fn validate_addr(addr: usize) -> bool {
     if addr % GRANULE_SIZE != 0 {
         // if the address is out of range.
@@ -53,7 +53,7 @@ pub fn validate_addr(addr: usize) -> bool {
     }
     true
 }
-#[cfg(any(kani, miri, test))]
+#[cfg(any(kani, miri, test, fuzzing))]
 // DIFF: check against GRANULE_REGION
 pub fn validate_addr(addr: usize) -> bool {
     if addr % GRANULE_SIZE != 0 {
@@ -66,7 +66,7 @@ pub fn validate_addr(addr: usize) -> bool {
     addr >= g_start && addr < g_end
 }
 
-#[cfg(not(any(kani, miri, test)))]
+#[cfg(not(any(kani, miri, test, fuzzing)))]
 pub fn granule_addr_to_index(addr: usize) -> usize {
     if FVP_DRAM0_REGION.contains(&addr) {
         return (addr - FVP_DRAM0_REGION.start) / GRANULE_SIZE;
@@ -76,7 +76,7 @@ pub fn granule_addr_to_index(addr: usize) -> usize {
     }
     usize::MAX
 }
-#[cfg(any(kani, miri, test))]
+#[cfg(any(kani, miri, test, fuzzing))]
 // DIFF: calculate index using GRANULE_REGION
 pub fn granule_addr_to_index(addr: usize) -> usize {
     let g_start = unsafe { GRANULE_REGION.as_ptr() as usize };
@@ -120,11 +120,11 @@ lazy_static! {
     pub static ref GRANULE_STATUS_TABLE: GranuleStatusTable = GranuleStatusTable::new();
 }
 
-#[cfg(not(any(kani, miri, test)))]
+#[cfg(not(any(kani, miri, test, fuzzing)))]
 pub const GRANULE_STATUS_TABLE_SIZE: usize = 0xfc000; // == RMM_MAX_GRANULES
 #[cfg(kani)]
 pub const GRANULE_STATUS_TABLE_SIZE: usize = 6;
-#[cfg(any(miri, test))]
+#[cfg(any(miri, test, fuzzing))]
 pub const GRANULE_STATUS_TABLE_SIZE: usize = 55;
 
 pub struct GranuleStatusTable {

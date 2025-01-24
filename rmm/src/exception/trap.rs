@@ -236,7 +236,7 @@ pub extern "C" fn handle_lower_exception(
                 rec.context.simd.is_used = true;
                 unsafe {
                     if rec.context.simd.is_saved {
-                        #[cfg(not(any(miri, test)))]
+                        #[cfg(not(any(miri, test, fuzzing)))]
                         match Syndrome::from(esr) {
                             Syndrome::FPU => simd::restore_fpu(&rec.context.simd.fpu),
                             Syndrome::SVE | Syndrome::SME => {

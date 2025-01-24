@@ -4,7 +4,7 @@
 #![feature(specialization)]
 #![warn(rust_2018_idioms)]
 
-#[cfg(not(test))]
+#[cfg(not(any(test, fuzzing)))]
 pub mod allocator;
 pub mod asm;
 pub mod config;
@@ -18,7 +18,7 @@ pub(crate) mod host;
 pub mod logger;
 pub mod mm;
 pub mod mmio;
-#[cfg(not(any(test, kani, miri)))]
+#[cfg(not(any(test, kani, miri, fuzzing)))]
 pub mod panic;
 pub mod realm;
 pub mod rec;
@@ -28,6 +28,8 @@ pub mod rsi;
 pub mod stat;
 #[cfg(any(test, miri))]
 pub(crate) mod test_utils;
+#[cfg(fuzzing)]
+pub mod test_utils;
 #[macro_use]
 pub mod r#macro;
 mod measurement;

@@ -1,0 +1,26 @@
+[package]
+name = "rmm_fuzz"
+version = "0.0.1"
+authors = ["Islet Contributors"]
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = { version = "0.4.0", features = ["arbitrary-derive"] }
+islet_rmm = { path = "../" }
+
+[[bin]]
+name = "rmi_version_fuzz"
+path = "fuzz_targets/rmi_version_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_features_fuzz"
+path = "fuzz_targets/rmi_features_fuzz.rs"
+test = false
+doc = false
+bench = false

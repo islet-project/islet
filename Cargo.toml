@@ -10,6 +10,7 @@ members = [
     "plat/fvp",
     "realm/rsi-test",
     "rmm/",
+    "rmm/fuzz/",
     "sdk",
 ]
 
@@ -19,3 +20,7 @@ panic = "abort"
 [profile.release]
 lto = true
 panic = "abort"
+
+[profile.fuzz]
+inherits = "dev"
+panic = "unwind"

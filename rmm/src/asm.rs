@@ -1,7 +1,7 @@
 use core::arch::asm;
 
 pub const SMC_SUCCESS: usize = 0;
-#[cfg(any(kani, miri, test))]
+#[cfg(any(kani, miri, test, fuzzing))]
 pub const SMC_ERROR: usize = 1;
 
 pub fn smc(cmd: usize, args: &[usize]) -> [usize; 8] {
@@ -22,7 +22,7 @@ pub fn smc(cmd: usize, args: &[usize]) -> [usize; 8] {
     };
     put(&mut ret);
     put(&mut padded_args);
-    #[cfg(any(kani, miri, test))]
+    #[cfg(any(kani, miri, test, fuzzing))]
     if cmd == crate::rmi::gpt::MARK_REALM {
         use crate::get_granule;
         use crate::granule::entry::GranuleGpt;
@@ -50,7 +50,7 @@ pub fn smc(cmd: usize, args: &[usize]) -> [usize; 8] {
     }
 
     // TODO: support more number of registers than 8 if needed
-    #[cfg(not(any(kani, miri, test)))]
+    #[cfg(not(any(kani, miri, test, fuzzing)))]
     unsafe {
         asm!(
             "smc #0x0",

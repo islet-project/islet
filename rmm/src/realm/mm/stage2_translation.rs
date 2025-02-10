@@ -394,12 +394,12 @@ impl IPATranslation for Stage2Translation<'_> {
         if let Ok(_x) = res {
             match invalidate {
                 Tlbi::LEAF(vmid) => {
-                    #[cfg(not(any(miri, test)))]
+                    #[cfg(not(any(miri, test, fuzzing)))]
                     Self::tlbi_by_vmid_ipa(level, map_addr, vmid);
                     self.dirty = true;
                 }
                 Tlbi::BREAKDOWN(vmid) => {
-                    #[cfg(not(any(miri, test)))]
+                    #[cfg(not(any(miri, test, fuzzing)))]
                     Self::tlbi_by_vmid_ipa_range(level, map_addr, vmid);
                     self.dirty = true;
                 }

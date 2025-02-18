@@ -69,3 +69,5 @@ For more information, please visit our [developer site](https://islet-project.gi
   3. (*run a coding assistant*) A mobile device user asks a chat-bot application that runs on Islet for generating a function. And then, that request is passed on to the ML server through a secure channel. Finally, the user can see the result (i.e., function).
   4. (*launch a malicious server*) This time, we launch a malicious server to show a failure case. When it attempts to join the certifier service (on the right side of the screen), it will not pass authentication as it results in a different measurement. Therefore, the malicious server cannot interact with the mobile device user in the first place.
 - To download this video, click [here](https://github.com/islet-project/islet/raw/main/examples/confidential-ml/video/confidential_ml.mp4).
+
+

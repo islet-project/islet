@@ -124,8 +124,10 @@ lazy_static! {
 pub const GRANULE_STATUS_TABLE_SIZE: usize = 0xfc000; // == RMM_MAX_GRANULES
 #[cfg(kani)]
 pub const GRANULE_STATUS_TABLE_SIZE: usize = 6;
-#[cfg(any(miri, test, fuzzing))]
+#[cfg(any(miri, test))]
 pub const GRANULE_STATUS_TABLE_SIZE: usize = 55;
+#[cfg(fuzzing)]
+pub const GRANULE_STATUS_TABLE_SIZE: usize = 2048;
 
 pub struct GranuleStatusTable {
     pub entries: [Entry; GRANULE_STATUS_TABLE_SIZE],

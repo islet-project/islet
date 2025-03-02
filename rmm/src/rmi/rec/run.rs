@@ -71,6 +71,27 @@ impl Run {
         self.entry.gicv3_hcr
     }
 
+    pub fn set_entry_flags(&mut self, flags: u64) {
+        self.entry.flags = flags;
+    }
+
+    pub fn set_entry_gpr(&mut self, idx: usize, val: u64) -> Result<(), Error> {
+        if idx >= NR_GPRS {
+            error!("out of index: {}", idx);
+            return Err(Error::RmiErrorInput);
+        }
+        self.entry.gprs[idx] = val;
+        Ok(())
+    }
+
+    pub fn set_entry_gic_hcr(&mut self, val: u64) {
+        self.entry.gicv3_hcr = val;
+    }
+
+    pub fn set_entry_gic_lrs(&mut self, src: &[u64], len: usize) {
+        self.entry.gicv3_lrs.copy_from_slice(&src[..len])
+    }
+
     pub fn exit_gic_lrs_mut(&mut self) -> &mut [u64; 16] {
         &mut self.exit.gicv3_lrs
     }
@@ -208,7 +229,7 @@ pub const REC_ENTRY_FLAG_TRAP_WFE: u64 = 1 << 3;
 #[allow(dead_code)]
 pub const REC_ENTRY_FLAG_RIPAS_RESPONSE: u64 = 1 << 4;
 pub const NR_GPRS: usize = 31;
-const NR_GIC_LRS: usize = 16;
+pub const NR_GIC_LRS: usize = 16;
 
 impl Run {
     pub fn verify_compliance(&self) -> Result<(), Error> {

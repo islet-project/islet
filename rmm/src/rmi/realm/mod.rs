@@ -1,5 +1,5 @@
-pub(crate) mod params;
-pub(crate) use self::params::Params;
+pub mod params;
+pub use self::params::Params;
 use super::error::Error;
 use crate::event::RmiHandle;
 use crate::granule::GRANULE_SIZE;

@@ -145,6 +145,16 @@ pub fn align_up(addr: usize) -> usize {
     }
 }
 
+#[cfg(fuzzing)]
+pub fn align_up_l2(addr: usize) -> usize {
+    let align_mask = L2_SIZE - 1;
+    if addr & align_mask == 0 {
+        addr
+    } else {
+        (addr | align_mask) + 1
+    }
+}
+
 pub const IDX_RD: usize = 0;
 pub const IDX_RTT_LEVEL0: usize = 1;
 pub const IDX_REALM_PARAMS: usize = 2;
@@ -168,6 +178,9 @@ pub const IDX_DATA3: usize = 48;
 pub const IDX_DATA4: usize = 49;
 pub const IDX_SRC1: usize = 50;
 pub const IDX_SRC2: usize = 51;
+
+#[cfg(fuzzing)]
+pub const IDX_L2_ALIGNED_DATA: usize = 0;
 
 pub const MAP_LEVEL: usize = 3;
 pub const L3_SIZE: usize = GRANULE_SIZE;
@@ -216,6 +229,17 @@ pub mod mock {
         pub fn alloc_granule(idx: usize) -> usize {
             let start = unsafe { GRANULE_REGION.as_ptr() as usize };
             let first = crate::test_utils::align_up(start);
+            first + idx * GRANULE_SIZE
+        }
+
+        /// Mock allocation of granules starting from an L2 aligned address for RTT fold fuzzing.
+        /// The granule region is made big enough to make space for these granules in the
+        /// fuzzing setup. It is also ensured these granules do not collide with the
+        /// regular mock granules.
+        #[cfg(fuzzing)]
+        pub fn alloc_granule_l2_aligned(idx: usize) -> usize {
+            let start = unsafe { GRANULE_REGION.as_ptr() as usize };
+            let first = crate::test_utils::align_up_l2(start + L2_SIZE);
             first + idx * GRANULE_SIZE
         }
 

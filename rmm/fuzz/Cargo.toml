@@ -24,3 +24,101 @@ path = "fuzz_targets/rmi_features_fuzz.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "rmi_granule_delegate_fuzz"
+path = "fuzz_targets/rmi_granule_delegate_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_granule_undelegate_fuzz"
+path = "fuzz_targets/rmi_granule_undelegate_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_realm_create_fuzz"
+path = "fuzz_targets/rmi_realm_create_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_rec_create_fuzz"
+path = "fuzz_targets/rmi_rec_create_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_rtt_create_fuzz"
+path = "fuzz_targets/rmi_rtt_create_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_rtt_read_entry_fuzz"
+path = "fuzz_targets/rmi_rtt_read_entry_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_data_create_fuzz"
+path = "fuzz_targets/rmi_data_create_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_data_create_unknown_fuzz"
+path = "fuzz_targets/rmi_data_create_unknown_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_rtt_map_unprotected_fuzz"
+path = "fuzz_targets/rmi_rtt_map_unprotected_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_rtt_init_ripas_fuzz"
+path = "fuzz_targets/rmi_rtt_init_ripas_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_rtt_set_ripas_fuzz"
+path = "fuzz_targets/rmi_rtt_set_ripas_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_rec_enter_fuzz"
+path = "fuzz_targets/rmi_rec_enter_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_psci_complete_fuzz"
+path = "fuzz_targets/rmi_psci_complete_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_rtt_fold_fuzz"
+path = "fuzz_targets/rmi_rtt_fold_fuzz.rs"
+test = false
+doc = false
+bench = false

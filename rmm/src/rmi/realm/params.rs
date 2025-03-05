@@ -129,7 +129,9 @@ impl Params {
         let ipa_bits = self.ipa_bits();
         let rtt_slvl = self.rtt_level_start as usize;
 
-        let level = RTT_PAGE_LEVEL - rtt_slvl;
+        let level = RTT_PAGE_LEVEL
+            .checked_sub(rtt_slvl)
+            .ok_or(Error::RmiErrorInput)?;
         let min_ipa_bits = level * RTT_STRIDE + GRANULE_SHIFT + 1;
         let max_ipa_bits = min_ipa_bits + (RTT_STRIDE - 1) + 4;
         let sl_ipa_bits = (level * RTT_STRIDE) + GRANULE_SHIFT + RTT_STRIDE;

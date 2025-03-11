@@ -7,10 +7,12 @@ AOSP_DIR="$PARENT_DIR/$AOSP_VER"
 AOSP_URL="https://android.googlesource.com/platform/manifest"
 AOSP_BRANCH="android-15.0.0_r8"
 
-ANDROID_KERNEL_VER="android15-6.6"
+ANDROID_KERNEL_VER="android16-6.12"
 ANDROID_KERNEL_DIR="$PARENT_DIR/$ANDROID_KERNEL_VER"
 ANDROID_KERNEL_URL="https://github.com/islet-project/3rd-android-kernel.git"
-ANDROID_KERNEL_BRANCH="common-android15-6.6/cca-host/rmm-v1.0-eac5"
+ANDROID_KERNEL_BUILD_ENVIRONMENT_BRANCH="common-android16-6.12/cca-host/build/v5"
+ANDROID_KERNEL_SOURCE_BRANCH="common-android16-6.12/cca-host/v5"
+ANDROID_KERNEL_BUILD_TARGET="//common-modules/virtual-device:virtual_device_aarch64_dist"
 
 CUR_SCRIPT_DIR=$(dirname "$(realpath "$0")")
 ISLET_DIR=$(dirname "$CUR_SCRIPT_DIR")
@@ -78,22 +80,34 @@ function build_android_kernel()
 
 	if [ ! -d "$ANDROID_KERNEL_DIR" ]; then
 		echo "Creating directory $ANDROID_KERNEL_DIR..."
-		mkdir -p "$ANDROID_KERNEL_DIR"
+		git clone $ANDROID_KERNEL_URL -b $ANDROID_KERNEL_BUILD_ENVIRONMENT_BRANCH --single-branch $ANDROID_KERNEL_DIR
 	fi
 
 	echo "Changing directory to $ANDROID_KERNEL_DIR..."
 	cd $ANDROID_KERNEL_DIR || exit 1
 
 	if [ ! -d "common" ]; then
-		echo "Downloading Android Kernel sources..."
-		repo init --partial-clone -u https://android.googlesource.com/kernel/manifest -b common-$ANDROID_KERNEL_VER
-		if ! repo sync; then
-			echo "ERROR: Download Android Kernel failed"
+		echo "unzip repo.zip to run 'repo sync'"
+		if ! unzip repo.zip; then
+			echo "ERROR: unzip repo.zip failed"
 			exit 2
 		fi
+
+		echo "Downloading Android Kernel Build Modules..."
+		if ! repo sync; then
+			echo "ERROR: Failed to download Android Kernel Build Modules..."
+			exit 3 
+		fi
+	fi
+
+	if [ ! -d "backup_common" ]; then
 		echo "Replace common with cca patched kernel sources..."
 		mv common backup_common
-		git clone $ANDROID_KERNEL_URL -b $ANDROID_KERNEL_BRANCH --depth 1 --single-branch common
+		if ! git clone $ANDROID_KERNEL_URL -b $ANDROID_KERNEL_SOURCE_BRANCH --depth 1 --single-branch common; then
+			echo "ERROR: Failed to Download Android Kernel Source failed"
+			mv backup_common common
+			exit 4 
+		fi
 	fi
 
 	if [ -f "$INITRAMFS_PATH" ] && [ -f "$KERNEL_PATH" ]; then
@@ -103,9 +117,9 @@ function build_android_kernel()
 
 	# Build
 	echo "Building Android Kernel..."
-	if ! tools/bazel run //common-modules/virtual-device:virtual_device_aarch64_dist_internal; then
+	if ! tools/bazel run $ANDROID_KERNEL_BUILD_TARGET; then
 		echo "ERROR: Android Kernel Build failed"
-		exit 4
+		exit 5 
 	fi
 
 	echo "Check built images..."
@@ -113,7 +127,7 @@ function build_android_kernel()
 	realpath $KERNEL_PATH
 
 	echo "Go back to $ISLET_DIR..."
-	cd $ISLET_DIR || exit 5
+	cd $ISLET_DIR || exit 6
 }
 
 install_required_packages

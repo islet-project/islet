@@ -14,8 +14,6 @@ KERNEL_CMDLINE="androidboot.hypervisor.vm.supported=1 vmw_vsock_virtio_transport
 
 KERNEL_CMDLINE+=$AOSP_RME_RAMDISK_PATH
 
-
-
 function run_qemu()
 {
 	cd "$ISLET_DIR" || exit

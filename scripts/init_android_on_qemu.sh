@@ -96,7 +96,7 @@ function build_android_kernel()
 		echo "Downloading Android Kernel Build Modules..."
 		if ! repo sync; then
 			echo "ERROR: Failed to download Android Kernel Build Modules..."
-			exit 3 
+			exit 3
 		fi
 	fi
 
@@ -106,7 +106,7 @@ function build_android_kernel()
 		if ! git clone $ANDROID_KERNEL_URL -b $ANDROID_KERNEL_SOURCE_BRANCH --depth 1 --single-branch common; then
 			echo "ERROR: Failed to Download Android Kernel Source failed"
 			mv backup_common common
-			exit 4 
+			exit 4
 		fi
 	fi
 
@@ -119,7 +119,7 @@ function build_android_kernel()
 	echo "Building Android Kernel..."
 	if ! tools/bazel run $ANDROID_KERNEL_BUILD_TARGET; then
 		echo "ERROR: Android Kernel Build failed"
-		exit 5 
+		exit 5
 	fi
 
 	echo "Check built images..."

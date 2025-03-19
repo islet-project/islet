@@ -14,7 +14,8 @@ KERNEL_CMDLINE="androidboot.hypervisor.vm.supported=1 vmw_vsock_virtio_transport
 
 KERNEL_CMDLINE+=$AOSP_RME_RAMDISK_PATH
 
-function run_qemu() {
+function run_qemu()
+{
 	cd "$ISLET_DIR" || exit
 	# Go to the aosp source directory which you were built before
 	echo "Changing directory to $AOSP_DIR to run qemu..."

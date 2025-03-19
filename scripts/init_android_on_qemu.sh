@@ -14,7 +14,7 @@ AOSP_BRANCH="android-15.0.0_r8"
 ANDROID_KERNEL_VER="android16-6.12"
 ANDROID_KERNEL_DIR="$QEMU_RME_DIR/$ANDROID_KERNEL_VER"
 ANDROID_KERNEL_URL="https://github.com/islet-project/3rd-android-kernel.git"
-ANDROID_KERNEL_BUILD_ENVIRONMENT_BRANCH="common-android16-6.12/cca-host/build/v5"
+ANDROID_KERNEL_BUILD_ENVIRONMENT_BRANCH="android16-6.12/cca-host/build/v5"
 ANDROID_KERNEL_SOURCE_BRANCH="android16-6.12/cca-host/v5"
 ANDROID_KERNEL_BUILD_TARGET="//common-modules/virtual-device:virtual_device_aarch64_dist"
 

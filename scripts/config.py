@@ -79,8 +79,10 @@ PLUGIN_PATH = os.path.join(THIRD_PARTY, "fvp/Base_RevC_AEMvA_pkg/plugins/Linux64
 TRACE_LIB = os.path.join(PLUGIN_PATH, "TarmacTrace.so")
 TOGGLE_LIB = os.path.join(PLUGIN_PATH, "ToggleMTIPlugin.so")
 
-AOSP_DIR = os.path.join(THIRD_PARTY, "android_on_qemu/aosp-15.0.0_r8")
-AOSP_KERNEL_DIR = os.path.join(THIRD_PARTY, "android_on_qemu/android16-6.12")
+ANDROID_ON_QEMU = os.path.join(THIRD_PARTY, "android_on_qemu")
+QEMU_BUILD_DIR = os.path.join(ANDROID_ON_QEMU, "qemu/build")
+AOSP_DIR = os.path.join(ANDROID_ON_QEMU, "aosp-15.0.0_r8")
+AOSP_KERNEL_DIR = os.path.join(ANDROID_ON_QEMU, "android16-6.12")
 AOSP_KERNEL_SRC_DIR = os.path.join(AOSP_KERNEL_DIR, "common")
 AOSP_KERNEL_OUT = os.path.join(AOSP_KERNEL_DIR, "out/virtual_device_aarch64/dist")
 AOSP_KERNEL_INITRAMFS_PATH = os.path.join(AOSP_KERNEL_OUT, "initramfs.img")

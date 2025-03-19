@@ -32,13 +32,15 @@ EXIT_KERNEL_BUILD=30
 EXIT_QEMU_BUILD=40
 EXIT_OTHER=125
 
-function install_required_packages() {
+function install_required_packages()
+{
 	if [ -z "$(which repo)" ]; then
 		sudo apt-get install repo
 	fi
 }
 
-function build_aosp() {
+function build_aosp()
+{
 	cd "$ISLET_DIR" || exit $EXIT_CD_FAILED # if cd failed, exit with error code
 
 	if [ -d "$AOSP_DIR" ]; then
@@ -83,7 +85,8 @@ function build_aosp() {
 	cd "$ISLET_DIR" || exit $EXIT_CD_FAILED
 }
 
-function build_android_kernel() {
+function build_android_kernel()
+{
 	cd "$ISLET_DIR" || exit $EXIT_CD_FAILED
 
 	if [ ! -d "$ANDROID_KERNEL_DIR" ]; then
@@ -137,7 +140,8 @@ function build_android_kernel() {
 	cd $ISLET_DIR || exit $EXIT_CD_FAILED
 }
 
-function clone_qemu_source() {
+function clone_qemu_source()
+{
 	cd "$QEMU_RME_DIR" || exit $EXIT_CD_FAILED
 
 	if [ ! -d $QEMU_SRC_DIR ]; then
@@ -154,7 +158,8 @@ function clone_qemu_source() {
 	fi
 }
 
-function build_qemu() {
+function build_qemu()
+{
 	cd "$QEMU_SRC_DIR" || exit $EXIT_CD_FAILED
 
 	if [ ! -d "build" ]; then

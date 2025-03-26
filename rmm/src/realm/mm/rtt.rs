@@ -384,7 +384,7 @@ pub fn set_ripas(rd: &Rd, base: usize, top: usize, ripas: u8, flags: u64) -> Res
         if ripas as u64 == invalid_ripas::EMPTY {
             new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::EMPTY);
 
-            if s2tte.is_unassigned_empty() {
+            if s2tte.is_unassigned_ram() {
                 new_s2tte |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::UNASSIGNED);
             } else if s2tte.is_unassigned_destroyed() {
                 if flags & CHANGE_DESTROYED != 0 {
@@ -404,6 +404,9 @@ pub fn set_ripas(rd: &Rd, base: usize, top: usize, ripas: u8, flags: u64) -> Res
                 } else {
                     break;
                 }
+            } else {
+                addr += map_size;
+                continue; // do nothing
             }
         } else if ripas as u64 == invalid_ripas::RAM {
             new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::RAM);

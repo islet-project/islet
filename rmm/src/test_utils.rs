@@ -10,6 +10,13 @@ pub use mock::host::{alloc_granule, granule_addr};
 
 use alloc::vec::Vec;
 
+pub const REC_ENTER_EXIT_CMD: usize = 0;
+
+pub struct RecEnterFuzzCall<'a> {
+    pub cmd: usize,
+    pub args: &'a [usize],
+}
+
 pub fn rmi<const COMMAND: usize>(arg: &[usize]) -> Vec<usize> {
     let monitor = Monitor::new();
 
@@ -314,6 +321,14 @@ pub mod mock {
 
             let ret = rmi::<REALM_ACTIVATE>(&[rd]);
             assert_eq!(ret[0], SUCCESS);
+
+            rd
+        }
+
+        pub fn realm_unactivated_setup() -> usize {
+            let rd = realm_create();
+            rec_create(rd, IDX_REC1, IDX_REC1_PARAMS, IDX_REC1_AUX);
+            rec_create(rd, IDX_REC2, IDX_REC2_PARAMS, IDX_REC2_AUX);
 
             rd
         }

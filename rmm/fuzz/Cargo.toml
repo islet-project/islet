@@ -122,3 +122,17 @@ path = "fuzz_targets/rmi_rtt_fold_fuzz.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "rsi_abi_version_fuzz"
+path = "fuzz_targets/rsi_abi_version_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rsi_psci_features_fuzz"
+path = "fuzz_targets/rsi_psci_features_fuzz.rs"
+test = false
+doc = false
+bench = false

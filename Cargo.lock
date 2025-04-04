@@ -1072,6 +1072,7 @@ dependencies = [
 name = "rmm_fuzz"
 version = "0.0.1"
 dependencies = [
+ "armv9a",
  "islet_rmm",
  "libfuzzer-sys",
 ]

@@ -263,11 +263,39 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
                 }
             }
 
-            #[cfg(any(miri, test, fuzzing))]
+            #[cfg(any(miri, test))]
             {
                 use crate::test_utils::mock;
                 mock::realm::setup_psci_complete(&mut rec, &mut run);
                 mock::realm::setup_ripas_state(&mut rec, &mut run);
+            }
+
+            #[cfg(fuzzing)]
+            {
+                use crate::rmi::rec::exit::handle_realm_exit;
+                use crate::test_utils::{RecEnterFuzzCall, REC_ENTER_EXIT_CMD};
+                const RSI_REASON: usize = 1 << 4;
+
+                if arg.len() == 3 {
+                    let callback = unsafe { &*(arg[2] as *const RecEnterFuzzCall) };
+
+                    let cmd = callback.cmd;
+                    let args = callback.args;
+
+                    if cmd == REC_ENTER_EXIT_CMD {
+                        let realm_exit_res: [usize; 4] = [args[0], args[1], args[2], args[3]];
+                        (_, ret[0]) = handle_realm_exit(realm_exit_res, rmm, &mut rec, &mut run)?;
+                    } else {
+                        set_reg(&mut rec, 0, cmd)?;
+
+                        for idx in 0..args.len() {
+                            set_reg(&mut rec, idx + 1, args[idx])?;
+                        }
+
+                        let realm_exit_res = [RSI_REASON, cmd, 0, 0];
+                        (_, ret[0]) = handle_realm_exit(realm_exit_res, rmm, &mut rec, &mut run)?;
+                    }
+                }
             }
 
             rec.set_state(RecState::Ready);

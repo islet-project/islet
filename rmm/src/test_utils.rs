@@ -192,6 +192,8 @@ pub const ATTR_NORMAL_WB_WA_RA: usize = 1 << 2;
 pub const ATTR_STAGE2_AP_RW: usize = 3 << 6;
 pub const ATTR_INNER_SHARED: usize = 3 << 8;
 
+pub const REC_ENTER_EXIT_CMD: usize = 0;
+
 /// This function is a temporary workaround to pass the MIRI test due to a memory leak bug
 /// related to the RMM Page Table. It forces the RMM Page Table to drop at the end of the
 /// test, preventing the memory leak issue from occurring during MIRI testing.
@@ -318,6 +320,14 @@ pub mod mock {
             rd
         }
 
+        pub fn realm_unactivated_setup() -> usize {
+            let rd = realm_create();
+            rec_create(rd, IDX_REC1, IDX_REC1_PARAMS, IDX_REC1_AUX);
+            rec_create(rd, IDX_REC2, IDX_REC2_PARAMS, IDX_REC2_AUX);
+
+            rd
+        }
+
         pub fn realm_teardown(rd: usize) {
             rec_destroy(IDX_REC1, IDX_REC1_AUX);
             rec_destroy(IDX_REC2, IDX_REC2_AUX);
@@ -330,6 +340,8 @@ pub mod mock {
         use crate::event::realmexit::RecExitReason;
         use crate::rec::context::set_reg;
         use crate::rec::Rec;
+        use crate::rmi::error::Error;
+        use crate::rmi::rec::exit::handle_realm_exit;
         use crate::rmi::rec::run::Run;
         use crate::rsi::PSCI_CPU_ON;
 
@@ -352,6 +364,30 @@ pub mod mock {
             const RSI_NO_CHANGE_DESTROYED: u64 = 0;
             run.set_ripas(ipa_base, ipa_top, RSI_RAM);
             rec.set_ripas(ipa_base, ipa_top, RSI_RAM, RSI_NO_CHANGE_DESTROYED);
+        }
+
+        pub fn emulate_realm(
+            rmm: &Monitor,
+            rec: &mut Rec<'_>,
+            run: &mut Run,
+            cmd: usize,
+            args: &[usize],
+        ) -> Result<(bool, usize), Error> {
+            const RSI_REASON: usize = 1 << 4;
+
+            if cmd == REC_ENTER_EXIT_CMD {
+                let realm_exit_res: [usize; 4] = [args[0], args[1], args[2], args[3]];
+                handle_realm_exit(realm_exit_res, rmm, rec, run)
+            } else {
+                set_reg(rec, 0, cmd)?;
+
+                for idx in 0..args.len() {
+                    set_reg(rec, idx + 1, args[idx])?;
+                }
+
+                let realm_exit_res = [RSI_REASON, cmd, 0, 0];
+                handle_realm_exit(realm_exit_res, rmm, rec, run)
+            }
         }
     }
 }

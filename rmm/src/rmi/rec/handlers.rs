@@ -263,11 +263,28 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
                 }
             }
 
-            #[cfg(any(miri, test, fuzzing))]
+            #[cfg(any(miri, test))]
             {
                 use crate::test_utils::mock;
                 mock::realm::setup_psci_complete(&mut rec, &mut run);
                 mock::realm::setup_ripas_state(&mut rec, &mut run);
+            }
+
+            #[cfg(fuzzing)]
+            {
+                use crate::test_utils::mock;
+
+                // In fuzzing contexts, unused register x3 denotes either RSI command or
+                // pseudo RSI command, REC_ENTER_EXIT_CMD for simulating realm exit conditions.
+                // Unused registers x4 and above serve as arguments for the RSI command.
+                if arg.len() >= 3 {
+                    let cmd = arg[2];
+                    let args = &arg[3..];
+
+                    rec.set_emulatable_abort(NotEmulatableAbort);
+
+                    (_, ret[0]) = mock::realm::emulate_realm(rmm, &mut rec, &mut run, cmd, args)?;
+                }
             }
 
             rec.set_state(RecState::Ready);

@@ -150,3 +150,17 @@ path = "fuzz_targets/rsi_measurement_extend_fuzz.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "rsi_realm_config_fuzz"
+path = "fuzz_targets/rsi_realm_config_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rsi_ipa_state_get_fuzz"
+path = "fuzz_targets/rsi_ipa_state_get_fuzz.rs"
+test = false
+doc = false
+bench = false

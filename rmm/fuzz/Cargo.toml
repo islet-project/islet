@@ -136,3 +136,17 @@ path = "fuzz_targets/rsi_psci_features_fuzz.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "rsi_measurement_read_fuzz"
+path = "fuzz_targets/rsi_measurement_read_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rsi_measurement_extend_fuzz"
+path = "fuzz_targets/rsi_measurement_extend_fuzz.rs"
+test = false
+doc = false
+bench = false

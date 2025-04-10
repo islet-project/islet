@@ -164,3 +164,17 @@ path = "fuzz_targets/rsi_ipa_state_get_fuzz.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "rsi_attestation_fuzz"
+path = "fuzz_targets/rsi_attestation_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rsi_host_call_fuzz"
+path = "fuzz_targets/rsi_host_call_fuzz.rs"
+test = false
+doc = false
+bench = false

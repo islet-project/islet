@@ -10,6 +10,7 @@ cargo-fuzz = true
 [dependencies]
 libfuzzer-sys = { version = "0.4.0", features = ["arbitrary-derive"] }
 islet_rmm = { path = "../" }
+armv9a = { path = "../../lib/armv9a"}
 
 [[bin]]
 name = "rmi_version_fuzz"
@@ -98,6 +99,20 @@ bench = false
 [[bin]]
 name = "rmi_rtt_set_ripas_fuzz"
 path = "fuzz_targets/rmi_rtt_set_ripas_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_rec_enter_exit_fuzz"
+path = "fuzz_targets/rmi_rec_enter_exit_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_rec_enter_data_abort_fuzz"
+path = "fuzz_targets/rmi_rec_enter_data_abort_fuzz.rs"
 test = false
 doc = false
 bench = false

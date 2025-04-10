@@ -139,13 +139,6 @@ doc = false
 bench = false
 
 [[bin]]
-name = "rmi_psci_complete_fuzz"
-path = "fuzz_targets/rmi_psci_complete_fuzz.rs"
-test = false
-doc = false
-bench = false
-
-[[bin]]
 name = "rmi_rtt_fold_fuzz"
 path = "fuzz_targets/rmi_rtt_fold_fuzz.rs"
 test = false

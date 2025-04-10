@@ -97,6 +97,20 @@ doc = false
 bench = false
 
 [[bin]]
+name = "rmi_rtt_set_ripas_assigned_fuzz"
+path = "fuzz_targets/rmi_rtt_set_ripas_assigned_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "rmi_rtt_set_ripas_destroyed_fuzz"
+path = "fuzz_targets/rmi_rtt_set_ripas_destroyed_fuzz.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
 name = "rmi_rtt_set_ripas_fuzz"
 path = "fuzz_targets/rmi_rtt_set_ripas_fuzz.rs"
 test = false

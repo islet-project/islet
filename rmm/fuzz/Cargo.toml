@@ -221,3 +221,10 @@ path = "fuzz_targets/rsi_psci_affinity_info_fuzz.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "rsi_invalid_ipa_fuzz"
+path = "fuzz_targets/rsi_invalid_ipa_fuzz.rs"
+test = false
+doc = false
+bench = false

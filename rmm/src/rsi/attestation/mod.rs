@@ -26,6 +26,14 @@ const CCA_TOKEN_COLLECTION: u64 = 399;
 const CCA_PLATFORM_TOKEN: u64 = 44234;
 const CCA_REALM_DELEGATED_TOKEN: u64 = 44241;
 
+// Hardcoded RAK private key for use in fuzzing, where HES is absent.
+#[cfg(fuzzing)]
+const RAK_PRIV_KEY: [u8; 48] = [
+    60, 140, 180, 183, 23, 21, 46, 76, 243, 33, 155, 38, 242, 82, 86, 0, 57, 97, 140, 67, 71, 234,
+    13, 22, 87, 140, 136, 172, 120, 226, 162, 115, 202, 242, 116, 10, 141, 245, 16, 119, 255, 31,
+    1, 3, 10, 113, 218, 134,
+];
+
 type PlatformToken = ArrayVec<[u8; MAX_PLATFORM_TOKEN_SIZE]>;
 // 48B - the length of EC-P384 private key
 type RAKPriv = ArrayVec<[u8; 48]>;
@@ -165,7 +173,12 @@ pub fn get_token(
 ) -> Vec<u8> {
     // TODO: consider storing attestation object somewhere,
     // as RAK and token do not change during rmm lifetime.
-    Attestation::new(&plat_token(), &realm_attest_key()).create_attestation_token(
+    #[cfg(fuzzing)]
+    let realm_attest_key = &RAK_PRIV_KEY;
+    #[cfg(not(fuzzing))]
+    let realm_attest_key = &realm_attest_key();
+
+    Attestation::new(&plat_token(), realm_attest_key).create_attestation_token(
         challenge,
         measurements,
         personalization_value,

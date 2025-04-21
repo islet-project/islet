@@ -84,8 +84,8 @@ pub fn do_host_call(
 
     let struct_size = core::mem::size_of::<HostCall>();
     if ipa % struct_size != 0
-        || ipa / GRANULE_SIZE != (ipa + struct_size - 1) / GRANULE_SIZE
         || !rd.addr_in_par(ipa)
+        || ipa / GRANULE_SIZE != (ipa + struct_size - 1) / GRANULE_SIZE
     {
         set_reg(rec, 0, ERROR_INPUT)?;
         ret[0] = rmi::SUCCESS_REC_ENTER;

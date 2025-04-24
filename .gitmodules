@@ -20,7 +20,6 @@
 [submodule "third-party/tf-rmm"]
 	path = third-party/tf-rmm
 	url = https://git.trustedfirmware.org/TF-RMM/tf-rmm.git
-	branch = rmm-spec-v1.0-eac5
 [submodule "third-party/android-kernel"]
 	path = third-party/android-kernel
 	url = https://github.com/islet-project/3rd-android-kernel
@@ -57,7 +56,7 @@
 [submodule "third-party/tf-a"]
 	path = third-party/tf-a
 	url = https://review.trustedfirmware.org/TF-A/trusted-firmware-a.git
-	branch = master
+	branch = v2.11
 [submodule "third-party/tf-a-rss"]
 	path = third-party/tf-a-rss
 	url = https://github.com/islet-project/arm-trusted-firmware

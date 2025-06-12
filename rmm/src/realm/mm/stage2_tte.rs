@@ -22,6 +22,7 @@ pub mod invalid_ripas {
     pub const EMPTY: u64 = 0b0;
     pub const RAM: u64 = 0b1;
     pub const DESTROYED: u64 = 0b10;
+    pub const DEV: u64 = 0b11;
 }
 
 pub fn mapping_size(level: usize) -> usize {

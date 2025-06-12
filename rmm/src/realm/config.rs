@@ -8,6 +8,7 @@ use safe_abstraction::raw_ptr::assume_safe;
 #[repr(C)]
 pub struct RealmConfig {
     ipa_width: usize,
+    hash_algo: u8,
 }
 
 impl RealmConfig {
@@ -18,9 +19,14 @@ impl RealmConfig {
     // in parsing the following kernel cmdline argument:
     // `console=ttyS0 root=/dev/vda rw  console=pl011,mmio,0x1c0a0000 console=ttyAMA0 printk.devkmsg=on`.
     // So, we get back to use the same kernel argument with TF-RMM's one (uart0 & uart3).
-    pub fn init(config_addr: usize, ipa_width: usize) -> Result<(), Error> {
+    pub fn init(config_addr: usize, ipa_width: usize, hash_algo: u8) -> Result<(), Error> {
         Ok(assume_safe::<RealmConfig>(config_addr)
-            .map(|mut realm_config| realm_config.ipa_width = ipa_width)?)
+           .map(|mut realm_config| realm_config.init_inner(ipa_width, hash_algo))?)
+    }
+
+    fn init_inner(&mut self, ipa_width: usize, hash_algo: u8) {
+        self.ipa_width = ipa_width;
+        self.hash_algo = hash_algo;
     }
 }
 
@@ -29,8 +35,9 @@ pub fn realm_config(rd: &Rd, config_ipa: usize, ipa_bits: usize) -> Result<(), E
         .s2_table()
         .lock()
         .ipa_to_pa(GuestPhysAddr::from(config_ipa), RTT_PAGE_LEVEL);
+    let hash_algo = rd.hash_algo();
     if let Some(pa) = res {
-        RealmConfig::init(pa.into(), ipa_bits)
+        RealmConfig::init(pa.into(), ipa_bits, hash_algo)
     } else {
         Err(Error::RmiErrorInput)
     }

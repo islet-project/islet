@@ -192,6 +192,10 @@ impl S2TTE {
         false
     }
 
+    pub fn has_ripas(&self, level: usize) -> bool {
+        self.get_masked_value(S2TTE::NS) == 0 && !self.is_table(level)
+    }
+
     // level should be the value returned in page table walking
     // (== the last level that has been reached)
     pub fn is_table(&self, level: usize) -> bool {

@@ -23,8 +23,14 @@ pub fn get_ripas_state(
     let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
     let rd = rd_granule.content::<Rd>()?;
 
-    let ipa_page = get_reg(rec, 1)?;
-    if validate_ipa(&rd, ipa_page).is_err() {
+    let base = get_reg(rec, 1)?;
+    let top = get_reg(rec, 2)?;
+    if !is_granule_aligned(base)
+        || !is_granule_aligned(top)
+        || !rd.addr_in_par(base)
+        || !rd.addr_in_par(top - 1)
+        || top <= base
+    {
         if set_reg(rec, 0, rsi::ERROR_INPUT).is_err() {
             warn!("Unable to set register 0. rec: {:?}", rec);
         }
@@ -32,19 +38,36 @@ pub fn get_ripas_state(
         return Ok(());
     }
 
-    let ripas = crate::realm::mm::rtt::get_ripas(&rd, ipa_page, RTT_PAGE_LEVEL)? as usize;
+    let res = crate::realm::mm::rtt::get_ripas(&rd, base, top);
+    let (out_top, ripas) = if let Ok((out_top, ripas)) = res {
+        if out_top > top {
+            (top, ripas)
+        } else {
+            (out_top, ripas)
+        }
+    } else {
+        if set_reg(rec, 0, rsi::ERROR_INPUT).is_err() {
+            warn!("Unable to set register 0. rec: {:?}", rec);
+        }
+        ret[0] = rmi::SUCCESS_REC_ENTER;
+        return Ok(());
+    };
 
     debug!(
-        "RSI_IPA_STATE_GET: ipa_page: {:X} ripas: {:X}",
-        ipa_page, ripas
+        "RSI_IPA_STATE_GET: base: {:X} top: {:X} out_top: {:X} ripas: {:X}",
+        base, top, out_top, ripas
     );
 
     if set_reg(rec, 0, rsi::SUCCESS).is_err() {
         warn!("Unable to set register 0. rec: {:?}", rec);
     }
 
-    if set_reg(rec, 1, ripas).is_err() {
+    if set_reg(rec, 1, out_top).is_err() {
         warn!("Unable to set register 1. rec: {:?}", rec);
+    }
+
+    if set_reg(rec, 2, ripas as usize).is_err() {
+        warn!("Unable to set register 2. rec: {:?}", rec);
     }
 
     ret[0] = rmi::SUCCESS_REC_ENTER;

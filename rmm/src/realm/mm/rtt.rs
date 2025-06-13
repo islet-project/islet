@@ -228,18 +228,30 @@ pub fn init_ripas(rd: &mut Rd, base: usize, top: usize) -> Result<usize, Error> 
     }
 }
 
-pub fn get_ripas(rd: &Rd, ipa: usize, level: usize) -> Result<u64, Error> {
-    let (s2tte, last_level) = S2TTE::get_s2tte(rd, ipa, level, Error::RmiErrorRtt(0))?;
-
-    if level != last_level {
-        return Err(Error::RmiErrorRtt(last_level));
+// return (out_top, ripas)
+pub fn get_ripas(rd: &Rd, start: usize, end: usize) -> Result<(usize, u64), Error> {
+    let level = RTT_PAGE_LEVEL;
+    let mut addr = start;
+    let mut common_ripas = 0; // initialized in the below if condition (addr == start)
+    let mut map_size = 0; // initialized in the below if condition (addr == start)
+    while addr < end {
+        let (s2tte, last_level) = S2TTE::get_s2tte(rd, addr, level, Error::RmiErrorRtt(0))?;
+        if !s2tte.has_ripas(level) {
+            break;
+        }
+        let ripas = s2tte.get_ripas();
+        if addr == start {
+            common_ripas = ripas;
+            map_size = mapping_size(last_level);
+        } else if common_ripas != ripas {
+            break;
+        }
+        addr += map_size;
     }
-
-    if s2tte.is_assigned_ram(level) {
-        return Ok(invalid_ripas::RAM);
+    if addr == start {
+        return Err(Error::RmiErrorInput);
     }
-
-    Ok(s2tte.get_ripas())
+    Ok((addr, common_ripas))
 }
 
 pub fn read_entry(rd: &Rd, ipa: usize, level: usize) -> Result<[usize; 4], Error> {
@@ -484,9 +496,15 @@ pub fn data_create(rd: &Rd, ipa: usize, target_pa: usize, unknown: bool) -> Resu
     }
     let ripas = s2tte.get_ripas();
     if unknown && ripas != invalid_ripas::RAM {
+        // New HIPAS: ASSIGNED
         new_s2tte |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
+        // New RIPAS: Unchanged
         new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, ripas);
     } else {
+        // New HIPAS: ASSIGNED
+        new_s2tte |= bits_in_reg(S2TTE::INVALID_HIPAS, invalid_hipas::ASSIGNED);
+        // New RIPAS: RAM
+        new_s2tte |= bits_in_reg(S2TTE::INVALID_RIPAS, invalid_ripas::RAM);
         // S2TTE_PAGE  : S2TTE_ATTRS | S2TTE_L3_PAGE
         new_s2tte |= bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
         // S2TTE_ATTRS : S2TTE_MEMATTR_FWB_NORMAL_WB | S2TTE_AP_RW | S2TTE_SH_IS | S2TTE_AF

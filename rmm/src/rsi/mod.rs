@@ -46,6 +46,7 @@ define_interface! {
         IPA_STATE_GET           = 0xc400_0198,
         HOST_CALL               = 0xc400_0199,
         // PSCI smcs
+        // XXX: SMCCC_VERSION is not defined in the spec, so remove it if it is not used now
         SMCCC_VERSION           = 0x8000_0000,
         PSCI_VERSION            = 0x8400_0000,
         PSCI_CPU_SUSPEND        = 0xC400_0001,

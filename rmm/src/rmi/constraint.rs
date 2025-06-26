@@ -36,7 +36,7 @@ fn pick(cmd: Command) -> Option<Constraint> {
         // NOTE: REC_CREATE has 4 of arg_num and 1 of ret_num according to the specification,
         //       but we're using one more return value for our own purpose.
         rmi::REC_CREATE => Constraint::new(rmi::REC_CREATE, 4, 2),
-        rmi::REC_DESTROY => Constraint::new(rmi::REC_DESTROY, 4, 1),
+        rmi::REC_DESTROY => Constraint::new(rmi::REC_DESTROY, 2, 1),
         rmi::REC_ENTER => Constraint::new(rmi::REC_ENTER, 3, 1),
         rmi::RTT_MAP_UNPROTECTED => Constraint::new(rmi::RTT_MAP_UNPROTECTED, 5, 1),
         rmi::RTT_UNMAP_UNPROTECTED => Constraint::new(rmi::RTT_UNMAP_UNPROTECTED, 4, 2),
@@ -48,6 +48,7 @@ fn pick(cmd: Command) -> Option<Constraint> {
         rmi::RTT_INIT_RIPAS => Constraint::new(rmi::RTT_INIT_RIPAS, 4, 2),
         rmi::RTT_SET_RIPAS => Constraint::new(rmi::RTT_SET_RIPAS, 5, 2),
         rmi::RTT_FOLD => Constraint::new(rmi::RTT_FOLD, 4, 2),
+        // XXX: REQ_COMPLETE do not exist in the spec
         rmi::REQ_COMPLETE => Constraint::new(rmi::REQ_COMPLETE, 4, 2),
         rmi::PSCI_COMPLETE => Constraint::new(rmi::PSCI_COMPLETE, 4, 1),
         rmi::ISLET_REALM_SET_METADATA => Constraint::new(rmi::ISLET_REALM_SET_METADATA, 4, 1),

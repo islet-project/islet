@@ -14,8 +14,8 @@ use crate::rmi::error::Error;
 pub const INVALID_UNPROTECTED: u64 = 0x0;
 
 pub mod invalid_hipas {
-    pub const UNASSIGNED: u64 = 0b00;
-    pub const ASSIGNED: u64 = 0b01;
+    pub const UNASSIGNED: u64 = 0b0;
+    pub const ASSIGNED: u64 = 0b1;
 }
 
 pub mod invalid_ripas {
@@ -47,6 +47,8 @@ pub fn level_mask(level: usize) -> Option<u64> {
 
 define_bits!(
     S2TTE,
+    INVALID_HIPAS[58 - 58], // Host IPA State (HIPAS)
+    INVALID_RIPAS[57 - 56], // Realm IPA State (RIPAS)
     NS[55 - 55], // DDI0615A: For a Block or Page descriptor fetched for stage 2 in the Realm Security state, bit 55 is the NS field. if set, it means output address is in NS PAS.
     XN[54 - 54],
     CONT[52 - 52],
@@ -57,10 +59,8 @@ define_bits!(
     ADDR_BLK_L3[47 - 12],      // page descriptor; level 3
     ADDR_TBL_OR_PAGE[47 - 12], // table descriptor(level 0-2) || page descriptor(level3)
     AF[10 - 10],
-    SH[9 - 8],   // pte_shareable
-    S2AP[7 - 6], // pte_access_perm
-    INVALID_RIPAS[6 - 5],
-    INVALID_HIPAS[4 - 2],
+    SH[9 - 8],      // pte_shareable
+    S2AP[7 - 6],    // pte_access_perm
     MEMATTR[5 - 2], // pte_mem_attr
     DESC_TYPE[1 - 0],
     TYPE[1 - 1], // pte_type ; block(0) or table(1)

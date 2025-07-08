@@ -1,11 +1,12 @@
 #![no_main]
 
-use islet_rmm::rmi::{RTT_CREATE, RTT_READ_ENTRY, RTT_INIT_RIPAS, DATA_CREATE_UNKNOWN, DATA_DESTROY,
-                     RTT_MAP_UNPROTECTED, RTT_UNMAP_UNPROTECTED, GRANULE_DELEGATE,
-                     GRANULE_UNDELEGATE, RTT_FOLD, SUCCESS};
 use islet_rmm::granule::GRANULE_SIZE;
+use islet_rmm::rmi::{
+    DATA_CREATE_UNKNOWN, DATA_DESTROY, GRANULE_DELEGATE, GRANULE_UNDELEGATE, RTT_CREATE, RTT_FOLD,
+    RTT_INIT_RIPAS, RTT_MAP_UNPROTECTED, RTT_READ_ENTRY, RTT_UNMAP_UNPROTECTED, SUCCESS,
+};
 use islet_rmm::test_utils::{mock, *};
-use mock::host::alloc_granule_l2_aligned as alloc_granule_l2_aligned;
+use mock::host::alloc_granule_l2_aligned;
 
 use libfuzzer_sys::{arbitrary, fuzz_target, Corpus};
 
@@ -57,8 +58,8 @@ fn destroy_fold(rd: usize, base: usize, fold_type: FoldType, fold_success: bool)
                     assert_eq!(ret[0], SUCCESS);
                 }
             }
-        },
-        FoldType::Unassigned => {},
+        }
+        FoldType::Unassigned => {}
         FoldType::NonHomogenous => {
             if ns {
                 let ret = rmi::<RTT_UNMAP_UNPROTECTED>(&[rd, base, MAP_LEVEL]);
@@ -90,7 +91,8 @@ fn setup_fold(rd: usize, base: usize, fold_type: FoldType, ram: bool) {
                 if ns {
                     let ns_desc = alloc_granule_l2_aligned(IDX_L2_ALIGNED_DATA + idx);
 
-                    let ret = rmi::<RTT_MAP_UNPROTECTED>(&[rd, base + idx * L3_SIZE, MAP_LEVEL, ns_desc]);
+                    let ret =
+                        rmi::<RTT_MAP_UNPROTECTED>(&[rd, base + idx * L3_SIZE, MAP_LEVEL, ns_desc]);
                     assert_eq!(ret[0], SUCCESS);
                 } else {
                     let data_granule = alloc_granule_l2_aligned(IDX_L2_ALIGNED_DATA + idx);
@@ -101,20 +103,21 @@ fn setup_fold(rd: usize, base: usize, fold_type: FoldType, ram: bool) {
                     assert_eq!(ret[0], SUCCESS);
                 }
             }
-        },
+        }
         FoldType::Unassigned => {
             if ns {
                 for idx in 0..L2_PAGE_COUNT {
                     let ns_desc = alloc_granule(IDX_NS_DESC);
 
-                    let ret = rmi::<RTT_MAP_UNPROTECTED>(&[rd, base + idx * L3_SIZE, MAP_LEVEL, ns_desc]);
+                    let ret =
+                        rmi::<RTT_MAP_UNPROTECTED>(&[rd, base + idx * L3_SIZE, MAP_LEVEL, ns_desc]);
                     assert_eq!(ret[0], SUCCESS);
 
                     let ret = rmi::<RTT_UNMAP_UNPROTECTED>(&[rd, base + idx * L3_SIZE, MAP_LEVEL]);
                     assert_eq!(ret[0], SUCCESS);
                 }
             }
-        },
+        }
         FoldType::NonHomogenous => {
             if ns {
                 let ns_desc = alloc_granule_l2_aligned(IDX_L2_ALIGNED_DATA);
@@ -129,7 +132,7 @@ fn setup_fold(rd: usize, base: usize, fold_type: FoldType, ram: bool) {
                 let ret = rmi::<DATA_CREATE_UNKNOWN>(&[rd, data_granule, base]);
                 assert_eq!(ret[0], SUCCESS);
             }
-        },
+        }
     }
 }
 
@@ -164,7 +167,7 @@ fuzz_target!(|data: RTTFoldFuzz| -> Corpus {
 
         match fold_type {
             FoldType::Unassigned => mock::host::unmap(rd, base, true),
-            _ => mock::host::unmap(rd, base, false)
+            _ => mock::host::unmap(rd, base, false),
         }
     } else {
         destroy_fold(rd, base, fold_type, false);

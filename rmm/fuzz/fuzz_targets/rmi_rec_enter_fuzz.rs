@@ -1,8 +1,8 @@
 #![no_main]
 
+use islet_rmm::rmi::rec::run::{Run, NR_GIC_LRS, NR_GPRS};
 use islet_rmm::rmi::{REC_ENTER, SUCCESS};
 use islet_rmm::test_utils::{mock, *};
-use islet_rmm::rmi::rec::run::{Run, NR_GPRS, NR_GIC_LRS};
 
 use libfuzzer_sys::{arbitrary, fuzz_target};
 

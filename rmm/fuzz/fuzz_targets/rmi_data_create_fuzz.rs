@@ -1,12 +1,13 @@
 #![no_main]
 
-use islet_rmm::rmi::{DATA_CREATE, DATA_DESTROY, GRANULE_DELEGATE, GRANULE_UNDELEGATE,
-                     RTT_INIT_RIPAS, RTT_READ_ENTRY, SUCCESS};
-use islet_rmm::rmi::rtt_entry_state::{RMI_UNASSIGNED, RMI_ASSIGNED};
+use islet_rmm::rmi::rtt_entry_state::{RMI_ASSIGNED, RMI_UNASSIGNED};
+use islet_rmm::rmi::{
+    DATA_CREATE, DATA_DESTROY, GRANULE_DELEGATE, GRANULE_UNDELEGATE, RTT_INIT_RIPAS,
+    RTT_READ_ENTRY, SUCCESS,
+};
 use islet_rmm::test_utils::{mock, *};
 
 use libfuzzer_sys::{arbitrary, fuzz_target, Corpus};
-
 
 #[derive(Debug, arbitrary::Arbitrary)]
 struct DataCreateFuzz {

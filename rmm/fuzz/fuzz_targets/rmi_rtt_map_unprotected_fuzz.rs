@@ -1,7 +1,7 @@
 #![no_main]
 
-use islet_rmm::rmi::{RTT_MAP_UNPROTECTED, RTT_UNMAP_UNPROTECTED, RTT_READ_ENTRY, SUCCESS};
 use islet_rmm::rmi::rtt_entry_state::{RMI_ASSIGNED, RMI_UNASSIGNED};
+use islet_rmm::rmi::{RTT_MAP_UNPROTECTED, RTT_READ_ENTRY, RTT_UNMAP_UNPROTECTED, SUCCESS};
 use islet_rmm::test_utils::{mock, *};
 
 use libfuzzer_sys::{arbitrary, fuzz_target, Corpus};

@@ -21,9 +21,14 @@ impl RealmConfig {
     // in parsing the following kernel cmdline argument:
     // `console=ttyS0 root=/dev/vda rw  console=pl011,mmio,0x1c0a0000 console=ttyAMA0 printk.devkmsg=on`.
     // So, we get back to use the same kernel argument with TF-RMM's one (uart0 & uart3).
-    pub fn init(config_addr: usize, ipa_width: usize, hash_algo: u8, rpv: &[u8]) -> Result<(), Error> {
+    pub fn init(
+        config_addr: usize,
+        ipa_width: usize,
+        hash_algo: u8,
+        rpv: &[u8],
+    ) -> Result<(), Error> {
         Ok(assume_safe::<RealmConfig>(config_addr)
-           .map(|mut realm_config| realm_config.init_inner(ipa_width, hash_algo, rpv))?)
+            .map(|mut realm_config| realm_config.init_inner(ipa_width, hash_algo, rpv))?)
     }
 
     fn init_inner(&mut self, ipa_width: usize, hash_algo: u8, rpv: &[u8]) {

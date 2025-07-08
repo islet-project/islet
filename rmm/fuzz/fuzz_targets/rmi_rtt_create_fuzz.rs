@@ -1,6 +1,6 @@
 #![no_main]
 
-use islet_rmm::rmi::{RTT_CREATE, RTT_DESTROY, GRANULE_DELEGATE, GRANULE_UNDELEGATE, SUCCESS};
+use islet_rmm::rmi::{GRANULE_DELEGATE, GRANULE_UNDELEGATE, RTT_CREATE, RTT_DESTROY, SUCCESS};
 use islet_rmm::test_utils::{mock, *};
 
 use libfuzzer_sys::{arbitrary, fuzz_target};

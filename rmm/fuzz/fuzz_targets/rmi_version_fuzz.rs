@@ -1,6 +1,6 @@
 #![no_main]
 
-use islet_rmm::rmi::{VERSION};
+use islet_rmm::rmi::VERSION;
 use islet_rmm::test_utils::*;
 
 use libfuzzer_sys::fuzz_target;

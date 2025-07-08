@@ -1,8 +1,10 @@
 #![no_main]
 
-use islet_rmm::rmi::{REALM_CREATE, REALM_DESTROY, REALM_ACTIVATE, GRANULE_DELEGATE, GRANULE_UNDELEGATE, SUCCESS};
 use islet_rmm::granule::GRANULE_STATUS_TABLE_SIZE;
 use islet_rmm::rmi::realm::params::Params as RealmParams;
+use islet_rmm::rmi::{
+    GRANULE_DELEGATE, GRANULE_UNDELEGATE, REALM_ACTIVATE, REALM_CREATE, REALM_DESTROY, SUCCESS,
+};
 use islet_rmm::test_utils::{mock, *};
 
 use libfuzzer_sys::{arbitrary, fuzz_target};
@@ -19,7 +21,7 @@ struct RealmParamsFuzz {
     rpv: [u8; 64],
     vmid: u16,
     rtt_level_start: i64,
-    rtt_num_start: u32
+    rtt_num_start: u32,
 }
 
 fuzz_target!(|data: RealmParamsFuzz| {

@@ -1,9 +1,10 @@
 #![no_main]
 
-use islet_rmm::rmi::{REC_CREATE, REC_DESTROY, REC_AUX_COUNT, GRANULE_DELEGATE,
-                     GRANULE_UNDELEGATE, SUCCESS};
-use islet_rmm::rmi::rec::params::NR_GPRS;
 use islet_rmm::rmi::rec::params::Params as RecParams;
+use islet_rmm::rmi::rec::params::NR_GPRS;
+use islet_rmm::rmi::{
+    GRANULE_DELEGATE, GRANULE_UNDELEGATE, REC_AUX_COUNT, REC_CREATE, REC_DESTROY, SUCCESS,
+};
 use islet_rmm::test_utils::{mock, *};
 
 use libfuzzer_sys::{arbitrary, fuzz_target};
@@ -22,10 +23,7 @@ fuzz_target!(|data: RecParamsFuzz| {
     let ret = rmi::<REC_AUX_COUNT>(&[rd]);
     let rec_aux_count = ret[1];
 
-    let (rec, params_ptr) = (
-        alloc_granule(IDX_REC1),
-        alloc_granule(IDX_REC1_PARAMS),
-    );
+    let (rec, params_ptr) = (alloc_granule(IDX_REC1), alloc_granule(IDX_REC1_PARAMS));
 
     let _ret = rmi::<GRANULE_DELEGATE>(&[rec]);
 

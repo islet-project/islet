@@ -32,6 +32,7 @@ pub struct Rd {
     s2_starting_level: isize,
     hash_algo: u8,
     rpv: [u8; RPV_SIZE],
+    num_recs: usize,
     pub measurements: [Measurement; MEASUREMENTS_SLOT_NR],
     pub vcpu_index: usize,
     metadata: Option<usize>,
@@ -66,10 +67,15 @@ impl Rd {
         if sve_en {
             self.simd_cfg.sve_vq = sve_vl;
         }
+        self.num_recs = 0;
     }
 
     pub fn id(&self) -> usize {
         self.vmid as usize
+    }
+
+    pub fn num_recs(&self) -> usize {
+        self.num_recs
     }
 
     pub fn s2_table(&self) -> Arc<Mutex<Box<dyn IPATranslation>>> {
@@ -108,8 +114,13 @@ impl Rd {
         self.s2_starting_level
     }
 
-    pub fn inc_rec_index(&mut self) {
+    pub fn inc_recs(&mut self) {
+        self.num_recs += 1;
         self.rec_index += 1;
+    }
+
+    pub fn dec_recs(&mut self) {
+        self.num_recs -= 1;
     }
 
     pub fn ipa_size(&self) -> usize {

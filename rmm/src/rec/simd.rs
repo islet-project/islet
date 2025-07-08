@@ -287,3 +287,11 @@ pub fn validate(en: bool, sve_vl: u64) -> bool {
     }
     true
 }
+
+pub fn sve_en() -> bool {
+    SIMD_CONFIG.sve_en
+}
+
+pub fn max_sve_vl() -> u64 {
+    SIMD_CONFIG.sve_vq
+}

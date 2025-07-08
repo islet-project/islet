@@ -70,6 +70,10 @@ lazy_static! {
     };
 }
 
+pub fn nr_lrs() -> usize {
+    GIC_FEATURES.nr_lrs
+}
+
 pub fn init_gic(rec: &mut Rec<'_>) {
     let gic_state = &mut rec.context.gic_state;
     gic_state.ich_hcr_el2 = (ICH_HCR_EL2::En.mask << ICH_HCR_EL2::En.shift)

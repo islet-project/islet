@@ -14,6 +14,8 @@ use aarch64_cpu::registers::*;
 use core::cell::OnceCell;
 use vmsa::guard::Content;
 
+const MAX_RECS_ORDER_VALUE: u64 = 4;
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum RmmRecAttestState {
     AttestInProgress,
@@ -366,4 +368,8 @@ pub fn run() -> Result<[usize; 4], Error> {
 
     exit();
     Ok(ret)
+}
+
+pub fn max_recs_order() -> usize {
+    MAX_RECS_ORDER_VALUE as usize
 }

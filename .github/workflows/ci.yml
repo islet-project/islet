@@ -156,8 +156,7 @@ jobs:
 
     - name: Check rust coding-style
       run: |
-        cd rmm && cargo fmt -- --check && cd -
-        cd plat/fvp && cargo fmt -- --check
+        cargo fmt -- --check
 
     - name: Check clippy lints
       run: ./scripts/clippy.sh

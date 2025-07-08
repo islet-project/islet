@@ -550,7 +550,7 @@ def place_realm_at_shared(rmm, realm_ip, fvp_tap_ip, fvp_ip, no_kvm_unit_tests, 
         run(["tar", "-zxvf", "%s/lib/libtensorflowlite.tar.gz" % SHARED_EXAMPLES_PATH, "-C", "%s/lib/" % SHARED_EXAMPLES_PATH], cwd=ROOT)
 
 def clean_repo(target):
-    clean_list = ["all", "tf-a", "tf-a-tests", "realm-linux", "kvmtool", "optee", "acs", "tf-rmm", "islet"]
+    clean_list = ["all", "tf-a", "tf-a-tests", "realm-linux", "nw-linux", "kvmtool", "optee", "acs", "tf-rmm", "islet"]
     if not target in clean_list:
         print("Please select one of the clean list:")
         print("  " + "\n  ".join(clean_list))
@@ -562,6 +562,8 @@ def clean_repo(target):
         run(["make", "distclean"], cwd=TF_A_TESTS)
     if target == "all" or target == "realm-linux":
         run(["make", "clean"], cwd=REALM_LINUX)
+    if target == "all" or target == "nw-linux":
+        run(["make", "clean"], cwd=NW_LINUX)
     if target == "all" or target == "kvmtool":
         run(["make", "clean"], cwd=KVMTOOL)
 

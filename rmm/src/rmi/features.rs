@@ -1,5 +1,7 @@
 use crate::event::RmiHandle;
 use crate::listen;
+use crate::rec;
+use crate::rec::{gic, simd};
 use crate::rmi;
 use armv9a::{define_bitfield, define_bits, define_mask};
 
@@ -7,12 +9,14 @@ extern crate alloc;
 
 define_bits!(
     FeatureReg0,
-    HASH_SHA_512[29 - 29],
-    HASH_SHA_256[28 - 28],
-    PMU_NUM_CTRS[27 - 23],
-    PMU_EN[22 - 22],
-    NUM_WPS[21 - 18],
-    NUM_BPS[17 - 14],
+    MAX_RECS_ORDER[41 - 38],
+    GICV3_NUM_LRS[37 - 34],
+    HASH_SHA_512[33 - 33],
+    HASH_SHA_256[32 - 32],
+    PMU_NUM_CTRS[31 - 27],
+    PMU_EN[26 - 26],
+    NUM_WPS[25 - 20],
+    NUM_BPS[19 - 14],
     SVE_VL[13 - 10],
     SVE_EN[9 - 9],
     LPA2[8 - 8],
@@ -20,8 +24,8 @@ define_bits!(
 );
 
 const S2SZ_VALUE: u64 = 48;
-const LPA2_VALUE: u64 = 0;
-const PMU_EN_VALUE: u64 = NOT_SUPPORTED;
+pub const LPA2_VALUE: u64 = 0;
+pub const PMU_EN_VALUE: u64 = NOT_SUPPORTED;
 const PMU_NUM_CTRS_VALUE: u64 = 0;
 const HASH_SHA_256_VALUE: u64 = SUPPORTED;
 const HASH_SHA_512_VALUE: u64 = SUPPORTED;
@@ -42,10 +46,21 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         feat_reg0
             .set_masked_value(FeatureReg0::S2SZ, S2SZ_VALUE)
             .set_masked_value(FeatureReg0::LPA2, LPA2_VALUE)
+            .set_masked_value(
+                FeatureReg0::SVE_EN,
+                if simd::sve_en() {
+                    SUPPORTED
+                } else {
+                    NOT_SUPPORTED
+                },
+            )
+            .set_masked_value(FeatureReg0::SVE_VL, simd::max_sve_vl())
             .set_masked_value(FeatureReg0::PMU_EN, PMU_EN_VALUE)
             .set_masked_value(FeatureReg0::PMU_NUM_CTRS, PMU_NUM_CTRS_VALUE)
             .set_masked_value(FeatureReg0::HASH_SHA_256, HASH_SHA_256_VALUE)
-            .set_masked_value(FeatureReg0::HASH_SHA_512, HASH_SHA_512_VALUE);
+            .set_masked_value(FeatureReg0::HASH_SHA_512, HASH_SHA_512_VALUE)
+            .set_masked_value(FeatureReg0::GICV3_NUM_LRS, gic::nr_lrs() as u64)
+            .set_masked_value(FeatureReg0::MAX_RECS_ORDER, rec::max_recs_order() as u64);
 
         ret[1] = feat_reg0.get() as usize;
         debug!("rmi::FEATURES ret:{:X}", feat_reg0.get());

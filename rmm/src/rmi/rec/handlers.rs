@@ -13,7 +13,7 @@ use crate::measurement::HashContext;
 use crate::realm::rd::{Rd, State};
 use crate::rec::context::{set_reg, RegOffset};
 use crate::rec::State as RecState;
-use crate::rec::{Rec, RmmRecEmulatableAbort::NotEmulatableAbort};
+use crate::rec::{max_recs_order, Rec, RmmRecEmulatableAbort::NotEmulatableAbort};
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rsi::do_host_call;
@@ -63,6 +63,9 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         if !rd.at_state(State::New) {
             return Err(Error::RmiErrorRealm(0));
         }
+        if rd.num_recs() == (1 << max_recs_order()) - 1 {
+            return Err(Error::RmiErrorRealm(0));
+        }
 
         if rec_index != rd.rec_index() {
             return Err(Error::RmiErrorInput);
@@ -91,7 +94,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         }
         rec.set_vtcr(prepare_vtcr(&rd)?);
 
-        rd.inc_rec_index();
+        rd.inc_recs();
         #[cfg(not(kani))]
         // `rsi` is currently not reachable in model checking harnesses
         HashContext::new(&mut rd)?.measure_rec_params(&params)?;
@@ -139,19 +142,19 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             set_granule(&mut rec_aux_granule, GranuleState::Delegated)?;
         }
 
-        #[cfg(not(feature = "gst_page_table"))]
+        let rd = rec.owner()?;
+        #[cfg(kani)]
         {
-            let rd = rec.owner()?;
-            #[cfg(kani)]
-            {
-                // XXX: the below can be guaranteed by Rec's invariants instead
-                kani::assume(crate::granule::validate_addr(rd));
-                let rd_granule = get_granule!(rd)?;
-                kani::assume(rd_granule.state() == GranuleState::RD);
-            }
-            let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
-            rd_granule.dec_count();
+            // XXX: the below can be guaranteed by Rec's invariants instead
+            kani::assume(crate::granule::validate_addr(rd));
+            let rd_granule = get_granule!(rd)?;
+            kani::assume(rd_granule.state() == GranuleState::RD);
         }
+        let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
+        #[cfg(not(feature = "gst_page_table"))]
+        rd_granule.dec_count();
+        let mut rd = rd_granule.content::<Rd>()?;
+        rd.dec_recs();
 
         set_granule(&mut rec_granule, GranuleState::Delegated).inspect_err(|_| {
             #[cfg(not(kani))]

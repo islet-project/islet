@@ -153,13 +153,13 @@ impl Params {
 
         // TODO: We don't support pmu, lpa2
         let flags = RmiRealmFlags::new(self.flags);
-        if flags.get_masked_value(RmiRealmFlags::Lpa2) != 0 {
+        if flags.get_masked_value(RmiRealmFlags::Lpa2) != features::LPA2_VALUE {
             return Err(Error::RmiErrorInput);
         }
         if !simd::validate(self.sve_en(), self.sve_vl as u64) {
             return Err(Error::RmiErrorInput);
         }
-        if flags.get_masked_value(RmiRealmFlags::Pmu) != 0 {
+        if flags.get_masked_value(RmiRealmFlags::Pmu) != features::PMU_EN_VALUE {
             return Err(Error::RmiErrorInput);
         }
 

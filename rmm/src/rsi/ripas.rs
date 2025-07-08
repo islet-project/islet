@@ -1,6 +1,5 @@
 use crate::granule::is_granule_aligned;
 use crate::granule::GranuleState;
-use crate::realm::mm::rtt::RTT_PAGE_LEVEL;
 use crate::realm::mm::stage2_tte::invalid_ripas;
 use crate::realm::rd::Rd;
 use crate::rec::context::{get_reg, set_reg};
@@ -8,7 +7,6 @@ use crate::rec::Rec;
 use crate::rmi;
 use crate::rmi::error::Error;
 use crate::rmi::rec::run::{Run, REC_ENTRY_FLAG_RIPAS_RESPONSE};
-use crate::rmi::rtt::validate_ipa;
 use crate::rsi;
 use crate::Monitor;
 use crate::{get_granule, get_granule_if};

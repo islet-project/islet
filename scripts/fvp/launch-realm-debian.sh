@@ -7,6 +7,7 @@ echo "copy done"
 
 ./configure-net.sh &
 ./lkvm run \
+	--restricted_mem \
 	--realm \
 	--measurement-algo="sha256" \
 	--disable-sve \

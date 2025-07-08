@@ -12,6 +12,7 @@ fi
 
 ./lkvm run \
 	--debug \
+	--restricted_mem \
 	--realm \
 	--measurement-algo="sha256" \
 	--disable-sve \

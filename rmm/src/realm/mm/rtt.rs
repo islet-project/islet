@@ -578,14 +578,15 @@ fn is_live_rtt(rd: &Rd, base: usize, level: usize) -> Result<bool, Error> {
 
 fn skip_non_live_entries(rd: &Rd, base: usize, level: usize) -> Result<usize, Error> {
     let map_size = mapping_size(level);
+    let upper_map_size = mapping_size(level - 1);
 
     let mut addr = base & !(map_size - 1);
     if addr != base {
         return Err(Error::RmiErrorRtt(level));
     }
 
-    let space_size = level_space_size(rd, level);
-    let mut bottom_addr = addr & !(space_size - 1);
+    let base_upper_masked = base & !(upper_map_size - 1);
+    let last_addr = base_upper_masked + upper_map_size;
 
     let binding = rd.s2_table();
     let binding = binding.lock();
@@ -597,9 +598,8 @@ fn skip_non_live_entries(rd: &Rd, base: usize, level: usize) -> Result<usize, Er
         );
     }
     for entry in entries_iter {
-        if bottom_addr < base {
-            bottom_addr += map_size;
-            continue;
+        if addr >= last_addr {
+            break;
         }
         let s2tte = S2TTE::new(entry.pte());
         if s2tte.is_live(level) {

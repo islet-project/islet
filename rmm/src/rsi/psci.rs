@@ -157,7 +157,8 @@ pub fn set_event_handler(rsi: &mut RsiHandle) {
     listen!(rsi, rsi::PSCI_FEATURES, |_arg, ret, _rmm, rec, _run| {
         let feature_id = get_reg(rec, 1)?;
         let retval = match feature_id {
-            rsi::PSCI_CPU_SUSPEND
+            rsi::SMCCC_VERSION //XXX: this should be added for realm-linux booting
+            | rsi::PSCI_CPU_SUSPEND
             | rsi::PSCI_CPU_OFF
             | rsi::PSCI_CPU_ON
             | rsi::PSCI_AFFINITY_INFO

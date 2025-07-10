@@ -17,7 +17,7 @@ use crate::Monitor;
 use crate::{rmi, rsi};
 use armv9a::{
     EsrEl2, DFSC_PERM_FAULTS, DFSC_PERM_FAULT_MASK, EMULATABLE_ABORT_MASK, INST_ABORT_MASK,
-    NON_EMULATABLE_ABORT_MASK,
+    NON_EMULATABLE_ABORT_MASK, SERROR_MASK, WFX_MASK,
 };
 
 use aarch64_cpu::registers::{Readable, Writeable};
@@ -75,9 +75,16 @@ pub fn handle_realm_exit(
         }
         RecExitReason::IRQ => {
             run.set_exit_reason(rmi::EXIT_IRQ);
-            run.set_esr(realm_exit_res[1] as u64);
-            run.set_hpfar(realm_exit_res[2] as u64);
-            run.set_far(realm_exit_res[3] as u64);
+            run.set_esr(0);
+            run.set_hpfar(0);
+            run.set_far(0);
+            rmi::SUCCESS
+        }
+        RecExitReason::SError => {
+            run.set_exit_reason(rmi::EXIT_SERROR);
+            run.set_esr(realm_exit_res[1] as u64 & SERROR_MASK);
+            run.set_hpfar(0);
+            run.set_far(0);
             rmi::SUCCESS
         }
         RecExitReason::Sync(ExitSyncType::InstAbort) => {
@@ -93,6 +100,14 @@ pub fn handle_realm_exit(
                 }
                 _ => panic!("shouldn't be reached here"),
             }
+        }
+        RecExitReason::Sync(ExitSyncType::WFx) => {
+            let esr_el2 = realm_exit_res[1] as u64;
+            run.set_exit_reason(rmi::EXIT_SYNC);
+            run.set_esr(esr_el2 & WFX_MASK);
+            run.set_hpfar(0);
+            run.set_far(0);
+            rmi::SUCCESS
         }
         RecExitReason::Sync(ExitSyncType::Undefined) => {
             run.set_exit_reason(rmi::EXIT_SYNC);

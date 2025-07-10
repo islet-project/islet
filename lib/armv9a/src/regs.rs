@@ -93,6 +93,7 @@ pub const NON_EMULATABLE_ABORT_MASK: u64 =
     EsrEl2::EC | EsrEl2::SET | EsrEl2::FNV | EsrEl2::EA | EsrEl2::DFSC;
 pub const EMULATABLE_ABORT_MASK: u64 =
     NON_EMULATABLE_ABORT_MASK | EsrEl2::ISV | EsrEl2::SAS | EsrEl2::SF | EsrEl2::WNR;
+pub const INST_ABORT_MASK: u64 = EsrEl2::EC | EsrEl2::SET | EsrEl2::EA | EsrEl2::DFSC;
 
 macro_rules! define_iss_id {
     ($name:ident, $Op0:expr, $Op1:expr, $CRn:expr, $CRm:expr, $Op2:expr) => {

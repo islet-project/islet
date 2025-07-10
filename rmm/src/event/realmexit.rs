@@ -49,7 +49,7 @@ impl From<usize> for RecExitReason {
 
 /// Fault Status Code only for the 'RecExitReason::Sync'
 /// it's a different from trap::Syndrome
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 #[repr(usize)]
 pub enum ExitSyncType {
     RSI = 1 << EXIT_SYNC_TYPE_SHIFT,

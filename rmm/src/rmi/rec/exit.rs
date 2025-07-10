@@ -16,7 +16,7 @@ use crate::rmi::rec::run::Run;
 use crate::Monitor;
 use crate::{rmi, rsi};
 use armv9a::{
-    EsrEl2, DFSC_PERM_FAULTS, DFSC_PERM_FAULT_MASK, EMULATABLE_ABORT_MASK,
+    EsrEl2, DFSC_PERM_FAULTS, DFSC_PERM_FAULT_MASK, EMULATABLE_ABORT_MASK, INST_ABORT_MASK,
     NON_EMULATABLE_ABORT_MASK,
 };
 
@@ -24,7 +24,7 @@ use aarch64_cpu::registers::{Readable, Writeable};
 use aarch64_cpu::registers::{ELR_EL1, ELR_EL2, HPFAR_EL2, SPSR_EL1, SPSR_EL2, VBAR_EL1};
 
 #[derive(Debug)]
-pub enum AbortHandleType {
+enum AbortHandleType {
     SeaInject,
     AddrSizeFaultInject,
     NonEmulatableExit,
@@ -80,8 +80,21 @@ pub fn handle_realm_exit(
             run.set_far(realm_exit_res[3] as u64);
             rmi::SUCCESS
         }
-        RecExitReason::Sync(ExitSyncType::InstAbort)
-        | RecExitReason::Sync(ExitSyncType::Undefined) => {
+        RecExitReason::Sync(ExitSyncType::InstAbort) => {
+            match handle_inst_abort(realm_exit_res, rec, run)? {
+                rmi::SUCCESS => {
+                    run.set_exit_reason(rmi::EXIT_SYNC);
+                    run.set_hpfar(realm_exit_res[2] as u64);
+                    rmi::SUCCESS
+                }
+                rmi::SUCCESS_REC_ENTER => {
+                    return_to_ns = false;
+                    rmi::SUCCESS
+                }
+                _ => panic!("shouldn't be reached here"),
+            }
+        }
+        RecExitReason::Sync(ExitSyncType::Undefined) => {
             run.set_exit_reason(rmi::EXIT_SYNC);
             run.set_esr(realm_exit_res[1] as u64);
             run.set_hpfar(realm_exit_res[2] as u64);
@@ -141,22 +154,31 @@ fn inject_sea(rec: &mut Rec<'_>, esr_el2: u64, far_el2: u64) {
     SPSR_EL1.set(SPSR_EL2.get());
 }
 
-fn dabt_handle_type(rd: &Rd, esr_el2: u64, fault_ipa: usize) -> Result<AbortHandleType, Error> {
+fn abort_handle_type(
+    rd: &Rd,
+    exit: ExitSyncType,
+    esr_el2: u64,
+    fault_ipa: usize,
+) -> Result<AbortHandleType, Error> {
     let is_protected_ipa = rd.addr_in_par(fault_ipa);
     let (s2tte, last_level) =
         S2TTE::get_s2tte(rd, fault_ipa, RTT_PAGE_LEVEL, Error::RmiErrorRtt(0))?;
     let esr = EsrEl2::new(esr_el2);
 
-    if is_protected_ipa && (s2tte.is_assigned_empty() || s2tte.is_unassigned_empty()) {
-        return Ok(AbortHandleType::SeaInject);
-    } else if fault_ipa > rd.ipa_size() {
-        return Ok(AbortHandleType::AddrSizeFaultInject);
-    } else if is_protected_ipa {
+    if is_protected_ipa {
+        if s2tte.is_assigned_empty() || s2tte.is_unassigned_empty() {
+            return Ok(AbortHandleType::SeaInject);
+        }
         if s2tte.is_unassigned_ram() || s2tte.is_destroyed() {
             return Ok(AbortHandleType::NonEmulatableExit);
         }
+    } else if fault_ipa > rd.ipa_size() {
+        return Ok(AbortHandleType::AddrSizeFaultInject);
     } else {
         // for unprotected IPA
+        if exit == ExitSyncType::InstAbort {
+            return Ok(AbortHandleType::SeaInject);
+        }
         let dfsc = esr.get_masked_value(EsrEl2::DFSC) & DFSC_PERM_FAULT_MASK;
         let mut check_isv = false;
         if s2tte.is_unassigned_ns()
@@ -190,7 +212,7 @@ fn handle_data_abort(
     let fault_ipa = hpfar_el2 & (HPFAR_EL2::FIPA.mask << HPFAR_EL2::FIPA.shift);
     let fault_ipa = (fault_ipa << 8) as usize;
 
-    let ret = match dabt_handle_type(&rd, esr_el2, fault_ipa)? {
+    let ret = match abort_handle_type(&rd, ExitSyncType::DataAbort, esr_el2, fault_ipa)? {
         AbortHandleType::SeaInject => {
             inject_sea(rec, esr_el2, far_el2);
             rmi::SUCCESS_REC_ENTER
@@ -229,5 +251,38 @@ fn handle_data_abort(
         }
     };
 
+    Ok(ret)
+}
+
+fn handle_inst_abort(
+    realm_exit_res: [usize; 4],
+    rec: &mut Rec<'_>,
+    run: &mut Run,
+) -> Result<usize, Error> {
+    let rd_granule = get_granule_if!(rec.owner()?, GranuleState::RD)?;
+    let rd = rd_granule.content::<Rd>()?;
+
+    let esr_el2 = realm_exit_res[1] as u64;
+    let hpfar_el2 = realm_exit_res[2] as u64;
+    let far_el2 = realm_exit_res[3] as u64;
+
+    let fault_ipa = hpfar_el2 & (HPFAR_EL2::FIPA.mask << HPFAR_EL2::FIPA.shift);
+    let fault_ipa = (fault_ipa << 8) as usize;
+
+    let ret = match abort_handle_type(&rd, ExitSyncType::InstAbort, esr_el2, fault_ipa)? {
+        AbortHandleType::SeaInject => {
+            inject_sea(rec, esr_el2, far_el2);
+            rmi::SUCCESS_REC_ENTER
+        }
+        AbortHandleType::AddrSizeFaultInject => {
+            unimplemented!();
+        }
+        AbortHandleType::NonEmulatableExit => {
+            run.set_esr(esr_el2 & INST_ABORT_MASK);
+            run.set_far(0);
+            rmi::SUCCESS
+        }
+        _ => panic!("Shoudn't be reaching here"),
+    };
     Ok(ret)
 }

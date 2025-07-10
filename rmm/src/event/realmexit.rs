@@ -55,6 +55,7 @@ pub enum ExitSyncType {
     RSI = 1 << EXIT_SYNC_TYPE_SHIFT,
     DataAbort = 2 << EXIT_SYNC_TYPE_SHIFT,
     InstAbort = 3 << EXIT_SYNC_TYPE_SHIFT,
+    WFx = 4 << EXIT_SYNC_TYPE_SHIFT,
     Undefined = EXIT_SYNC_TYPE_MASK, // fixed, 0b1111_0000
 }
 
@@ -71,6 +72,7 @@ impl From<usize> for ExitSyncType {
             1 => ExitSyncType::RSI,
             2 => ExitSyncType::DataAbort,
             3 => ExitSyncType::InstAbort,
+            4 => ExitSyncType::WFx,
             _ => ExitSyncType::Undefined,
         }
     }

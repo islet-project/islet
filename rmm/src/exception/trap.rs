@@ -198,10 +198,8 @@ pub extern "C" fn handle_lower_exception(
             }
             Syndrome::WFX => {
                 debug!("Synchronous: WFx");
-                tf.regs[0] = RecExitReason::Sync(ExitSyncType::Undefined).into();
+                tf.regs[0] = RecExitReason::Sync(ExitSyncType::WFx).into();
                 tf.regs[1] = esr as u64;
-                tf.regs[2] = HPFAR_EL2.get();
-                tf.regs[3] = FAR_EL2.get();
                 advance_pc(rec);
                 RET_TO_RMM
             }
@@ -252,8 +250,6 @@ pub extern "C" fn handle_lower_exception(
                 debug!("Synchronous: Other");
                 tf.regs[0] = RecExitReason::Sync(ExitSyncType::Undefined).into();
                 tf.regs[1] = esr as u64;
-                tf.regs[2] = HPFAR_EL2.get();
-                tf.regs[3] = FAR_EL2.get();
                 RET_TO_RMM
             }
         },
@@ -262,8 +258,12 @@ pub extern "C" fn handle_lower_exception(
             tf.regs[0] = RecExitReason::IRQ.into();
             // IRQ isn't interpreted with esr. It just hold previsou info. Void them out.
             tf.regs[1] = 0;
-            tf.regs[2] = 0;
-            tf.regs[3] = 0;
+            RET_TO_RMM
+        }
+        Kind::SError => {
+            debug!("SError");
+            tf.regs[0] = RecExitReason::SError.into();
+            tf.regs[1] = esr as u64;
             RET_TO_RMM
         }
         _ => {

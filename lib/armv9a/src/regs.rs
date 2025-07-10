@@ -35,6 +35,8 @@ define_bits!(
     IL[25 - 25],
     // Instruction syndrome valid.
     ISV[24 - 24],
+    // IMPLEMENTATION DEFINED syndrome (for SError)
+    IDS[24 - 24],
     // Syndrome Access Size (ISV == '1')
     SAS[23 - 22],
     // Syndrome Sign Extend (ISV == '1')
@@ -49,6 +51,8 @@ define_bits!(
     VNCR[13 - 13],
     // Synchronous Error Type
     SET[12 - 11],
+    // Asynchronous Error Type. (for SError)
+    AET[12 - 10],
     // FAR not Valid
     FNV[10 - 10],
     // External Abort type
@@ -58,7 +62,9 @@ define_bits!(
     S1PTW[7 - 7],
     // Write not Read.
     WNR[6 - 6],
-    DFSC[5 - 0]
+    DFSC[5 - 0],
+    // Trapped instruction (for WFx)
+    TI[1 - 0]
 );
 
 impl EsrEl2 {
@@ -86,6 +92,11 @@ pub const ESR_EL2_EC_INST_ABORT: u64 = 32;
 pub const ESR_EL2_EC_DATA_ABORT: u64 = 36;
 pub const ESR_EL2_EC_SERROR: u64 = 47;
 
+pub const ESR_EL2_TI_WFI: u64 = 0;
+pub const ESR_EL2_TI_WFE: u64 = 1;
+pub const ESR_EL2_TI_WFIT: u64 = 2;
+pub const ESR_EL2_TI_WFET: u64 = 3;
+
 pub const DFSC_PERM_FAULT_MASK: u64 = 0b111100;
 pub const DFSC_PERM_FAULTS: u64 = 0b001100; // 0b0011xx
 
@@ -94,6 +105,8 @@ pub const NON_EMULATABLE_ABORT_MASK: u64 =
 pub const EMULATABLE_ABORT_MASK: u64 =
     NON_EMULATABLE_ABORT_MASK | EsrEl2::ISV | EsrEl2::SAS | EsrEl2::SF | EsrEl2::WNR;
 pub const INST_ABORT_MASK: u64 = EsrEl2::EC | EsrEl2::SET | EsrEl2::EA | EsrEl2::DFSC;
+pub const SERROR_MASK: u64 = EsrEl2::EC | EsrEl2::IDS | EsrEl2::AET | EsrEl2::EA | EsrEl2::DFSC;
+pub const WFX_MASK: u64 = EsrEl2::EC | EsrEl2::TI;
 
 macro_rules! define_iss_id {
     ($name:ident, $Op0:expr, $Op1:expr, $CRn:expr, $CRm:expr, $Op2:expr) => {

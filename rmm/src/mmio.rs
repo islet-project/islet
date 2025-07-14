@@ -1,13 +1,13 @@
 use crate::rec::{Rec, RmmRecEmulatableAbort::EmulatableAbort};
 use crate::rmi::error::Error;
-use crate::rmi::rec::run::{Run, REC_ENTRY_FLAG_EMUL_MMIO};
+use crate::rmi::rec::run::{EntryFlag, Run};
 use armv9a::regs::*;
 
 pub fn emulate_mmio(rec: &mut Rec<'_>, run: &Run) -> Result<(), Error> {
     let flags = run.entry_flags();
 
     // Host has not completed emulation for an Emulatable Abort.
-    if (flags & REC_ENTRY_FLAG_EMUL_MMIO) == 0 {
+    if flags.get_masked(EntryFlag::EMUL_MMIO) == 0 {
         return Ok(());
     }
 

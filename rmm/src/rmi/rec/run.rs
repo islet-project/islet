@@ -1,3 +1,5 @@
+use armv9a::{define_bitfield, define_bits, define_mask};
+
 use crate::const_assert_eq;
 use crate::granule::GRANULE_SIZE;
 use crate::rmi::error::Error;
@@ -51,8 +53,8 @@ struct Exit {
 );
 
 impl Run {
-    pub fn entry_flags(&self) -> u64 {
-        self.entry.flags
+    pub fn entry_flags(&self) -> EntryFlag {
+        EntryFlag::new(self.entry.flags)
     }
 
     pub fn entry_gpr(&self, idx: usize) -> Result<u64, Error> {
@@ -203,6 +205,32 @@ impl core::fmt::Debug for Run {
             .finish()
     }
 }
+
+// EntryFlag corresponds to the RmiRecEnterFlags fieldset in the spec document,
+// containing flags provided by the Host during REC entry.
+define_bits!(
+    EntryFlag,
+    // RIPAS_RESPONSE: Host response to RIPAS change request.
+    // val 0: Host accepted the Realm request.
+    // val 1: Host rejected the Realm request.
+    RIPAS_RESPONSE[4 - 4],
+    // TRAP_WFE: Whether to trap WFE execution by the Realm.
+    //  val 0: Trap is disabled.
+    //  val 1: Trap is enabled.
+    TRAP_WFE[3 - 3],
+    // TRAP_WFI: Whether to trap WFI execution by the Realm.
+    //  val 0: Trap is disabled.
+    //  val 1: Trap is enabled.
+    TRAP_WFI[2 - 2],
+    // INJECT_SEA: Whether to inject a Synchronous External Abort (SEA) into the Realm.
+    //  val 0: Do not inject an SEA into the Realm.
+    //  val 1: Inject an SEA into the Realm.
+    INJECT_SEA[1 - 1],
+    // EMUL_MMIO: Whether the host has completed emulation for an Emulatable Data Abort.
+    //  val 0: Host has not completed emulation for an Emulatable Abort.
+    //  val 1: Host has completed emulation for an Emulatable Abort.
+    EMUL_MMIO[0 - 0]
+);
 
 /// Whether the host has completed emulation for an Emulatable Data Abort.
 ///  val 0: Host has not completed emulation for an Emulatable Abort.

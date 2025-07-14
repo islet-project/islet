@@ -1,6 +1,6 @@
 use super::mpidr::MPIDR;
 use super::params::Params;
-use super::run::{Run, REC_ENTRY_FLAG_TRAP_WFE, REC_ENTRY_FLAG_TRAP_WFI};
+use super::run::{EntryFlag, Run};
 use super::vtcr::{activate_stage2_mmu, prepare_vtcr};
 use crate::event::RmiHandle;
 #[cfg(feature = "gst_page_table")]
@@ -230,7 +230,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         crate::rsi::ripas::complete_ripas(&mut rec, &run)?;
 
         let wfx_flag = run.entry_flags();
-        if wfx_flag & (REC_ENTRY_FLAG_TRAP_WFI | REC_ENTRY_FLAG_TRAP_WFE) != 0 {
+        if wfx_flag.get_masked(EntryFlag::TRAP_WFI | EntryFlag::TRAP_WFE) != 0 {
             warn!("Islet does not support re-configuring the WFI(E) trap");
             warn!("TWI(E) in HCR_EL2 is currently fixed to 'no trap'");
         }

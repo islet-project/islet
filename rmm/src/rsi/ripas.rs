@@ -6,7 +6,7 @@ use crate::rec::context::{get_reg, set_reg};
 use crate::rec::Rec;
 use crate::rmi;
 use crate::rmi::error::Error;
-use crate::rmi::rec::run::{Run, REC_ENTRY_FLAG_RIPAS_RESPONSE};
+use crate::rmi::rec::run::{EntryFlag, Run};
 use crate::rsi;
 use crate::Monitor;
 use crate::{get_granule, get_granule_if};
@@ -131,7 +131,7 @@ pub fn complete_ripas(rec: &mut Rec<'_>, run: &Run) -> Result<(), Error> {
         set_reg(rec, 0, rsi::SUCCESS)?; // RSI_SUCCESS
         set_reg(rec, 1, ripas_addr)?;
         let flags = run.entry_flags();
-        if flags & REC_ENTRY_FLAG_RIPAS_RESPONSE != 0 {
+        if flags.get_masked(EntryFlag::RIPAS_RESPONSE) != 0 {
             set_reg(rec, 2, 1)?; // REJECT
         } else {
             set_reg(rec, 2, 0)?; // ACCEPT

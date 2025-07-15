@@ -588,20 +588,8 @@ fn skip_non_live_entries(rd: &Rd, base: usize, level: usize) -> Result<usize, Er
     let base_upper_masked = base & !(upper_map_size - 1);
     let last_addr = base_upper_masked + upper_map_size;
 
-    let binding = rd.s2_table();
-    let binding = binding.lock();
-    let (entries_iter, last_level) = binding.entries(GuestPhysAddr::from(base), level)?;
-    if level != last_level {
-        warn!(
-            "level doesn't match! level:{:?} last_level:{:?}",
-            level, last_level
-        );
-    }
-    for entry in entries_iter {
-        if addr >= last_addr {
-            break;
-        }
-        let s2tte = S2TTE::new(entry.pte());
+    while addr < last_addr {
+        let (s2tte, last_level) = S2TTE::get_s2tte(rd, addr, level, Error::RmiErrorRtt(level))?;
         if s2tte.is_live(level) {
             return Ok(addr);
         }

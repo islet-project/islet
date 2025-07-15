@@ -17,7 +17,6 @@ pub mod granule;
 pub(crate) mod host;
 pub mod logger;
 pub mod mm;
-pub mod mmio;
 #[cfg(not(any(test, kani, miri, fuzzing)))]
 pub mod panic;
 pub mod realm;

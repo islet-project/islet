@@ -232,30 +232,6 @@ define_bits!(
     EMUL_MMIO[0 - 0]
 );
 
-/// Whether the host has completed emulation for an Emulatable Data Abort.
-///  val 0: Host has not completed emulation for an Emulatable Abort.
-///  val 1: Host has completed emulation for an Emulatable Abort.
-pub const REC_ENTRY_FLAG_EMUL_MMIO: u64 = 1 << 0;
-/// Whether to inject a Synchronous External Abort (SEA) into the Realm.
-///  val 0: Do not inject an SEA into the Realm.
-///  val 1: Inject an SEA into the Realm.
-#[allow(dead_code)]
-pub const REC_ENTRY_FLAG_INJECT_SEA: u64 = 1 << 1;
-/// Whether to trap WFI execution by the Realm.
-///  val 0: Trap is disabled.
-///  val 1: Trap is enabled.
-#[allow(dead_code)]
-pub const REC_ENTRY_FLAG_TRAP_WFI: u64 = 1 << 2;
-/// Whether to trap WFE execution by the Realm.
-///  val 0: Trap is disabled.
-///  val 1: Trap is enabled.
-#[allow(dead_code)]
-pub const REC_ENTRY_FLAG_TRAP_WFE: u64 = 1 << 3;
-/// Host response to RIPAS change request
-///  val 0: ACCEPT
-///  val 1: REJECT
-#[allow(dead_code)]
-pub const REC_ENTRY_FLAG_RIPAS_RESPONSE: u64 = 1 << 4;
 pub const NR_GPRS: usize = 31;
 pub const NR_GIC_LRS: usize = 16;
 

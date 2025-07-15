@@ -34,7 +34,6 @@ pub fn host_sea_inject(rec: &mut Rec<'_>, run: &Run) -> Result<(), Error> {
     let raw_ptr: *const Rd = rec.owner()? as *const Rd;
     let rd: &Rd = unsafe { raw_ptr.as_ref().expect("REASON") }; // FIXME
     if !rd.addr_in_par(fault_ipa) && fault_ipa < rd.ipa_size() {
-        debug!("[JBD] about the inject SEA");
         inject_sea(rec, esr_el2, rec.context.sys_regs.far_el2);
     }
 

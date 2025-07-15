@@ -150,9 +150,12 @@ pub struct SystemRegister {
     pub cntkctl: u64,
     pub par: u64,
     pub vttbr: u64,
+    pub elr: u64,
+    pub spsr: u64,
+    pub sctlr: u64,
     pub esr_el2: u64,
     pub hpfar: u64,
-    pub sctlr: u64,
+    pub far_el2: u64,
 }
 
 #[repr(C)]

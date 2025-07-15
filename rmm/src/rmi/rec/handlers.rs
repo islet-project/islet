@@ -226,6 +226,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         #[cfg(not(any(miri, test, fuzzing)))]
         crate::rec::gic::receive_state_from_host(&mut rec, &run)?;
         crate::rec::mmio::emulate_mmio(&mut rec, &run)?;
+        crate::rec::sea::host_sea_inject(&mut rec, &run)?;
 
         crate::rsi::ripas::complete_ripas(&mut rec, &run)?;
 

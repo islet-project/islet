@@ -163,7 +163,7 @@ fn inject_sea(rec: &mut Rec<'_>, esr_el2: u64, far_el2: u64) {
     let context = &mut rec.context;
     context.sys_regs.esr_el1 = esr_el1;
     context.sys_regs.far = far_el2;
-    context.elr = vector_entry;
+    context.elr_el2 = vector_entry;
     let _ = set_reg(rec, RegOffset::PSTATE, pstate as usize);
     ELR_EL1.set(ELR_EL2.get());
     SPSR_EL1.set(SPSR_EL2.get());

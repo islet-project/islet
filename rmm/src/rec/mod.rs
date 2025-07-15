@@ -287,7 +287,7 @@ impl Rec<'_> {
     }
 
     pub fn reset_ctx(&mut self) {
-        self.context.spsr = (SPSR_EL2::D.mask << SPSR_EL2::D.shift)
+        self.context.spsr_el2 = (SPSR_EL2::D.mask << SPSR_EL2::D.shift)
             | (SPSR_EL2::A.mask << SPSR_EL2::A.shift)
             | (SPSR_EL2::I.mask << SPSR_EL2::I.shift)
             | (SPSR_EL2::F.mask << SPSR_EL2::F.shift)
@@ -354,9 +354,9 @@ fn exit() {
 // TODO: check the below again
 pub fn run_prepare(rd: &Rd, vcpu: usize, rec: &mut Rec<'_>, incr_pc: usize) -> Result<(), Error> {
     if incr_pc == 1 {
-        rec.context.elr += 4;
+        rec.context.elr_el2 += 4;
     }
-    debug!("resuming: {:#x}", rec.context.elr);
+    debug!("resuming: {:#x}", rec.context.elr_el2);
     rec.into_current();
 
     trace!("Switched to VCPU {} on Realm {}", vcpu, rd.id());

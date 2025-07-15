@@ -31,6 +31,7 @@ pub fn mapping_size(level: usize) -> usize {
         2 => 1 << S2TTE::ADDR_BLK_L2.trailing_zeros(),
         1 => 1 << S2TTE::ADDR_BLK_L1.trailing_zeros(),
         0 => 1 << S2TTE::ADDR_BLK_L0.trailing_zeros(),
+        usize::MAX => (1 << S2TTE::ADDR_BLK_L0.trailing_zeros()) * 512, // XXX: usize::MAX indicates -1 and 512 means the number of entries (S2TTES_PER_S2TT)
         _ => unreachable!(),
     }
 }

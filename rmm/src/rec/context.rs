@@ -11,8 +11,8 @@ use aarch64_cpu::registers::*;
 #[derive(Default, Debug)]
 pub struct Context {
     pub gp_regs: [u64; 31],
-    pub elr: u64,
-    pub spsr: u64,
+    pub elr_el2: u64,
+    pub spsr_el2: u64,
     pub sys_regs: SystemRegister,
     pub gic_state: GICRegister,
     pub timer: TimerRegister,
@@ -33,11 +33,11 @@ pub fn set_reg(rec: &mut Rec<'_>, register: usize, value: usize) -> Result<(), E
             Ok(())
         }
         RegOffset::PC => {
-            rec.context.elr = value as u64;
+            rec.context.elr_el2 = value as u64;
             Ok(())
         }
         RegOffset::PSTATE => {
-            rec.context.spsr = value as u64;
+            rec.context.spsr_el2 = value as u64;
             Ok(())
         }
         _ => Err(Error::RmiErrorInput),
@@ -52,7 +52,7 @@ pub fn get_reg(rec: &Rec<'_>, register: usize) -> Result<usize, Error> {
             Ok(value as usize)
         }
         RegOffset::PC => {
-            let value = rec.context.elr;
+            let value = rec.context.elr_el2;
             Ok(value as usize)
         }
         _ => Err(Error::RmiErrorInput),
@@ -65,7 +65,7 @@ impl Context {
         // TODO: enable floating point
         // CPTR_EL2, CPACR_EL1, update vectors.s, etc..
         Self {
-            spsr: (SPSR_EL2::D.mask << SPSR_EL2::D.shift)
+            spsr_el2: (SPSR_EL2::D.mask << SPSR_EL2::D.shift)
                 | (SPSR_EL2::A.mask << SPSR_EL2::A.shift)
                 | (SPSR_EL2::I.mask << SPSR_EL2::I.shift)
                 | (SPSR_EL2::F.mask << SPSR_EL2::F.shift)
@@ -124,6 +124,8 @@ pub struct GICRegister {
 
 #[repr(C)]
 #[derive(Default, Debug)]
+// System registers without explicit exception level are for EL1
+// unless it is unique to EL2 (e.g., vmpidr_el2, hpfar_el2)
 pub struct SystemRegister {
     pub sp: u64,
     pub sp_el0: u64,

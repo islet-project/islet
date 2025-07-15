@@ -32,6 +32,6 @@ pub fn emulate_mmio(rec: &mut Rec<'_>, run: &Run) -> Result<(), Error> {
         }
         rec.context.gp_regs[rt] = val;
     }
-    rec.context.elr += 4;
+    rec.context.elr_el2 += 4;
     Ok(())
 }

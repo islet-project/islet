@@ -109,11 +109,14 @@ restore_all_from_rec:
 	msr vttbr_el2, x3
 
 	ldp x2, x3, [x28], #16
-	msr esr_el2, x2
-	msr hpfar_el2, x3
+	msr elr_el1, x2
+	msr spsr_el1, x3
 
 	ldr x3, [x28], #8
 	msr sctlr_el1, x3
+
+	// don't re-store EL2 sys regs related to exceptions
+	// such as esr_el2, hpfar_el2 and far_el2
 	/* TODO: invalidate TLB */
 
 	/* Intentional fallthrough */
@@ -259,12 +262,17 @@ rmm_enter:
 	mrs x3, vttbr_el2
 	stp x2, x3, [x28], #16
 
-	mrs x2, esr_el2
-	mrs x3, hpfar_el2
+	mrs x2, elr_el1
+	mrs x3, spsr_el1
 	stp x2, x3, [x28], #16
 
-	mrs x3, sctlr_el1
-	str x3, [x28], #8
+	mrs x2, sctlr_el1
+	mrs x3, esr_el2
+	stp x2, x3, [x28], #16
+
+	mrs x2, hpfar_el2
+	mrs x3, far_el2
+	stp x2, x3, [x28], #16
 	/* TODO: FP_REGS */
 
 	/* load three more registers to match with TrapFrame */

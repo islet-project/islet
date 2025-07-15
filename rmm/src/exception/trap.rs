@@ -154,14 +154,14 @@ pub extern "C" fn handle_lower_exception(
                 debug!("Synchronous: HVC: {:#X}", rec.context.gp_regs[0]);
 
                 // Inject undefined exception to the realm
-                SPSR_EL1.set(rec.context.spsr);
-                ELR_EL1.set(rec.context.elr);
+                SPSR_EL1.set(rec.context.spsr_el2);
+                ELR_EL1.set(rec.context.elr_el2);
                 ESR_EL1.write(ESR_EL1::EC::Unknown + ESR_EL1::IL::SET);
 
                 // Return to realm's exception handler
                 let vbar = rec.context.sys_regs.vbar;
                 const SPSR_EL2_MODE_EL1H_OFFSET: u64 = 0x200;
-                rec.context.elr = vbar + SPSR_EL2_MODE_EL1H_OFFSET;
+                rec.context.elr_el2 = vbar + SPSR_EL2_MODE_EL1H_OFFSET;
 
                 tf.regs[0] = RecExitReason::Sync(ExitSyncType::Undefined).into();
                 tf.regs[1] = esr as u64;
@@ -212,14 +212,14 @@ pub extern "C" fn handle_lower_exception(
                 };
                 if abort {
                     // Inject undefined exception to the realm
-                    SPSR_EL1.set(rec.context.spsr);
-                    ELR_EL1.set(rec.context.elr);
+                    SPSR_EL1.set(rec.context.spsr_el2);
+                    ELR_EL1.set(rec.context.elr_el2);
                     ESR_EL1.write(ESR_EL1::EC::Unknown + ESR_EL1::IL::SET);
 
                     // Return to realm's exception handler
                     let vbar = rec.context.sys_regs.vbar;
                     const SPSR_EL2_MODE_EL1H_OFFSET: u64 = 0x200;
-                    rec.context.elr = vbar + SPSR_EL2_MODE_EL1H_OFFSET;
+                    rec.context.elr_el2 = vbar + SPSR_EL2_MODE_EL1H_OFFSET;
 
                     tf.regs[0] = RecExitReason::Sync(ExitSyncType::Undefined).into();
                     tf.regs[1] = esr as u64;
@@ -280,5 +280,5 @@ pub extern "C" fn handle_lower_exception(
 
 #[inline(always)]
 fn advance_pc(rec: &mut Rec<'_>) {
-    rec.context.elr += 4;
+    rec.context.elr_el2 += 4;
 }

@@ -1,6 +1,7 @@
 pub mod context;
 pub mod gic;
 pub mod mmio;
+pub mod sea;
 pub mod simd;
 pub mod timer;
 

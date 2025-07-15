@@ -7,6 +7,7 @@ pub mod r#macro;
 
 pub mod regs;
 pub use regs::*;
+pub use tock_registers::registers::InMemoryRegister;
 
 pub const fn bits_in_reg(mask: u64, val: u64) -> u64 {
     (val << (mask.trailing_zeros())) & mask

@@ -7,7 +7,8 @@ use crate::granule::GRANULE_MASK;
 use crate::realm::mm::rtt::RTT_PAGE_LEVEL;
 use crate::realm::mm::stage2_tte::S2TTE;
 use crate::realm::rd::Rd;
-use crate::rec::context::{get_reg, set_reg, RegOffset};
+use crate::rec::context::get_reg;
+use crate::rec::sea::inject_sea;
 use crate::rec::{
     Rec, RmmRecEmulatableAbort::EmulatableAbort, RmmRecEmulatableAbort::NotEmulatableAbort,
 };
@@ -20,8 +21,7 @@ use armv9a::{
     NON_EMULATABLE_ABORT_MASK, SERROR_MASK, WFX_MASK,
 };
 
-use aarch64_cpu::registers::{Readable, Writeable};
-use aarch64_cpu::registers::{ELR_EL1, ELR_EL2, HPFAR_EL2, SPSR_EL1, SPSR_EL2, VBAR_EL1};
+use aarch64_cpu::registers::HPFAR_EL2;
 
 #[derive(Debug)]
 enum AbortHandleType {
@@ -129,44 +129,6 @@ fn get_write_val(rec: &Rec<'_>, esr_el2: u64) -> Result<u64, Error> {
         false => get_reg(rec, rt)? as u64 & esr_el2.get_access_size_mask(),
     };
     Ok(write_val)
-}
-
-fn inject_sea(rec: &mut Rec<'_>, esr_el2: u64, far_el2: u64) {
-    let mut esr_el1 = esr_el2 & !(EsrEl2::EC | EsrEl2::FNV | EsrEl2::S1PTW | EsrEl2::DFSC);
-    let mut ec = esr_el2 & EsrEl2::EC;
-    if SPSR_EL2.read(SPSR_EL2::M) != SPSR_EL2::M::EL0t.into() {
-        ec |= 1 << EsrEl2::EC.trailing_zeros();
-    }
-    esr_el1 |= ec;
-    esr_el1 |= EsrEl2::EA;
-    esr_el1 |= 0b010000; // Synchronous External Abort (SEA)
-    const VBAR_CURRENT_SP0_OFFSET: u64 = 0x0;
-    const VBAR_CURRENT_SPX_OFFSET: u64 = 0x200;
-    const VBAR_LOWER_AARCH64_OFFSET: u64 = 0x400;
-    let mut vector_entry = {
-        match SPSR_EL2.read_as_enum(SPSR_EL2::M) {
-            Some(SPSR_EL2::M::Value::EL0t) => VBAR_LOWER_AARCH64_OFFSET, //EL0t
-            Some(SPSR_EL2::M::Value::EL1t) => VBAR_CURRENT_SP0_OFFSET,   //EL1t
-            Some(SPSR_EL2::M::Value::EL1h) => VBAR_CURRENT_SPX_OFFSET,   //EL1h
-            _ => panic!("shouldn't be reached here"), // Realms run at aarch64 state only (i.e. no aarch32)
-        }
-    };
-    vector_entry += VBAR_EL1.get();
-
-    let pstate: u64 = (SPSR_EL2::D::SET
-        + SPSR_EL2::A::SET
-        + SPSR_EL2::I::SET
-        + SPSR_EL2::F::SET
-        + SPSR_EL2::M::EL1h)
-        .into();
-
-    let context = &mut rec.context;
-    context.sys_regs.esr_el1 = esr_el1;
-    context.sys_regs.far = far_el2;
-    context.elr_el2 = vector_entry;
-    let _ = set_reg(rec, RegOffset::PSTATE, pstate as usize);
-    ELR_EL1.set(ELR_EL2.get());
-    SPSR_EL1.set(SPSR_EL2.get());
 }
 
 fn abort_handle_type(

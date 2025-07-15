@@ -7,7 +7,8 @@ pub fn emulate_mmio(rec: &mut Rec<'_>, run: &Run) -> Result<(), Error> {
     let flags = run.entry_flags();
 
     // Host has not completed emulation for an Emulatable Abort.
-    if flags.get_masked(EntryFlag::EMUL_MMIO) == 0 {
+    // if INJECT_SEA is set then the value of EMUL_MMIO is ignored.
+    if flags.get_masked(EntryFlag::INJECT_SEA | EntryFlag::EMUL_MMIO) == 0 {
         return Ok(());
     }
 

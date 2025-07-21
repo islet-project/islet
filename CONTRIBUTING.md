@@ -20,15 +20,19 @@ Make sure your changes are clear, tested, and relevant to the project.
 
 ## Coding Style
 
-Consistent formatting helps keep the codebase clean and maintainable.
+Consistent formatting and linting help keep the codebase clean and reliable.
 Please follow the formatting conventions:
 
-- **Rust code** should be formatted with `cargo fmt`
-- **Shell scripts** should be formatted with `shfmt`
+- **Rust code**
+  - Format with: `cargo fmt`
+  - Lint with: `cargo clippy`
+- **Shell scripts**
+  - Format with: `shfmt`
 
 These checks are included in our CI, but you can run them manually before submitting:
 
 ```sh
 cargo fmt -- --check
+./scripts/clippy.sh
 ./assets/formatter/shfmt -d -ci -bn -fn `find scripts/. -name *.sh`
 ```

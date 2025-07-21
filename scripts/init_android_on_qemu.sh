@@ -140,6 +140,17 @@ function build_android_kernel()
 	cd $ISLET_DIR || exit $EXIT_CD_FAILED
 }
 
+function create_qemu_rme_directory()
+{
+	# Create the directory if it does not exist
+	if [ ! -d "$QEMU_RME_DIR" ]; then
+		mkdir -p "$QEMU_RME_DIR"
+		echo "Directory created: $QEMU_RME_DIR"
+	else
+		echo "Directory already exists. Don't create the directory: $QEMU_RME_DIR"
+	fi
+}
+
 function clone_qemu_source()
 {
 	cd "$QEMU_RME_DIR" || exit $EXIT_CD_FAILED
@@ -177,6 +188,8 @@ function build_qemu()
 }
 
 install_required_packages
+
+create_qemu_rme_directory
 
 clone_qemu_source
 build_qemu

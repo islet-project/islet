@@ -1,17 +1,28 @@
 use core::slice::Iter;
 
-use armv9a::{define_bitfield, define_bits, define_mask};
+use armv9a::{bits_in_reg, define_bitfield, define_bits, define_mask};
 use vmsa::address::PhysAddr;
 use vmsa::page_table::Entry;
 
 use crate::realm::mm::address::GuestPhysAddr;
-use crate::realm::mm::attribute::{desc_type, memattr, shareable};
+use crate::realm::mm::attribute::{desc_type, memattr, permission, shareable};
 use crate::realm::mm::entry;
 use crate::realm::mm::rtt::{RTT_MIN_BLOCK_LEVEL, RTT_PAGE_LEVEL};
 use crate::realm::rd::Rd;
 use crate::rmi::error::Error;
 
 pub const INVALID_UNPROTECTED: u64 = 0x0;
+pub const VALID_TTE: u64 = bits_in_reg(S2TTE::MEMATTR, memattr::NORMAL_FWB)
+    | bits_in_reg(S2TTE::S2AP, permission::RW)
+    | bits_in_reg(S2TTE::SH, shareable::INNER)
+    | bits_in_reg(S2TTE::AF, 1);
+
+pub const VALID_NS_TTE: u64 =
+    bits_in_reg(S2TTE::NS, 1) | bits_in_reg(S2TTE::XN, 1) | bits_in_reg(S2TTE::AF, 1);
+
+pub const TABLE_TTE: u64 = bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_TABLE)
+    | bits_in_reg(S2TTE::MEMATTR, memattr::NORMAL_FWB)
+    | bits_in_reg(S2TTE::SH, shareable::INNER);
 
 pub mod invalid_hipas {
     pub const UNASSIGNED: u64 = 0b0;
@@ -74,11 +85,15 @@ impl S2TTE {
         level: usize,
         error_code: Error,
     ) -> Result<(S2TTE, usize), Error> {
-        let (s2tte, last_level) = rd
+        let (mut s2tte, last_level) = rd
             .s2_table()
             .lock()
             .ipa_to_pte(GuestPhysAddr::from(ipa), level)
             .ok_or(error_code)?;
+
+        if ipa < rd.ipa_size() && !rd.addr_in_par(ipa) && s2tte == 0 {
+            s2tte |= S2TTE::NS;
+        }
 
         Ok((S2TTE::from(s2tte as usize), last_level))
     }
@@ -149,6 +164,7 @@ impl S2TTE {
     pub fn is_destroyed(&self) -> bool {
         self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
             && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::DESTROYED
+            && self.get_masked_value(S2TTE::NS) == 0
     }
 
     pub fn is_assigned(&self) -> bool {
@@ -167,7 +183,9 @@ impl S2TTE {
     }
 
     pub fn is_assigned_ram(&self, level: usize) -> bool {
-        if self.get_masked_value(S2TTE::NS) != 0 {
+        if self.get_masked_value(S2TTE::NS) != 0
+            || self.get_masked_value(S2TTE::INVALID_RIPAS) != invalid_ripas::RAM
+        {
             return false;
         }
         let desc_type = self.get_masked_value(S2TTE::DESC_TYPE);
@@ -180,7 +198,9 @@ impl S2TTE {
     }
 
     pub fn is_assigned_ns(&self, level: usize) -> bool {
-        if self.get_masked_value(S2TTE::NS) == 0 {
+        if self.get_masked_value(S2TTE::NS) == 0
+            || self.get_masked_value(S2TTE::INVALID_HIPAS) != invalid_hipas::ASSIGNED
+        {
             return false;
         }
         let desc_type = self.get_masked_value(S2TTE::DESC_TYPE);
@@ -221,9 +241,9 @@ impl S2TTE {
     }
 
     pub fn is_live(&self, _level: usize) -> bool {
+        // live tte: ASSIGNED, ASSIGNED_NS, TABLE
         self.get_masked_value(S2TTE::DESC_TYPE) != desc_type::LX_INVALID
-            || self.is_assigned_empty()
-            || self.is_assigned_destroyed()
+            || self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::ASSIGNED
     }
 
     // TODO: remvoe mut

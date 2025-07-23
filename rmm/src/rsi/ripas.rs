@@ -1,6 +1,6 @@
 use crate::granule::is_granule_aligned;
 use crate::granule::GranuleState;
-use crate::realm::mm::stage2_tte::invalid_ripas;
+use crate::realm::mm::stage2_tte::ripas;
 use crate::realm::rd::Rd;
 use crate::rec::context::{get_reg, set_reg};
 use crate::rec::Rec;
@@ -120,7 +120,7 @@ pub fn set_ripas_state(
 
 fn is_ripas_valid(ripas: u8) -> bool {
     match ripas as u64 {
-        invalid_ripas::EMPTY | invalid_ripas::RAM => true,
+        ripas::EMPTY | ripas::RAM => true,
         _ => false,
     }
 }

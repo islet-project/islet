@@ -24,12 +24,12 @@ pub const TABLE_TTE: u64 = bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_TABLE)
     | bits_in_reg(S2TTE::MEMATTR, memattr::NORMAL_FWB)
     | bits_in_reg(S2TTE::SH, shareable::INNER);
 
-pub mod invalid_hipas {
+pub mod hipas {
     pub const UNASSIGNED: u64 = 0b0;
     pub const ASSIGNED: u64 = 0b1;
 }
 
-pub mod invalid_ripas {
+pub mod ripas {
     pub const EMPTY: u64 = 0b0;
     pub const RAM: u64 = 0b1;
     pub const DESTROYED: u64 = 0b10;
@@ -58,8 +58,8 @@ pub fn level_mask(level: usize) -> Option<u64> {
 
 define_bits!(
     S2TTE,
-    INVALID_HIPAS[58 - 58], // Host IPA State (HIPAS)
-    INVALID_RIPAS[57 - 56], // Realm IPA State (RIPAS)
+    HIPAS[58 - 58], // Host IPA State (HIPAS)
+    RIPAS[57 - 56], // Realm IPA State (RIPAS)
     NS[55 - 55], // DDI0615A: For a Block or Page descriptor fetched for stage 2 in the Realm Security state, bit 55 is the NS field. if set, it means output address is in NS PAS.
     XN[54 - 54],
     CONT[52 - 52],
@@ -138,53 +138,51 @@ impl S2TTE {
 
     pub fn is_unassigned(&self) -> bool {
         self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
-            && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::UNASSIGNED
+            && self.get_masked_value(S2TTE::HIPAS) == hipas::UNASSIGNED
             && self.get_masked_value(S2TTE::NS) == 0
     }
 
     pub fn is_unassigned_empty(&self) -> bool {
-        self.is_unassigned() && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::EMPTY
+        self.is_unassigned() && self.get_masked_value(S2TTE::RIPAS) == ripas::EMPTY
     }
 
     pub fn is_unassigned_destroyed(&self) -> bool {
-        self.is_unassigned()
-            && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::DESTROYED
+        self.is_unassigned() && self.get_masked_value(S2TTE::RIPAS) == ripas::DESTROYED
     }
 
     pub fn is_unassigned_ram(&self) -> bool {
-        self.is_unassigned() && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::RAM
+        self.is_unassigned() && self.get_masked_value(S2TTE::RIPAS) == ripas::RAM
     }
 
     pub fn is_unassigned_ns(&self) -> bool {
         self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
-            && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::UNASSIGNED
+            && self.get_masked_value(S2TTE::HIPAS) == hipas::UNASSIGNED
             && self.get_masked_value(S2TTE::NS) != 0
     }
 
     pub fn is_destroyed(&self) -> bool {
         self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
-            && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::DESTROYED
+            && self.get_masked_value(S2TTE::RIPAS) == ripas::DESTROYED
             && self.get_masked_value(S2TTE::NS) == 0
     }
 
     pub fn is_assigned(&self) -> bool {
         self.get_masked_value(S2TTE::NS) == 0
             && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
-            && self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::ASSIGNED
+            && self.get_masked_value(S2TTE::HIPAS) == hipas::ASSIGNED
     }
 
     pub fn is_assigned_empty(&self) -> bool {
-        self.is_assigned() && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::EMPTY
+        self.is_assigned() && self.get_masked_value(S2TTE::RIPAS) == ripas::EMPTY
     }
 
     pub fn is_assigned_destroyed(&self) -> bool {
-        self.is_assigned()
-            && self.get_masked_value(S2TTE::INVALID_RIPAS) == invalid_ripas::DESTROYED
+        self.is_assigned() && self.get_masked_value(S2TTE::RIPAS) == ripas::DESTROYED
     }
 
     pub fn is_assigned_ram(&self, level: usize) -> bool {
         if self.get_masked_value(S2TTE::NS) != 0
-            || self.get_masked_value(S2TTE::INVALID_RIPAS) != invalid_ripas::RAM
+            || self.get_masked_value(S2TTE::RIPAS) != ripas::RAM
         {
             return false;
         }
@@ -199,7 +197,7 @@ impl S2TTE {
 
     pub fn is_assigned_ns(&self, level: usize) -> bool {
         if self.get_masked_value(S2TTE::NS) == 0
-            || self.get_masked_value(S2TTE::INVALID_HIPAS) != invalid_hipas::ASSIGNED
+            || self.get_masked_value(S2TTE::HIPAS) != hipas::ASSIGNED
         {
             return false;
         }
@@ -222,9 +220,9 @@ impl S2TTE {
         (level < RTT_PAGE_LEVEL) && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L012_TABLE
     }
 
-    pub fn is_invalid_ripas(&self) -> bool {
+    pub fn is_ripas(&self) -> bool {
         (self.get_masked_value(S2TTE::DESC_TYPE) != desc_type::LX_INVALID)
-            && (self.get_ripas() != invalid_ripas::RAM)
+            && (self.get_ripas() != ripas::RAM)
     }
 
     pub fn addr_as_block(&self, level: usize) -> PhysAddr {
@@ -237,13 +235,13 @@ impl S2TTE {
     }
 
     pub fn get_ripas(&self) -> u64 {
-        self.get_masked_value(S2TTE::INVALID_RIPAS)
+        self.get_masked_value(S2TTE::RIPAS)
     }
 
     pub fn is_live(&self, _level: usize) -> bool {
         // live tte: ASSIGNED, ASSIGNED_NS, TABLE
         self.get_masked_value(S2TTE::DESC_TYPE) != desc_type::LX_INVALID
-            || self.get_masked_value(S2TTE::INVALID_HIPAS) == invalid_hipas::ASSIGNED
+            || self.get_masked_value(S2TTE::HIPAS) == hipas::ASSIGNED
     }
 
     // TODO: remvoe mut
@@ -260,8 +258,8 @@ impl S2TTE {
             let s2tte = S2TTE::new(entry.pte());
             if first {
                 desc_type = s2tte.get_masked_value(S2TTE::DESC_TYPE);
-                hipas = s2tte.get_masked_value(S2TTE::INVALID_HIPAS);
-                ripas = s2tte.get_masked_value(S2TTE::INVALID_RIPAS);
+                hipas = s2tte.get_masked_value(S2TTE::HIPAS);
+                ripas = s2tte.get_masked_value(S2TTE::RIPAS);
                 ns = s2tte.get_masked_value(S2TTE::NS);
                 first = false;
                 if s2tte.is_assigned_ns(level) | s2tte.is_assigned_ram(level) | s2tte.is_assigned()
@@ -299,7 +297,7 @@ impl S2TTE {
                     return false;
                 }
                 // ripas is identical
-                if ripas != s2tte.get_masked_value(S2TTE::INVALID_RIPAS) {
+                if ripas != s2tte.get_masked_value(S2TTE::RIPAS) {
                     return false;
                 }
             } else if s2tte.is_unassigned_ns() {
@@ -308,16 +306,16 @@ impl S2TTE {
                     return false;
                 }
                 // hipas is always UNASSIGNED
-                if hipas != s2tte.get_masked_value(S2TTE::INVALID_HIPAS) {
+                if hipas != s2tte.get_masked_value(S2TTE::HIPAS) {
                     return false;
                 }
             } else if s2tte.is_unassigned() {
                 // hipas is always UNASSIGNED
-                if hipas != s2tte.get_masked_value(S2TTE::INVALID_HIPAS) {
+                if hipas != s2tte.get_masked_value(S2TTE::HIPAS) {
                     return false;
                 }
                 // ripas is identical
-                if ripas != s2tte.get_masked_value(S2TTE::INVALID_RIPAS) {
+                if ripas != s2tte.get_masked_value(S2TTE::RIPAS) {
                     return false;
                 }
             }

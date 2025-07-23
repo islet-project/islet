@@ -60,7 +60,7 @@ fn pick(cmd: Command) -> Option<Constraint> {
 pub fn validate(cmd: Command, arg: &[usize]) -> Context {
     if let Some(c) = pick(cmd) {
         let mut ctx = Context::new(cmd);
-        ctx.init_arg(&arg[..c.arg_num]);
+        ctx.init_arg(&arg[..(c.arg_num - 1)]);
         ctx.resize_ret(c.ret_num);
         ctx
     } else {

@@ -3,15 +3,17 @@ use crate::realm::mm::rtt::RTT_PAGE_LEVEL;
 use crate::realm::rd::{Rd, RPV_SIZE};
 use crate::rmi::error::Error;
 
+use autopadding::*;
 use safe_abstraction::raw_ptr::assume_safe;
 
-#[repr(C)]
+pad_struct_and_impl_default!(
 pub struct RealmConfig {
-    ipa_width: usize,    // Offset 0x0
-    hash_algo: u8,       // Offset 0x8
-    dummy: [u8; 0x1F7],  // 0x1F7 == 0x200 - 0x9 (offset 0x8 + 1 byte)
-    rpv: [u8; RPV_SIZE], // Offset 0x200
+    0x0    ipa_width: usize,    // Offset 0x0
+    0x8    hash_algo: u8,       // Offset 0x8
+    0x200  rpv: [u8; RPV_SIZE], // Offset 0x200
+    0x1000 => @END,             // The width of the RealmConfig structure is 4096 (0x1000) bytes.
 }
+);
 
 impl RealmConfig {
     // The below `init()` fills the object allocated in the Realm kernel with the proper

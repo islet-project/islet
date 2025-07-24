@@ -14,7 +14,7 @@ AOSP_BRANCH="android-15.0.0_r8"
 ANDROID_KERNEL_VER="android16-6.12"
 ANDROID_KERNEL_DIR="$QEMU_RME_DIR/$ANDROID_KERNEL_VER"
 ANDROID_KERNEL_URL="https://github.com/islet-project/3rd-android-kernel.git"
-ANDROID_KERNEL_BUILD_ENVIRONMENT_BRANCH="android16-6.12/cca-host/build/v5"
+ANDROID_KERNEL_MANIFEST_BRANCH="android16-6.12/cca-host/manifest/v5"
 ANDROID_KERNEL_SOURCE_BRANCH="android16-6.12/cca-host/v5"
 ANDROID_KERNEL_BUILD_TARGET="//common-modules/virtual-device:virtual_device_aarch64_dist"
 
@@ -90,40 +90,27 @@ function build_android_kernel()
 	cd "$ISLET_DIR" || exit $EXIT_CD_FAILED
 
 	if [ ! -d "$ANDROID_KERNEL_DIR" ]; then
-		echo "Creating directory $ANDROID_KERNEL_DIR..."
-		git clone $ANDROID_KERNEL_URL -b $ANDROID_KERNEL_BUILD_ENVIRONMENT_BRANCH --single-branch $ANDROID_KERNEL_DIR
+		mkdir -p $ANDROID_KERNEL_DIR
 	fi
 
 	echo "Changing directory to $ANDROID_KERNEL_DIR..."
 	cd $ANDROID_KERNEL_DIR || exit $EXIT_CD_FAILED
 
-	if [ ! -d "common" ]; then
-		echo "unzip repo.zip to run 'repo sync'"
-		if ! unzip repo.zip; then
-			echo "ERROR: unzip repo.zip failed"
-			exit $EXIT_OTHER
-		fi
-
-		echo "Downloading Android Kernel Build Modules..."
-		if ! repo sync; then
-			echo "ERROR: Kernel sync failed"
-			exit $EXIT_REPO_DOWNLOAD
-		fi
-	fi
-
-	if [ ! -d "backup_common" ]; then
-		echo "Replace common with cca patched kernel sources..."
-		mv common backup_common
-		if ! git clone $ANDROID_KERNEL_URL -b $ANDROID_KERNEL_SOURCE_BRANCH --depth 1 --single-branch common; then
-			echo "ERROR: Kernel source clone failed"
-			mv backup_common common
-			exit $EXIT_REPO_DOWNLOAD
-		fi
-	fi
-
 	if [ -f "$INITRAMFS_PATH" ] && [ -f "$KERNEL_PATH" ]; then
 		echo "Build is alread done. Skip building Android Kernel"
 		return
+	fi
+
+	echo "Downloading android kernel sources..."
+	if ! repo init -b $ANDROID_KERNEL_MANIFEST_BRANCH -u $ANDROID_KERNEL_URL; then
+		echo "ERROR: Android Kernel repo init failed"
+		exit $EXIT_REPO_DOWNLOAD
+	fi
+
+	echo "Start repo sync for android kernel sources..."
+	if ! repo sync; then
+		echo "ERROR: Android Kernel repo sync failed"
+		exit $EXIT_REPO_DOWNLOAD
 	fi
 
 	echo "Building Android Kernel..."
@@ -194,6 +181,6 @@ create_qemu_rme_directory
 clone_qemu_source
 build_qemu
 
-build_aosp
-
 build_android_kernel
+
+build_aosp

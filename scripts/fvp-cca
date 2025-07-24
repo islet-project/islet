@@ -254,7 +254,7 @@ def prepare_rmm(rmm, features):
     elif rmm == "tf-rmm":
         run(["./scripts/build-tf-rmm.sh", CROSS_COMPILE], cwd=ROOT)
 
-def prepare_nw_linux(fvp_ip, host_tap_ip, normal_world, realm_launch):
+def prepare_nw_linux(fvp_ip, host_tap_ip, normal_world, realm_launch, rmm=""):
     args = [
         "-j%d" % multiprocessing.cpu_count(), "-f",
         "fvp.mk",
@@ -273,6 +273,9 @@ def prepare_nw_linux(fvp_ip, host_tap_ip, normal_world, realm_launch):
         "-j%d" % multiprocessing.cpu_count(), "-f",
         "fvp.mk",
     ]
+
+    if rmm == "islet":
+        args.append("RME_HOST_CONTEXT=y")
 
     if realm_launch != False:
         args.append("boot-img-launch")
@@ -700,7 +703,7 @@ if __name__ == "__main__":
             prepare_kvmtool()
             if args.no_kvm_unit_tests is False:
                 prepare_kvm_unit_tests()
-            prepare_nw_linux(args.fvp_ip, args.host_tap_ip, args.normal_world, args.realm_launch)
+            prepare_nw_linux(args.fvp_ip, args.host_tap_ip, args.normal_world, args.realm_launch, args.rmm)
             prepare_bootloaders(args.rmm, PREBUILT_EDK2, args.hes)
 
             if args.realm is not None:

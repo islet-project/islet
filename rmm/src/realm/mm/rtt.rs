@@ -256,7 +256,7 @@ pub fn read_entry(rd: &Rd, ipa: usize, level: usize) -> Result<[usize; 4], Error
     } else if s2tte.is_assigned_ns(last_level) {
         r2 = rtt_entry_state::RMI_ASSIGNED;
         let addr_mask: u64 = level_mask(last_level).ok_or(Error::RmiErrorRtt(0))?;
-        let mask = addr_mask | S2TTE::MEMATTR | S2TTE::S2AP | S2TTE::SH;
+        let mask = addr_mask | S2TTE::MEMATTR | S2TTE::S2AP;
         r3 = s2tte.get_masked(mask);
     } else {
         error!("Unexpected S2TTE value retrieved!");
@@ -280,7 +280,11 @@ pub fn map_unprotected(rd: &Rd, ipa: usize, level: usize, host_s2tte: usize) -> 
         return Err(Error::RmiErrorRtt(level));
     }
 
-    let mut new_s2tte = host_s2tte as u64 | bits_in_reg(S2TTE::HIPAS, hipas::ASSIGNED);
+    let host_s2tte = S2TTE::new(host_s2tte as u64);
+    let mut new_s2tte = host_s2tte.get_masked(S2TTE::ADDR_TBL_OR_PAGE)
+        | host_s2tte.get_masked(S2TTE::MEMATTR)
+        | host_s2tte.get_masked(S2TTE::S2AP)
+        | bits_in_reg(S2TTE::HIPAS, hipas::ASSIGNED);
     if level == RTT_PAGE_LEVEL {
         new_s2tte |= VALID_NS_TTE | bits_in_reg(S2TTE::DESC_TYPE, desc_type::L3_PAGE);
     } else {

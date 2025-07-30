@@ -43,6 +43,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         }
 
         let mut feat_reg0 = FeatureReg0::new(0);
+        #[cfg(not(any(miri, test)))]
         feat_reg0
             .set_masked_value(FeatureReg0::S2SZ, S2SZ_VALUE)
             .set_masked_value(FeatureReg0::LPA2, LPA2_VALUE)

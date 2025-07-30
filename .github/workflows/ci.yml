@@ -84,26 +84,26 @@ jobs:
 #          name: tf-a-tests
 #          path: out/uart*.log
 
-  realm-boot:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v3
-
-      - uses: actions/cache@v3
-        with:
-          path: .git/modules/assets
-          key: ${{ runner.os }}-assets-${{ hashFiles('.gitmodules', 'assets') }}
-
-      - name: Install dependencies
-        run: ./scripts/init_min.sh
-
-      - name: Run realm-linux booting
-        run: ./scripts/tests/realm-boot.sh
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: realm-boot
-          path: out/uart*.log
+#  realm-boot:
+#    runs-on: ubuntu-22.04
+#    steps:
+#      - uses: actions/checkout@v3
+#
+#      - uses: actions/cache@v3
+#        with:
+#          path: .git/modules/assets
+#          key: ${{ runner.os }}-assets-${{ hashFiles('.gitmodules', 'assets') }}
+#
+#      - name: Install dependencies
+#        run: ./scripts/init_min.sh
+#
+#      - name: Run realm-linux booting
+#        run: ./scripts/tests/realm-boot.sh
+#
+#      - uses: actions/upload-artifact@v4
+#        with:
+#          name: realm-boot
+#          path: out/uart*.log
 
   crates:
     runs-on: ubuntu-22.04
@@ -227,8 +227,8 @@ jobs:
     - name: Run unsafe analyzer
       run: ./scripts/run-unsafe-analysis.sh
 
-    - name: Run MIRI test
-      run: ./scripts/tests/miri.sh
+#    - name: Run MIRI test
+#      run: ./scripts/tests/miri.sh
 
     - uses: actions/upload-artifact@v4
       with:

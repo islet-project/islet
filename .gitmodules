@@ -8,7 +8,12 @@
 [submodule "third-party/optee-build"]
 	path = third-party/optee-build
 	url = https://github.com/islet-project/assets
-	branch = 3rd-optee-build
+	branch = 3rd-optee-build-cca-v5
+[submodule "third-party/qemu"]
+	path = third-party/qemu
+	url = https://github.com/qemu/qemu.git
+	branch = stable-9.2
+	shallow = true
 [submodule "third-party/realm-linux"]
 	path = third-party/realm-linux
 	url = https://github.com/islet-project/3rd-linux
@@ -19,8 +24,8 @@
 	branch = master
 [submodule "third-party/tf-rmm"]
 	path = third-party/tf-rmm
-	url = https://git.trustedfirmware.org/TF-RMM/tf-rmm.git
-	branch = rmm-spec-v1.0-rel0
+	url = https://github.com/islet-project/3rd-tf-rmm
+	branch = main
 [submodule "third-party/android-kernel"]
 	path = third-party/android-kernel
 	url = https://github.com/islet-project/3rd-android-kernel
@@ -57,8 +62,8 @@
 	url = https://github.com/bitboom/cargo-geiger
 [submodule "third-party/tf-a"]
 	path = third-party/tf-a
-	url = https://review.trustedfirmware.org/TF-A/trusted-firmware-a.git
-	branch = v2.11
+	url = https://github.com/islet-project/3rd-tf-a
+	branch = main
 [submodule "third-party/tf-a-rss"]
 	path = third-party/tf-a-rss
 	url = https://github.com/islet-project/arm-trusted-firmware
@@ -77,3 +82,6 @@
 [submodule "third-party/linux-rsi"]
 	path = third-party/linux-rsi
 	url = https://github.com/islet-project/linux-rsi.git
+[submodule "third-party/edk2"]
+	path = third-party/edk2
+	url = https://github.com/tianocore/edk2.git

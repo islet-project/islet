@@ -78,6 +78,3 @@
 [submodule "third-party/linux-rsi"]
 	path = third-party/linux-rsi
 	url = https://github.com/islet-project/linux-rsi.git
-[submodule "third-party/edk2"]
-	path = third-party/edk2
-	url = https://github.com/tianocore/edk2.git

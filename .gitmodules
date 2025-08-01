@@ -30,10 +30,6 @@
 	path = third-party/android-kernel
 	url = https://github.com/islet-project/3rd-android-kernel
 	branch = main
-[submodule "third-party/gki-build"]
-	path = third-party/gki-build
-	url = https://github.com/islet-project/3rd-gki-build
-	branch = main
 [submodule "third-party/kvmtool"]
 	path = third-party/kvmtool
 	url = https://github.com/islet-project/3rd-kvmtool

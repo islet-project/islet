@@ -131,22 +131,10 @@ def prepare_rsi_test():
         print("[!] Failed to build rsi-test")
         sys.exit(1)
 
-def prepare_realm_aosp():
-    new_env = environ.copy()
-    new_env["BUILD_CONFIG"] = "../android-kernel/build.config.gki.aarch64.realm"
-    new_env["OUT_DIR"] = RW_AOSP_OUT
-    new_env["KMI_SYMBOL_LIST_STRICT_MODE"] = "0"
-    new_env["SKIP_MRPROPER"] = "1"
-
-    print("[!] Building Android kernel for realm...")
-    run(["build/build.sh"], cwd=AOSP_BUILD_SCRIPT, new_env=new_env)
-
 def prepare_realm(name):
     print("[!] Building realm(%s)... " % name)
     if args.realm == "rsi-test":
         prepare_rsi_test()
-    elif args.realm == "aosp":
-        prepare_realm_aosp()
     else:
         srcdir = os.path.join(REALM, name)
         run(["make"], cwd=srcdir)
@@ -304,41 +292,6 @@ def prepare_kvmtool(lkvm="lkvm"):
     make(KVMTOOL, args)
     run(["cp", "%s/%s" % (KVMTOOL, lkvm), OUT], cwd=ROOT)
 
-def prepare_nw_aosp(no_prebuilt_initrd):
-    new_env = environ.copy()
-    new_env["BUILD_CONFIG"] = "../android-kernel/build.config.gki.aarch64"
-    new_env["OUT_DIR"] = NW_AOSP_OUT
-    new_env["KMI_SYMBOL_LIST_STRICT_MODE"] = "0"
-    new_env["SKIP_MRPROPER"] = "1"
-
-    print("[!] Building Android kernel...")
-    run(["build/build.sh"], cwd=AOSP_BUILD_SCRIPT, new_env=new_env)
-
-    print("[!] Building boot image...")
-    args = [
-        "cp",
-        "%s/%s/arch/arm64/boot/Image" % (AOSP_BUILD_SCRIPT, NW_AOSP_OUT),
-        "%s/Image_aosp" % OUT
-    ]
-    run(args, cwd=ROOT)
-    run(["cp", PREBUILT_AOSP_DTB, OUT], cwd=ROOT)
-    if not no_prebuilt_initrd:
-        run(["cp", PREBUILT_AOSP_INITRD, OUT], cwd=ROOT)
-    run(["cp", PREBUILT_GRUB, OUT], cwd=ROOT)
-
-    if not os.path.exists("%s/initrd-aosp.img" % OUT):
-        print("[!] Place AOSP ramdisk image with name 'initrd-aosp.img' to %s" % OUT)
-        sys.exit(1)
-
-    print("[!] Composing boot image...")
-    args = [
-        "-j%d" % multiprocessing.cpu_count(), "-f",
-        "fvp-android.mk",
-        "boot-img" # DEPS:  $(GRUB_BIN) ${AOSP_KERNEL_BIN} ${AOSP_DTB_BIN}
-    ]
-    make(BUILD_SCRIPT, args)
-
-
 def prepare_kvm_unit_tests():
     print("[!] Building kvm-unit-tests...")
     run(["./scripts/build-kvm-unit-tests.sh"], cwd=ROOT)
@@ -478,25 +431,6 @@ def run_fvp_linux_net(debug, trace, trace_toggle, no_telnet, host_ip, host_tap_i
     args += prepare_arguments(debug, trace, trace_toggle, no_telnet)
     run(args, cwd=FVP_DIR)
 
-def run_fvp_aosp(debug, trace, trace_toggle, no_telnet):
-    os.makedirs(AOSP_SHARED_PATH, exist_ok=True)
-    new_env = environ.copy()
-    new_env["LD_PRELOAD"] = PREBUILT_AOSP_ADB
-    print("[!] Running fvp for Android...")
-    args = ["./FVP_Base_RevC-2xAEMvA",
-            "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
-            "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
-            "-C", "bp.mmc.p_mmc_file=%s/boot-aosp.img" % OUT,
-            "-C", "bp.virtioblockdevice.image_path=%s/system-qemu-aosp.img" % OUT,
-            "-C", "bp.virtiop9device.root_path=%s" % AOSP_SHARED_PATH,
-            "-C", "bp.virtio_net.hostbridge.userNetworking=1",
-            "-C", "bp.virtio_net.hostbridge.userNetPorts=5555=5555",
-            "-C",  "bp.virtio_net.enabled=1",
-            "-f", FVP_CONFIG_AOSP,
-            "-Q", "1000"]
-    args += prepare_arguments(debug, trace, trace_toggle, no_telnet)
-    run(args, cwd=FVP_DIR, new_env=new_env)
-
 def run_fvp_acs(debug, trace, trace_toggle, no_telnet):
     print("[!] Running fvp for acs...")
 
@@ -587,7 +521,7 @@ def clean_repo(target):
         run(["rm", "-rf", "out/aarch64-unknown-none-softfloat"], cwd=ROOT)
 
 def get_all_realms():
-    realms = ["aosp"]
+    realms = []
     for dirp in glob.glob(os.path.join(REALM, "*/")):
         realms.append(os.path.basename(dirp.rstrip("/")))
 
@@ -613,11 +547,6 @@ def validate_args(args):
             print("  " + "\n  ".join(realms))
             sys.exit(1)
 
-    if args.no_prebuilt_initrd:
-        if args.run_only or args.normal_world != "aosp":
-            print("--no-prebuilt-initrd is valid only when building normal world AOSP")
-            sys.exit(1)
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="FVP launcher for CCA")
     parser.add_argument("--normal-world", "-nw", help="A normal world component")
@@ -633,7 +562,6 @@ if __name__ == "__main__":
     parser.add_argument("--realm", "-rm", help="A sample realm")
     parser.add_argument("--rmm", "-rmm", help="A realm management monitor (islet, trp, tf-rmm)", default="islet")
     parser.add_argument("--use-prebuilt", help="Use prebuilt binary (realm-linux, nw-linux, lkvm, etc)", action="store_true")
-    parser.add_argument("--no-prebuilt-initrd", "-no-pi", help="Not using the prebuilt AOSP initrd", action="store_true")
     parser.add_argument("--no-prebuilt-ml", help="Not using the prebuilt confidential-ml example", action="store_true")
     parser.add_argument("--no-kvm-unit-tests", help="Do not build kvm unit tests", action="store_true")
     parser.add_argument("--no-sdk", help="Do not build sdk", action="store_true")
@@ -680,10 +608,6 @@ if __name__ == "__main__":
         elif args.normal_world == "tf-a-tests":
             prepare_tf_a_tests(args.realm)
             prepare_bootloaders(args.rmm, TFTF_BIN, args.hes)
-        elif args.normal_world == "aosp":
-            prepare_kvmtool("lkvm-static")
-            prepare_nw_aosp(args.no_prebuilt_initrd)
-            prepare_bootloaders(args.rmm, PREBUILT_EDK2, args.hes)
         elif args.normal_world == "acs":
             # When a target has changed either with `--selected-tests` or
             # `--excluded-tests`, it is recommended for users to execute
@@ -730,9 +654,6 @@ if __name__ == "__main__":
 
     if not args.build_only and args.normal_world == "linux-net":
         run_fvp_linux_net(args.debug, args.trace, args.trace_toggle, args.no_telnet, args.host_ip, args.host_tap_ip, args.fvp_ip, args.fvp_tap_ip, args.realm_ip, args.route_ip, args.gateway, args.ifname)
-
-    if not args.build_only and args.normal_world == "aosp":
-        run_fvp_aosp(args.debug, args.trace, args.trace_toggle, args.no_telnet)
 
     if not args.build_only and args.normal_world == "acs":
         run_fvp_acs(args.debug, args.trace, args.trace_toggle, args.no_telnet)

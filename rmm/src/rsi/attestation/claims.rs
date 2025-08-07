@@ -1,6 +1,9 @@
 use core::fmt::Debug;
 
-use alloc::{string::String, vec::Vec};
+use alloc::{
+    string::{String, ToString},
+    vec::Vec,
+};
 use ciborium::{ser, Value};
 use coset::{iana::EllipticCurve, AsCborValue, CoseKeyBuilder};
 use tinyvec::ArrayVec;
@@ -8,12 +11,15 @@ use tinyvec::ArrayVec;
 use crate::measurement::{Measurement, MEASUREMENTS_SLOT_NR, MEASUREMENTS_SLOT_RIM};
 
 pub const CHALLENGE_LABEL: u64 = 10;
+pub const PROFILE_LABEL: u64 = 265;
 pub const PERSONALIZATION_VALUE_LABEL: u64 = 44235;
 pub const INITIAL_MEASUREMENT_LABEL: u64 = 44238;
 pub const EXTENSIBLE_MEASUREMENTS_LABEL: u64 = 44239;
 pub const HASH_ALGO_ID_LABEL: u64 = 44236;
 pub const PUBLIC_KEY_LABEL: u64 = 44237;
 pub const PUBLIC_KEY_HASH_ALOG_ID_LABEL: u64 = 44240;
+
+pub const REALM_PROFILE: &str = "tag:arm.com,2023:realm#1.0.0";
 
 #[derive(Clone, Copy, Debug, Default)]
 pub struct MeasurementEntry(Measurement, usize);
@@ -30,6 +36,7 @@ impl<T: Copy + Default, const N: usize> Data<T, N> {
 pub const REM_SLOT_NR: usize = MEASUREMENTS_SLOT_NR - 1;
 
 pub type Challenge = Data<u8, 64>;
+pub type Profile = String;
 pub type PersonalizationValue = Data<u8, 64>;
 pub type REMs = Data<MeasurementEntry, REM_SLOT_NR>;
 pub type RIM = MeasurementEntry;
@@ -76,6 +83,7 @@ where
 #[derive(Clone, Debug)]
 pub struct RealmClaims {
     pub challenge: Claim<Challenge>,
+    pub profile: Claim<Profile>,
     pub personalization_value: Claim<PersonalizationValue>,
     pub rim: Claim<RIM>,
     pub rems: Claim<REMs>,
@@ -97,6 +105,11 @@ impl RealmClaims {
         let challenge_claim: Claim<Challenge> = Claim {
             label: CHALLENGE_LABEL,
             value: Data::from_slice(challenge),
+        };
+
+        let profile: Claim<Profile> = Claim {
+            label: PROFILE_LABEL,
+            value: REALM_PROFILE.to_string(),
         };
 
         let personalization_value: Claim<PersonalizationValue> = Claim {
@@ -156,6 +169,7 @@ impl RealmClaims {
 
         Self {
             challenge: challenge_claim,
+            profile,
             personalization_value,
             rim,
             rems,

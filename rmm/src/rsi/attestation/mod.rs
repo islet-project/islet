@@ -135,6 +135,7 @@ impl Attestation {
 
         let claims_map: Vec<(Value, Value)> = vec![
             claims.challenge.into(),
+            claims.profile.into(),
             claims.personalization_value.into(),
             claims.rim.into(),
             claims.rems.into(),

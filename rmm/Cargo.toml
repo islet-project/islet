@@ -38,6 +38,8 @@ max_level_debug = ["log/max_level_debug"]
 max_level_trace = ["log/max_level_trace"]
 stat = []
 gst_page_table = []
+fvp = []
+qemu = []
 
 # The below are features relevant for model checking
 mc_rmi_features = []

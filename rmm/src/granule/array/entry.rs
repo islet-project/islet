@@ -1,3 +1,4 @@
+use crate::config;
 use crate::granule::array::GRANULE_STATUS_TABLE;
 use crate::rmi::error::Error;
 
@@ -6,9 +7,6 @@ use core::sync::atomic::{AtomicU8, Ordering};
 use safe_abstraction::raw_ptr;
 use spinning_top::{Spinlock, SpinlockGuard};
 use vmsa::guard::Content;
-
-#[cfg(not(any(kani, miri, test, fuzzing)))]
-use crate::granule::{FVP_DRAM0_REGION, FVP_DRAM1_IDX, FVP_DRAM1_REGION};
 
 // Safety: concurrency safety
 //  - For a granule status table that manages granules, it doesn't use a big lock for efficiency.
@@ -178,11 +176,17 @@ impl Granule {
 
     #[cfg(not(any(kani, miri, test, fuzzing)))]
     fn index_to_addr(&self) -> usize {
-        let idx = self.index();
-        if idx < FVP_DRAM1_IDX {
-            return FVP_DRAM0_REGION.start + (idx * GRANULE_SIZE);
+        let mut idx = self.index();
+        let regions = config::NS_DRAM_REGIONS.lock();
+
+        for range in regions.iter() {
+            let region_max = (range.end - range.start) / GRANULE_SIZE;
+            if idx < region_max {
+                return range.start + (idx * GRANULE_SIZE);
+            }
+            idx -= region_max;
         }
-        FVP_DRAM1_REGION.start + ((idx - FVP_DRAM1_IDX) * GRANULE_SIZE)
+        0
     }
     #[cfg(any(kani, miri, test, fuzzing))]
     // DIFF: calculate addr using GRANULE_REGION

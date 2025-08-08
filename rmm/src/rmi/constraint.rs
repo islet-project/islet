@@ -1,3 +1,4 @@
+use crate::config::SMCCC_1_3_SVE_HINT;
 use crate::event::{Command, Context};
 use crate::rmi;
 
@@ -58,12 +59,17 @@ fn pick(cmd: Command) -> Option<Constraint> {
 }
 
 pub fn validate(cmd: Command, arg: &[usize]) -> Context {
-    if let Some(c) = pick(cmd) {
-        let mut ctx = Context::new(cmd);
+    let fid = cmd & !SMCCC_1_3_SVE_HINT;
+    if let Some(c) = pick(fid) {
+        let mut ctx = Context::new(fid);
         ctx.init_arg(&arg[..(c.arg_num - 1)]);
         ctx.resize_ret(c.ret_num);
+        if cmd & SMCCC_1_3_SVE_HINT != 0 {
+            ctx.sve_hint = true;
+        }
         ctx
     } else {
+        error!("Coudlnt find constraint for command: {:X}", cmd);
         Context::new(rmi::NOT_SUPPORTED_YET)
     }
 }

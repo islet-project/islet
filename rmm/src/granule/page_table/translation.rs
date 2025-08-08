@@ -1,6 +1,6 @@
 use super::entry;
 use super::{validate_addr, GranuleState, L0Table, L1Table, GRANULE_SIZE};
-use super::{FVP_DRAM0_REGION, FVP_DRAM1_REGION};
+use crate::config;
 use crate::const_assert_eq;
 
 use alloc::collections::BTreeMap;
@@ -10,17 +10,10 @@ use vmsa::error::Error;
 use vmsa::page::{Page, PageSize};
 use vmsa::page_table::{DefaultMemAlloc, Level, PageTable, PageTableMethods};
 
-pub const DRAM_SIZE: usize = 0x7C00_0000 + 0x8000_0000;
-
 pub const L0_TABLE_ENTRY_SIZE_RANGE: usize = 1024 * 1024 * 4; // 4mb
 pub const L1_TABLE_ENTRY_SIZE_RANGE: usize = GRANULE_SIZE;
 
 const_assert_eq!(L0_TABLE_ENTRY_SIZE_RANGE % L1_TABLE_ENTRY_SIZE_RANGE, 0);
-const_assert_eq!(DRAM_SIZE % L0_TABLE_ENTRY_SIZE_RANGE, 0);
-const_assert_eq!(
-    ((DRAM_SIZE / L0_TABLE_ENTRY_SIZE_RANGE) <= L0Table::NUM_ENTRIES),
-    true
-);
 
 type L0PageTable = PageTable<PhysAddr, L0Table, entry::Entry, { <L0Table as Level>::NUM_ENTRIES }>;
 pub type L1PageTable =
@@ -98,13 +91,14 @@ pub fn addr_to_idx(phys: usize) -> Result<usize, Error> {
         return Err(Error::MmInvalidAddr);
     }
 
-    if FVP_DRAM0_REGION.contains(&phys) {
-        Ok((phys - FVP_DRAM0_REGION.start) / GRANULE_SIZE)
-    } else if FVP_DRAM1_REGION.contains(&phys) {
-        let num_dram0 = (FVP_DRAM0_REGION.end - FVP_DRAM0_REGION.start + 1) / GRANULE_SIZE;
-        Ok(((phys - FVP_DRAM1_REGION.start) / GRANULE_SIZE) + num_dram0)
-    } else {
-        warn!("address is strange 0x{:X}", phys);
-        Err(Error::MmInvalidAddr)
+    let mut base_idx = 0;
+    let regions = config::NS_DRAM_REGIONS.lock();
+    for range in regions.iter() {
+        if range.contains(&phys) {
+            return Ok((phys - range.start) / GRANULE_SIZE + base_idx);
+        }
+        base_idx += (range.end - range.start) / GRANULE_SIZE;
     }
+    warn!("address is strange 0x{:X}", phys);
+    Err(Error::MmInvalidAddr)
 }

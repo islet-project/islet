@@ -7,7 +7,7 @@ members = [
     "lib/uart",
     "lib/vmsa",
     "model-checking",
-    "plat/fvp",
+    "plat/",
     "realm/rsi-test",
     "rmm/",
     "rmm/fuzz/",

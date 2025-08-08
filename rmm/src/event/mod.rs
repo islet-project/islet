@@ -26,6 +26,7 @@ pub struct Context {
     pub cmd: Command,
     pub arg: Vec<usize>,
     pub ret: Vec<usize>,
+    pub sve_hint: bool,
 }
 
 impl Context {
@@ -34,6 +35,7 @@ impl Context {
             cmd,
             arg: Vec::new(),
             ret: Vec::new(),
+            sve_hint: false,
         }
     }
 

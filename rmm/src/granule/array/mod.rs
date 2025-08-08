@@ -2,27 +2,12 @@ pub mod entry;
 
 use self::entry::Entry;
 use self::entry::Granule;
+use crate::config;
 use crate::rmi::error::Error;
 
 pub const GRANULE_SIZE: usize = 4096;
 pub const GRANULE_SHIFT: usize = 12;
 pub const GRANULE_MASK: usize = !((1 << GRANULE_SHIFT) - 1);
-
-// TODO: move this FVP-specific address info
-#[cfg(not(kani))]
-pub(super) const FVP_DRAM0_REGION: core::ops::Range<usize> = core::ops::Range {
-    start: 0x8000_0000,
-    end: 0x8000_0000 + 0x7C00_0000,
-};
-#[cfg(not(kani))]
-pub(super) const FVP_DRAM1_REGION: core::ops::Range<usize> = core::ops::Range {
-    start: 0x8_8000_0000,
-    end: 0x8_8000_0000 + 0x8000_0000,
-};
-
-#[cfg(not(kani))]
-pub(super) const FVP_DRAM1_IDX: usize =
-    (FVP_DRAM0_REGION.end - FVP_DRAM0_REGION.start) / GRANULE_SIZE;
 
 #[cfg(any(kani, miri, test, fuzzing))]
 pub const GRANULE_MEM_SIZE: usize = GRANULE_SIZE * GRANULE_STATUS_TABLE_SIZE;
@@ -46,7 +31,7 @@ pub fn validate_addr(addr: usize) -> bool {
         warn!("address need to be aligned 0x{:X}", addr);
         return false;
     }
-    if !(FVP_DRAM0_REGION.contains(&addr) || FVP_DRAM1_REGION.contains(&addr)) {
+    if !config::is_ns_dram(addr) {
         // if the address is out of range.
         warn!("address is strange 0x{:X}", addr);
         return false;
@@ -68,12 +53,16 @@ pub fn validate_addr(addr: usize) -> bool {
 
 #[cfg(not(any(kani, miri, test, fuzzing)))]
 pub fn granule_addr_to_index(addr: usize) -> usize {
-    if FVP_DRAM0_REGION.contains(&addr) {
-        return (addr - FVP_DRAM0_REGION.start) / GRANULE_SIZE;
+    let regions = config::NS_DRAM_REGIONS.lock();
+
+    let mut base_idx = 0;
+    for range in regions.iter() {
+        if range.contains(&addr) {
+            return (addr - range.start) / GRANULE_SIZE + base_idx;
+        }
+        base_idx += (range.end - range.start) / GRANULE_SIZE;
     }
-    if FVP_DRAM1_REGION.contains(&addr) {
-        return ((addr - FVP_DRAM1_REGION.start) / GRANULE_SIZE) + FVP_DRAM1_IDX;
-    }
+
     usize::MAX
 }
 #[cfg(any(kani, miri, test, fuzzing))]

@@ -7,6 +7,8 @@ use io::stdout;
 use islet_rmm::config::{NUM_OF_CPU, RMM_STACK_GUARD_SIZE, RMM_STACK_SIZE};
 use islet_rmm::logger;
 
+use crate::plat;
+
 /// Configure the first page of the stack section as a stack guard page
 #[no_mangle]
 #[link_section = ".stack"]
@@ -25,6 +27,11 @@ pub unsafe extern "C" fn current_cpu_stack() -> usize {
     &RMM_STACK[cpu_id] as *const u8 as usize + RMM_STACK_SIZE
 }
 
+// TODO : save boot args
+// x0 : CPUID
+// x1 : Version for this Boot interface
+// x2 : platform core count
+// x3 : Base address for the EL3 <-> RMM shared area
 #[naked]
 #[link_section = ".head.text"]
 #[no_mangle]
@@ -57,9 +64,8 @@ unsafe fn clear_bss() {
     bss.fill(0);
 }
 
-fn init_console() {
-    const UART3_BASE: usize = 0x1c0c_0000usize;
-    let _ = stdout().attach(uart::pl011::device(UART3_BASE));
+pub fn init_console() {
+    let _ = stdout().attach(uart::pl011::device(plat::UART_BASE));
     logger::register_global_logger(LevelFilter::Trace); // Control log level
     info!("Initialized the console!");
 }

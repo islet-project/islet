@@ -8,10 +8,20 @@ pub extern "C" fn get_cpu_id() -> usize {
     cluster * NUM_OF_CPU_PER_CLUSTER + core
 }
 
+#[cfg(feature = "fvp")]
 #[inline(always)]
 pub fn id() -> (usize, usize) {
     (
         MPIDR_EL1.read(MPIDR_EL1::Aff2) as usize,
         MPIDR_EL1.read(MPIDR_EL1::Aff1) as usize,
+    )
+}
+
+#[cfg(feature = "qemu")]
+#[inline(always)]
+pub fn id() -> (usize, usize) {
+    (
+        MPIDR_EL1.read(MPIDR_EL1::Aff1) as usize,
+        MPIDR_EL1.read(MPIDR_EL1::Aff0) as usize,
     )
 }

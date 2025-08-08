@@ -18,6 +18,8 @@ pub const RMM_HEAP_SIZE: usize = 16 * 1024 * 1024;
 pub const VM_STACK_SIZE: usize = 1 << 15;
 pub const STACK_ALIGN: usize = 16;
 
+pub const SMCCC_1_3_SVE_HINT: usize = 1 << 16;
+
 #[derive(Debug, Default)]
 pub struct PlatformMemoryLayout {
     pub rmm_base: u64,

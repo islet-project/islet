@@ -1,3 +1,4 @@
+use crate::config::SMCCC_1_3_SVE_HINT;
 use crate::event::{Command, Context};
 use crate::rmi::constraint::Constraint; // TODO: we might need rsi's own constraint struct in the future
 use crate::rsi;
@@ -39,8 +40,12 @@ fn pick(cmd: Command) -> Option<Constraint> {
 }
 
 pub fn validate(cmd: Command) -> Context {
-    let mut ctx = Context::new(cmd);
-    if let Some(c) = pick(cmd) {
+    let fid = cmd & !SMCCC_1_3_SVE_HINT;
+    let mut ctx = Context::new(fid);
+    if cmd & SMCCC_1_3_SVE_HINT != 0 {
+        ctx.sve_hint = true;
+    }
+    if let Some(c) = pick(fid) {
         ctx.resize_ret(c.ret_num);
     } else {
         // rmm.handle_rsi takes care of unregistered command.

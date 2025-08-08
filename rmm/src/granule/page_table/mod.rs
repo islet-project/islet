@@ -5,6 +5,7 @@ use self::entry::{Entry, Inner};
 use self::translation::{
     GranuleStatusTable, GRANULE_STATUS_TABLE, L0_TABLE_ENTRY_SIZE_RANGE, L1_TABLE_ENTRY_SIZE_RANGE,
 };
+use crate::config;
 use crate::rmi::error::Error as RmiError;
 
 use core::ptr::addr_of_mut;
@@ -209,23 +210,13 @@ pub fn set_granule_raw(addr: usize, state: u64) -> Result<(), Error> {
     }
 }
 
-// TODO: move this FVP-specific address info
-const FVP_DRAM0_REGION: core::ops::Range<usize> = core::ops::Range {
-    start: 0x8000_0000,
-    end: 0x8000_0000 + 0x7C00_0000 - 1,
-};
-const FVP_DRAM1_REGION: core::ops::Range<usize> = core::ops::Range {
-    start: 0x8_8000_0000,
-    end: 0x8_8000_0000 + 0x8000_0000 - 1,
-};
-
 pub fn validate_addr(addr: usize) -> bool {
     if addr % GRANULE_SIZE != 0 {
         // if the address is out of range.
         warn!("address need to be aligned 0x{:X}", addr);
         return false;
     }
-    if !(FVP_DRAM0_REGION.contains(&addr) || FVP_DRAM1_REGION.contains(&addr)) {
+    if !config::is_ns_dram(addr) {
         // if the address is out of range.
         warn!("address is strange 0x{:X}", addr);
         return false;

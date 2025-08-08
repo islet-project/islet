@@ -8,6 +8,7 @@
 extern crate log;
 
 mod entry;
+mod plat;
 
 use aarch64_cpu::registers::*;
 use islet_rmm::allocator;
@@ -35,7 +36,8 @@ pub unsafe fn main() -> ! {
             rw_start: &__RW_START__ as *const u64 as u64,
             rw_end: &__RW_END__ as *const u64 as u64,
             stack_base: &__RMM_STACK_BASE__ as *const u64 as u64,
-            uart_phys: 0x1c0c_0000,
+            uart_phys: plat::UART_BASE as u64,
+            el3_shared_buf: plat::EL3_SHARED_BUF,
         }
     };
     islet_rmm::start(cpu::get_cpu_id(), layout);

@@ -72,13 +72,14 @@ use core::ptr::addr_of;
 /// - The `layout` must be a valid `PlatformMemoryLayout` appropriate for the platform.
 /// - Calling this function may alter system-level configurations and should be done with caution.
 pub unsafe fn start(cpu_id: usize, layout: PlatformMemoryLayout) {
+    let el3_shared_buf = layout.el3_shared_buf;
     setup_mmu_cfg(layout);
     setup_el2();
     #[cfg(feature = "gst_page_table")]
     setup_gst();
     // TODO: call once or with every start?
     if cpu_id == 0 {
-        setup_el3_ifc();
+        setup_el3_ifc(el3_shared_buf);
     }
 
     Monitor::new().run();

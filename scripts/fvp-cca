@@ -239,6 +239,7 @@ def get_rmm_features(args):
             features += ["--features", "stat"]
         if args.normal_world == "acs":
             features += ["--features", "gst_page_table"]
+        features += ["--features", "fvp"]
 
     if features:
         print("[!] Setting", args.rmm, "features:", features)
@@ -253,9 +254,11 @@ def prepare_rmm(rmm, features):
         args = ["cargo", "build", "--release"]
         args += features
 
-        run(args, cwd=RMM)
+        new_env = os.environ.copy()
+        new_env["PLATFORM"] = "fvp"
+        run(args, cwd=RMM, new_env=new_env)
         run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
-             "%s/aarch64-unknown-none-softfloat/release/fvp" % OUT,
+             "%s/aarch64-unknown-none-softfloat/release/islet-rmm" % OUT,
              "%s/rmm.bin" % OUT],
              cwd=ROOT)
     elif rmm == "tf-rmm":

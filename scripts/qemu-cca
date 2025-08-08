@@ -169,7 +169,6 @@ def prepare_bootloaders(rmm, bl33, hes):
         print("[WARN] boot loader build arguments are not defined yet")
         sys.exit(1)
     else:
-         # We don't want to build secure OS. Set BL32 empty
         if rmm == "islet":
             args.append("RMM_BIN=%s/rmm.bin" % OUT)
         make(BUILD_SCRIPT, args)
@@ -182,7 +181,7 @@ def prepare_bootloaders(rmm, bl33, hes):
         make(TF_A_RSS, args)
         outdir = os.path.join(TF_A_RSS, "build/qemu/release")
     else:
-        outdir = os.path.join(TF_A, "build/qemu/release")
+        outdir = os.path.join(TF_A, "build/qemu/debug")
 
     for bootloader in bl_list:
         outbin = os.path.join(outdir, bootloader)
@@ -213,6 +212,7 @@ def get_rmm_features(args):
             features += ["--features", "stat"]
         if args.normal_world == "acs":
             features += ["--features", "gst_page_table"]
+        features += ["--features", "qemu"]
 
     if features:
         print("[!] Setting", args.rmm, "features:", features)
@@ -224,14 +224,14 @@ def prepare_rmm(rmm, features):
     print("[!] Building realm management monitor...: %s" % rmm)
 
     if rmm == "islet":
-        print("[TODO] for %s" % rmm)
-        sys.exit(1) 
         args = ["cargo", "build", "--release"]
         args += features
 
-        run(args, cwd=RMM)
+        new_env = os.environ.copy()
+        new_env["PLATFORM"] = "qemu"
+        run(args, cwd=RMM, new_env=new_env)
         run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
-             "%s/aarch64-unknown-none-softfloat/release/qemu" % OUT,
+             "%s/aarch64-unknown-none-softfloat/release/islet-rmm" % OUT,
              "%s/rmm.bin" % OUT],
              cwd=ROOT)
     elif rmm == "tf-rmm":

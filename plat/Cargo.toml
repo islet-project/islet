@@ -1,11 +1,12 @@
 [package]
-name = "fvp"
+name = "islet-rmm"
 version = "0.0.1"
 authors = ["Islet Contributors"]
 edition = "2021"
+build   = "build.rs"
 
 [[bin]]
-name = "fvp"
+name = "islet-rmm"
 path = "src/main.rs"
 
 [features]
@@ -17,15 +18,17 @@ max_level_debug = ["log/max_level_debug", "islet_rmm/max_level_debug"]
 max_level_trace = ["log/max_level_trace", "islet_rmm/max_level_trace"]
 stat = ["islet_rmm/stat"]
 gst_page_table = ["islet_rmm/gst_page_table"]
+fvp = []
+qemu = []
 
 [dependencies]
 aarch64-cpu = { version = "10.0.0" }
 bitflags = "1.3"
-islet_rmm = { path = "../../rmm" }
+islet_rmm = { path = "../rmm" }
 linked_list_allocator = "0.10.4"
 log = "0.4.17"
-uart = { path = "../../lib/uart" }
-io = { path = "../../lib/io" }
+uart = { path = "../lib/uart" }
+io = { path = "../lib/io" }
 
 [build-dependencies]
 cc = "1.0"

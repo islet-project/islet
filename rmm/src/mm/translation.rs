@@ -1,8 +1,6 @@
 use super::page_table::entry::Entry;
 use super::page_table::{attr, L1Table};
-use crate::config::{
-    PlatformMemoryLayout, PAGE_SIZE, RMM_SHARED_BUFFER_START, RMM_STACK_GUARD_SIZE, RMM_STACK_SIZE,
-};
+use crate::config::{PlatformMemoryLayout, PAGE_SIZE, RMM_STACK_GUARD_SIZE, RMM_STACK_SIZE};
 use crate::mm::page::BasePageSize;
 use crate::mm::page_table::entry::PTDesc;
 
@@ -90,7 +88,7 @@ impl Inner<'_> {
         let ro_size = rw_start - base_address;
         let rw_size = layout.rw_end - rw_start;
         let uart_phys = layout.uart_phys;
-        let shared_start = RMM_SHARED_BUFFER_START;
+        let el3_shared_page = layout.el3_shared_buf;
         self.set_pages(
             VirtAddr::from(base_address),
             PhysAddr::from(base_address),
@@ -121,8 +119,8 @@ impl Inner<'_> {
             rw_flags | device_flags,
         );
         self.set_pages(
-            VirtAddr::from(shared_start),
-            PhysAddr::from(shared_start),
+            VirtAddr::from(el3_shared_page),
+            PhysAddr::from(el3_shared_page),
             PAGE_SIZE,
             rw_flags | rmm_flags,
         );

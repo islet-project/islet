@@ -1,3 +1,7 @@
+use alloc::vec::Vec;
+use lazy_static::lazy_static;
+use spin::mutex::Mutex;
+
 pub const NUM_OF_CPU: usize = 8;
 pub const NUM_OF_CLUSTER: usize = 2;
 pub const NUM_OF_CPU_PER_CLUSTER: usize = NUM_OF_CPU / NUM_OF_CLUSTER;
@@ -14,9 +18,6 @@ pub const RMM_HEAP_SIZE: usize = 16 * 1024 * 1024;
 pub const VM_STACK_SIZE: usize = 1 << 15;
 pub const STACK_ALIGN: usize = 16;
 
-// TODO: Acquire this address properly.
-pub const RMM_SHARED_BUFFER_START: usize = 0xFFBFF000;
-
 #[derive(Debug, Default)]
 pub struct PlatformMemoryLayout {
     pub rmm_base: u64,
@@ -24,4 +25,21 @@ pub struct PlatformMemoryLayout {
     pub rw_end: u64,
     pub stack_base: u64,
     pub uart_phys: u64,
+    pub el3_shared_buf: u64,
+}
+
+lazy_static! {
+    pub static ref NS_DRAM_REGIONS: Mutex<Vec<core::ops::Range<usize>>> = Mutex::new(Vec::new());
+}
+
+pub fn is_ns_dram(addr: usize) -> bool {
+    let regions = NS_DRAM_REGIONS.lock();
+
+    for range in regions.iter() {
+        if range.contains(&addr) {
+            return true;
+        }
+    }
+
+    false
 }

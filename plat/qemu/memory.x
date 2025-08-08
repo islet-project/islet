@@ -1,7 +1,7 @@
-SIZE_4MB = 0x400000;
-SIZE_32MB = 0x2000000;
+SIZE_1MB = 0x100000;
+SIZE_40MB = 0x2800000;
 SIZE_4KB = 0x1000;
-SIZE_2GB = 0x80000000;
+SIZE_8GB = 0x200000000;
 
 ENTRY(rmm_entry);
 
@@ -9,17 +9,18 @@ ENTRY(rmm_entry);
  *
  * Partition            | Origin      | Length
  * ---------------------|-------------|-----------
- * NS PAS (Non-Secure)  | 0x80000000  | 0x7C000000 (2GB - 64MB)
- * Secure PAS           | 0xFC000000  | 0x01C00000 (28MB)
- * Realm PAS            | 0xFDC00000  | 0x02000000 (32MB)
- * Root PAS             | 0xFFC00000  | 0x00400000 (4MB)
+ * NS PAS (Non-Secure)  | 0x40000000  |    0x100000 (1MB)
+ * NS PAS (Non-Secure)  | 0x42900000  | 0x600000000 (3GB~)
+ * Secure PAS           | 0x0E100000  |    0xE00000 (14MB)
+ * Realm PAS            | 0x40100000  |   0x2800000 (40MB)
+ * Root PAS             | 0x0E001000  |     0xFF000 (1MB-1KB)
+ * Root PAS             | 0x0EDFC000  |    0x204000 (2MB+16KB)
  * ---------------------|-------------|-----------
  */
 
 MEMORY {
-    RAM (rwx)      : ORIGIN = 0x80000000, LENGTH = SIZE_2GB
-    ROOT_PAS (rwx) : ORIGIN = ORIGIN(RAM) + LENGTH(RAM) - SIZE_4MB, LENGTH = SIZE_4MB
-    REALM_PAS (rxw): ORIGIN = ORIGIN(ROOT_PAS) - SIZE_32MB, LENGTH = SIZE_32MB
+    RAM (rwx)      : ORIGIN = 0x40000000, LENGTH = SIZE_1MB
+    REALM_PAS (rxw): ORIGIN = ORIGIN(RAM) + SIZE_1MB, LENGTH = SIZE_40MB
 }
 
 SECTIONS {
@@ -73,5 +74,5 @@ SECTIONS {
     __RMM_END__ = .;
 
     /* LENGTH(REALM_PAS) - SIZE_4KB: last page is reserved for the el3 manifest */
-    ASSERT((__RMM_END__ < ORIGIN(REALM_PAS) + LENGTH(REALM_PAS)) - SIZE_4KB, "REALM_PAS size exceeded!")
+    ASSERT((__RMM_END__ < ORIGIN(REALM_PAS) + LENGTH(REALM_PAS) - SIZE_4KB), "REALM_PAS size exceeded!")
 }

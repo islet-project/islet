@@ -18,8 +18,8 @@ max_level_debug = ["log/max_level_debug", "islet_rmm/max_level_debug"]
 max_level_trace = ["log/max_level_trace", "islet_rmm/max_level_trace"]
 stat = ["islet_rmm/stat"]
 gst_page_table = ["islet_rmm/gst_page_table"]
-fvp = []
-qemu = []
+fvp = ["islet_rmm/fvp"]
+qemu = ["islet_rmm/qemu"]
 
 [dependencies]
 aarch64-cpu = { version = "10.0.0" }

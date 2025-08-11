@@ -110,7 +110,7 @@ lazy_static! {
 }
 
 #[cfg(not(any(kani, miri, test, fuzzing)))]
-pub const GRANULE_STATUS_TABLE_SIZE: usize = 0xfc000; // == RMM_MAX_GRANULES
+pub const GRANULE_STATUS_TABLE_SIZE: usize = config::MAX_DRAM_SIZE / GRANULE_SIZE; // == RMM_MAX_GRANULES
 #[cfg(kani)]
 pub const GRANULE_STATUS_TABLE_SIZE: usize = 6;
 #[cfg(any(miri, test))]

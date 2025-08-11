@@ -36,7 +36,7 @@ const UARTMIS: isize = 0x040 / REG_LEN;
 #[allow(dead_code)]
 const UARTDMACR: isize = 0x048 / REG_LEN;
 
-const UARTFR_TXFF_BIT: u32 = 5;
+const UARTFR_TXFF: u32 = 1 << 5;
 
 #[allow(dead_code)]
 enum UARTCR {
@@ -87,7 +87,7 @@ impl DeviceInner {
     pub fn putc(&mut self, byte: u8) -> Result<()> {
         if self.ready {
             unsafe {
-                while self.register.offset(UARTFR).read_volatile() & UARTFR_TXFF_BIT == 0 {}
+                while self.register.offset(UARTFR).read_volatile() & UARTFR_TXFF != 0 {}
                 self.register.offset(UARTDR).write_volatile(byte as u32);
             }
             Ok(())

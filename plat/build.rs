@@ -1,8 +1,9 @@
-use std::{env, fs, path::Path};
+use std::env;
 
 fn main() {
     let platform = env::var("PLATFORM").unwrap_or_else(|_| {
-        panic!("Please set the PLATFORM environment variable (e.g., PLATFORM=fvp)")
+        "fvp".to_string()
+        //panic!("Please set the PLATFORM environment variable (e.g., PLATFORM=fvp)")
     });
 
     let memory_file = format!("plat/{}/memory.x", platform);

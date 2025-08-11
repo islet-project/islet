@@ -8,7 +8,7 @@ pub extern "C" fn get_cpu_id() -> usize {
     cluster * NUM_OF_CPU_PER_CLUSTER + core
 }
 
-#[cfg(feature = "fvp")]
+#[cfg(any(feature = "fvp", not(feature = "qemu")))]
 #[inline(always)]
 pub fn id() -> (usize, usize) {
     (

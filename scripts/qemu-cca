@@ -181,7 +181,7 @@ def prepare_bootloaders(rmm, bl33, hes):
         make(TF_A_RSS, args)
         outdir = os.path.join(TF_A_RSS, "build/qemu/release")
     else:
-        outdir = os.path.join(TF_A, "build/qemu/debug")
+        outdir = os.path.join(TF_A, "build/qemu/release")
 
     for bootloader in bl_list:
         outbin = os.path.join(outdir, bootloader)
@@ -298,15 +298,18 @@ def run_qemu_tf_a_tests(debug):
     print("[TODO] Running qemu for tf-a-tests...")
     sys.exit(1)
 
-def run_qemu_linux(debug):
+def run_qemu_linux(rmm, debug):
     print("[!] Running qemu for linux...")
     args = default_optee_build_args("run-only")
+    if rmm == "islet":
+        args.append("EXTRA_CMDLINE=kvm-rme.save_host_context=1")
+        args.append("QEMU_LPA2=n")
 
     print("[!] RUNNING QEMU...")
     make(BUILD_SCRIPT, args)
 
 
-def run_qemu_linux_net(debug, host_ip, host_tap_ip, qemu_ip, qemu_tap_ip, realm_ip, route_ip, gateway, ifname):
+def run_qemu_linux_net(rmm, debug, host_ip, host_tap_ip, qemu_ip, qemu_tap_ip, realm_ip, route_ip, gateway, ifname):
     print("[TODO] Running qemu for linux with the tap network..", )
     sys.exit(1)
 
@@ -505,10 +508,10 @@ if __name__ == "__main__":
         run_qemu_tf_a_tests(args.debug)
 
     if not args.build_only and args.normal_world == "linux":
-        run_qemu_linux(args.debug)
+        run_qemu_linux(args.rmm, args.debug)
 
     if not args.build_only and args.normal_world == "linux-net":
-        run_qemu_linux_net(args.debug, args.host_ip, args.host_tap_ip, args.fvp_ip, args.fvp_tap_ip, args.realm_ip, args.route_ip, args.gateway, args.ifname)
+        run_qemu_linux_net(args.rmm, args.debug, args.host_ip, args.host_tap_ip, args.fvp_ip, args.fvp_tap_ip, args.realm_ip, args.route_ip, args.gateway, args.ifname)
 
     if not args.build_only and args.normal_world == "acs":
         run_qemu_acs(args.debug)

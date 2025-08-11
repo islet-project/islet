@@ -11,6 +11,11 @@ pub const PAGE_SIZE: usize = 1 << PAGE_BITS; // 4KiB
 pub const LARGE_PAGE_SIZE: usize = 1024 * 1024 * 2; // 2MiB
 pub const HUGE_PAGE_SIZE: usize = 1024 * 1024 * 1024; // 1GiB
 
+#[cfg(feature = "fvp")]
+pub const MAX_DRAM_SIZE: usize = 0xFC00_0000; // 4GB - 64MB
+#[cfg(feature = "qemu")]
+pub const MAX_DRAM_SIZE: usize = 0x2_0000_0000; // 8GB
+
 pub const RMM_STACK_GUARD_SIZE: usize = crate::granule::GRANULE_SIZE * 1;
 pub const RMM_STACK_SIZE: usize = 1024 * 1024 - RMM_STACK_GUARD_SIZE;
 pub const RMM_HEAP_SIZE: usize = 16 * 1024 * 1024;

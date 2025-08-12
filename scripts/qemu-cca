@@ -148,8 +148,7 @@ def prepare_realm(name):
         run(["make", "install"], cwd=srcdir)
 
 def prepare_sdk():
-    print("[TODO] Building SDK...")
-    return
+    print("[!] Building SDK...")
     make(SDK, ["fvp"])
 
     print("[!] Building RSI kernel module...")

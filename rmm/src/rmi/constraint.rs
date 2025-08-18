@@ -62,6 +62,10 @@ pub fn validate(cmd: Command, arg: &[usize]) -> Context {
     let fid = cmd & !SMCCC_1_3_SVE_HINT;
     if let Some(c) = pick(fid) {
         let mut ctx = Context::new(fid);
+        // SMC calling convention requires x4-x7 to be preserved unless used.
+        // Since the rmmd in EL3 takes care of preserving x5-x7,
+        // we only store x4.
+        ctx.x4 = arg[3] as u64;
         ctx.init_arg(&arg[..(c.arg_num - 1)]);
         ctx.resize_ret(c.ret_num);
         if cmd & SMCCC_1_3_SVE_HINT != 0 {

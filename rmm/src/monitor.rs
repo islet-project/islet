@@ -109,8 +109,14 @@ impl Monitor {
                 &ctx.ret
             );
 
-            ctx.arg.clear();
-            ctx.arg.extend_from_slice(&ctx.ret[..]);
+            // SMC calling convention requires x4-x7 to be preserved unless used.
+            // Since the rmmd in EL3 takes care of preserving x5-x7,
+            // we only restore x4.
+            ctx.arg.resize(5, 0);
+            ctx.arg[..ctx.ret.len()].copy_from_slice(&ctx.ret[..]);
+            if ctx.ret.len() < 5 {
+                ctx.arg[4] = ctx.x4 as usize;
+            }
 
             #[cfg(kani)]
             // the below is a proof helper

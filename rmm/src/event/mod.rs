@@ -27,6 +27,7 @@ pub struct Context {
     pub arg: Vec<usize>,
     pub ret: Vec<usize>,
     pub sve_hint: bool,
+    pub x4: u64,
 }
 
 impl Context {
@@ -36,6 +37,7 @@ impl Context {
             arg: Vec::new(),
             ret: Vec::new(),
             sve_hint: false,
+            x4: 0,
         }
     }
 

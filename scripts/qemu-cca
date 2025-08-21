@@ -30,6 +30,7 @@ def default_optee_build_args(target=""):
     args.append("QEMU_PATH=" + QEMU)
     args.append("TF_A_PATH=" + TF_A)
     args.append("TF_A_DEBUG=0")
+    args.append("TF_A_MEASURED_BOOT=y")
     # We don't want to build secure OS and edk. Set BL32/33 empty
     args.append("BL32_DEPS=")
     args.append("BL33_DEPS=")

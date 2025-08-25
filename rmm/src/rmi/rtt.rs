@@ -462,7 +462,7 @@ mod test {
     // Source: https://github.com/ARM-software/cca-rmm-acs
     // Test Case: cmd_rtt_map_unprotected
     // Covered RMIs: RTT_MAP_UNPROTECTED, RTT_UNMAP_UNPROTECTED
-    // #[test] TODO: enable this test after fixing it
+    #[test]
     fn rmi_rtt_map_unprotected_positive() {
         let rd = realm_create();
 
@@ -472,7 +472,7 @@ mod test {
         let ipa = IPA_ADDR_UNPROTECTED_UNASSIGNED;
         let level = MAP_LEVEL;
         let ns = mock::host::alloc_granule(IDX_NS_DESC);
-        let desc = ns | ATTR_NORMAL_WB_WA_RA | ATTR_STAGE2_AP_RW | ATTR_INNER_SHARED;
+        let desc = ns | ATTR_NORMAL_WB_WA_RA | ATTR_STAGE2_AP_RW;
 
         let ret = rmi::<RTT_MAP_UNPROTECTED>(&[rd, ipa, level, desc]);
         assert_eq!(ret[0], SUCCESS);

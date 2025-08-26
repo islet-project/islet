@@ -11,6 +11,7 @@ pub mod config;
 pub mod cpu;
 pub(crate) mod event;
 pub mod exception;
+pub mod gic;
 #[macro_use]
 pub mod granule;
 #[macro_use]

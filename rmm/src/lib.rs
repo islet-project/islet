@@ -23,6 +23,7 @@ pub mod realm;
 pub mod rec;
 pub mod rmi;
 pub mod rsi;
+pub mod simd;
 #[cfg(feature = "stat")]
 pub mod stat;
 #[cfg(any(test, miri))]

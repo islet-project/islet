@@ -1,8 +1,9 @@
 use crate::event::RmiHandle;
 use crate::listen;
 use crate::rec;
-use crate::rec::{gic, simd};
+use crate::rec::gic;
 use crate::rmi;
+use crate::simd;
 use armv9a::{define_bitfield, define_bits, define_mask};
 
 extern crate alloc;

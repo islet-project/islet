@@ -2,7 +2,7 @@ use vmsa::guard::Content;
 
 use crate::measurement::{Measurement, MEASUREMENTS_SLOT_NR};
 use crate::realm::mm::IPATranslation;
-use crate::rec::simd::SimdConfig;
+use crate::simd::SimdConfig;
 use alloc::boxed::Box;
 use alloc::collections::btree_map::BTreeMap;
 use alloc::sync::Arc;

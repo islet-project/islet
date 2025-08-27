@@ -45,7 +45,7 @@
 [submodule "third-party/mbedtls"]
 	path = third-party/mbedtls
 	url = https://github.com/Mbed-TLS/mbedtls.git
-	branch = v3.4.1
+	branch = v3.6.4
 [submodule "third-party/kvmtool-rim-measurer"]
 	path = third-party/kvmtool-rim-measurer
 	url = https://github.com/islet-project/3rd-kvmtool
@@ -62,8 +62,8 @@
 	branch = main
 [submodule "third-party/tf-a-rss"]
 	path = third-party/tf-a-rss
-	url = https://github.com/islet-project/arm-trusted-firmware
-	branch = eac5-rss
+	url = https://github.com/islet-project/3rd-tf-a
+	branch = hes
 [submodule "third-party/ciborium"]
 	path = third-party/ciborium
 	url = https://github.com/islet-project/ciborium.git

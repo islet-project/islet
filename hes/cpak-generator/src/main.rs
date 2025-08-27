@@ -1,9 +1,9 @@
 use clap::Parser;
+use clean_path::clean;
 use p384::pkcs8::{EncodePublicKey, LineEnding};
 use std::fs::{self, create_dir_all, File};
 use std::io::{Read, Result as IOResult, Write};
 use std::mem;
-use clean_path::clean;
 
 /// Creates a path to a resource file
 macro_rules! resource_file {

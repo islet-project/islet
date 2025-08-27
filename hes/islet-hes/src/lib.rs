@@ -22,8 +22,9 @@ use tinyvec::ArrayVec;
 
 pub use measured_boot::{
     Measurement, MeasurementError, MeasurementMetaData, MeasurementMgr, MeasurementType, SWType,
-    SWVersion, SignerHash, NUM_OF_MEASUREMENT_SLOTS, SW_TYPE_MAX_SIZE, VERSION_MAX_SIZE, SIGNER_ID_MAX_SIZE, SIGNER_ID_MIN_SIZE,
-    MEASUREMENT_VALUE_MAX_SIZE, MEASUREMENT_VALUE_MIN_SIZE
+    SWVersion, SignerHash, MEASUREMENT_VALUE_MAX_SIZE, MEASUREMENT_VALUE_MIN_SIZE,
+    NUM_OF_MEASUREMENT_SLOTS, SIGNER_ID_MAX_SIZE, SIGNER_ID_MIN_SIZE, SW_TYPE_MAX_SIZE,
+    VERSION_MAX_SIZE,
 };
 
 pub use hw::{
@@ -103,7 +104,7 @@ impl IsletHES {
         let measured_boot_mgr = MeasurementMgr::init(
             hw_data
                 .boot_measurements()
-                .map_err(|_| IsletHESError::InvalidArgument)?
+                .map_err(|_| IsletHESError::InvalidArgument)?,
         )?;
 
         let profile_definition = match hw_data
@@ -139,9 +140,7 @@ impl IsletHES {
                 hash: hw_data
                     .bl_hash()
                     .map_err(|_| IsletHESError::InvalidArgument)?,
-                guk: hw_data
-                    .guk()
-                    .map_err(|_| IsletHESError::InvalidArgument)?,
+                guk: hw_data.guk().map_err(|_| IsletHESError::InvalidArgument)?,
             },
             HWClaims {
                 implementation_id: hw_data
@@ -160,16 +159,19 @@ impl IsletHES {
             measured_boot_mgr,
             attestation_mgr,
             lcs: security_lifecycle,
-            huk: hw_data.huk().map_err(|_| IsletHESError::InvalidArgument)?.to_vec(),
+            huk: hw_data
+                .huk()
+                .map_err(|_| IsletHESError::InvalidArgument)?
+                .to_vec(),
         })
     }
 
     /// Resets the measurements database and unmarks DAK key as generated
-    pub fn reset<H: HWData>(&mut self, hw_data: H) -> Result<(), IsletHESError>{
+    pub fn reset<H: HWData>(&mut self, hw_data: H) -> Result<(), IsletHESError> {
         self.measured_boot_mgr = MeasurementMgr::init(
             hw_data
                 .boot_measurements()
-                .map_err(|_| IsletHESError::InvalidArgument)?
+                .map_err(|_| IsletHESError::InvalidArgument)?,
         )?;
 
         self.attestation_mgr.reset();
@@ -179,10 +181,7 @@ impl IsletHES {
     /// Returns measurement metadata, value and locked attribute from given slot_id.
     /// Returns [`IsletHESError::InvalidArgument`], when slot_id is out of bounds.
     /// Returns [`IsletHESError::DoesNotExist`], when is not populated.
-    pub fn read_measurement(
-        &self,
-        slot_id: usize,
-    ) -> Result<(&Measurement, bool), IsletHESError> {
+    pub fn read_measurement(&self, slot_id: usize) -> Result<(&Measurement, bool), IsletHESError> {
         Ok(self.measured_boot_mgr.read_measurement(slot_id)?)
     }
 
@@ -241,10 +240,7 @@ impl IsletHES {
     /// Returns [`IsletHESError::GenericError`], when CBOR or crypto operation fails.
     /// Returns [`IsletHESError::InvalidArgument`], when DAK was not requsted before
     /// this operation, or `dak_pub_hash` is not a valid hash of DAK Public Key.
-    pub fn get_platform_token(
-        &mut self,
-        dak_pub_hash: &[u8],
-    ) -> Result<CoseSign1, IsletHESError> {
+    pub fn get_platform_token(&mut self, dak_pub_hash: &[u8]) -> Result<CoseSign1, IsletHESError> {
         let measurements = self.fetch_current_measurements()?;
 
         Ok(self
@@ -256,14 +252,14 @@ impl IsletHES {
     /// This key is bound to the authority data, the type of firmware components
     /// and HUK. This makes it immune to firmware updates.
     /// This function should not return an error.
-    pub fn get_authority_vhuk(
-        &mut self,
-    ) -> Result<Vec<u8>, IsletHESError> {
+    pub fn get_authority_vhuk(&mut self) -> Result<Vec<u8>, IsletHESError> {
         let measurements = self.fetch_current_measurements()?;
 
         let mut authority_info = Vec::new();
         for Measurement { metadata, .. } in measurements {
-            let MeasurementMetaData { signer_id, sw_type, .. } = metadata;
+            let MeasurementMetaData {
+                signer_id, sw_type, ..
+            } = metadata;
             authority_info.extend_from_slice(signer_id.as_slice());
             authority_info.extend_from_slice(sw_type.as_bytes());
         }
@@ -278,14 +274,13 @@ impl IsletHES {
     /// Creates a measurement based Virtual HUK (VHUK_M).
     /// This key is bound to the boot measurements of firmware components and HUK.
     /// It is bound to a specific version of CCA Platform firmware.
-    pub fn get_measurement_vhuk(
-        &mut self,
-    ) -> Result<Vec<u8>, IsletHESError> {
+    pub fn get_measurement_vhuk(&mut self) -> Result<Vec<u8>, IsletHESError> {
         let measurements = self.fetch_current_measurements()?;
         let encoded_measurements = utils::encode_measurements(&measurements);
 
         let mut context = Vec::new();
-        into_writer(&encoded_measurements, &mut context).map_err(|_| IsletHESError::GenericError)?;
+        into_writer(&encoded_measurements, &mut context)
+            .map_err(|_| IsletHESError::GenericError)?;
         context.extend(self.lcs.to_ne_bytes());
 
         Ok(generate_seed(&context, &self.huk, b"VHUK_M"))

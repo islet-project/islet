@@ -134,29 +134,32 @@ impl CommsChannel {
                 // FIXME: Currently TF-A returns only zeroes for these parameters.
 
                 // let request_ecc_family: u8 =
-                //     u8::from_ne_bytes(psa_request.in_vecs[0].clone().try_into().unwrap());
+                //     u8::from_ne_bytes(in_vecs[0].clone().try_into().unwrap());
                 // let request_key_bits: u32 =
-                //     u32::from_ne_bytes(psa_request.in_vecs[1].clone().try_into().unwrap());
+                //     u32::from_ne_bytes(in_vecs[1].clone().try_into().unwrap());
                 // let request_hash_algo: u32 =
-                //     u32::from_ne_bytes(psa_request.in_vecs[1].clone().try_into().unwrap());
+                //     u32::from_ne_bytes(in_vecs[1].clone().try_into().unwrap());
+
+                // println!("DEBUG: ecc_family: {:x?}, key_bits: {}, hash_algo: {:x?}",
+                //          request_ecc_family, request_key_bits, request_hash_algo);
 
                 // let ecc_family = match request_ecc_family {
                 //     0x12 => ECCFamily::SecpR1,
-                //     _ => return Err(CommsError::PsaInvalidArgument),
+                //     _ => return Err(CommsError::InvalidArgument),
                 // };
 
                 // let key_bits = match request_key_bits {
                 //     256 => KeyBits::Bits256,
                 //     384 => KeyBits::Bits384,
-                //     521 => return Err(CommsError::PsaInvalidArgument),
-                //     _ => return Err(CommsError::PsaInvalidArgument),
+                //     521 => return Err(CommsError::InvalidArgument),
+                //     _ => return Err(CommsError::InvalidArgument),
                 // };
 
                 // let hash_algo = match request_hash_algo {
                 //     0x2000009 => HashAlgo::Sha256,
                 //     0x200000a => HashAlgo::Sha384,
                 //     0x200000b => HashAlgo::Sha512,
-                //     _ => return Err(CommsError::PsaInvalidArgument),
+                //     _ => return Err(CommsError::InvalidArgument),
                 // };
 
                 // Ok(Request::GetDAK(ecc_family, key_bits, hash_algo))

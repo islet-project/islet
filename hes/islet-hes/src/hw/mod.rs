@@ -97,7 +97,7 @@ pub trait HWData {
     /// of the token, being a full description of the claims, their usage,
     /// verification and token signing. The document name may include
     /// versioning. Custom claim with a value encoded as text string.
-    fn profile_definition(&self) -> Result<Option<ArrayVec<[u8; 32]>>, Self::Error>;
+    fn profile_definition(&self) -> Result<Option<ArrayVec<[u8; 35]>>, Self::Error>;
     /// The value is a text string that can be used to locate the
     /// service or a URL specifying the address of the service. t is used by
     /// a Relying Party to locate a validation service for the token.

@@ -432,7 +432,7 @@ mod tests {
                 0xDD, 0xDD, 0xDD, 0xDD,
             ],
             security_lifecycle: 0x4000,
-            profile_definition: Some("http://arm.com/CCA-SSD/1.0.0".to_string()),
+            profile_definition: Some("tag:arm.com,2023:cca_platform#1.0.0".to_string()),
             verification_service_url: Some("http://whatever.com".to_string()),
             platform_config: 0xDEADBEEFu32.to_ne_bytes().iter().cloned().collect(),
         }

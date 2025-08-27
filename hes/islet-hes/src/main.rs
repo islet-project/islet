@@ -108,9 +108,12 @@ impl HWData for DummyHW {
         ])
     }
 
-    fn profile_definition(&self) -> Result<Option<ArrayVec<[u8; 32]>>, DummyError> {
+    fn profile_definition(&self) -> Result<Option<ArrayVec<[u8; 35]>>, DummyError> {
         Ok(Some(
-            b"http://arm.com/CCA-SSD/1.0.0".iter().cloned().collect(),
+            b"tag:arm.com,2023:cca_platform#1.0.0"
+                .iter()
+                .cloned()
+                .collect(),
         ))
     }
 

@@ -12,6 +12,7 @@ sha2 = { version = "*", default-features = false, features = ["oid"]}
 aes = "*"
 p256 = { version = "*", default-features = false, features = ["alloc", "ecdsa"] }
 p384 = { version = "*", default-features = false, features = ["alloc", "ecdsa"] }
+p521 = { version = "*", default-features = false, features = ["alloc", "ecdsa"] }
 ecdsa = "*"
 hkdf = "*"
 ciborium = { version = "*", default-features = false, path = "../../third-party/ciborium/ciborium" }

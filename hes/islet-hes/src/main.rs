@@ -208,10 +208,8 @@ fn main() {
 
     // let scalar = dak.as_scalar_primitive().to_bytes().to_vec();
 
-    let dak_pub_hash = calculate_public_key_hash(
-        priv_dak.public_key().to_sec1_bytes().to_vec(),
-        HashAlgo::Sha256,
-    );
+    let dak_pub_hash =
+        calculate_public_key_hash(&priv_dak.public_key().to_sec1_bytes(), HashAlgo::Sha256);
 
     let token = attestation_mgr
         .get_platform_token(&dak_pub_hash, &measurements)

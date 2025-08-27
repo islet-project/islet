@@ -19,12 +19,12 @@ pub const RSS_MEASURED_BOOT_EXTEND: i16 = 1002;
 pub const PSA_MAX_IOVEC: usize = 4;
 const PLAT_RSS_COMMS_PAYLOAD_MAX_SIZE: usize = 0x1000;
 
-const TYPE_OFFSET: u8 = 16;
+const TYPE_OFFSET: u8 = 0;
 const TYPE_MASK: u32 = 0xFFFF << TYPE_OFFSET;
-const IN_LEN_OFFSET: u8 = 8;
-const IN_LEN_MASK: u32 = 0xFF << IN_LEN_OFFSET;
-const OUT_LEN_OFFSET: u8 = 0;
-const OUT_LEN_MASK: u32 = 0xFF << OUT_LEN_OFFSET;
+const IN_LEN_OFFSET: u8 = 24;
+const IN_LEN_MASK: u32 = 0x7 << IN_LEN_OFFSET;
+const OUT_LEN_OFFSET: u8 = 16;
+const OUT_LEN_MASK: u32 = 0x7 << OUT_LEN_OFFSET;
 
 pub const PSA_SUCCESS: i32 = 0;
 

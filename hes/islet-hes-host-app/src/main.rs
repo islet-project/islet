@@ -117,7 +117,7 @@ fn process_requests(comms: &mut CommsChannel, islet_hes: &mut IsletHES) -> Resul
                     // Server disconnected gracefully
                     return Ok(());
                 }
-                println!("Request read: {:02x?}", requests);
+                println!("Request read: {:02X?}", requests);
                 let request = requests.unwrap();
                 match request {
                     Request::GetDAK(ecc_family, key_bits, hash_algo) => {
@@ -196,7 +196,7 @@ fn process_requests(comms: &mut CommsChannel, islet_hes: &mut IsletHES) -> Resul
             }
         };
 
-        println!("Sending response {:02x?}", response);
+        println!("Generated response: {:02X?}, ret: {:?}", response, ret_val);
         match comms.send_response(ret_val, response) {
             Ok(()) => (),
             Err(e) => match e {

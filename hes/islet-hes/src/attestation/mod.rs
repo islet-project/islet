@@ -1,11 +1,13 @@
 use core::mem;
 
+use alloc::borrow::ToOwned;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use ciborium::{ser, Value};
-use coset::{CoseSign1, CoseSign1Builder, HeaderBuilder};
+use coset::{iana, AsCborValue, CoseKeyBuilder, CoseSign1, CoseSign1Builder, HeaderBuilder};
+use ecdsa::{elliptic_curve::sec1::ToEncodedPoint, signature::Signer};
 use key_derivation::{derive_p256_key, derive_p384_key, generate_seed};
-use p384::ecdsa::{signature::Signer, Signature as P384Signature};
+use p384::ecdsa::Signature as P384Signature;
 use sha2::{Digest, Sha256, Sha384, Sha512};
 use tinyvec::ArrayVec;
 
@@ -139,22 +141,61 @@ pub struct AttestationMgr {
     dak: Option<DAKInfo>,
 }
 
+/// Convert SEC1 encoded EC2 public `key` to COSE/CBOR
+pub fn ec_public_key_sec1_to_cose(key: &[u8]) -> Vec<u8> {
+    let p256_sec1_len = 1 + 2 * 32;
+    let p384_sec1_len = 1 + 2 * 48;
+    let p521_sec1_len = 1 + 2 * 66;
+
+    let key_cbor_value = match key.len() {
+        n if n == p256_sec1_len => {
+            let pk = p256::PublicKey::from_sec1_bytes(key).expect("Failed to load p256 sec1 key");
+            let ep = pk.to_encoded_point(false);
+            let x = ep.x().unwrap().to_owned().to_vec();
+            let y = ep.y().unwrap().to_owned().to_vec();
+            let key = CoseKeyBuilder::new_ec2_pub_key(iana::EllipticCurve::P_256, x, y).build();
+            key.to_cbor_value().expect("Failed to encode p256 as CBOR")
+        }
+        n if n == p384_sec1_len => {
+            let pk = p384::PublicKey::from_sec1_bytes(key).expect("Failed to load p384 sec1 key");
+            let ep = pk.to_encoded_point(false);
+            let x = ep.x().unwrap().to_owned().to_vec();
+            let y = ep.y().unwrap().to_owned().to_vec();
+            let key = CoseKeyBuilder::new_ec2_pub_key(iana::EllipticCurve::P_384, x, y).build();
+            key.to_cbor_value().expect("Failed to encode p384 as CBOR")
+        }
+        n if n == p521_sec1_len => {
+            let pk = p521::PublicKey::from_sec1_bytes(key).expect("Failed to load p521 sec1 key");
+            let ep = pk.to_encoded_point(false);
+            let x = ep.x().unwrap().to_owned().to_vec();
+            let y = ep.y().unwrap().to_owned().to_vec();
+            let key = CoseKeyBuilder::new_ec2_pub_key(iana::EllipticCurve::P_521, x, y).build();
+            key.to_cbor_value().expect("Failed to encode p521 as CBOR")
+        }
+        _ => panic!("Wrong sec1 key length"),
+    };
+
+    let mut key_cbor_bytes = Vec::new();
+    ser::into_writer(&key_cbor_value, &mut key_cbor_bytes).expect("Failed to serialize CBOR value");
+    key_cbor_bytes
+}
+
 /// Calculate hash for given `key` with chosen [`HashAlgo`]
-pub fn calculate_public_key_hash(sec1_public_key: Vec<u8>, hash_algo: HashAlgo) -> Vec<u8> {
+pub fn calculate_public_key_hash(public_key: Vec<u8>, hash_algo: HashAlgo) -> Vec<u8> {
     match hash_algo {
         HashAlgo::Sha256 => {
             let mut hasher = Sha256::new();
-            hasher.update(sec1_public_key);
+            hasher.update(public_key);
             hasher.finalize().to_vec()
         }
         HashAlgo::Sha384 => {
             let mut hasher = Sha384::new();
-            hasher.update(sec1_public_key);
+            hasher.update(public_key);
             hasher.finalize().to_vec()
         }
         HashAlgo::Sha512 => {
             let mut hasher = Sha512::new();
-            hasher.update(sec1_public_key);
+            hasher.update(public_key);
             hasher.finalize().to_vec()
         }
     }
@@ -171,24 +212,30 @@ impl AttestationMgr {
         )
     }
 
+    // This function calculates a hash of a public key but not in sec1 format as
+    // was done previously but encoded as COSE/CBOR. I find it strange that HES
+    // module is supposed to return a raw key through PSA, but when asked for
+    // token be forced to encode that key as COSE. This is how TF-RMM does it
+    // now though. See here:
+    // https://github.com/TF-RMM/tf-rmm/commit/3aa34974bd21449e0be82f99e3e0c1888e67dfd6
     pub fn calculate_dak_hash(&self, hash_algo: HashAlgo) -> Vec<u8> {
         let dak_info = self.dak.as_ref().unwrap();
-        let dak_sec1_bytes = match dak_info.key_bits {
+        let key_public_sec1 = match dak_info.key_bits {
             KeyBits::Bits256 => p256::SecretKey::from_slice(&dak_info.key)
                 .unwrap()
                 .public_key()
-                .to_sec1_bytes()
-                .to_vec(),
+                .to_sec1_bytes(),
             KeyBits::Bits384 => p384::SecretKey::from_slice(&dak_info.key)
                 .unwrap()
                 .public_key()
-                .to_sec1_bytes()
-                .to_vec(),
-            KeyBits::Bits521 => {
-                panic!("p521 elliptic curve is not supported");
-            }
+                .to_sec1_bytes(),
+            KeyBits::Bits521 => p521::SecretKey::from_slice(&dak_info.key)
+                .unwrap()
+                .public_key()
+                .to_sec1_bytes(),
         };
-        calculate_public_key_hash(dak_sec1_bytes, hash_algo)
+        let key_public_cose = ec_public_key_sec1_to_cose(&key_public_sec1);
+        calculate_public_key_hash(key_public_cose, hash_algo)
     }
 
     fn generate_instance_id(cpak: &p384::SecretKey) -> InstanceId {
@@ -509,14 +556,12 @@ mod tests {
             .get_delegated_key(ECCFamily::SecpR1, KeyBits::Bits384, HashAlgo::Sha256, &[])
             .unwrap();
 
-        let hash = calculate_public_key_hash(
-            p384::SecretKey::from_slice(&dak)
-                .unwrap()
-                .public_key()
-                .to_sec1_bytes()
-                .to_vec(),
-            HashAlgo::Sha512,
-        );
+        let key_public_sec1 = p384::SecretKey::from_slice(&dak)
+            .unwrap()
+            .public_key()
+            .to_sec1_bytes();
+        let key_public_cose = ec_public_key_sec1_to_cose(&key_public_sec1);
+        let hash = calculate_public_key_hash(key_public_cose, HashAlgo::Sha512);
 
         assert_eq!(
             mgr.get_platform_token(&hash, &[]).unwrap_err(),
@@ -541,14 +586,12 @@ mod tests {
             )
             .unwrap();
 
-        let hash = calculate_public_key_hash(
-            p384::SecretKey::from_slice(&dak)
-                .unwrap()
-                .public_key()
-                .to_sec1_bytes()
-                .to_vec(),
-            hash_algo,
-        );
+        let key_public_sec1 = p384::SecretKey::from_slice(&dak)
+            .unwrap()
+            .public_key()
+            .to_sec1_bytes();
+        let key_public_cose = ec_public_key_sec1_to_cose(&key_public_sec1);
+        let hash = calculate_public_key_hash(key_public_cose, hash_algo);
 
         let token_sign1 = mgr.get_platform_token(&hash, &boot_measurements).unwrap();
 
@@ -608,14 +651,12 @@ mod tests {
             )
             .unwrap();
 
-        let hash = calculate_public_key_hash(
-            p384::SecretKey::from_slice(&dak)
-                .unwrap()
-                .public_key()
-                .to_sec1_bytes()
-                .to_vec(),
-            hash_algo,
-        );
+        let key_public_sec1 = p384::SecretKey::from_slice(&dak)
+            .unwrap()
+            .public_key()
+            .to_sec1_bytes();
+        let key_public_cose = ec_public_key_sec1_to_cose(&key_public_sec1);
+        let hash = calculate_public_key_hash(key_public_cose, hash_algo);
 
         let token_sign1 = mgr.get_platform_token(&hash, &measurements).unwrap();
         let payload = de::from_reader(&token_sign1.payload.unwrap()[..])

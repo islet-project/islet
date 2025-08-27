@@ -539,20 +539,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fvp"
-version = "0.0.1"
-dependencies = [
- "aarch64-cpu",
- "bitflags 1.3.2",
- "cc",
- "io",
- "islet_rmm",
- "linked_list_allocator",
- "log",
- "uart",
-]
-
-[[package]]
 name = "generic-array"
 version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -660,6 +646,20 @@ name = "io"
 version = "0.0.1"
 dependencies = [
  "spinning_top",
+]
+
+[[package]]
+name = "islet-rmm"
+version = "0.0.1"
+dependencies = [
+ "aarch64-cpu",
+ "bitflags 1.3.2",
+ "cc",
+ "io",
+ "islet_rmm",
+ "linked_list_allocator",
+ "log",
+ "uart",
 ]
 
 [[package]]

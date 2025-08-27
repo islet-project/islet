@@ -181,23 +181,11 @@ pub fn ec_public_key_sec1_to_cose(key: &[u8]) -> Vec<u8> {
 }
 
 /// Calculate hash for given `key` with chosen [`HashAlgo`]
-pub fn calculate_public_key_hash(public_key: Vec<u8>, hash_algo: HashAlgo) -> Vec<u8> {
+pub fn calculate_public_key_hash(public_key: &[u8], hash_algo: HashAlgo) -> Vec<u8> {
     match hash_algo {
-        HashAlgo::Sha256 => {
-            let mut hasher = Sha256::new();
-            hasher.update(public_key);
-            hasher.finalize().to_vec()
-        }
-        HashAlgo::Sha384 => {
-            let mut hasher = Sha384::new();
-            hasher.update(public_key);
-            hasher.finalize().to_vec()
-        }
-        HashAlgo::Sha512 => {
-            let mut hasher = Sha512::new();
-            hasher.update(public_key);
-            hasher.finalize().to_vec()
-        }
+        HashAlgo::Sha256 => Sha256::digest(public_key).to_vec(),
+        HashAlgo::Sha384 => Sha384::digest(public_key).to_vec(),
+        HashAlgo::Sha512 => Sha512::digest(public_key).to_vec(),
     }
 }
 
@@ -207,7 +195,7 @@ impl AttestationMgr {
 
     pub fn calculate_cpak_hash(&self) -> Vec<u8> {
         calculate_public_key_hash(
-            self.cpak.key.public_key().to_sec1_bytes().to_vec(),
+            &self.cpak.key.public_key().to_sec1_bytes(),
             HashAlgo::Sha256,
         )
     }
@@ -235,12 +223,11 @@ impl AttestationMgr {
                 .to_sec1_bytes(),
         };
         let key_public_cose = ec_public_key_sec1_to_cose(&key_public_sec1);
-        calculate_public_key_hash(key_public_cose, hash_algo)
+        calculate_public_key_hash(&key_public_cose, hash_algo)
     }
 
     fn generate_instance_id(cpak: &p384::SecretKey) -> InstanceId {
-        let hash =
-            calculate_public_key_hash(cpak.public_key().to_sec1_bytes().to_vec(), HashAlgo::Sha256);
+        let hash = calculate_public_key_hash(&cpak.public_key().to_sec1_bytes(), HashAlgo::Sha256);
 
         let mut instance_id: InstanceId = ArrayVec::new();
         instance_id.push(0x01);
@@ -561,7 +548,7 @@ mod tests {
             .public_key()
             .to_sec1_bytes();
         let key_public_cose = ec_public_key_sec1_to_cose(&key_public_sec1);
-        let hash = calculate_public_key_hash(key_public_cose, HashAlgo::Sha512);
+        let hash = calculate_public_key_hash(&key_public_cose, HashAlgo::Sha512);
 
         assert_eq!(
             mgr.get_platform_token(&hash, &[]).unwrap_err(),
@@ -591,7 +578,7 @@ mod tests {
             .public_key()
             .to_sec1_bytes();
         let key_public_cose = ec_public_key_sec1_to_cose(&key_public_sec1);
-        let hash = calculate_public_key_hash(key_public_cose, hash_algo);
+        let hash = calculate_public_key_hash(&key_public_cose, hash_algo);
 
         let token_sign1 = mgr.get_platform_token(&hash, &boot_measurements).unwrap();
 
@@ -656,7 +643,7 @@ mod tests {
             .public_key()
             .to_sec1_bytes();
         let key_public_cose = ec_public_key_sec1_to_cose(&key_public_sec1);
-        let hash = calculate_public_key_hash(key_public_cose, hash_algo);
+        let hash = calculate_public_key_hash(&key_public_cose, hash_algo);
 
         let token_sign1 = mgr.get_platform_token(&hash, &measurements).unwrap();
         let payload = de::from_reader(&token_sign1.payload.unwrap()[..])
@@ -696,7 +683,7 @@ mod tests {
                         assert_eq!(
                             instance_id[1..],
                             calculate_public_key_hash(
-                                mgr.cpak.key.public_key().to_sec1_bytes().to_vec(),
+                                &mgr.cpak.key.public_key().to_sec1_bytes(),
                                 HashAlgo::Sha256
                             )
                         );

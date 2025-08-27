@@ -1,9 +1,9 @@
+use coset::TaggedCborSerializable;
 use islet_hes::{
     self, calculate_public_key_hash, AttestationMgr, BootMeasurement, BootMeasurementMetadata,
     HWAsymmetricKey, HWClaims, HWData, HWHash, HWSymmetricKey, HashAlgo, KeyMaterialData,
     MeasurementMgr, NUM_OF_MEASUREMENT_SLOTS,
 };
-use coset::TaggedCborSerializable;
 use tinyvec::ArrayVec;
 
 use std::fs::{self, create_dir_all, File};
@@ -221,11 +221,7 @@ fn main() {
     println!("{out_dir}");
     create_dir_all(&out_dir).unwrap();
 
-    save_binary_file(
-        &format!("{}/{}", out_dir, "platform_token.bin"),
-        &token,
-    )
-    .unwrap();
+    save_binary_file(&format!("{}/{}", out_dir, "platform_token.bin"), &token).unwrap();
     save_binary_file(
         &format!("{}/{}", out_dir, "dak_priv.bin"),
         &dak_scalar_bytes,

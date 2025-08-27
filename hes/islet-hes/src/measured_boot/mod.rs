@@ -5,8 +5,8 @@ mod measurement;
 pub use manager::{MeasurementMgr, NUM_OF_MEASUREMENT_SLOTS};
 pub use measurement::{
     Measurement, MeasurementMetaData, MeasurementType, SWType, SWVersion, SignerHash,
-    SW_TYPE_MAX_SIZE, VERSION_MAX_SIZE, SIGNER_ID_MAX_SIZE, SIGNER_ID_MIN_SIZE,
-    MEASUREMENT_VALUE_MAX_SIZE, MEASUREMENT_VALUE_MIN_SIZE
+    MEASUREMENT_VALUE_MAX_SIZE, MEASUREMENT_VALUE_MIN_SIZE, SIGNER_ID_MAX_SIZE, SIGNER_ID_MIN_SIZE,
+    SW_TYPE_MAX_SIZE, VERSION_MAX_SIZE,
 };
 
 /// Measurement error enumeration.

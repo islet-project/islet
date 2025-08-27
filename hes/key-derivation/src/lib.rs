@@ -13,7 +13,6 @@ use p384::elliptic_curve::Curve;
 use p384::U384;
 use sha2::{Digest, Sha256};
 
-
 /// Derives key material from a symmetric key, some label and input data.
 /// Key material is a derived 256-bit symmetric key using counter-mode KDF complying
 /// with NIST SP800-108, where the PRF is a combined sha256 hash and an ECB-mode

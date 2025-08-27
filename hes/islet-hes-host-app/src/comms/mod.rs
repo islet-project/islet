@@ -15,10 +15,10 @@ use islet_hes::{
 use psa_serde::{RSS_VHUK_GET_KEY, RSS_VHUK_SERVICE_HANDLE};
 
 use self::psa_serde::{
-    ExtendRequest, PSAError, PSARequest, PSAResponse, ReadRequest, PSA_MAX_IOVEC,
+    ExtendRequest, PSAError, PSARequest, PSAResponse, ReadRequest, ReadResponse, PSA_MAX_IOVEC,
     RSS_DELEGATED_ATTEST_GET_DELEGATED_KEY, RSS_DELEGATED_ATTEST_GET_PLATFORM_TOKEN,
     RSS_DELEGATED_SERVICE_HANDLE, RSS_MEASURED_BOOT_EXTEND, RSS_MEASURED_BOOT_READ,
-    RSS_MEASURED_BOOT_SERVICE_HANDLE, ReadResponse,
+    RSS_MEASURED_BOOT_SERVICE_HANDLE,
 };
 
 #[derive(Debug)]
@@ -55,7 +55,7 @@ pub enum Request {
     // (index, sw_type_len, sw_version_len)
     ReadMeasurement(usize, usize, usize),
     ExtendMeasurement(usize, Measurement, bool),
-    GetVHuk(VHukId)
+    GetVHuk(VHukId),
 }
 
 #[derive(Debug)]
@@ -63,7 +63,7 @@ pub enum Response {
     GetDAK(Vec<u8>),
     GetPlatformToken(Vec<u8>),
     ReadMeasurement(Measurement, bool),
-    GetVHuk(Vec<u8>)
+    GetVHuk(Vec<u8>),
 }
 
 struct Channel {
@@ -91,10 +91,7 @@ impl From<PSAError> for CommsError {
 impl CommsChannel {
     pub fn new(addr: String) -> Self {
         Self {
-            channel: Channel {
-                stream: None,
-                addr,
-            },
+            channel: Channel { stream: None, addr },
             msg_metadata: None,
         }
     }
@@ -105,9 +102,8 @@ impl CommsChannel {
                 Ok(stream) => break stream,
                 Err(e) => {
                     if e.kind() == ErrorKind::ConnectionRefused && persistent {
-                        const RECONNECT_SEC:u64 = 5;
-                        println!("Couldn't connect, retrying in {} seconds...",
-                                 RECONNECT_SEC);
+                        const RECONNECT_SEC: u64 = 5;
+                        println!("Couldn't connect, retrying in {} seconds...", RECONNECT_SEC);
                         sleep(Duration::from_secs(RECONNECT_SEC));
                         continue;
                     } else {
@@ -192,10 +188,7 @@ impl CommsChannel {
         }
     }
 
-    fn convert_vhuk_request(
-        request_type: i16,
-        in_vecs: &[Vec<u8>],
-    ) -> Result<Request, CommsError> {
+    fn convert_vhuk_request(request_type: i16, in_vecs: &[Vec<u8>]) -> Result<Request, CommsError> {
         match request_type {
             RSS_VHUK_GET_KEY => {
                 if in_vecs[0].len() != std::mem::size_of::<u8>() {
@@ -208,7 +201,7 @@ impl CommsChannel {
                     _ => return Err(CommsError::InvalidArgument),
                 };
                 Ok(Request::GetVHuk(key_id))
-            },
+            }
             _ => {
                 // This doesn't happen in case of real psa
                 Err(CommsError::ProgrammerError)
@@ -293,17 +286,17 @@ impl CommsChannel {
         let request = match psa_request.handle {
             RSS_DELEGATED_SERVICE_HANDLE => {
                 Self::convert_attestation_request(psa_request.psa_type, &psa_request.in_vecs)?
-            },
+            }
             RSS_MEASURED_BOOT_SERVICE_HANDLE => {
                 Self::convert_measured_boot_request(psa_request.psa_type, &psa_request.in_vecs)?
-            },
+            }
             RSS_VHUK_SERVICE_HANDLE => {
                 Self::convert_vhuk_request(psa_request.psa_type, &psa_request.in_vecs)?
-            },
+            }
             _ => {
                 println!("Unknown service handle: {}", psa_request.handle);
                 return Err(CommsError::ServiceHandleError);
-            },
+            }
         };
 
         Ok(request)
@@ -375,7 +368,9 @@ impl CommsChannel {
                     out_vecs[0] = token;
                 }
                 Some(Response::ReadMeasurement(measurement, is_locked)) => {
-                    if measurement.metadata.signer_id.len() > msg_metadata.response_params[1] || measurement.value.len() > msg_metadata.response_params[2] {
+                    if measurement.metadata.signer_id.len() > msg_metadata.response_params[1]
+                        || measurement.value.len() > msg_metadata.response_params[2]
+                    {
                         return Err(CommsError::BufferTooSmall);
                     }
                     let read_response = ReadResponse {
@@ -387,7 +382,12 @@ impl CommsChannel {
                         },
                         sw_type: measurement.metadata.sw_type.as_bytes().try_into().unwrap(),
                         sw_type_len: measurement.metadata.sw_type.len() as u8,
-                        version: measurement.metadata.sw_version.as_bytes().try_into().unwrap(),
+                        version: measurement
+                            .metadata
+                            .sw_version
+                            .as_bytes()
+                            .try_into()
+                            .unwrap(),
                         version_len: measurement.metadata.sw_version.len() as u8,
                     };
 

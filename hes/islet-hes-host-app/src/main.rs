@@ -1,18 +1,18 @@
 mod comms;
 
-use islet_hes::{
-    BootMeasurement, BootMeasurementMetadata, IsletHES, IsletHESError, HWAsymmetricKey,
-    HWData, HWHash, HWSymmetricKey,
-};
 use clap::Parser;
 use comms::{CommsChannel, CommsError, Request, Response};
 use coset::TaggedCborSerializable;
 use daemonize::Daemonize;
+use islet_hes::{
+    BootMeasurement, BootMeasurementMetadata, HWAsymmetricKey, HWData, HWHash, HWSymmetricKey,
+    IsletHES, IsletHESError,
+};
 use std::fs::{self, File};
 use std::io::{Read, Result as IOResult};
-use tinyvec::ArrayVec;
 use std::thread;
 use std::time;
+use tinyvec::ArrayVec;
 
 use crate::comms::psa_serde::PSA_SUCCESS;
 
@@ -147,9 +147,18 @@ fn process_requests(comms: &mut CommsChannel, islet_hes: &mut IsletHES) -> Resul
                                 if sw_type_len < measurement.metadata.sw_type.len()
                                     || version_len < measurement.metadata.sw_version.len()
                                 {
-                                    (islet_hes_error_to_ret_val(IsletHESError::InvalidArgument), None)
+                                    (
+                                        islet_hes_error_to_ret_val(IsletHESError::InvalidArgument),
+                                        None,
+                                    )
                                 } else {
-                                    (PSA_SUCCESS, Some(Response::ReadMeasurement(measurement.clone(), is_locked)))
+                                    (
+                                        PSA_SUCCESS,
+                                        Some(Response::ReadMeasurement(
+                                            measurement.clone(),
+                                            is_locked,
+                                        )),
+                                    )
                                 }
                             }
                             Err(e) => (islet_hes_error_to_ret_val(e), None),
@@ -157,18 +166,12 @@ fn process_requests(comms: &mut CommsChannel, islet_hes: &mut IsletHES) -> Resul
                     }
                     Request::GetVHuk(key_id) => {
                         let key_result = match key_id {
-                            comms::VHukId::VHUK_A => {
-                                islet_hes.get_authority_vhuk()
-                            },
-                            comms::VHukId::VHUK_M => {
-                                islet_hes.get_measurement_vhuk()
-                            }
+                            comms::VHukId::VHUK_A => islet_hes.get_authority_vhuk(),
+                            comms::VHukId::VHUK_M => islet_hes.get_measurement_vhuk(),
                         };
                         match key_result {
-                            Ok(key) => {
-                                (PSA_SUCCESS, Some(Response::GetVHuk(key)))
-                            },
-                            Err(e) => (islet_hes_error_to_ret_val(e), None)
+                            Ok(key) => (PSA_SUCCESS, Some(Response::GetVHuk(key))),
+                            Err(e) => (islet_hes_error_to_ret_val(e), None),
                         }
                     }
                 }
@@ -207,7 +210,7 @@ fn process_requests(comms: &mut CommsChannel, islet_hes: &mut IsletHES) -> Resul
     }
 }
 
-fn daemonize(daemonize_root: String) -> std::io::Result<()>{
+fn daemonize(daemonize_root: String) -> std::io::Result<()> {
     let root = std::fs::canonicalize(daemonize_root)?;
     let hespid = root.join("hes.pid").to_string_lossy().to_string();
     let hesout = root.join("hes.out").to_string_lossy().to_string();
@@ -278,7 +281,7 @@ fn main() -> std::io::Result<()> {
                 } else {
                     return Ok(());
                 }
-            },
+            }
             // Some connection error
             Err(_) => {
                 if is_persistent {

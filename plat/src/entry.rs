@@ -19,15 +19,14 @@ static mut RMM_STACK: [[u8; RMM_STACK_SIZE + RMM_STACK_GUARD_SIZE]; NUM_OF_CPU] 
 ///
 /// This function only reads the address of the stack.
 #[no_mangle]
-pub unsafe extern "C" fn current_cpu_stack() -> usize {
-    let cpu_id = get_cpu_id();
+pub unsafe extern "C" fn current_cpu_stack(cpu_id: usize) -> usize {
     if cpu_id >= NUM_OF_CPU {
         panic!("Invalid CPU ID!");
     }
     &RMM_STACK[cpu_id] as *const u8 as usize + RMM_STACK_SIZE
 }
 
-// TODO : save boot args
+// Entrypoint boot args
 // x0 : CPUID
 // x1 : Version for this Boot interface
 // x2 : platform core count
@@ -38,20 +37,32 @@ pub unsafe extern "C" fn current_cpu_stack() -> usize {
 unsafe extern "C" fn rmm_entry() -> ! {
     core::arch::naked_asm!(
         "
+        // save boot args to preserved registers (x20-x23)
+        mov x20, x0  // CPUID
+        mov x21, x1  // Version
+        mov x22, x2  // Core count
+        mov x23, x3  // Shared area address
+
         msr spsel, #1
         bl current_cpu_stack
         mov sp, x0
 
+        // save boot args to the initialized stack
+        stp x20, x21, [sp, #-16]!
+        stp x22, x23, [sp, #-16]!
+
         bl setup
 
         1:
+        // restore boot args
+        ldp x2, x3, [sp], #16
+        ldp x0, x1, [sp], #16
         bl main
         b 1b"
     )
 }
 
 extern "C" {
-    fn get_cpu_id() -> usize;
     static __BSS_START__: usize;
     static __BSS_SIZE__: usize;
 }

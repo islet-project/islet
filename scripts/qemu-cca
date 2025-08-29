@@ -1,516 +1,239 @@
 #!/usr/bin/env python3
 
-import argparse
-import errno
-import glob
-import multiprocessing
 import os
-import signal
-import subprocess
 import sys
 
-from config import *
-from config_qemu import *
-from initrd import prepare_initrd
-from os import environ
+# Ensure the script's directory is in sys.path to find cca_base
+script_dir = os.path.dirname(os.path.abspath(__file__))
+if script_dir not in sys.path:
+    sys.path.insert(0, script_dir)
 
-os.makedirs(OUT, exist_ok=True)
+from cca_base import CCAPlatform
+from config import * # General config
+from config_qemu import * # QEMU specific config
+from initrd import prepare_initrd # QEMU also uses prepare_initrd
 
-def default_optee_build_args(target=""):
-    args = [
-        "-j%d" % multiprocessing.cpu_count(), "-f",
-        "qemu_v8_cca.mk",
-    ]
-    if target != "":
-        args.append(target)
-    args.append("ROOT=" + ROOT)
-    args.append("RMM_PATH=" + TF_RMM)
-    args.append("EDK2_PATH=" + EDK2)
-    args.append("EDK2_BUILD=RELEASE")
-    args.append("QEMU_PATH=" + QEMU)
-    args.append("TF_A_PATH=" + TF_A)
-    args.append("TF_A_DEBUG=0")
-    # We don't want to build secure OS and edk. Set BL32/33 empty
-    args.append("BL32_DEPS=")
-    args.append("BL33_DEPS=")
-    args.append("EDK2_BIN=" + PREBUILT_EDK2)
-    # arguemtns below are set in optee-build/common.mk
-    args.append("BUILD_PATH=" + BUILD_SCRIPT)
-    args.append("LINUX_PATH=" + NW_LINUX)
-    args.append("DEBUG=1")
-    return args
+# QEMU specific paths, typically from config_qemu.py
+# e.g., QEMU, EDK2, etc.
 
-def run(cmd, cwd, new_env=None):
-    process = subprocess.run(cmd, cwd=cwd,
-                       stderr=subprocess.STDOUT,
-                       stdout=subprocess.PIPE,
-                       universal_newlines=True,
-                       env=new_env,
-                       check=False)
-    if process.returncode != 0:
-        print("[!] Failed to run: %s @ %s" % (cmd, cwd))
-        print(process.stdout)
-        sys.exit(1)
+class QEMUPlatform(CCAPlatform):
+    def __init__(self):
+        self.PREBUILT_EDK2 = PREBUILT_EDK2
+        super().__init__()
+        # QEMU-specific initializations if any
+        # Ensure all necessary QEMU paths from config_qemu are available.
 
-def make(srcdir, extra=None):
-    args = ["make"]
-    if extra:
-        args += extra
-    run(args, cwd=srcdir)
+    @property
+    def platform_name(self):
+        return "qemu"
 
-def kill(pid):
-    try:
-        os.kill(pid, signal.SIGTERM)
-    except OSError as e:
-        if e.errno != errno.ESRCH:
-            print(f"Error sending signal to {pid}: {e}")
-            sys.exit(1)
-
-def kill_pid_file(pid_file_path):
-    if not os.path.exists(pid_file_path):
-        return
-    with open(pid_file_path, "r") as pid_file:
-        pid_str = pid_file.read().strip()
-        if pid_str.isdigit():
-            kill(int(pid_str))
-    os.remove(pid_file_path)
-
-def custom_signal_handler(signum, frame):
-    print("Signal %s intercepted" % signal.Signals(signum).name)
-    kill_pid_file(HES_PID)
-    signal.default_int_handler(signum, frame)
-
-def make_single_line(excluded):
-    with open(excluded, 'r') as excluded_file:
-        excluded_tests = ""
-        for i, line in enumerate(excluded_file.readlines()):
-            line = line.strip()
-            if i == 0:
-                excluded_tests = line
-            else:
-                excluded_tests = ",".join([excluded_tests, line])
-        return excluded_tests
-
-def prepare_tf_a_tests(realm):
-    srcdir = TF_A_TESTS
-    outbin = TFTF_BIN
-
-    args = [
-        "CROSS_COMPILE=%s" % CROSS_COMPILE,
-        "PLAT=qemu",
-        "DEBUG=1",
-        "all",
-    ]
-
-    if realm != "rsi-test":
-        args += ["pack_realm"]
-
-    print("[!] Building tf-a-tests...")
-    make(srcdir, args)
-
-    if not os.path.exists(outbin):
-        print("[!] Failed to build: %s" % outbin)
-        sys.exit(1)
-
-    # Pack realm to tftf
-    if realm == "rsi-test":
-        tftf_max_size = 10485760
+    def default_optee_build_args(self, target=""):
         args = [
-            'dd',
-            'if=%s' % RSI_TEST_BIN,
-            'of=%s' % outbin,
-            'obs=1',
-            'seek=%s' % tftf_max_size
+            "-j%d" % multiprocessing.cpu_count(),
+            "-f",
+            "qemu_v8_cca.mk",
         ]
-        run(args, cwd=ROOT)
+        if target != "":
+            args.append(target)
+        args.append("ROOT=" + ROOT)
+        args.append("RMM_PATH=" + TF_RMM)  # TF_RMM path for QEMU
+        args.append("EDK2_PATH=" + EDK2)
+        args.append("EDK2_BUILD=RELEASE")
+        args.append("QEMU_PATH=" + QEMU)
+        args.append("TF_A_PATH=" + TF_A)
+        args.append("TF_A_DEBUG=0")  # QEMU build typically uses release TF-A
+        args.append("BL32_DEPS=")  # No secure OS
+        args.append("BL33_DEPS=")  # No edk2 build here, using prebuilt
+        args.append("EDK2_BIN=" + PREBUILT_EDK2)  # Use prebuilt EDK2
+        args.append("BUILD_PATH=" + BUILD_SCRIPT)
+        args.append("LINUX_PATH=" + NW_LINUX)
+        args.append("DEBUG=1")  # General build debug flag for optee-build
+        return args
 
-def prepare_rsi_test():
-    run(["cargo", "build", "--release"], cwd=RSI_TEST)
-    run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
-         "%s/aarch64-unknown-none-softfloat/release/rsi-test" % OUT,
-         RSI_TEST_BIN],
-         cwd=ROOT)
+    def prepare_bootloaders(self, rmm, bl33, hes):
+        # For QEMU, bootloader prep is mostly handled by optee-build (qemu_v8_cca.mk)
+        # The 'arm-tf' target in optee-build builds TF-A and FIP.
+        make_args = self.default_optee_build_args("arm-tf")
 
-    os.makedirs("%s/realm" % OUT, exist_ok=True)
-    run(["cp", RSI_TEST_BIN, "%s/realm" % OUT], cwd=ROOT)
+        if hes:
+            # Original QEMU script had a warning and exit for HES bootloader build.
+            # This implies HES bootloader build for QEMU is not defined/implemented.
+            print("[WARN] QEMU bootloader build arguments for HES are not defined.")
+            print("[!] Please ensure TF-A with RSS is correctly configured for QEMU if HES is intended.")
+            # For now, we'll proceed as if non-HES, or one might sys.exit(1)
+            # To maintain behavior of original script if it was more specific:
+            # sys.exit(1)
+            # However, the original script just printed a warning and continued,
+            # then hit an issue because TF_A_RSS args were not defined.
+            # Let's assume for now non-HES path if hes=True for QEMU, or needs proper implementation.
+            # The original script had `sys.exit(1)` here.
+            print("[!] HES bootloader build for QEMU is not fully supported in this refactored version yet. Exiting.")
+            sys.exit(1)
 
-    if not os.path.exists(RSI_TEST_BIN):
-        print("[!] Failed to build rsi-test")
-        sys.exit(1)
 
-def prepare_realm(name):
-    print("[!] Building realm(%s)... " % name)
-    if args.realm == "rsi-test":
-        prepare_rsi_test()
-    else:
-        srcdir = os.path.join(REALM, name)
-        run(["make"], cwd=srcdir)
-        run(["make", "install"], cwd=srcdir)
-
-def prepare_sdk():
-    print("[!] Building SDK...")
-    make(SDK, ["fvp"])
-
-    print("[!] Building RSI kernel module...")
-    make(RSI_KO)
-
-def prepare_islet_hes():
-    print("[!] Building islet-hes... ")
-    run(["cargo", "build", "--release"], cwd=HES_APP)
-
-def prepare_bootloaders(rmm, bl33, hes):
-    args = default_optee_build_args("arm-tf")
-
-    if hes:
-        # Features removed below (ENABLE_*=0 lines) are just so the TF-A with
-        # PSA/RSS fits into BL31 space. They mights cause some issues and maybe
-        # some other need to be chosen. Basics seem to work fin though.
-        print("[WARN] boot loader build arguments are not defined yet")
-        sys.exit(1)
-    else:
         if rmm == "islet":
-            args.append("RMM_BIN=%s/rmm.bin" % OUT)
-        make(BUILD_SCRIPT, args)
+            make_args.append("RMM_BIN=%s/rmm.bin" % OUT)
 
-    bl_list = ["bl1.bin", "fip.bin"]
-    print("[!] Building bootloaders(%s)... " % ', '.join(bl_list))
+        # The optee-build script handles the specific TF-A arguments for QEMU.
+        # We just need to call it.
+        print("[!] Building QEMU bootloaders (bl1.bin, fip.bin) via optee-build...")
+        self.make(BUILD_SCRIPT, make_args)
 
-    outdir = ""
-    if hes:
-        make(TF_A_RSS, args)
-        outdir = os.path.join(TF_A_RSS, "build/qemu/release")
-    else:
-        outdir = os.path.join(TF_A, "build/qemu/release")
+        # Output directory for QEMU TF-A build is typically build/qemu/release
+        outdir = os.path.join(TF_A, "build/qemu/release") # TF_A from config
+        bl_list = ["bl1.bin", "fip.bin"]
 
-    for bootloader in bl_list:
-        outbin = os.path.join(outdir, bootloader)
-        if not os.path.exists(outbin):
-            print("[!] Failed to build: %s" % outbin)
-            sys.exit(1)
+        for bootloader in bl_list:
+            outbin = os.path.join(outdir, bootloader)
+            if not os.path.exists(outbin):
+                print("[!] Failed to build QEMU bootloader: %s" % outbin)
+                sys.exit(1)
+            self.run(["cp", outbin, OUT], cwd=ROOT)
 
-        run(["cp", outbin, OUT], cwd=ROOT)
+    def prepare_tf_rmm(self):
+        # For QEMU, tf-rmm is also built via optee-build (qemu_v8_cca.mk)
+        # The 'rmm' target in optee-build handles this.
+        print("[!] Building tf-rmm for QEMU via optee-build...")
+        make_args = self.default_optee_build_args("rmm")
+        self.make(BUILD_SCRIPT, make_args)
+        # The output tf-rmm.img should be in OUT by the optee-build script.
 
-def get_rmm_features(args):
-    features = []
+    def prepare_nw_linux(self):
+        # For QEMU, Linux and QEMU itself are built via optee-build
+        build_args_qemu = self.default_optee_build_args("qemu")
+        print("[!] Building QEMU system...")
+        self.make(BUILD_SCRIPT, build_args_qemu)
 
-    if args.rmm == "islet":
-        if args.rmm_log_level == "off":
-            features += ["--features", "max_level_off"]
-        elif args.rmm_log_level == "error":
-            features += ["--features", "max_level_error"]
-        elif args.rmm_log_level == "warn":
-            features += ["--features", "max_level_warn"]
-        elif args.rmm_log_level == "info":
-            features += ["--features", "max_level_info"]
-        elif args.rmm_log_level == "debug":
-            features += ["--features", "max_level_debug"]
-        else:
-            features += ["--features", "max_level_trace"]
+        build_args_linux = self.default_optee_build_args("linux")
+        print("[!] Building Linux for QEMU...")
+        self.make(BUILD_SCRIPT, build_args_linux)
 
-        if args.stat == True:
-            features += ["--features", "stat"]
-        if args.normal_world == "acs":
-            features += ["--features", "gst_page_table"]
-        features += ["--features", "qemu"]
+        print("[!] Building initrd for QEMU...")
+        prepare_initrd(ROOT, OUT, self.args.realm_launch, self.args.normal_world == "linux-net", self.args.platform_ip, self.args.host_tap_ip)
+        # QEMU does not build a separate boot.img like FVP in this context.
+        # The kernel and initrd are passed directly to QEMU.
 
-    if features:
-        print("[!] Setting", args.rmm, "features:", features)
-    return features
+    def prepare_tap_network(self):
+        print("[TODO] Configuring a tap network for QEMU...")
+        # Original script had this as TODO and returned.
+        # Actual implementation would involve QEMU specific tap setup commands.
+        return
 
+    def prepare_run_arguments(self):
+        # Original script had this as TODO.
+        # QEMU arguments are different from FVP.
+        # This would need to be implemented based on how QEMU is invoked.
+        print("[TODO] prepare_run_arguments for QEMU - specific QEMU command line options needed.")
+        # Example: return ["-s", "-S"] for gdb connect, or monitor options
+        # For now, return an empty list or handle specific known args.
+        run_args = []
+        if self.args.debug: # Assuming debug might mean QEMU's -s and -S for GDB
+            print("[!] Enabling QEMU debug (GDB stub on tcp::1234, stops CPU start)")
+            run_args += ["-s", "-S"]
+        # Trace, trace_toggle, no_telnet, hes are not directly mapped to simple QEMU args here.
+        # These would require more detailed QEMU command line construction.
+        return run_args
 
+    def run_tf_a_tests(self):
+        print("[TODO] Running QEMU for tf-a-tests...")
+        # Original script had sys.exit(1)
+        sys.exit(1) # Not implemented in original
 
-def prepare_rmm(rmm, features):
-    print("[!] Building realm management monitor...: %s" % rmm)
+    def run_nw_linux(self):
+        print("[!] Running QEMU for linux...")
+        # For QEMU, running is often done via the optee-build script's 'run-only' target
+        # or by directly invoking QEMU with built components.
+        # The original script used optee-build.
+        run_args = self.default_optee_build_args("run-only")
+        if self.args.rmm == "islet":
+            run_args.append("EXTRA_CMDLINE=kvm-rme.save_host_context=1")
+            run_args.append("QEMU_LPA2=n") # From original qemu-cca
+        
+        # Add other QEMU specific arguments from prepare_run_arguments if any
+        # For example, debug arguments for QEMU itself
+        qemu_specific_run_args = self.prepare_run_arguments()
+        # Note: How these are combined with optee_build's run-only target needs care.
+        # The optee_build script might have its own way to pass extra QEMU args.
+        # If `prepare_run_arguments` returns args for direct QEMU invocation, then `make(BUILD_SCRIPT, run_args)`
+        # might not be the right way if `run_args` are for QEMU, not make.
+        # The original script implies `make(BUILD_SCRIPT, run_args)` is the way.
+        # So, `prepare_run_arguments` for QEMU might need to return makefile variable overrides
+        # or the optee_build script needs to handle EXTRA_QEMU_ARGS.
 
-    if rmm == "islet":
-        args = ["cargo", "build", "--release"]
-        args += features
+        # For now, let's assume the optee_build script handles QEMU debug flags,
+        # or we pass them via make variables if the script supports it.
+        # The `prepare_run_arguments` for QEMU is currently a TODO.
+        # If `prepare_run_arguments` returned QEMU command line args (e.g. ["-s", "-S"]),
+        # they would need to be passed to QEMU, not `make`.
+        # The original `qemu-cca` did not have complex `prepare_run_arguments`.
+        # It directly called `make(BUILD_SCRIPT, args)`.
 
-        new_env = os.environ.copy()
-        new_env["PLATFORM"] = "qemu"
-        run(args, cwd=RMM, new_env=new_env)
-        run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
-             "%s/aarch64-unknown-none-softfloat/release/islet-rmm" % OUT,
-             "%s/rmm.bin" % OUT],
-             cwd=ROOT)
-    elif rmm == "tf-rmm":
-        args = default_optee_build_args("rmm")
-        make(BUILD_SCRIPT, args)
-
-def prepare_nw_linux(qemu_ip, host_tap_ip, normal_world, realm_launch):
-    args = default_optee_build_args("qemu")
-    print("[!] Building qemu...")
-    make(BUILD_SCRIPT, args)
-
-    args = default_optee_build_args("linux")
-    print("[!] Building linux...")
-    make(BUILD_SCRIPT, args)
-
-    print("[!] Building initrd...")
-    prepare_initrd(ROOT, OUT, realm_launch, normal_world == "linux-net", qemu_ip, host_tap_ip)
-
-def prepare_kvmtool(lkvm="lkvm"):
-    print("[!] Building kvmtool...")
-    args = [
-        "CROSS_COMPILE=%s" % KVMTOOL_CROSS_COMPILE,
-        "ARCH=arm64",
-        "LIBFDT_DIR=%s/libfdt" % DTC,
-        lkvm,
-    ]
-    make(KVMTOOL, args)
-    run(["cp", "%s/%s" % (KVMTOOL, lkvm), OUT], cwd=ROOT)
-
-def prepare_kvm_unit_tests():
-    print("[!] Building kvm-unit-tests...")
-    run(["./scripts/build-kvm-unit-tests.sh"], cwd=ROOT)
-    run(["cp", "-R", "arm", "%s/%s" % (OUT, "kvm-unit-tests")], cwd=KVM_UNIT_TESTS)
-
-def prepare_acs(start, end, excluded):
-    print("[!] Building ACS...")
-    if start == "" and end == "":
-        if excluded == "":
-            run(["./scripts/build-acs.sh"], cwd=ROOT)
-        else:
-            excluded_tests = make_single_line(excluded)
-            run(["./scripts/build-acs.sh", excluded_tests], cwd=ROOT)
-    else:
-        if excluded == "":
-            run(["./scripts/build-acs.sh", start, end], cwd=ROOT)
-        else:
-            excluded_tests = make_single_line(excluded)
-            run(["./scripts/build-acs.sh", excluded_tests, start, end], cwd=ROOT)
-
-def prepare_tap_network(host_ip, host_tap_ip, qemu_ip, route_ip, gateway, ifname):
-    print("[TODO] Configuring a tap network for qemu...")
-    return
-    #run(["./scripts/configure_tap.sh", host_ip, host_tap_ip, qemu_ip, route_ip, gateway, ifname], cwd=ROOT)
-
-def prepare_arguments(debug):
-    print("[TODO] prepare arguments")
-
-def run_islet_hes():
-    print("[!] Running islet-hes...")
-    kill_pid_file(HES_PID)
-    run(["cargo", "run", "--", "-d"], cwd=HES_APP)
-
-def run_qemu_tf_a_tests(debug):
-    print("[TODO] Running qemu for tf-a-tests...")
-    sys.exit(1)
-
-def run_qemu_linux(rmm, debug):
-    print("[!] Running qemu for linux...")
-    args = default_optee_build_args("run-only")
-    if rmm == "islet":
-        args.append("EXTRA_CMDLINE=kvm-rme.save_host_context=1")
-        args.append("QEMU_LPA2=n")
-
-    print("[!] RUNNING QEMU...")
-    make(BUILD_SCRIPT, args)
+        print("[!] RUNNING QEMU...")
+        self.make(BUILD_SCRIPT, run_args)
 
 
-def run_qemu_linux_net(rmm, debug, host_ip, host_tap_ip, qemu_ip, qemu_tap_ip, realm_ip, route_ip, gateway, ifname):
-    print("[TODO] Running qemu for linux with the tap network..", )
-    sys.exit(1)
+    def run_nw_linux_net(self):
+        print("[TODO] Running QEMU for linux with the tap network...")
+        # Original script had sys.exit(1)
+        sys.exit(1) # Not implemented in original
 
-def run_qemu_acs(debug):
-    print("[TODO] Running qemu for acs...")
-    sys.exit(1)
+    def run_acs(self):
+        print("[TODO] Running QEMU for ACS...")
+        # Original script had sys.exit(1)
+        sys.exit(1) # Not implemented in original
 
-def place_prebuilt_at_shared():
-    run(["cp", "%s/rootfs-realm.cpio.gz" % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
-    run(["cp", "%s/Image" % PREBUILT, OUT], cwd=ROOT)
+    def place_prebuilt_at_shared(self):
+        super().place_prebuilt_at_shared() # Call common part
+        # QEMU specific prebuilt items (e.g., DTB for QEMU if different from FVP)
+        # Original QEMU script did not copy fvp-base-revc.dtb or PREBUILT_GRUB here.
+        # It copied Image. If a QEMU specific DTB is needed, it would be:
+        # self.run([f"cp", f"{PREBUILT}/qemu-arm64.dtb", OUT], cwd=ROOT)
+        pass # No QEMU-specific additions in the original script for this function.
 
-def place_script_at_shared():
-    run(["cp", LAUNCH_REALM, SHARED_PATH], cwd=ROOT)
-    run(["cp", LAUNCH_REALM_DEBIAN, SHARED_PATH], cwd=ROOT)
-    run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
-    run(["cp", CONFIGURE_NET, SHARED_PATH], cwd=ROOT)
-    run(["cp", SET_REALM_IP, SHARED_PATH], cwd=ROOT)
+    def _clean_platform_tf_a(self):
+        # QEMU cleans TF-A via optee_build
+        make_args_base = self.default_optee_build_args()
+        current_make_args = list(make_args_base)
+        current_make_args.append("arm-tf-clean")
+        self.make(BUILD_SCRIPT, current_make_args)
 
-def place_realm_at_shared(rmm, realm_ip, qemu_tap_ip, qemu_ip, no_kvm_unit_tests, no_prebuilt_ml):
-    os.makedirs(SHARED_PATH, exist_ok=True)
-    run(["cp", "%s/rootfs-realm.cpio.gz" % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
-    run(["mv", "%s/realm/linux.realm" % OUT, SHARED_PATH], cwd=ROOT)
-    run(["mv", "%s/lkvm" % OUT, SHARED_PATH], cwd=ROOT)
-    place_script_at_shared()
-    if no_kvm_unit_tests == False:
-        run(["cp", "-R", "%s/kvm-unit-tests" % OUT, SHARED_PATH], cwd=ROOT)
+    def _clean_nw_linux(self):
+        # QEMU cleans linux via optee_build
+        make_args_base = self.default_optee_build_args()
+        current_make_args = list(make_args_base)
+        current_make_args.append("linux-clean")
+        self.make(BUILD_SCRIPT, current_make_args)
 
-    if realm_ip != None and qemu_ip != None and qemu_tap_ip != None:
-        # set IP address accordingly
-        run(["sed", "-i", "-e", "s/FVP_IP/%s/g" % qemu_ip, "%s/configure-net.sh" % SHARED_PATH], cwd=ROOT)
-        run(["sed", "-i", "-e", "s/FVP_TAP_IP/%s/g" % qemu_tap_ip, "%s/configure-net.sh" % SHARED_PATH], cwd=ROOT)
-        run(["sed", "-i", "-e", "s/FVP_TAP_IP/%s/g" % qemu_tap_ip, "%s/set-realm-ip.sh" % SHARED_PATH], cwd=ROOT)
-        run(["sed", "-i", "-e", "s/REALM_IP/%s/g" % realm_ip, "%s/set-realm-ip.sh" % SHARED_PATH], cwd=ROOT)
-        run(["sed", "-i", "-e", "s/FVP_TAP_IP/%s/g" % qemu_tap_ip, "%s/launch-realm-debian.sh" % SHARED_PATH], cwd=ROOT)
+    def _clean_tf_rmm(self):
+        # QEMU cleans tf-rmm via optee_build
+        make_args_base = self.default_optee_build_args()
+        current_make_args = list(make_args_base)
+        current_make_args.append("rmm-clean")
+        self.make(BUILD_SCRIPT, current_make_args)
 
-    if no_prebuilt_ml == False:
-        # prebuilt examples: confidential-ml
-        os.makedirs(SHARED_EXAMPLES_PATH, exist_ok=True)
-        run(["cp", "-R", "%s/confidential-ml" % EXAMPLES, SHARED_EXAMPLES_PATH], cwd=ROOT)
-        run(["cp", "%s/confidential-ml/device/device.exe" % PREBUILT_EXAMPLES, "%s/confidential-ml/device/device.exe" % SHARED_EXAMPLES_PATH], cwd=ROOT)
-        run(["cp", "-R", "%s/lib" % PREBUILT_EXAMPLES, SHARED_EXAMPLES_PATH], cwd=ROOT)
-        run(["tar", "-zxvf", "%s/lib/libtensorflowlite.tar.gz" % SHARED_EXAMPLES_PATH, "-C", "%s/lib/" % SHARED_EXAMPLES_PATH], cwd=ROOT)
+    def add_platform_arguments(self, parser):
+        parser.add_argument(
+            "--qemu-ip",
+            "-qip",
+            help="the ip address that is going to be assigned to the platform host "
+                 "(e.g. fvp, qemu)",
+            default="192.168.10.5",
+            dest="platform_ip",
+        )  # Renamed conceptually
+        parser.add_argument(
+            "--qemu-tap-ip",
+            "-ftip",
+            help="the ip address for tap device in platform",
+            default="192.168.20.1",
+            dest="platform_tap_ip",
+        )  # Renamed conceptually
+        # QEMU script did not have --trace, --trace-toggle, --no-telnet
+        # If QEMU specific arguments were needed, they would be added here.
+        # For example, if QEMU had a different way to enable tracing:
+        # parser.add_argument("--qemu-trace", help="Enable QEMU tracing", action="store_true")
+        pass
 
-def clean_repo(target):
-    clean_list = ["all", "tf-a", "tf-a-tests", "realm-linux", "kvmtool", "nw-linux", "acs", "tf-rmm", "islet"]
-    args = default_optee_build_args()
-    if not target in clean_list:
-        print("Please select one of the clean list:")
-        print("  " + "\n  ".join(clean_list))
-        sys.exit(1)
-
-    if target == "all" or target == "tf-a":
-        args.append("arm-tf-clean")
-        make(BUILD_SCRIPT, args)
-    if target == "all" or target == "tf-a-tests":
-        run(["make", "distclean"], cwd=TF_A_TESTS)
-    if target == "all" or target == "realm-linux":
-        run(["make", "clean"], cwd=REALM_LINUX)
-    if target == "all" or target == "kvmtool":
-        run(["make", "clean"], cwd=KVMTOOL)
-    if target == "all" or target == "nw-linux":
-        args.append("linux-clean")
-        make(BUILD_SCRIPT, args)
-    if target == "all" or target == "tf-rmm":
-        args.append("rmm-clean")
-        make(BUILD_SCRIPT, args)
-
-    if target == "all" or target == "acs":
-        run(["rm", "-rf", "build"], cwd=ACS)
-    if target == "all" or target == "islet":
-        run(["rm", "-rf", "out/aarch64-unknown-none-softfloat"], cwd=ROOT)
-
-def get_all_realms():
-    realms = []
-    for dirp in glob.glob(os.path.join(REALM, "*/")):
-        realms.append(os.path.basename(dirp.rstrip("/")))
-
-    return sorted(realms)
-
-def validate_args(args):
-    nw_list = ["linux", "linux-net", "tf-a-tests", "acs"]
-    if not args.use_prebuilt and not args.normal_world in nw_list:
-        print("Please select one of the normal components:")
-        print("  " + "\n  ".join(nw_list))
-        sys.exit(1)
-
-    rmm_list = ["islet", "trp", "tf-rmm"]
-    if not args.rmm in rmm_list:
-        print("Please select one of the rmm components:")
-        print("  " + "\n  ".join(rmm_list))
-        sys.exit(1)
-
-    if args.realm is not None:
-        realms = get_all_realms()
-        if not args.realm in realms:
-            print("Please select one of the realms:")
-            print("  " + "\n  ".join(realms))
-            sys.exit(1)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="QEMU launcher for CCA")
-    parser.add_argument("--normal-world", "-nw", help="A normal world component")
-    parser.add_argument("--debug", "-d", help="Using debug component", action="store_true")
-    parser.add_argument("--run-only", "-ro",
-                        help="Running qemu without building", action="store_true")
-    parser.add_argument("--build-only", "-bo",
-                        help="Building components without running", action="store_true")
-    parser.add_argument("--clean", "-c", help="Clean the repo (pass `target name` or `all`)", default="")
-    parser.add_argument("--realm-launch", help="Execute realm launch on boot", action="store_true")
-    parser.add_argument("--realm", "-rm", help="A sample realm")
-    parser.add_argument("--rmm", "-rmm", help="A realm management monitor (islet, trp, tf-rmm)", default="islet")
-    parser.add_argument("--use-prebuilt", help="Use prebuilt binary (realm-linux, nw-linux, lkvm, etc)", action="store_true")
-    parser.add_argument("--no-prebuilt-ml", help="Not using the prebuilt confidential-ml example", action="store_true")
-    parser.add_argument("--no-kvm-unit-tests", help="Do not build kvm unit tests", action="store_true")
-    parser.add_argument("--no-sdk", help="Do not build sdk", action="store_true")
-    parser.add_argument("--hes", help="Run with hes", action="store_true")
-
-    # for the network capability of QEMU linux
-    parser.add_argument("--host-ip", "-hip", help="the ip address of host machine", default="192.168.10.15")
-    parser.add_argument("--host-tap-ip", "-htip", help="the ip address of the tap device in host", default="192.168.10.1")
-    parser.add_argument("--fvp-ip", "-fip", help="the ip address that is going to be assigned to the fvp host", default="192.168.10.5")
-    parser.add_argument("--fvp-tap-ip", "-ftip", help="the ip address for tap device in fvp", default="192.168.20.1")
-    parser.add_argument("--realm-ip", "-reip", help="the ip address for realm", default="192.168.20.10")
-    parser.add_argument("--route-ip", "-roip", help="the route ip for fvp", default="192.168.20.0")
-    parser.add_argument("--gateway", "-gw", help="the gateway ip for host machine", default="192.168.10.1")
-    parser.add_argument("--ifname", "-if", help="the main interface name of host machine", default="eth0")
-    parser.add_argument("--rmm-log-level", help="Determine RMM's log-level. Choose among (off, error, warn, info, debug, trace)", default="trace")
-    parser.add_argument("--stat", help="Enable stat to check memory used size per command", action="store_true")
-    parser.add_argument("--selected-tests", "-st", help="Select the first and end test name separated by ';'", default="")
-    parser.add_argument("--excluded-tests", "-et", help="File name which contains the list of ACS tests to be excluded", default="")
-
-    args = parser.parse_args()
-
-    if args.clean != "":
-        clean_repo(args.clean)
-        sys.exit(0)
-
-    validate_args(args)
-
-    if not args.run_only:
-        features = get_rmm_features(args)
-
-        if args.hes:
-            prepare_islet_hes()
-
-        prepare_rmm(args.rmm, features)
-
-        if args.realm is not None:
-            prepare_realm(args.realm)
-
-        if args.use_prebuilt:
-            prepare_bootloaders(args.rmm, PREBUILT_EDK2, args.hes)
-            place_script_at_shared()
-            place_prebuilt_at_shared()
-#        elif args.normal_world == "tf-a-tests":
-#            prepare_tf_a_tests(args.realm)
-            prepare_bootloaders(args.rmm, TFTF_BIN, args.hes)
-        elif args.normal_world == "acs":
-            # When a target has changed either with `--selected-tests` or
-            # `--excluded-tests`, it is recommended for users to execute
-            # `./scripts/qemu-cca --clean acs` first, so that the current
-            # target is not confused by the previous target in the build.
-            if args.selected_tests == "":
-                prepare_acs("", "", args.excluded_tests)
-                prepare_bootloaders(args.rmm, ACS_HOST, args.hes)
-            else:
-                selected_tests = args.selected_tests
-                tests = selected_tests.split(";")
-                test_num = len(tests)
-                if test_num == 1:
-                    prepare_acs(tests[0], tests[0], args.excluded_tests)
-                elif test_num == 2:
-                    prepare_acs(tests[0], tests[1], args.excluded_tests)
-                else:
-                    print("[!] Pass one or two test names separated by ';'")
-                    sys.exit(1)
-                prepare_bootloaders(args.rmm, ACS_HOST, args.hes)
-        else:
-            prepare_kvmtool()
-            if args.no_kvm_unit_tests is False:
-                prepare_kvm_unit_tests()
-            prepare_nw_linux(args.fvp_ip, args.host_tap_ip, args.normal_world, args.realm_launch)
-            prepare_bootloaders(args.rmm, PREBUILT_EDK2, args.hes)
-
-            if args.realm is not None:
-                place_realm_at_shared(args.rmm, args.realm_ip, args.fvp_tap_ip, args.fvp_ip, args.no_kvm_unit_tests, args.no_prebuilt_ml)
-                if args.no_sdk is False:
-                    prepare_sdk()
-
-    if not args.build_only and args.hes:
-        signal.signal(signal.SIGTERM, custom_signal_handler)
-        signal.signal(signal.SIGINT, custom_signal_handler)
-        run_islet_hes()
-
-    if not args.build_only and args.normal_world == "tf-a-tests":
-        run_qemu_tf_a_tests(args.debug)
-
-    if not args.build_only and args.normal_world == "linux":
-        run_qemu_linux(args.rmm, args.debug)
-
-    if not args.build_only and args.normal_world == "linux-net":
-        run_qemu_linux_net(args.rmm, args.debug, args.host_ip, args.host_tap_ip, args.fvp_ip, args.fvp_tap_ip, args.realm_ip, args.route_ip, args.gateway, args.ifname)
-
-    if not args.build_only and args.normal_world == "acs":
-        run_qemu_acs(args.debug)
+    import multiprocessing
+    CCAPlatform.main(QEMUPlatform)

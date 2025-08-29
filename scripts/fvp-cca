@@ -1,418 +1,239 @@
 #!/usr/bin/env python3
 
-import argparse
-import errno
-import glob
-import multiprocessing
 import os
-import signal
-import subprocess
 import sys
 
-from config import *
-from config_fvp import *
-from initrd import prepare_initrd
-from os import environ
+# Ensure the script's directory is in sys.path to find cca_base
+script_dir = os.path.dirname(os.path.abspath(__file__))
+if script_dir not in sys.path:
+    sys.path.insert(0, script_dir)
 
-os.makedirs(OUT, exist_ok=True)
+from cca_base import CCAPlatform
+from config import * # General config
+from config_fvp import * # FVP specific config
+from initrd import prepare_initrd # FVP uses prepare_initrd
 
-def default_optee_build_args(target=""):
-    args = [
-        "-j%d" % multiprocessing.cpu_count(), "-f",
-        "fvp.mk",
-    ]
-    if target != "":
-        args.append(target)
-    args.append("ROOT=" + ROOT)
-    args.append("BUILD_PATH=" + BUILD_SCRIPT)
-    args.append("LINUX_PATH=" + NW_LINUX)
-    args.append("TF_A_PATH=" + TF_A)
-    args.append("FVP_USE_BASE_PLAT=y")
-    args.append("FVP_PATH=" + FVP_DIR)
-    args.append("BOOT_IMG=%s/boot.img" % OUT)
-    args.append("GRUB_CONFIG_PATH=%s" % OUT)
-    return args
+# FVP specific paths that might be referenced by CCAPlatform or need to be set
+# These are typically defined in config_fvp.py but ensuring they are accessible.
+# CCAPlatform defines placeholders, these will override if imported correctly.
+# For example, PREBUILT_EDK2, ACS_HOST, FVP_DIR, FVP_BIN, etc.
 
-def run(cmd, cwd, new_env=None):
-    process = subprocess.run(cmd, cwd=cwd,
-                       stderr=subprocess.STDOUT,
-                       stdout=subprocess.PIPE,
-                       universal_newlines=True,
-                       env=new_env,
-                       check=False)
-    if process.returncode != 0:
-        print("[!] Failed to run: %s @ %s" % (cmd, cwd))
-        print(process.stdout)
-        sys.exit(1)
+class FVPPlatform(CCAPlatform):
+    def __init__(self):
+        self.PREBUILT_EDK2 = PREBUILT_EDK2
+        super().__init__()
+        # FVP-specific initializations if any
+        # Ensure all necessary FVP paths from config_fvp are available.
+        # For example, self.FVP_DIR = FVP_DIR (already imported)
 
-def make(srcdir, extra=None):
-    args = ["make"]
-    if extra:
-        args += extra
-    run(args, cwd=srcdir)
+    @property
+    def platform_name(self):
+        return "fvp"
 
-def kill(pid):
-    try:
-        os.kill(pid, signal.SIGTERM)
-    except OSError as e:
-        if e.errno != errno.ESRCH:
-            print(f"Error sending signal to {pid}: {e}")
-            sys.exit(1)
-
-def kill_pid_file(pid_file_path):
-    if not os.path.exists(pid_file_path):
-        return
-    with open(pid_file_path, "r") as pid_file:
-        pid_str = pid_file.read().strip()
-        if pid_str.isdigit():
-            kill(int(pid_str))
-    os.remove(pid_file_path)
-
-def custom_signal_handler(signum, frame):
-    print("Signal %s intercepted" % signal.Signals(signum).name)
-    kill_pid_file(HES_PID)
-    signal.default_int_handler(signum, frame)
-
-def make_single_line(excluded):
-    with open(excluded, 'r') as excluded_file:
-        excluded_tests = ""
-        for i, line in enumerate(excluded_file.readlines()):
-            line = line.strip()
-            if i == 0:
-                excluded_tests = line
-            else:
-                excluded_tests = ",".join([excluded_tests, line])
-        return excluded_tests
-
-def prepare_tf_a_tests(realm):
-    srcdir = TF_A_TESTS
-    outbin = TFTF_BIN
-
-    args = [
-        "CROSS_COMPILE=%s" % CROSS_COMPILE,
-        "PLAT=fvp",
-        "DEBUG=1",
-        "all",
-    ]
-
-    if realm != "rsi-test":
-        args += ["pack_realm"]
-
-    print("[!] Building tf-a-tests...")
-    make(srcdir, args)
-
-    if not os.path.exists(outbin):
-        print("[!] Failed to build: %s" % outbin)
-        sys.exit(1)
-
-    # Pack realm to tftf
-    if realm == "rsi-test":
-        tftf_max_size = 10485760
+    def default_optee_build_args(self, target=""):
         args = [
-            'dd',
-            'if=%s' % RSI_TEST_BIN,
-            'of=%s' % outbin,
-            'obs=1',
-            'seek=%s' % tftf_max_size
+            "-j%d" % multiprocessing.cpu_count(), "-f",
+            "fvp.mk",
         ]
-        run(args, cwd=ROOT)
+        if target != "":
+            args.append(target)
+        args.append("ROOT=" + ROOT)
+        args.append("BUILD_PATH=" + BUILD_SCRIPT)
+        args.append("LINUX_PATH=" + NW_LINUX)
+        args.append("TF_A_PATH=" + TF_A)
+        args.append("FVP_USE_BASE_PLAT=y")
+        args.append("FVP_PATH=" + FVP_DIR)
+        args.append("BOOT_IMG=%s/boot.img" % OUT)
+        args.append("GRUB_CONFIG_PATH=%s" % OUT)
+        return args
 
-def prepare_rsi_test():
-    run(["cargo", "build", "--release"], cwd=RSI_TEST)
-    run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
-         "%s/aarch64-unknown-none-softfloat/release/rsi-test" % OUT,
-         RSI_TEST_BIN],
-         cwd=ROOT)
+    def prepare_bootloaders(self, rmm, bl33, hes):
+        args = []
 
-    os.makedirs("%s/realm" % OUT, exist_ok=True)
-    run(["cp", RSI_TEST_BIN, "%s/realm" % OUT], cwd=ROOT)
+        if hes:
+            args = [
+                "CROSS_COMPILE=%s" % CROSS_COMPILE,
+                "PLAT=fvp",
+                "ENABLE_RME=1",
+                "FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts",
+                "DEBUG=0", # RSS build is typically release
+                "BL33=%s" % bl33,
+                "PLAT_RSE_COMMS_USE_SERIAL=1",
+                "MBEDTLS_DIR=%s" % MBEDTLS,
+            ]
+        else:
+            args = [
+                "CROSS_COMPILE=%s" % CROSS_COMPILE,
+                "PLAT=fvp",
+                "ENABLE_RME=1",
+                "FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts",
+                "DEBUG=1",
+                "BL33=%s" % bl33]
 
-    if not os.path.exists(RSI_TEST_BIN):
-        print("[!] Failed to build rsi-test")
-        sys.exit(1)
+        if rmm == "islet":
+            args += "RMM=%s/rmm.bin" % OUT,
+        elif rmm == "tf-rmm":
+            args += "RMM=%s/tf-rmm.img" % OUT,
 
-def prepare_realm(name):
-    print("[!] Building realm(%s)... " % name)
-    if args.realm == "rsi-test":
-        prepare_rsi_test()
-    else:
-        srcdir = os.path.join(REALM, name)
-        run(["make"], cwd=srcdir)
-        run(["make", "install"], cwd=srcdir)
+        args += ["all", "fip"]
 
-def prepare_sdk():
-    print("[!] Building SDK...")
-    make(SDK, ["fvp"])
+        bl_list = ["bl1.bin", "fip.bin"]
+        print(f"[!] Building FVP bootloaders({', '.join(bl_list)})... ")
 
-    print("[!] Building RSI kernel module...")
-    make(RSI_KO)
+        outdir = ""
+        if hes:
+            self.make(TF_A_RSS, args)
+            outdir = os.path.join(TF_A_RSS, "build/fvp/release")
+        else:
+            self.make(TF_A, args)
+            outdir = os.path.join(TF_A, "build/fvp/debug")
 
-def prepare_islet_hes():
-    print("[!] Building islet-hes... ")
-    run(["cargo", "build", "--release"], cwd=HES_APP)
+        for bootloader in bl_list:
+            outbin = os.path.join(outdir, bootloader)
+            if not os.path.exists(outbin):
+                print(f"[!] Failed to build: {outbin}")
+                sys.exit(1)
+            self.run(["cp", outbin, OUT], cwd=ROOT)
 
-def prepare_bootloaders(rmm, bl33, hes):
-    args = []
+    def prepare_tf_rmm(self):
+        self.run(["./scripts/build-tf-rmm.sh", CROSS_COMPILE], cwd=ROOT)
 
-    if hes:
-        # Features removed below (ENABLE_*=0 lines) are just so the TF-A with
-        # PSA/RSS fits into BL31 space. They mights cause some issues and maybe
-        # some other need to be chosen. Basics seem to work fin though.
-        args = [
-            "CROSS_COMPILE=%s" % CROSS_COMPILE,
-            "PLAT=fvp",
-            "ENABLE_RME=1",
-            "FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts",
-            "DEBUG=0",
-            "BL33=%s" % bl33,
-            "PLAT_RSE_COMMS_USE_SERIAL=1",
-            "MBEDTLS_DIR=%s" % MBEDTLS,
+    def prepare_grub_config(self, rmm): # FVP specific
+        grubdir = os.path.join(BUILD_SCRIPT, "fvp", "grub")
+        if rmm == "islet":
+            self.run(["cp", os.path.join(grubdir, "grub-hostctxt.cfg"), os.path.join(OUT, "grub.cfg")], cwd=ROOT)
+        else:
+            self.run(["cp", os.path.join(grubdir, "grub.cfg"), OUT], cwd=ROOT)
+
+    def prepare_nw_linux(self):
+        self.prepare_grub_config(self.args.rmm) # FVP specific
+        build_args_linux = self.default_optee_build_args("linux")
+        print("[!] Building linux for FVP...")
+        self.make(BUILD_SCRIPT, build_args_linux)
+
+        self.run(["cp", PREBUILT_GRUB, OUT], cwd=ROOT) # PREBUILT_GRUB from config_fvp
+        print("[!] Building initrd for FVP...")
+        prepare_initrd(ROOT, OUT, self.args.realm_launch, self.args.normal_world == "linux-net", self.args.platform_ip, self.args.host_tap_ip)
+
+        build_args = self.default_optee_build_args("boot-img")
+        print("[!] Building boot image for FVP...")
+        self.make(BUILD_SCRIPT, build_args)
+
+    def prepare_tap_network(self):
+        args = self.args
+        print("[!] Configuring a tap network for FVP...")
+        self.run(["./scripts/configure_tap.sh", args.host_ip, args.host_tap_ip, args.platform_ip, args.route_ip, args.gateway, args.ifname], cwd=ROOT)
+
+    def prepare_run_arguments(self):
+        run_args = []
+        if self.args.debug:
+            print("[!] Enabling FVP debug...")
+            run_args += ["--cadi-server"]
+        if self.args.trace_toggle:
+            print("[!] Enabling FVP trace with toggle...")
+            run_args += self._prepare_trace_toggle()
+        elif self.args.trace:
+            print("[!] Enabling FVP trace...")
+            run_args += self._prepare_trace()
+        if self.args.no_telnet:
+            print("[!] Disabling FVP telnet...")
+            run_args += ["-C", "bp.terminal_0.start_telnet=0",
+                    "-C", "bp.terminal_1.start_telnet=0",
+                    "-C", "bp.terminal_2.start_telnet=0",
+                    "-C", "bp.terminal_3.start_telnet=0"]
+        elif self.args.hes: # HES implies disabling telnet 2
+            print("[!] Using HES, disabling FVP telnet 2...")
+            run_args += ["-C", "bp.terminal_2.start_telnet=0"]
+        return run_args
+
+    def _prepare_trace(self): # Internal helper for FVP trace
+        return [
+            "--plugin", "%s" % TRACE_LIB,
+            "-C", "TRACE.TarmacTrace.trace_events=1",
+            "-C", "TRACE.TarmacTrace.trace_instructions=1",
+            "-C", "TRACE.TarmacTrace.start-instruction-count=100000000",
+            "-C", "TRACE.TarmacTrace.trace_core_registers=1",
+            "-C", "TRACE.TarmacTrace.trace_vfp=1",
+            "-C", "TRACE.TarmacTrace.trace_mmu=0",
+            "-C", "TRACE.TarmacTrace.trace_loads_stores=1",
+            "-C", "TRACE.TarmacTrace.trace_cache=0",
+            "-C", "TRACE.TarmacTrace.updated-registers=1",
+            "-C", "TRACE.TarmacTrace.trace-file=%s/trace.log" % OUT,
         ]
-    else:
-        args = [
-            "CROSS_COMPILE=%s" % CROSS_COMPILE,
-            "PLAT=fvp",
-            "ENABLE_RME=1",
-            "FVP_HW_CONFIG_DTS=fdts/fvp-base-gicv3-psci-1t.dts",
-            "DEBUG=1",
-            "BL33=%s" % bl33]
 
-    if rmm == "islet":
-        args += "RMM=%s/rmm.bin" % OUT,
-
-    elif rmm == "tf-rmm":
-        args += "RMM=%s/tf-rmm.img" % OUT,
-
-    args += ["all", "fip"]
-
-    bl_list = ["bl1.bin", "fip.bin"]
-    print("[!] Building bootloaders(%s)... " % ', '.join(bl_list))
-
-    outdir = ""
-    if hes:
-        make(TF_A_RSS, args)
-        outdir = os.path.join(TF_A_RSS, "build/fvp/release")
-    else:
-        make(TF_A, args)
-        outdir = os.path.join(TF_A, "build/fvp/debug")
-
-    for bootloader in bl_list:
-        outbin = os.path.join(outdir, bootloader)
-        if not os.path.exists(outbin):
-            print("[!] Failed to build: %s" % outbin)
+    def _prepare_trace_toggle(self): # Internal helper for FVP trace toggle
+        if not os.path.isfile(TOGGLE_LIB):
+            pair = TOGGLE_LIB.split(PLUGIN_PATH)
+            toggle_name = pair[1]
+            print("File not found: %s" % toggle_name)
+            print("Please put %s in %s" % (toggle_name, PLUGIN_PATH))
+            print("The library can be found by installing FastModelsPortfolio_11.25 "
+                  "which requires license agreement")
             sys.exit(1)
+        return [
+            "--plugin", "%s" % TRACE_LIB,
+            "-C", "TRACE.TarmacTrace.trace_atomic=0",
+            "-C", "TRACE.TarmacTrace.trace_bte=0",
+            "-C", "TRACE.TarmacTrace.trace_cache=0",
+            "-C", "TRACE.TarmacTrace.trace_core_registers=0",
+            "-C", "TRACE.TarmacTrace.trace_cp15=0",
+            "-C", "TRACE.TarmacTrace.trace_dap=0",
+            "-C", "TRACE.TarmacTrace.trace_ete=0",
+            "-C", "TRACE.TarmacTrace.trace_events=0",
+            "-C", "TRACE.TarmacTrace.trace_exception_reasons=0",
+            "-C", "TRACE.TarmacTrace.trace_gicv3=0",
+            "-C", "TRACE.TarmacTrace.trace_gpt=0",
+            "-C", "TRACE.TarmacTrace.trace_hacdbs=0",
+            "-C", "TRACE.TarmacTrace.trace_hdbss=0",
+            "-C", "TRACE.TarmacTrace.trace_loads_stores=0",
+            "-C", "TRACE.TarmacTrace.trace_mmu=0",
+            "-C", "TRACE.TarmacTrace.trace_spe=0",
+            "-C", "TRACE.TarmacTrace.trace_tag_loads_stores=0",
+            "-C", "TRACE.TarmacTrace.trace_vfp=0",
+            "-C", "TRACE.TarmacTrace.unbuffered=1",
+            "-C", "TRACE.TarmacTrace.trace-file=%s/trace.log" % OUT,
+            "--plugin", "%s" % TOGGLE_LIB,
+            "-C", "TRACE.ToggleMTIPlugin.disable_mti_from_start=1",
+            "-C", "TRACE.ToggleMTIPlugin.use_hlt=1",
+            "-C", "TRACE.ToggleMTIPlugin.hlt_imm16=5",
+            "-C", "cluster0.cpu0.enable_trace_special_hlt_imm16=1",
+            "-C", "cluster0.cpu0.trace_special_hlt_imm16=5",
+        ]
 
-        run(["cp", outbin, OUT], cwd=ROOT)
-
-def get_rmm_features(args):
-    features = []
-
-    if args.rmm == "islet":
-        if args.rmm_log_level == "off":
-            features += ["--features", "max_level_off"]
-        elif args.rmm_log_level == "error":
-            features += ["--features", "max_level_error"]
-        elif args.rmm_log_level == "warn":
-            features += ["--features", "max_level_warn"]
-        elif args.rmm_log_level == "info":
-            features += ["--features", "max_level_info"]
-        elif args.rmm_log_level == "debug":
-            features += ["--features", "max_level_debug"]
-        else:
-            features += ["--features", "max_level_trace"]
-
-        if args.stat == True:
-            features += ["--features", "stat"]
-        if args.normal_world == "acs":
-            features += ["--features", "gst_page_table"]
-        features += ["--features", "fvp"]
-
-    if features:
-        print("[!] Setting", args.rmm, "features:", features)
-    return features
-
-
-
-def prepare_rmm(rmm, features):
-    print("[!] Building realm management monitor...: %s" % rmm)
-
-    if rmm == "islet":
-        args = ["cargo", "build", "--release"]
-        args += features
-
-        new_env = os.environ.copy()
-        new_env["PLATFORM"] = "fvp"
-        run(args, cwd=RMM, new_env=new_env)
-        run(["%sobjcopy" % CROSS_COMPILE, "-O", "binary",
-             "%s/aarch64-unknown-none-softfloat/release/islet-rmm" % OUT,
-             "%s/rmm.bin" % OUT],
-             cwd=ROOT)
-    elif rmm == "tf-rmm":
-        run(["./scripts/build-tf-rmm.sh", CROSS_COMPILE], cwd=ROOT)
-
-def prepare_grub_config(rmm):
-    grubdir = os.path.join(BUILD_SCRIPT, "fvp", "grub")
-    if rmm == "islet":
-        run(["cp", os.path.join(grubdir, "grub-hostctxt.cfg"), os.path.join(OUT, "grub.cfg")], cwd=ROOT)
-    else:
-        run(["cp", os.path.join(grubdir, "grub.cfg"), OUT], cwd=ROOT)
-
-def prepare_nw_linux(fvp_ip, host_tap_ip, normal_world, realm_launch):
-    args = default_optee_build_args("linux")
-    print("[!] Building linux...")
-    make(BUILD_SCRIPT, args)
-
-    run(["cp", PREBUILT_GRUB, OUT], cwd=ROOT)
-    print("[!] Building initrd...")
-    prepare_initrd(ROOT, OUT, realm_launch, normal_world == "linux-net", fvp_ip, host_tap_ip)
-
-    args = default_optee_build_args("boot-img")
-    print("[!] Building boot image...")
-    make(BUILD_SCRIPT, args)
-
-def prepare_kvmtool(lkvm="lkvm"):
-    print("[!] Building kvmtool...")
-    args = [
-        "CROSS_COMPILE=%s" % KVMTOOL_CROSS_COMPILE,
-        "ARCH=arm64",
-        "LIBFDT_DIR=%s/libfdt" % DTC,
-        lkvm,
-    ]
-    make(KVMTOOL, args)
-    run(["cp", "%s/%s" % (KVMTOOL, lkvm), OUT], cwd=ROOT)
-
-def prepare_kvm_unit_tests():
-    print("[!] Building kvm-unit-tests...")
-    run(["./scripts/build-kvm-unit-tests.sh"], cwd=ROOT)
-    run(["cp", "-R", "arm", "%s/%s" % (OUT, "kvm-unit-tests")], cwd=KVM_UNIT_TESTS)
-
-def prepare_acs(start, end, excluded):
-    print("[!] Building ACS...")
-    if start == "" and end == "":
-        if excluded == "":
-            run(["./scripts/build-acs.sh"], cwd=ROOT)
-        else:
-            excluded_tests = make_single_line(excluded)
-            run(["./scripts/build-acs.sh", excluded_tests], cwd=ROOT)
-    else:
-        if excluded == "":
-            run(["./scripts/build-acs.sh", start, end], cwd=ROOT)
-        else:
-            excluded_tests = make_single_line(excluded)
-            run(["./scripts/build-acs.sh", excluded_tests, start, end], cwd=ROOT)
-
-def prepare_tap_network(host_ip, host_tap_ip, fvp_ip, route_ip, gateway, ifname):
-    print("[!] Configuring a tap network for fvp...")
-    run(["./scripts/configure_tap.sh", host_ip, host_tap_ip, fvp_ip, route_ip, gateway, ifname], cwd=ROOT)
-
-def prepare_trace():
-    return ["--plugin", "%s" % TRACE_LIB,
-           "-C", "TRACE.TarmacTrace.trace_events=1",
-           "-C", "TRACE.TarmacTrace.trace_instructions=1",
-           "-C", "TRACE.TarmacTrace.start-instruction-count=100000000",
-           "-C", "TRACE.TarmacTrace.trace_core_registers=1",
-           "-C", "TRACE.TarmacTrace.trace_vfp=1",
-           "-C", "TRACE.TarmacTrace.trace_mmu=0",
-           "-C", "TRACE.TarmacTrace.trace_loads_stores=1",
-           "-C", "TRACE.TarmacTrace.trace_cache=0",
-           "-C", "TRACE.TarmacTrace.updated-registers=1",
-           "-C", "TRACE.TarmacTrace.trace-file=%s/trace.log" % OUT]
-
-# Use `hlt 5` instruction in the target system to designate the
-# starting/ending points of the instruction tracing
-def prepare_trace_toggle():
-    if not os.path.isfile(TOGGLE_LIB):
-        pair = TOGGLE_LIB.split(PLUGIN_PATH)
-        toggle_name = pair[1]
-        print ("File not found: "+toggle_name)
-        print ("Please put "+toggle_name+" in "+PLUGIN_PATH)
-        print ("The library can be found by installing FastModelsPortfolio_11.25 which requires license agreement")
-        sys.exit(1)
-    return ["--plugin", "%s" % TRACE_LIB,
-           # The below configuration is for the performance evaluation.
-           # It turns off all default trace options except the instruction trace.
-           "-C", "TRACE.TarmacTrace.trace_atomic=0",
-           "-C", "TRACE.TarmacTrace.trace_bte=0",
-           "-C", "TRACE.TarmacTrace.trace_cache=0",
-           "-C", "TRACE.TarmacTrace.trace_core_registers=0",
-           "-C", "TRACE.TarmacTrace.trace_cp15=0",
-           "-C", "TRACE.TarmacTrace.trace_dap=0",
-           "-C", "TRACE.TarmacTrace.trace_ete=0",
-           "-C", "TRACE.TarmacTrace.trace_events=0",
-           "-C", "TRACE.TarmacTrace.trace_exception_reasons=0",
-           "-C", "TRACE.TarmacTrace.trace_gicv3=0",
-           "-C", "TRACE.TarmacTrace.trace_gpt=0",
-           "-C", "TRACE.TarmacTrace.trace_hacdbs=0",
-           "-C", "TRACE.TarmacTrace.trace_hdbss=0",
-           "-C", "TRACE.TarmacTrace.trace_loads_stores=0",
-           "-C", "TRACE.TarmacTrace.trace_mmu=0",
-           "-C", "TRACE.TarmacTrace.trace_spe=0",
-           "-C", "TRACE.TarmacTrace.trace_tag_loads_stores=0",
-           "-C", "TRACE.TarmacTrace.trace_vfp=0",
-           "-C", "TRACE.TarmacTrace.unbuffered=1",
-           "-C", "TRACE.TarmacTrace.trace-file=%s/trace.log" % OUT,
-           "--plugin", "%s" % TOGGLE_LIB,
-           "-C", "TRACE.ToggleMTIPlugin.disable_mti_from_start=1",
-           "-C", "TRACE.ToggleMTIPlugin.use_hlt=1",
-           "-C", "TRACE.ToggleMTIPlugin.hlt_imm16=5",
-           "-C", "cluster0.cpu0.enable_trace_special_hlt_imm16=1",
-           "-C", "cluster0.cpu0.trace_special_hlt_imm16=5"]
-
-def prepare_arguments(debug, trace, trace_toggle, no_telnet, hes):
-    args = []
-    if debug:
-        print("[!] Enabling debug...")
-        args += ["--cadi-server"]
-    if trace_toggle:
-        print("[!] Enabling trace with toggle...")
-        args += prepare_trace_toggle()
-    elif trace:
-        print("[!] Enabling trace...")
-        args += prepare_trace()
-    if no_telnet:
-        print("[!] Disabling telnet...")
-        args += ["-C", "bp.terminal_0.start_telnet=0",
-                "-C", "bp.terminal_1.start_telnet=0",
-                "-C", "bp.terminal_2.start_telnet=0",
-                "-C", "bp.terminal_3.start_telnet=0"]
-    elif hes:
-        print("[!] Using HES, disabling telnet 2...")
-        args += ["-C", "bp.terminal_2.start_telnet=0"]
-
-    return args
-
-def run_islet_hes():
-    print("[!] Running islet-hes...")
-    kill_pid_file(HES_PID)
-    run(["cargo", "run", "--", "-d"], cwd=HES_APP)
-
-def run_fvp_tf_a_tests(debug, trace, trace_toggle, no_telnet, hes):
-    print("[!] Running fvp for tf-a-tests...")
-    args = ["./FVP_Base_RevC-2xAEMvA",
+    def run_tf_a_tests(self):
+        print("[!] Running FVP for tf-a-tests...")
+        run_args = [
+            FVP_BIN,  # FVP_BIN from config_fvp
             "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
-            "-f", FVP_CONFIG,
-            "-Q", "1000"]
-    args += prepare_arguments(debug, trace, trace_toggle, no_telnet, hes)
-    run(args, cwd=FVP_DIR)
+            "-f", FVP_CONFIG,  # FVP_CONFIG from config_fvp
+            "-Q", "1000",
+        ]
+        run_args += self.prepare_run_arguments()
+        self.run(run_args, cwd=FVP_DIR)  # FVP_DIR from config_fvp
 
-def run_fvp_linux(debug, trace, trace_toggle, no_telnet, hes):
-    print("[!] Running fvp for linux...")
-    args = ["./FVP_Base_RevC-2xAEMvA",
+    def run_nw_linux(self):
+        args = self.args
+        print("[!] Running FVP for linux...")
+        fvp_args = [
+            FVP_BIN,
             "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
             "-C", "bp.virtioblockdevice.image_path=%s/boot.img" % OUT,
             "-C", "bp.virtiop9device.root_path=%s" % SHARED_PATH,
             "-f", FVP_CONFIG,
-            "-Q", "1000"]
-    args += prepare_arguments(debug, trace, trace_toggle, no_telnet, hes)
-    run(args, cwd=FVP_DIR)
+            "-Q", "1000",
+        ]
+        fvp_args += self.prepare_run_arguments()
+        self.run(fvp_args, cwd=FVP_DIR)
 
-def run_fvp_linux_net(debug, trace, trace_toggle, no_telnet, hes, host_ip, host_tap_ip, fvp_ip, fvp_tap_ip, realm_ip, route_ip, gateway, ifname):
-    user_name = os.environ['USER']
-    prepare_tap_network(host_ip, host_tap_ip, fvp_ip, route_ip, gateway, ifname)
-    print("[!] Running fvp for linux with the tap network..", )
-    args = ["./FVP_Base_RevC-2xAEMvA",
+    def run_nw_linux_net(self):
+        args = self.args
+        user_name = os.environ['USER']
+        self.prepare_tap_network()
+        print(f"[!] Running FVP for linux with the tap network for user {user_name}...")
+        fvp_args = [
+            FVP_BIN,
             "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
             "-C", "bp.virtioblockdevice.image_path=%s/boot.img" % OUT,
@@ -420,233 +241,65 @@ def run_fvp_linux_net(debug, trace, trace_toggle, no_telnet, hes, host_ip, host_
             "-C", "bp.virtio_net.hostbridge.interfaceName=ARM%s" % user_name,
             "-C", "bp.virtio_net.enabled=1",
             "-f", FVP_CONFIG,
-            "-Q", "1000"]
-    args += prepare_arguments(debug, trace, trace_toggle, no_telnet, hes)
-    run(args, cwd=FVP_DIR)
+            "-Q", "1000",
+        ]
+        fvp_args += self.prepare_run_arguments()
+        self.run(fvp_args, cwd=FVP_DIR)
 
-def run_fvp_acs(debug, trace, trace_toggle, no_telnet):
-    print("[!] Running fvp for acs...")
+    def run_acs(self):
+        print("[!] Running FVP for ACS...")
+        run_args = [
+            ACS_RUN,  # ACS_RUN from config_fvp
+            "--model", FVP_BIN,  # FVP_BIN from config_fvp
+            "--bl1", "%s/bl1.bin" % OUT,
+            "--fip", "%s/fip.bin" % OUT,
+            "--acs_build_dir", ACS_BUILD,
+        ]  # ACS_BUILD from config_fvp
+        if self.args.debug:
+            print("[!] Enabling FVP ACS debug...")
+            run_args += ["--debug"]
+        if self.args.trace_toggle:
+            print("[!] Enabling FVP ACS trace with toggle...")
+            run_args += ["--trace-toggle"]
+        elif self.args.trace:
+            print("[!] Enabling FVP ACS trace...")
+            run_args += ["--trace"]
+        if self.args.no_telnet:
+            print("[!] Disabling FVP ACS telnet...")
+            run_args += ["--no_telnet"]
+        self.run(run_args, cwd=ROOT)
 
-    args = [ACS_RUN,
-            "--model", FVP_BIN,
-            "--bl1",  "%s/bl1.bin" % OUT,
-            "--fip",  "%s/fip.bin" % OUT,
-            "--acs_build_dir", ACS_BUILD]
-    if debug:
-        print("[!] Enabling debug...")
-        args += ["--debug"]
-    if trace_toggle:
-        print("[!] Enabling trace with toggle...")
-        args += ["--trace-toggle"]
-    elif trace:
-        print("[!] Enabling trace...")
-        args += ["--trace"]
-    if no_telnet:
-        print("[!] Disabling telnet...")
-        args += ["--no_telnet"]
-    run(args, cwd=ROOT)
+    def place_prebuilt_at_shared(self):
+        super().place_prebuilt_at_shared() # Call common part
+        # FVP specific prebuilt items
+        self.run([f"cp", f"{PREBUILT}/fvp-base-revc.dtb", OUT], cwd=ROOT)
+        self.run([f"cp", PREBUILT_GRUB, OUT], cwd=ROOT) # PREBUILT_GRUB from config_fvp
 
-def place_prebuilt_at_shared():
-    run(["cp", "%s/rootfs-realm.cpio.gz" % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
-    run(["cp", "%s/Image" % PREBUILT, OUT], cwd=ROOT)
-    run(["cp", "%s/fvp-base-revc.dtb" % PREBUILT, OUT], cwd=ROOT)
-    run(["cp", PREBUILT_GRUB, OUT], cwd=ROOT)
 
-def place_script_at_shared():
-    run(["cp", LAUNCH_REALM, SHARED_PATH], cwd=ROOT)
-    run(["cp", LAUNCH_REALM_DEBIAN, SHARED_PATH], cwd=ROOT)
-    run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
-    run(["cp", CONFIGURE_NET, SHARED_PATH], cwd=ROOT)
-    run(["cp", SET_REALM_IP, SHARED_PATH], cwd=ROOT)
+    def _clean_platform_tf_a(self):
+        self.run(["make", "distclean"], cwd=TF_A)
 
-def place_realm_at_shared(rmm, realm_ip, fvp_tap_ip, fvp_ip, no_kvm_unit_tests, no_prebuilt_ml):
-    os.makedirs(SHARED_PATH, exist_ok=True)
-    run(["cp", "%s/rootfs-realm.cpio.gz" % REALM_ROOTFS, SHARED_PATH], cwd=ROOT)
-    run(["mv", "%s/realm/linux.realm" % OUT, SHARED_PATH], cwd=ROOT)
-    run(["mv", "%s/lkvm" % OUT, SHARED_PATH], cwd=ROOT)
-    place_script_at_shared()
-    if no_kvm_unit_tests == False:
-        run(["cp", "-R", "%s/kvm-unit-tests" % OUT, SHARED_PATH], cwd=ROOT)
+    def _clean_nw_linux(self):
+        # For FVP, nw-linux cleaning uses optee_build_args
+        make_args_base = self.default_optee_build_args()
+        current_make_args = list(make_args_base) # Make a copy
+        current_make_args.append("linux-clean")
+        current_make_args.append("boot-img-clean")
+        self.make(BUILD_SCRIPT, current_make_args)
 
-    if realm_ip != None and fvp_ip != None and fvp_tap_ip != None:
-        # set IP address accordingly
-        run(["sed", "-i", "-e", "s/FVP_IP/%s/g" % fvp_ip, "%s/configure-net.sh" % SHARED_PATH], cwd=ROOT)
-        run(["sed", "-i", "-e", "s/FVP_TAP_IP/%s/g" % fvp_tap_ip, "%s/configure-net.sh" % SHARED_PATH], cwd=ROOT)
-        run(["sed", "-i", "-e", "s/FVP_TAP_IP/%s/g" % fvp_tap_ip, "%s/set-realm-ip.sh" % SHARED_PATH], cwd=ROOT)
-        run(["sed", "-i", "-e", "s/REALM_IP/%s/g" % realm_ip, "%s/set-realm-ip.sh" % SHARED_PATH], cwd=ROOT)
-        run(["sed", "-i", "-e", "s/FVP_TAP_IP/%s/g" % fvp_tap_ip, "%s/launch-realm-debian.sh" % SHARED_PATH], cwd=ROOT)
+    def _clean_tf_rmm(self):
+        self.run(["rm", "-rf", "build"], cwd=TF_RMM)
 
-    if no_prebuilt_ml == False:
-        # prebuilt examples: confidential-ml
-        os.makedirs(SHARED_EXAMPLES_PATH, exist_ok=True)
-        run(["cp", "-R", "%s/confidential-ml" % EXAMPLES, SHARED_EXAMPLES_PATH], cwd=ROOT)
-        run(["cp", "%s/confidential-ml/device/device.exe" % PREBUILT_EXAMPLES, "%s/confidential-ml/device/device.exe" % SHARED_EXAMPLES_PATH], cwd=ROOT)
-        run(["cp", "-R", "%s/lib" % PREBUILT_EXAMPLES, SHARED_EXAMPLES_PATH], cwd=ROOT)
-        run(["tar", "-zxvf", "%s/lib/libtensorflowlite.tar.gz" % SHARED_EXAMPLES_PATH, "-C", "%s/lib/" % SHARED_EXAMPLES_PATH], cwd=ROOT)
 
-def clean_repo(target):
-    clean_list = ["all", "tf-a", "tf-a-tests", "realm-linux", "kvmtool", "nw-linux", "acs", "tf-rmm", "islet"]
-    args = default_optee_build_args()
-    if not target in clean_list:
-        print("Please select one of the clean list:")
-        print("  " + "\n  ".join(clean_list))
-        sys.exit(1)
-
-    if target == "all" or target == "tf-a":
-        run(["make", "distclean"], cwd=TF_A)
-    if target == "all" or target == "tf-a-tests":
-        run(["make", "distclean"], cwd=TF_A_TESTS)
-    if target == "all" or target == "realm-linux":
-        run(["make", "clean"], cwd=REALM_LINUX)
-    if target == "all" or target == "kvmtool":
-        run(["make", "clean"], cwd=KVMTOOL)
-
-    if target == "all" or target == "nw-linux":
-        args.append("linux-clean")
-        args.append("boot-img-clean")
-        make(BUILD_SCRIPT, args)
-
-    if target == "all" or target == "acs":
-        run(["rm", "-rf", "build"], cwd=ACS)
-    if target == "all" or target == "tf-rmm":
-        run(["rm", "-rf", "build"], cwd=TF_RMM)
-    if target == "all" or target == "islet":
-        run(["rm", "-rf", "out/aarch64-unknown-none-softfloat"], cwd=ROOT)
-
-def get_all_realms():
-    realms = []
-    for dirp in glob.glob(os.path.join(REALM, "*/")):
-        realms.append(os.path.basename(dirp.rstrip("/")))
-
-    return sorted(realms)
-
-def validate_args(args):
-    nw_list = ["linux", "linux-net", "tf-a-tests", "acs"]
-    if not args.use_prebuilt and not args.normal_world in nw_list:
-        print("Please select one of the normal components:")
-        print("  " + "\n  ".join(nw_list))
-        sys.exit(1)
-
-    rmm_list = ["islet", "trp", "tf-rmm"]
-    if not args.rmm in rmm_list:
-        print("Please select one of the rmm components:")
-        print("  " + "\n  ".join(rmm_list))
-        sys.exit(1)
-
-    if args.realm is not None:
-        realms = get_all_realms()
-        if not args.realm in realms:
-            print("Please select one of the realms:")
-            print("  " + "\n  ".join(realms))
-            sys.exit(1)
+    def add_platform_arguments(self, parser):
+        parser.add_argument("--trace", "-t", help="Using FVP trace component", action="store_true")
+        parser.add_argument("--trace-toggle", "-tt", help="Using FVP trace component with toggle", action="store_true")
+        parser.add_argument("--no-telnet", help="Do not use FVP telnet", action="store_true")
+        parser.add_argument("--fvp-ip", "-fip", help="the ip address that is going to be assigned to the platform host (e.g. fvp, qemu)", default="192.168.10.5", dest="platform_ip") # Renamed conceptually
+        parser.add_argument("--fvp-tap-ip", "-ftip", help="the ip address for tap device in platform", default="192.168.20.1", dest="platform_tap_ip") # Renamed conceptually
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="FVP launcher for CCA")
-    parser.add_argument("--normal-world", "-nw", help="A normal world component")
-    parser.add_argument("--debug", "-d", help="Using debug component", action="store_true")
-    parser.add_argument("--trace", "-t", help="Using trace component", action="store_true")
-    parser.add_argument("--trace-toggle", "-tt", help="Using trace component with toggle", action="store_true")
-    parser.add_argument("--run-only", "-ro",
-                        help="Running fvp without building", action="store_true")
-    parser.add_argument("--build-only", "-bo",
-                        help="Building components without running", action="store_true")
-    parser.add_argument("--clean", "-c", help="Clean the repo (pass `target name` or `all`)", default="")
-    parser.add_argument("--realm-launch", help="Execute realm launch on boot", action="store_true")
-    parser.add_argument("--realm", "-rm", help="A sample realm")
-    parser.add_argument("--rmm", "-rmm", help="A realm management monitor (islet, trp, tf-rmm)", default="islet")
-    parser.add_argument("--use-prebuilt", help="Use prebuilt binary (realm-linux, nw-linux, lkvm, etc)", action="store_true")
-    parser.add_argument("--no-prebuilt-ml", help="Not using the prebuilt confidential-ml example", action="store_true")
-    parser.add_argument("--no-kvm-unit-tests", help="Do not build kvm unit tests", action="store_true")
-    parser.add_argument("--no-sdk", help="Do not build sdk", action="store_true")
-    parser.add_argument("--no-telnet", help="Do not use telnet", action="store_true")
-    parser.add_argument("--hes", help="Run with hes", action="store_true")
-
-    # for the network capability of FVP linux
-    parser.add_argument("--host-ip", "-hip", help="the ip address of host machine", default="192.168.10.15")
-    parser.add_argument("--host-tap-ip", "-htip", help="the ip address of the tap device in host", default="192.168.10.1")
-    parser.add_argument("--fvp-ip", "-fip", help="the ip address that is going to be assigned to the fvp host", default="192.168.10.5")
-    parser.add_argument("--fvp-tap-ip", "-ftip", help="the ip address for tap device in fvp", default="192.168.20.1")
-    parser.add_argument("--realm-ip", "-reip", help="the ip address for realm", default="192.168.20.10")
-    parser.add_argument("--route-ip", "-roip", help="the route ip for fvp", default="192.168.20.0")
-    parser.add_argument("--gateway", "-gw", help="the gateway ip for host machine", default="192.168.10.1")
-    parser.add_argument("--ifname", "-if", help="the main interface name of host machine", default="eth0")
-    parser.add_argument("--rmm-log-level", help="Determine RMM's log-level. Choose among (off, error, warn, info, debug, trace)", default="trace")
-    parser.add_argument("--stat", help="Enable stat to check memory used size per command", action="store_true")
-    parser.add_argument("--selected-tests", "-st", help="Select the first and end test name separated by ';'", default="")
-    parser.add_argument("--excluded-tests", "-et", help="File name which contains the list of ACS tests to be excluded", default="")
-
-    args = parser.parse_args()
-
-    if args.clean != "":
-        clean_repo(args.clean)
-        sys.exit(0)
-
-    validate_args(args)
-
-    if not args.run_only:
-        features = get_rmm_features(args)
-
-        if args.hes:
-            prepare_islet_hes()
-
-        prepare_rmm(args.rmm, features)
-
-        if args.realm is not None:
-            prepare_realm(args.realm)
-
-        if args.use_prebuilt:
-            prepare_bootloaders(args.rmm, PREBUILT_EDK2, args.hes)
-            place_script_at_shared()
-            place_prebuilt_at_shared()
-        elif args.normal_world == "tf-a-tests":
-            prepare_tf_a_tests(args.realm)
-            prepare_bootloaders(args.rmm, TFTF_BIN, args.hes)
-        elif args.normal_world == "acs":
-            # When a target has changed either with `--selected-tests` or
-            # `--excluded-tests`, it is recommended for users to execute
-            # `./scripts/fvp-cca --clean acs` first, so that the current
-            # target is not confused by the previous target in the build.
-            if args.selected_tests == "":
-                prepare_acs("", "", args.excluded_tests)
-                prepare_bootloaders(args.rmm, ACS_HOST, args.hes)
-            else:
-                selected_tests = args.selected_tests
-                tests = selected_tests.split(";")
-                test_num = len(tests)
-                if test_num == 1:
-                    prepare_acs(tests[0], tests[0], args.excluded_tests)
-                elif test_num == 2:
-                    prepare_acs(tests[0], tests[1], args.excluded_tests)
-                else:
-                    print("[!] Pass one or two test names separated by ';'")
-                    sys.exit(1)
-                prepare_bootloaders(args.rmm, ACS_HOST, args.hes)
-        else:
-            prepare_kvmtool()
-            if args.no_kvm_unit_tests is False:
-                prepare_kvm_unit_tests()
-            prepare_grub_config(args.rmm)
-            prepare_nw_linux(args.fvp_ip, args.host_tap_ip, args.normal_world, args.realm_launch)
-            prepare_bootloaders(args.rmm, PREBUILT_EDK2, args.hes)
-
-            if args.realm is not None:
-                place_realm_at_shared(args.rmm, args.realm_ip, args.fvp_tap_ip, args.fvp_ip, args.no_kvm_unit_tests, args.no_prebuilt_ml)
-                if args.no_sdk is False:
-                    prepare_sdk()
-
-    if not args.build_only and args.hes:
-        signal.signal(signal.SIGTERM, custom_signal_handler)
-        signal.signal(signal.SIGINT, custom_signal_handler)
-        run_islet_hes()
-
-    if not args.build_only and args.normal_world == "tf-a-tests":
-        run_fvp_tf_a_tests(args.debug, args.trace, args.trace_toggle, args.no_telnet, args.hes)
-
-    if not args.build_only and args.normal_world == "linux":
-        run_fvp_linux(args.debug, args.trace, args.trace_toggle, args.no_telnet, args.hes)
-
-    if not args.build_only and args.normal_world == "linux-net":
-        run_fvp_linux_net(args.debug, args.trace, args.trace_toggle, args.no_telnet, args.hes, args.host_ip, args.host_tap_ip, args.fvp_ip, args.fvp_tap_ip, args.realm_ip, args.route_ip, args.gateway, args.ifname)
-
-    if not args.build_only and args.normal_world == "acs":
-        run_fvp_acs(args.debug, args.trace, args.trace_toggle, args.no_telnet)
+    # Import multiprocessing here as it's used in default_optee_build_args
+    # which might be called during CCAPlatform.main() when creating an instance for the parser.
+    import multiprocessing 
+    CCAPlatform.main(FVPPlatform)

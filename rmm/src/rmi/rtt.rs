@@ -642,7 +642,7 @@ mod test {
     // Source: https://github.com/ARM-software/cca-rmm-acs
     // Test Case: cmd_rtt_set_ripas
     // Covered RMIs: RTT_SET_RIPAS
-    // #[test] TODO: enable this test after fixing it
+    #[test]
     fn rmi_rtt_set_ripas_positive() {
         use crate::rmi::rec::run::Run;
         use crate::rsi::PSCI_CPU_ON;

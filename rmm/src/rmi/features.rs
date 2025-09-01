@@ -44,10 +44,17 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         }
 
         let mut feat_reg0 = FeatureReg0::new(0);
-        #[cfg(not(any(miri, test)))]
         feat_reg0
             .set_masked_value(FeatureReg0::S2SZ, S2SZ_VALUE)
             .set_masked_value(FeatureReg0::LPA2, LPA2_VALUE)
+            .set_masked_value(FeatureReg0::PMU_EN, PMU_EN_VALUE)
+            .set_masked_value(FeatureReg0::PMU_NUM_CTRS, PMU_NUM_CTRS_VALUE)
+            .set_masked_value(FeatureReg0::HASH_SHA_256, HASH_SHA_256_VALUE)
+            .set_masked_value(FeatureReg0::HASH_SHA_512, HASH_SHA_512_VALUE)
+            .set_masked_value(FeatureReg0::MAX_RECS_ORDER, rec::max_recs_order() as u64);
+
+        #[cfg(not(any(miri, test, fuzzing)))]
+        feat_reg0
             .set_masked_value(
                 FeatureReg0::SVE_EN,
                 if simd::sve_en() {
@@ -57,12 +64,12 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
                 },
             )
             .set_masked_value(FeatureReg0::SVE_VL, simd::max_sve_vl())
-            .set_masked_value(FeatureReg0::PMU_EN, PMU_EN_VALUE)
-            .set_masked_value(FeatureReg0::PMU_NUM_CTRS, PMU_NUM_CTRS_VALUE)
-            .set_masked_value(FeatureReg0::HASH_SHA_256, HASH_SHA_256_VALUE)
-            .set_masked_value(FeatureReg0::HASH_SHA_512, HASH_SHA_512_VALUE)
-            .set_masked_value(FeatureReg0::GICV3_NUM_LRS, gic::nr_lrs() as u64)
-            .set_masked_value(FeatureReg0::MAX_RECS_ORDER, rec::max_recs_order() as u64);
+            .set_masked_value(FeatureReg0::GICV3_NUM_LRS, gic::nr_lrs() as u64);
+        #[cfg(any(miri, test, fuzzing))]
+        feat_reg0
+            .set_masked_value(FeatureReg0::SVE_EN, NOT_SUPPORTED)
+            .set_masked_value(FeatureReg0::SVE_VL, 0)
+            .set_masked_value(FeatureReg0::GICV3_NUM_LRS, 0);
 
         ret[1] = feat_reg0.get() as usize;
         debug!("rmi::FEATURES ret:{:X}", feat_reg0.get());
@@ -92,7 +99,7 @@ mod test {
         let ret = rmi::<FEATURES>(&[0]);
 
         assert_eq!(ret[0], SUCCESS);
-        assert_eq!(extract_bits(ret[1], 30, 63), 0);
+        assert_eq!(extract_bits(ret[1], 42, 63), 0);
 
         let ret = rmi::<FEATURES>(&[1]);
         assert_eq!(ret[0], SUCCESS);

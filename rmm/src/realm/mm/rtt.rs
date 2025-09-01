@@ -83,12 +83,11 @@ pub fn create(rd: &Rd, rtt_addr: usize, ipa: usize, level: usize) -> Result<(), 
         }
         let pa: usize = parent_s2tte.addr_as_block(level - 1).into(); //XXX: check this again
         flags |= parent_s2tte.get_masked(S2TTE::MEMATTR | S2TTE::S2AP | S2TTE::SH);
-        if parent_s2tte.is_assigned_ram(level - 1) {
-            invalidate = Tlbi::LEAF(rd.id());
-        } else if !parent_s2tte.is_assigned_ns(level - 1) {
-            panic!("Unexpected s2tte value:{:X}", parent_s2tte.get());
-        }
         create_pgtbl_at(rtt_addr, flags, pa, map_size)?;
+
+        if parent_s2tte.is_assigned_ram(level - 1) || parent_s2tte.is_assigned_ns(level - 1) {
+            invalidate = Tlbi::LEAF(rd.id());
+        }
     }
 
     let parent_s2tte = rtt_addr as u64 | TABLE_TTE;

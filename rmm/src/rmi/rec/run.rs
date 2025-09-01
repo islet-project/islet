@@ -73,10 +73,12 @@ impl Run {
         self.entry.gicv3_hcr
     }
 
+    #[cfg(fuzzing)]
     pub fn set_entry_flags(&mut self, flags: u64) {
         self.entry.flags = flags;
     }
 
+    #[cfg(fuzzing)]
     pub fn set_entry_gpr(&mut self, idx: usize, val: u64) -> Result<(), Error> {
         if idx >= NR_GPRS {
             error!("out of index: {}", idx);
@@ -86,10 +88,12 @@ impl Run {
         Ok(())
     }
 
+    #[cfg(fuzzing)]
     pub fn set_entry_gic_hcr(&mut self, val: u64) {
         self.entry.gicv3_hcr = val;
     }
 
+    #[cfg(fuzzing)]
     pub fn set_entry_gic_lrs(&mut self, src: &[u64], len: usize) {
         self.entry.gicv3_lrs.copy_from_slice(&src[..len])
     }

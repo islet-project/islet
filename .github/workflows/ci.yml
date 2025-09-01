@@ -227,8 +227,8 @@ jobs:
     - name: Run unsafe analyzer
       run: ./scripts/run-unsafe-analysis.sh
 
-#    - name: Run MIRI test
-#      run: ./scripts/tests/miri.sh
+    - name: Run MIRI test
+      run: ./scripts/tests/miri.sh
 
     - uses: actions/upload-artifact@v4
       with:

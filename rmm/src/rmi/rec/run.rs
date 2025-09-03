@@ -42,12 +42,10 @@ struct Exit {
     0x410 cntv_ctl: u64,
     0x418 cntv_cval: u64,
     0x500 ripas_base: u64,
-    0x508 ripas_size: u64,
+    0x508 ripas_top: u64,
     0x510 ripas_value: u8,
     0x600 imm: u16,
-    0x700 pmu_ovf: u64,
-    0x708 pmu_intr_en: u64,
-    0x710 pmu_cntr_en: u64,
+    0x700 pmu_ovf: u8,
     0x800 => @END,
 }
 );
@@ -131,9 +129,9 @@ impl Run {
         Ok(())
     }
 
-    pub fn set_ripas(&mut self, base: u64, size: u64, state: u8) {
+    pub fn set_ripas(&mut self, base: u64, top: u64, state: u8) {
         self.exit.ripas_base = base;
-        self.exit.ripas_size = size;
+        self.exit.ripas_top = top;
         self.exit.ripas_value = state;
     }
 
@@ -182,10 +180,7 @@ impl Run {
     }
 
     pub fn ripas(&self) -> (u64, u64) {
-        (
-            self.exit.ripas_base,
-            self.exit.ripas_base + self.exit.ripas_size,
-        )
+        (self.exit.ripas_base, self.exit.ripas_top)
     }
 }
 

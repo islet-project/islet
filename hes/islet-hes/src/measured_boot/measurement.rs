@@ -18,7 +18,7 @@ pub const SIGNER_ID_MAX_SIZE: usize = MEASUREMENT_VALUE_MAX_SIZE;
 /// Set based on RSS imlementation.
 pub const VERSION_MAX_SIZE: usize = 14;
 /// Set based on RSS imlementation.
-pub const SW_TYPE_MAX_SIZE: usize = 20;
+pub const SW_TYPE_MAX_SIZE: usize = 32;
 
 /// Error message for MessageError::InvalidData(), when converted signer_id has wrong size.
 const SIGNER_ID_SIZE_ERROR_MSG: &'static str = "SignerIdSize";

@@ -35,7 +35,7 @@ impl HWData for DummyHW {
                     .cloned()
                     .collect(),
                     measurement_type: 0,
-                    sw_type: b"BL1".iter().cloned().collect(),
+                    sw_type: b"Dummy BL1".iter().cloned().collect(),
                     sw_version: b"0.1.0".iter().cloned().collect(),
                 },
             },
@@ -58,7 +58,7 @@ impl HWData for DummyHW {
                     .cloned()
                     .collect(),
                     measurement_type: 2,
-                    sw_type: b"BL2".iter().cloned().collect(),
+                    sw_type: b"Dummy BL2".iter().cloned().collect(),
                     sw_version: b"1.9.0+0".iter().cloned().collect(),
                 },
             },

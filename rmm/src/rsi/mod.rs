@@ -102,7 +102,9 @@ pub fn do_host_call(
         )
         .ok_or(Error::RmiErrorInput)?;
 
-    let mut host_call = assume_safe::<HostCall>(pa.into())?;
+    // page mapping result 'pa' is PAGE_SIZE aligned. Get hsot_call_ptr.
+    let host_call_ptr: usize = pa.as_usize() + ipa % crate::config::PAGE_SIZE;
+    let mut host_call = assume_safe::<HostCall>(host_call_ptr)?;
     let imm = host_call.imm();
 
     if rec.host_call_pending() {

@@ -342,9 +342,9 @@ impl CommsChannel {
             Some(data) => data,
             None => return Ok(None),
         };
+        println!("Received {} bytes", data.len());
 
         let psa_request = PSARequest::de(&data)?;
-
         Ok(self.convert_request(psa_request.clone()).map(|r| Some(r))?)
     }
 
@@ -429,12 +429,14 @@ impl CommsChannel {
         response: Option<Response>,
     ) -> Result<(), CommsError> {
         let psa_response = self.convert_response(ret_val, response)?;
+        let data = psa_response.ser()?;
 
+        println!("Sending {} bytes", data.len());
         self.channel
             .stream
             .as_ref()
             .unwrap()
-            .write_all(&psa_response.ser()?)?;
+            .write_all(&data)?;
 
         Ok(())
     }

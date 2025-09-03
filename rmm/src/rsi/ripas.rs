@@ -23,11 +23,13 @@ pub fn get_ripas_state(
 
     let base = get_reg(rec, 1)?;
     let top = get_reg(rec, 2)?;
+    // To prevent underflow when top is 0,
+    // check top <= base prior to addr_in_par() check
     if !is_granule_aligned(base)
         || !is_granule_aligned(top)
         || !rd.addr_in_par(base)
-        || !rd.addr_in_par(top - 1)
         || top <= base
+        || !rd.addr_in_par(top - 1)
     {
         if set_reg(rec, 0, rsi::ERROR_INPUT).is_err() {
             warn!("Unable to set register 0. rec: {:?}", rec);

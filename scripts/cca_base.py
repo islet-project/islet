@@ -295,7 +295,7 @@ class CCAPlatform(ABC):
     def run_islet_hes(self):
         print("[!] Running islet-hes...")
         self.kill_pid_file(HES_PID) # Use HES_PID from base or overridden by subclass
-        self.run(["cargo", "run", "--", "-d"], cwd=HES_APP)
+        self.run(["cargo", "run", "--", "-d", "-a", self.hes_address], cwd=HES_APP)
 
     def place_prebuilt_at_shared(self):
         # Ensure paths like REALM_ROOTFS, PREBUILT are correctly resolved
@@ -543,6 +543,12 @@ class CCAPlatform(ABC):
     @abstractmethod
     def platform_name(self):
         """Return the platform name (e.g., 'fvp', 'qemu')."""
+        pass
+
+    @property
+    @abstractmethod
+    def hes_address(self):
+        """The TCP address the HES implementation should connect to."""
         pass
 
     @staticmethod

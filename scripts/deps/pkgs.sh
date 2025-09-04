@@ -19,7 +19,8 @@ sudo apt-get install -y -qq --no-install-recommends --fix-missing \
 	git wget make vim bc pkg-config \
 	bridge-utils \
 	inotify-tools \
-	pylint
+	pylint \
+	swtpm
 
 python3 -m venv venv
 source venv/bin/activate

@@ -27,6 +27,10 @@ class QEMUPlatform(CCAPlatform):
     def platform_name(self):
         return "qemu"
 
+    @property
+    def hes_address(self):
+        return "127.0.0.1:54321"
+
     def default_optee_build_args(self, target=""):
         args = [
             "-j%d" % multiprocessing.cpu_count(),
@@ -40,7 +44,11 @@ class QEMUPlatform(CCAPlatform):
         args.append("EDK2_PATH=" + EDK2)
         args.append("EDK2_BUILD=RELEASE")
         args.append("QEMU_PATH=" + QEMU)
-        args.append("TF_A_PATH=" + TF_A)
+        if self.args.hes:
+            args.append("TF_A_PATH=" + TF_A_RSS)
+            args.append("TF_A_RSE_SERIAL_HES=y")
+        else:
+            args.append("TF_A_PATH=" + TF_A)
         args.append("TF_A_DEBUG=0")  # QEMU build typically uses release TF-A
         args.append("BL32_DEPS=")  # No secure OS
         args.append("BL33_DEPS=")  # No edk2 build here, using prebuilt
@@ -55,22 +63,6 @@ class QEMUPlatform(CCAPlatform):
         # The 'arm-tf' target in optee-build builds TF-A and FIP.
         make_args = self.default_optee_build_args("arm-tf")
 
-        if hes:
-            # Original QEMU script had a warning and exit for HES bootloader build.
-            # This implies HES bootloader build for QEMU is not defined/implemented.
-            print("[WARN] QEMU bootloader build arguments for HES are not defined.")
-            print("[!] Please ensure TF-A with RSS is correctly configured for QEMU if HES is intended.")
-            # For now, we'll proceed as if non-HES, or one might sys.exit(1)
-            # To maintain behavior of original script if it was more specific:
-            # sys.exit(1)
-            # However, the original script just printed a warning and continued,
-            # then hit an issue because TF_A_RSS args were not defined.
-            # Let's assume for now non-HES path if hes=True for QEMU, or needs proper implementation.
-            # The original script had `sys.exit(1)` here.
-            print("[!] HES bootloader build for QEMU is not fully supported in this refactored version yet. Exiting.")
-            sys.exit(1)
-
-
         if rmm == "islet":
             make_args.append("RMM_BIN=%s/rmm.bin" % OUT)
 
@@ -80,7 +72,10 @@ class QEMUPlatform(CCAPlatform):
         self.make(BUILD_SCRIPT, make_args)
 
         # Output directory for QEMU TF-A build is typically build/qemu/release
-        outdir = os.path.join(TF_A, "build/qemu/release") # TF_A from config
+        if hes:
+            outdir = os.path.join(TF_A_RSS, "build/qemu/release") # TF_A_RSS from config
+        else:
+            outdir = os.path.join(TF_A, "build/qemu/release") # TF_A from config
         bl_list = ["bl1.bin", "fip.bin"]
 
         for bootloader in bl_list:
@@ -148,7 +143,7 @@ class QEMUPlatform(CCAPlatform):
         if self.args.rmm == "islet":
             run_args.append("EXTRA_CMDLINE=kvm-rme.save_host_context=1")
             run_args.append("QEMU_LPA2=n") # From original qemu-cca
-        
+
         # Add other QEMU specific arguments from prepare_run_arguments if any
         # For example, debug arguments for QEMU itself
         qemu_specific_run_args = self.prepare_run_arguments()

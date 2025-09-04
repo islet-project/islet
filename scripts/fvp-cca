@@ -30,6 +30,10 @@ class FVPPlatform(CCAPlatform):
     def platform_name(self):
         return "fvp"
 
+    @property
+    def hes_address(self):
+        return "127.0.0.1:5002"
+
     def default_optee_build_args(self, target=""):
         args = [
             "-j%d" % multiprocessing.cpu_count(), "-f",

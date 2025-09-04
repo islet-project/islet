@@ -71,31 +71,6 @@ impl Run {
         self.entry.gicv3_hcr
     }
 
-    #[cfg(fuzzing)]
-    pub fn set_entry_flags(&mut self, flags: u64) {
-        self.entry.flags = flags;
-    }
-
-    #[cfg(fuzzing)]
-    pub fn set_entry_gpr(&mut self, idx: usize, val: u64) -> Result<(), Error> {
-        if idx >= NR_GPRS {
-            error!("out of index: {}", idx);
-            return Err(Error::RmiErrorInput);
-        }
-        self.entry.gprs[idx] = val;
-        Ok(())
-    }
-
-    #[cfg(fuzzing)]
-    pub fn set_entry_gic_hcr(&mut self, val: u64) {
-        self.entry.gicv3_hcr = val;
-    }
-
-    #[cfg(fuzzing)]
-    pub fn set_entry_gic_lrs(&mut self, src: &[u64], len: usize) {
-        self.entry.gicv3_lrs.copy_from_slice(&src[..len])
-    }
-
     pub fn exit_gic_lrs_mut(&mut self) -> &mut [u64; 16] {
         &mut self.exit.gicv3_lrs
     }
@@ -181,6 +156,30 @@ impl Run {
 
     pub fn ripas(&self) -> (u64, u64) {
         (self.exit.ripas_base, self.exit.ripas_top)
+    }
+}
+
+#[cfg(fuzzing)]
+impl Run {
+    pub fn set_entry_flags(&mut self, flags: u64) {
+        self.entry.flags = flags;
+    }
+
+    pub fn set_entry_gpr(&mut self, idx: usize, val: u64) -> Result<(), Error> {
+        if idx >= NR_GPRS {
+            error!("out of index: {}", idx);
+            return Err(Error::RmiErrorInput);
+        }
+        self.entry.gprs[idx] = val;
+        Ok(())
+    }
+
+    pub fn set_entry_gic_hcr(&mut self, val: u64) {
+        self.entry.gicv3_hcr = val;
+    }
+
+    pub fn set_entry_gic_lrs(&mut self, src: &[u64], len: usize) {
+        self.entry.gicv3_lrs.copy_from_slice(&src[..len])
     }
 }
 

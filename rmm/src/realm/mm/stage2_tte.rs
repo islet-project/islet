@@ -24,6 +24,8 @@ pub const TABLE_TTE: u64 = bits_in_reg(S2TTE::DESC_TYPE, desc_type::L012_TABLE)
     | bits_in_reg(S2TTE::MEMATTR, memattr::NORMAL_FWB)
     | bits_in_reg(S2TTE::SH, shareable::INNER);
 
+pub const TTE_ATTR_MASK: u64 = S2TTE::MEMATTR | S2TTE::S2AP | S2TTE::SH | S2TTE::AF;
+
 pub mod hipas {
     pub const UNASSIGNED: u64 = 0b0;
     pub const ASSIGNED: u64 = 0b1;
@@ -54,6 +56,10 @@ pub fn level_mask(level: usize) -> Option<u64> {
         0 => Some(S2TTE::ADDR_BLK_L0),
         _ => None,
     }
+}
+
+fn is_block_level(level: usize) -> bool {
+    level >= RTT_MIN_BLOCK_LEVEL && level < RTT_PAGE_LEVEL
 }
 
 define_bits!(
@@ -96,16 +102,6 @@ impl S2TTE {
         }
 
         Ok((S2TTE::from(s2tte as usize), last_level))
-    }
-
-    pub fn is_valid(&self, level: usize, is_ns: bool) -> bool {
-        let ns = self.get_masked_value(S2TTE::NS);
-        let ns_valid = if is_ns { ns == 1 } else { ns == 0 };
-        ns_valid
-            && ((level == RTT_PAGE_LEVEL
-                && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L3_PAGE)
-                || (level == RTT_MIN_BLOCK_LEVEL
-                    && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L012_BLOCK))
     }
 
     pub fn is_host_ns_valid(&self, level: usize) -> bool {
@@ -168,16 +164,21 @@ impl S2TTE {
 
     pub fn is_assigned(&self) -> bool {
         self.get_masked_value(S2TTE::NS) == 0
+            && self.get_masked_value(S2TTE::HIPAS) == hipas::ASSIGNED
+    }
+
+    pub fn is_assigned_invalid(&self) -> bool {
+        self.get_masked_value(S2TTE::NS) == 0
             && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::LX_INVALID
             && self.get_masked_value(S2TTE::HIPAS) == hipas::ASSIGNED
     }
 
     pub fn is_assigned_empty(&self) -> bool {
-        self.is_assigned() && self.get_masked_value(S2TTE::RIPAS) == ripas::EMPTY
+        self.is_assigned_invalid() && self.get_masked_value(S2TTE::RIPAS) == ripas::EMPTY
     }
 
     pub fn is_assigned_destroyed(&self) -> bool {
-        self.is_assigned() && self.get_masked_value(S2TTE::RIPAS) == ripas::DESTROYED
+        self.is_assigned_invalid() && self.get_masked_value(S2TTE::RIPAS) == ripas::DESTROYED
     }
 
     pub fn is_assigned_ram(&self, level: usize) -> bool {
@@ -188,7 +189,7 @@ impl S2TTE {
         }
         let desc_type = self.get_masked_value(S2TTE::DESC_TYPE);
         if (level == RTT_PAGE_LEVEL && desc_type == desc_type::L3_PAGE)
-            || (level == RTT_MIN_BLOCK_LEVEL && desc_type == desc_type::L012_BLOCK)
+            || (is_block_level(level) && desc_type == desc_type::L012_BLOCK)
         {
             return true;
         }
@@ -203,7 +204,7 @@ impl S2TTE {
         }
         let desc_type = self.get_masked_value(S2TTE::DESC_TYPE);
         if (level == RTT_PAGE_LEVEL && desc_type == desc_type::L3_PAGE)
-            || (level == RTT_MIN_BLOCK_LEVEL && desc_type == desc_type::L012_BLOCK)
+            || (is_block_level(level) && desc_type == desc_type::L012_BLOCK)
         {
             return true;
         }
@@ -217,7 +218,9 @@ impl S2TTE {
     // level should be the value returned in page table walking
     // (== the last level that has been reached)
     pub fn is_table(&self, level: usize) -> bool {
-        (level < RTT_PAGE_LEVEL) && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L012_TABLE
+        (level < RTT_PAGE_LEVEL)
+            && self.get_masked_value(S2TTE::DESC_TYPE) == desc_type::L012_TABLE
+            && self.get_masked_value(S2TTE::NS | S2TTE::HIPAS | S2TTE::RIPAS) == 0x0
     }
 
     pub fn is_ripas(&self) -> bool {
@@ -262,8 +265,7 @@ impl S2TTE {
                 ripas = s2tte.get_masked_value(S2TTE::RIPAS);
                 ns = s2tte.get_masked_value(S2TTE::NS);
                 first = false;
-                if s2tte.is_assigned_ns(level) | s2tte.is_assigned_ram(level) | s2tte.is_assigned()
-                {
+                if s2tte.is_assigned_ns(level) | s2tte.is_assigned() {
                     // level is 2 or 3
                     if level != 2 && level != 3 {
                         return false;
@@ -290,7 +292,7 @@ impl S2TTE {
                 if attr != s2tte.get() & !level_mask(level).unwrap_or(0) {
                     return false;
                 }
-            } else if s2tte.is_assigned_ram(level) || s2tte.is_assigned() {
+            } else if s2tte.is_assigned() {
                 // addr is contiguous
                 pa += map_size;
                 if pa != s2tte.addr_as_block(level).into() {

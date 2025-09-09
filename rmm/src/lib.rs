@@ -8,6 +8,7 @@
 pub mod allocator;
 pub mod asm;
 pub mod config;
+pub(crate) mod cose;
 pub mod cpu;
 pub(crate) mod event;
 pub mod exception;

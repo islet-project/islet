@@ -4,10 +4,10 @@ use alloc::{
     string::{String, ToString},
     vec::Vec,
 };
-use ciborium::{ser, Value};
-use coset::{iana::EllipticCurve, AsCborValue, CoseKeyBuilder};
+use ciborium::Value;
 use tinyvec::ArrayVec;
 
+use crate::cose;
 use crate::measurement::{Measurement, MEASUREMENTS_SLOT_NR, MEASUREMENTS_SLOT_RIM};
 
 pub const CHALLENGE_LABEL: u64 = 10;
@@ -98,8 +98,7 @@ impl RealmClaims {
         personalization_val: &[u8],
         measurements: &[Measurement],
         measurement_hash_algo: String,
-        key_pub_x: &[u8],
-        key_pub_y: &[u8],
+        key_pub: &[u8],
         key_pub_hash_algo: String,
     ) -> RealmClaims {
         let challenge_claim: Claim<Challenge> = Claim {
@@ -143,23 +142,11 @@ impl RealmClaims {
             value: measurement_hash_algo,
         };
 
-        let public_key_cose = CoseKeyBuilder::new_ec2_pub_key(
-            EllipticCurve::P_384,
-            key_pub_x.to_vec(),
-            key_pub_y.to_vec(),
-        )
-        .build();
-
-        let public_key_value = public_key_cose
-            .to_cbor_value()
-            .expect("Conversion of COSE public_key to CBOR failed.");
-        let mut public_key_vec = Vec::new();
-        ser::into_writer(&public_key_value, &mut public_key_vec)
-            .expect("Serializing public_key CBOR failed.");
+        let key_pub_cose = cose::ec_public_key_sec1_to_cose(key_pub);
 
         let rak_pub: Claim<RAKPubKey> = Claim {
             label: PUBLIC_KEY_LABEL,
-            value: public_key_vec,
+            value: key_pub_cose,
         };
 
         let rak_pub_hash_algo: Claim<HashAlgo> = Claim {

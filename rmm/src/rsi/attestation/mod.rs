@@ -4,7 +4,6 @@ use alloc::{boxed::Box, string::String, vec, vec::Vec};
 use ciborium::{ser, Value};
 use coset::{CoseSign1Builder, HeaderBuilder, TaggedCborSerializable};
 use ecdsa::signature::Signer;
-use p384::elliptic_curve::sec1::ToEncodedPoint;
 use tinyvec::ArrayVec;
 
 use crate::{
@@ -114,21 +113,14 @@ impl Attestation {
         let secret_key =
             p384::SecretKey::from_slice(&self.rak_priv).expect("Failed to import private RAK.");
 
-        let pub_key_enc_pt = secret_key.public_key().to_encoded_point(false);
-        let pub_key_x = pub_key_enc_pt
-            .x()
-            .expect("public_key X coordinate missing.");
-        let pub_key_y = pub_key_enc_pt
-            .y()
-            .expect("public_key Y coordinate missing.");
+        let public_key = secret_key.public_key().to_sec1_bytes().to_vec();
 
         let claims = RealmClaims::init(
             challenge,
             personalization_value,
             measurements,
             hash_algo_id,
-            pub_key_x,
-            pub_key_y,
+            &public_key,
             // TODO: should this value be stored somewhere else?
             String::from("sha-256"),
         );

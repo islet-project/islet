@@ -5,13 +5,17 @@ mod macros;
 
 mod cptr_el2;
 mod id_aa64pfr1_el1;
+mod id_aa64zfr0_el1;
 mod smcr_el2;
+mod svcr;
 mod zcr_el1;
 mod zcr_el2;
 
 pub use cptr_el2::CPTR_EL2;
 pub use id_aa64pfr1_el1::ID_AA64PFR1_SME_EL1;
+pub use id_aa64zfr0_el1::ID_AA64ZFR0_EL1;
 pub use smcr_el2::SMCR_EL2;
+pub use svcr::SVCR;
 pub use zcr_el1::ZCR_EL1;
 pub use zcr_el2::ZCR_EL2;
 
@@ -151,3 +155,5 @@ define_iss_id!(ISS_ID_AA64MMFR0_EL1, 3, 0, 0, 7, 0);
 define_iss_id!(ISS_ID_AA64MMFR1_EL1, 3, 0, 0, 7, 1);
 
 define_iss_id!(ISS_ID_AA64MMFR2_EL1, 3, 0, 0, 7, 2);
+
+define_iss_id!(ISS_ID_AA64ZFR0_EL1, 3, 0, 0, 4, 4);

@@ -52,9 +52,18 @@ fn handle_sysreg_id(rec: &mut Rec<'_>, esr: u64) -> u64 {
         }
         ISS_ID_AA64PFR0_EL1 => {
             (ID_AA64PFR0_EL1::AMU.mask << ID_AA64PFR0_EL1::AMU.shift)
-                + (ID_AA64PFR0_EL1::SVE.mask << ID_AA64PFR0_EL1::SVE.shift)
+                + if !rec.context.simd.cfg.sve_en {
+                    ID_AA64PFR0_EL1::SVE.mask << ID_AA64PFR0_EL1::SVE.shift
+                } else {
+                    0
+                }
         }
-        ISS_ID_AA64PFR1_EL1 => ID_AA64PFR1_EL1::MTE.mask << ID_AA64PFR1_EL1::MTE.shift,
+        // Present FEAT_SVE only if Rec is set to use SVE.
+        ISS_ID_AA64ZFR0_EL1 => (!rec.context.simd.cfg.sve_en as u64).wrapping_neg(),
+        ISS_ID_AA64PFR1_EL1 => {
+            (ID_AA64PFR1_SME_EL1::MTE.mask << ID_AA64PFR1_SME_EL1::MTE.shift)
+                + (ID_AA64PFR1_SME_EL1::SME.mask << ID_AA64PFR1_SME_EL1::SME.shift)
+        }
         ISS_ID_AA64DFR0_EL1 => {
             (ID_AA64DFR0_EL1::BRBE.mask << ID_AA64DFR0_EL1::BRBE.shift)
                 + (ID_AA64DFR0_EL1::MTPMU.mask << ID_AA64DFR0_EL1::MTPMU.shift)
@@ -75,7 +84,7 @@ fn handle_sysreg_id(rec: &mut Rec<'_>, esr: u64) -> u64 {
     rec.context.gp_regs[rt] = match idreg as u32 {
         ISS_ID_AA64PFR0_EL1 => ID_AA64PFR0_EL1.get() & mask,
         ISS_ID_AA64PFR1_EL1 => ID_AA64PFR1_EL1.get() & mask,
-        //ISS_ID_AA64ZFR0_EL1 => unsafe { ID_AA64ZFR0_EL1.get()  & mask },
+        ISS_ID_AA64ZFR0_EL1 => ID_AA64ZFR0_EL1.get() & mask,
         ISS_ID_AA64DFR0_EL1 => {
             let mut dfr0_set = 0u64;
             dfr0_set &= 6 << ID_AA64DFR0_EL1::DebugVer.shift;

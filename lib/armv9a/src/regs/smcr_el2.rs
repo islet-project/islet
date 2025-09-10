@@ -7,8 +7,13 @@ use tock_registers::{
 
 register_bitfields! {u64,
     pub SMCR_EL2 [
+        /// When FEAT_SME_FA64 is implemented:
+        /// Controls whether execution of an A64 instruction is
+        /// considered legal when the PE is in Streaming SVE mode
+        FA64 OFFSET(31) NUMBITS(1) [],
+        /// Reserved
         RAZWI   OFFSET(4) NUMBITS(5) [],
-
+        /// Effective Streaming SVE Vector Length (SVL)
         LEN OFFSET(0) NUMBITS(4) []
     ]
 }

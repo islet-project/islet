@@ -7,7 +7,7 @@ use lazy_static::lazy_static;
 // Vector length (VL) = size of a Z-register in bytes
 // Vector quadwords (VQ) = size of a Z-register in units of 128 bits
 // Minimum length of a SVE vector: 128 bits
-const ZCR_EL2_LEN_WIDTH: u64 = 4;
+pub const ZCR_EL2_LEN_WIDTH: u64 = 4;
 const SVE_VQ_ARCH_MAX: u64 = (1 << ZCR_EL2_LEN_WIDTH) - 1;
 const QUARD_WORD: u64 = 128;
 
@@ -36,7 +36,7 @@ lazy_static! {
         #[cfg(not(any(test, miri, fuzzing)))]
         if ID_AA64PFR0_EL1.is_set(ID_AA64PFR0_EL1::SVE) {
             trace!("SVE is set");
-            // Get effective vl
+            // Get effective vl: (ZCR_EL2:LEN + 1)*128 bits
             //let _e_vl = ZCR_EL2.read(ZCR_EL2::LEN);
             // Set to maximum
             ZCR_EL2.write(ZCR_EL2::LEN.val(SVE_VQ_ARCH_MAX));
@@ -89,4 +89,8 @@ pub fn sve_en() -> bool {
 
 pub fn max_sve_vl() -> u64 {
     SIMD_CONFIG.sve_vq
+}
+
+pub fn sme_en() -> bool {
+    SIMD_CONFIG.sme_en
 }

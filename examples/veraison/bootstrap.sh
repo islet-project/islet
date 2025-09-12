@@ -4,10 +4,11 @@ set -exuo pipefail
 shopt -s expand_aliases
 
 ROOT_DIR=$(git rev-parse --show-toplevel)
+VERAISON_DIR="$ROOT_DIR/examples/veraison"
 SERVICES_REPO="https://github.com/veraison/services.git"
-SERVICES_DIR="$ROOT_DIR/examples/veraison/services"
+SERVICES_DIR="$VERAISON_DIR/services"
 DOCKER_DIR="$SERVICES_DIR/deployments/docker"
-REVISION="736e119"
+REVISION="v0.0.2412"
 
 if [ -d "$SERVICES_DIR" ]
 then
@@ -22,7 +23,7 @@ pushd "$SERVICES_DIR"
 git checkout -b freeze "$REVISION"
 popd
 
-for patch in "./veraison-no-auth-patch" ; do
+for patch in "$VERAISON_DIR/veraison-no-auth.patch" "$VERAISON_DIR/veraison-gopls-version.patch"; do
     cat "$patch" | (cd "$SERVICES_DIR" && git apply);
 done
 
@@ -33,6 +34,6 @@ source "$DOCKER_DIR/env.bash"
 veraison start
 
 echo "Waiting for the services to be available:"
-until pocli create ARM_CCA provisioning/accept-all.rego -i >/dev/null; do
+until pocli create ARM_CCA "$VERAISON_DIR/provisioning/accept-all.rego" -i >/dev/null; do
     sleep 2
 done

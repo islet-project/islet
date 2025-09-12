@@ -4,14 +4,15 @@ set -exuo pipefail
 shopt -s expand_aliases
 
 ROOT="$(git rev-parse --show-toplevel)"
-DEMO="$ROOT/examples/veraison"
-DOCKER_DIR="$DEMO/services/deployments/docker"
-ROCLI="$DEMO/bin/rocli"
-PROV="$DEMO/provisioning"
+EXAMPLE="$ROOT/examples/veraison"
+DOCKER_DIR="$EXAMPLE/services/deployments/docker"
+ROCLI="$EXAMPLE/bin/rocli"
+
+PROV="$EXAMPLE/provisioning"
+CONFIG="$PROV/config.yml"
 TOKEN="$PROV/token/token.bin"
 CPAK="$PROV/claims/cpak_public.pem"
 CPAK_TYPE="pkix-base64-key"
-CONFIG="$PROV/config.yml"
 
 source "$DOCKER_DIR/env.bash"
 export PATH="$HOME/go/bin:$PATH"
@@ -37,9 +38,15 @@ while getopts "ht:c:e:" arg; do
   esac
 done
 
-#if ! [ -f "$ROCLI" ]; then
-#    cargo install --path "$ROOT" --root "$ROOT";
-#fi
+if [ ! -r "$TOKEN" ]; then
+	echo "You need a valid token file (either token.bin or pass with -t)"
+	exit 1
+fi
+
+if [ ! -r "$CPAK" ]; then
+	echo "You need a valid CPAK file (either cpak_public.pem or pass with -c)"
+	exit 1
+fi
 
 function loginfo () {
     echo -e "\e[0;32m$1\e[0m"
@@ -56,17 +63,17 @@ pocli create ARM_CCA accept-all.rego -i
 ######  Generating Comids and Corim
 loginfo "Creating Endorsements"
 
-$ROCLI --config "$CONFIG" -o endorsements.json \
+"$ROCLI" --config "$CONFIG" -o endorsements.json \
     --token "$TOKEN" endorsements \
     --cpak "$CPAK" \
     --cpak-type "$CPAK_TYPE"
 
 loginfo "Endorsements:"
-cat ./endorsements.json | jq
+cat endorsements.json | jq
 
 loginfo "Creating reference values"
 
-$ROCLI --config "$CONFIG" -o refvals.json \
+"$ROCLI" --config "$CONFIG" -o refvals.json \
     --token "$TOKEN" refvals
 
 loginfo "Refvals:"
@@ -74,7 +81,7 @@ cat refvals.json | jq
 
 loginfo "Creating Corim"
 
-$ROCLI --config "$CONFIG" -o corim.json \
+"$ROCLI" --config "$CONFIG" -o corim.json \
     --token "$TOKEN" corim
 
 loginfo "Corim:"
@@ -100,5 +107,5 @@ cocli corim submit --corim-file=corim.cbor -i \
 loginfo "Verifying token as relaying party"
 evcli cca verify-as relying-party \
     --api-server=https://verification-service:8080/challenge-response/v1/newSession \
-    --token $TOKEN | tail -n 1 | tr -d '"' > ear.jwt
+    --token "$TOKEN" | tail -n 1 | tr -d '"' > ear.jwt
 arc verify -p=pkey.jwk ear.jwt

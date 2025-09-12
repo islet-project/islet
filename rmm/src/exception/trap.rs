@@ -101,6 +101,7 @@ pub extern "C" fn handle_exception(info: Info, esr: u32, tf: &mut TrapFrame) {
             }
             Syndrome::FPU | Syndrome::SVE | Syndrome::SME => {
                 // Islet RMM is not supposed to use simd.
+                debug!("ELR_EL2:{:x}", ELR_EL2.get());
                 panic!("RMM is using SIMD instruction");
             }
             Syndrome::Other(v) => {
@@ -207,7 +208,11 @@ pub extern "C" fn handle_lower_exception(
                 debug!("Synchronous: SIMD");
                 let abort: bool = match Syndrome::from(esr) {
                     Syndrome::SVE => !rec.context.simd.cfg.sve_en,
-                    Syndrome::SME => !rec.context.simd.cfg.sme_en,
+                    // Note: Since only FEAT_SVE is set for Realms and
+                    // we are doing lazy restore, being reported as Syndrome::SME
+                    // is actually comming from the NW's SME setting.
+                    Syndrome::SME => !rec.context.simd.cfg.sve_en,
+                    //Syndrome::SME => !rec.context.simd.cfg.sme_en,
                     _ => false,
                 };
                 if abort {
@@ -231,19 +236,8 @@ pub extern "C" fn handle_lower_exception(
                 // Note: To avoid being trapped from RMM's access to simd,
                 //       setting cptr_el2 should come prior to the context restoration.
                 CPTR_EL2.write(CPTR_EL2::TAM::SET);
+                simd::restore_state_lazy(rec);
                 rec.context.simd.is_used = true;
-                unsafe {
-                    if rec.context.simd.is_saved {
-                        #[cfg(not(any(miri, test, fuzzing)))]
-                        match Syndrome::from(esr) {
-                            Syndrome::FPU => simd::restore_fpu(&rec.context.simd.fpu),
-                            Syndrome::SVE | Syndrome::SME => {
-                                unimplemented!();
-                            }
-                            _ => (),
-                        }
-                    }
-                }
                 RET_TO_REC
             }
             undefined => {

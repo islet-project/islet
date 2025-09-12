@@ -26,6 +26,12 @@ static VHUK_M: Spinlock<[u8; VHUK_LENGTH]> = Spinlock::new([0x33u8; VHUK_LENGTH]
 pub fn setup_el3_ifc(el3_shared_buf: u64) {
     trace!("Setup EL3 interface");
 
+    // In case of warm boot, el3_shared_buf is delivered with 0x0
+    if el3_shared_buf == 0x0 {
+        warn!("el3_sshared_buf address is 0x0. Won't initialize again.");
+        return;
+    }
+
     {
         // limit the scope of lock to this scope
         // to avoid spinning forever in the subsequent functions

@@ -288,9 +288,14 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
         let rd = rd_granule.content::<Rd>()?;
 
-        if !is_valid_rtt_cmd(&rd, ipa, level) {
+        if (level < rd.s2_starting_level() as usize)
+            || (level < RTT_MIN_BLOCK_LEVEL)
+            || (level > RTT_PAGE_LEVEL)
+            || !is_valid_rtt_cmd(&rd, ipa, level)
+        {
             return Err(Error::RmiErrorInput);
         }
+
         rtt::map_unprotected(&rd, ipa, level, host_s2tte)?;
         Ok(())
     });
@@ -303,7 +308,8 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         let ipa = arg[1];
 
         let level = arg[2];
-        if (level < RTT_MIN_BLOCK_LEVEL)
+        if (level < rd.s2_starting_level() as usize)
+            || (level < RTT_MIN_BLOCK_LEVEL)
             || (level > RTT_PAGE_LEVEL)
             || !is_valid_rtt_cmd(&rd, ipa, level)
         {

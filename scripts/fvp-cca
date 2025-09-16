@@ -204,13 +204,22 @@ class FVPPlatform(CCAPlatform):
             "-C", "cluster0.cpu0.trace_special_hlt_imm16=5",
         ]
 
+    # https://developer.arm.com/documentation/109246/0100/Toolchains-and-model-support/How-to-run-an-SME-application
     def run_tf_a_tests(self):
         print("[!] Running FVP for tf-a-tests...")
         run_args = [
             FVP_BIN,  # FVP_BIN from config_fvp
+            "--plugin", "%s" % SVE_LIB,
             "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
+            "-C", "SVE.ScalableVectorExtension.veclen=8", # to test SVE
+            "-C", "SVE.ScalableVectorExtension.enable_at_reset=1",
+            "-C", "SVE.ScalableVectorExtension.has_sme=1", # to test SME
+            "-C", "cluster0.has_arm_v9-2=1",
+            "-C", "cluster1.has_arm_v9-2=1",
             "-f", FVP_CONFIG,  # FVP_CONFIG from config_fvp
+            "-C", "cluster0.NUM_CORES=4", # overwrite # of cores in FVP_CONFIG
+            "-C", "cluster1.NUM_CORES=4",
             "-Q", "1000",
         ]
         run_args += self.prepare_run_arguments()
@@ -221,6 +230,7 @@ class FVPPlatform(CCAPlatform):
         print("[!] Running FVP for linux...")
         fvp_args = [
             FVP_BIN,
+            "--plugin", "%s" % SVE_LIB,
             "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
             "-C", "bp.virtioblockdevice.image_path=%s/boot.img" % OUT,

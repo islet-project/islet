@@ -20,8 +20,8 @@
 	branch = cca-guest/v6
 [submodule "third-party/tf-a-tests"]
 	path = third-party/tf-a-tests
-	url = https://git.trustedfirmware.org/TF-A/tf-a-tests.git
-	branch = master
+	url = https://github.com/islet-project/3rd-tf-a-tests
+	branch = main
 [submodule "third-party/tf-rmm"]
 	path = third-party/tf-rmm
 	url = https://github.com/islet-project/3rd-tf-rmm

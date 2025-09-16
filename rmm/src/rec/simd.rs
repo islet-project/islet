@@ -352,7 +352,6 @@ fn preserve_ffr(svcr: u64) -> bool {
     let mut rtn = true;
 
     let is_streaming = sme_en() && svcr.read(SVCR::SM) != 0;
-    #[cfg(not(any(test, miri, fuzzing)))]
     if is_streaming {
         rtn = SMCR_EL2.read(SMCR_EL2::FA64) != 0;
     }
@@ -377,6 +376,7 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
         }
         // Save at max to prevent leakage across worlds
         ZCR_EL2.set(max_len);
+        #[cfg(not(any(test, miri, fuzzing)))]
         unsafe {
             // ns_simd.svcr is save at restore_state() on REC_ENTER
             let save_ffr = preserve_ffr(ns_simd.svcr);

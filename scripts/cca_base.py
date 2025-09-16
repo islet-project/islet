@@ -113,11 +113,14 @@ class CCAPlatform(ABC):
             "CROSS_COMPILE=%s" % CROSS_COMPILE,
             "PLAT=%s" % self.platform_name,  # Use platform_name from subclass
             "DEBUG=1",
-            "all",
+            "TESTS=realm-payload",
+            "realm",
+            "tftf",
         ]
 
         if realm != "rsi-test":
-            args += ["pack_realm"]
+            args += ["ENABLE_REALM_PAYLOAD_TESTS=1"]
+            args += ["BRANCH_PROTECTION=0"]
 
         print("[!] Building tf-a-tests for %s..." % self.platform_name)
         self.make(srcdir, args)

@@ -192,6 +192,22 @@ fn smccc_version() -> usize {
     (SMCCC_MAJOR_VERSION << 16) | SMCCC_MINOR_VERSION
 }
 
+fn return_code_permitted(
+    caller: &mut Rec<'_>,
+    target: &mut Rec<'_>,
+    status: usize,
+) -> Result<(), Error> {
+    if status == PsciReturn::SUCCESS {
+        return Ok(());
+    }
+
+    let command = get_reg(caller, 0)?;
+    if command == rsi::PSCI_CPU_ON && !target.runnable() && status == PsciReturn::DENIED {
+        return Ok(());
+    }
+    Err(Error::RmiErrorInput)
+}
+
 pub fn complete_psci(
     caller: &mut Rec<'_>,
     target: &mut Rec<'_>,
@@ -205,20 +221,9 @@ pub fn complete_psci(
         return Err(Error::RmiErrorInput);
     }
 
+    return_code_permitted(caller, target, status)?;
+
     let command = get_reg(caller, 0)?;
-    match command {
-        rsi::PSCI_CPU_ON => {
-            if status != PsciReturn::SUCCESS && status != PsciReturn::DENIED {
-                return Err(Error::RmiErrorInput);
-            }
-        }
-        rsi::PSCI_AFFINITY_INFO => {
-            if status != PsciReturn::SUCCESS {
-                return Err(Error::RmiErrorInput);
-            }
-        }
-        _ => {}
-    }
 
     let psci_ret = match command {
         rsi::PSCI_CPU_ON if target.runnable() => PsciReturn::ALREADY_ON,
@@ -236,13 +241,6 @@ pub fn complete_psci(
         rsi::PSCI_AFFINITY_INFO => PsciReturn::AFFINITY_INFO_OFF,
         _ => PsciReturn::NOT_SUPPORTED,
     };
-
-    if command == rsi::PSCI_CPU_ON
-        && status == PsciReturn::DENIED
-        && psci_ret == PsciReturn::ALREADY_ON
-    {
-        return Err(Error::RmiErrorInput);
-    }
 
     set_reg(caller, 0, psci_ret)?;
     set_reg(caller, 1, 0)?;

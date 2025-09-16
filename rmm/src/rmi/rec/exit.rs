@@ -190,12 +190,9 @@ fn handle_data_abort(
     let fault_ipa = (fault_ipa << 8) as usize;
 
     let ret = match abort_handle_type(&rd, ExitSyncType::DataAbort, esr_el2, fault_ipa)? {
-        AbortHandleType::SeaInject => {
+        AbortHandleType::SeaInject | AbortHandleType::AddrSizeFaultInject => {
             inject_sea(rec, esr_el2, far_el2);
             rmi::SUCCESS_REC_ENTER
-        }
-        AbortHandleType::AddrSizeFaultInject => {
-            unimplemented!();
         }
         AbortHandleType::NonEmulatableExit => {
             rec.set_emulatable_abort(NotEmulatableAbort);
@@ -247,12 +244,9 @@ fn handle_inst_abort(
     let fault_ipa = (fault_ipa << 8) as usize;
 
     let ret = match abort_handle_type(&rd, ExitSyncType::InstAbort, esr_el2, fault_ipa)? {
-        AbortHandleType::SeaInject => {
+        AbortHandleType::SeaInject | AbortHandleType::AddrSizeFaultInject => {
             inject_sea(rec, esr_el2, far_el2);
             rmi::SUCCESS_REC_ENTER
-        }
-        AbortHandleType::AddrSizeFaultInject => {
-            unimplemented!();
         }
         AbortHandleType::NonEmulatableExit => {
             run.set_esr(esr_el2 & INST_ABORT_MASK);

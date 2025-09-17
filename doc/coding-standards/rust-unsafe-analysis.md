@@ -2,28 +2,14 @@
 
 ## Overview <a name="overview"></a>
 
-### **Islet: An On-Device Confidential Computing Platform**
-
-Islet is an open-source project written in Rust
-that enables confidential computing on ARM architecture devices using the ARMv9 CCA \[0\].
-Islet consists of the two main components and a sdk (refer to Fig. 0).
-The `RMM` operates at EL2 in the Realm world on the application processor cores
-and manages the confidential VMs, known as realms.
-The `HES` performs device boot measurement, generates platform attestation reports,
-and manages sealing key functionality within a secure hardware IP
-apart from the main application processor.
-The `SDK` provides confidential computing primitives to applications in the realms.
-
-<p align="center"><img src="./res/seur/islet-overview.png" height="400px"></p>
-
-Due to its nature of operating at EL2,
-the RMM requires the use of Rust's `unsafe` syntax.
+Due to the nature of its role operating at EL2,
+Islet RMM requires the use of Rust's `unsafe` syntax.
 This activity focuses on minimizing the use of `unsafe` code
 and finding design improvements to enhance safety.
 
 ### **Rust and Unsafe Rust**
 
-**Rust** is a systems programming language that offers several key advantages \[1\]:
+**Rust** is a system programming language that offers several key advantages \[1\]:
 
 - Memory Safety: Rust guarantees memory safety through its ownership system,
   which enforces strict borrowing rules and eliminates many common programming errors
@@ -76,7 +62,7 @@ with 185 `unsafe` blocks,
 56 `unsafe` functions,
 and 3 `unsafe` trait implementations.
 
-![v1-unsafe](./res/seur/islet-v1.png)
+![v1-unsafe](../res/seur/islet-v1.png)
 
 ## Code Improvement <a name="code-improvement"></a>
 
@@ -173,7 +159,7 @@ pub fn create_granule_status_table() {
 }
 ```
 
-<p align="center"><img src="./res/seur/safe-usage-static-variables.png" height="500px"></p>
+<p align="center"><img src="../res/seur/safe-usage-static-variables.png" height="500px"></p>
 
 **Solution**: Define flowcharts to use mutable static variables safely by leveraging Rust's idiom (refer to Fig. 3).
 
@@ -233,7 +219,7 @@ which have been reduced to 75 in Islet v1.0-seur,
 Version 1.0 Safety Enhancements of Unsafe Rust,
 Resulting in an approximately 70% reduction (refer to Fig. 4).
 
-![usage-of-unsafe](./res/seur/usage-of-unsafe.png)
+![usage-of-unsafe](../res/seur/usage-of-unsafe.png)
 
 ### **KR2: Best Practices for Improving Unsafe Code**
 
@@ -249,7 +235,7 @@ only explicitly removed keywords were counted (refer to Fig. 5).
 The remaining 75 `unsafe` keywords are associated with accessing local registers
 and internally managed structures within RMM, such as converting raw pointers for page tables.
 
-![number-of-unsafe-removed](./res/seur/number-of-unsafe-removed.png)
+![number-of-unsafe-removed](../res/seur/number-of-unsafe-removed.png)
 
 ### **KR3: Development a new library (safe-abstraction)**
 

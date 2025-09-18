@@ -4,10 +4,11 @@ set -exuo pipefail
 shopt -s expand_aliases
 
 ROOT="$(git rev-parse --show-toplevel)"
-VERAISON="$ROOT/examples/app-provisioning/veraison"
-DOCKER_DIR="$VERAISON/services/deployments/docker"
-ROCLI="$VERAISON/bin/rocli"
+EXAMPLE="$ROOT/examples/app-provisioning"
+DOCKER_DIR="$EXAMPLE/veraison/services/deployments/docker"
+ROCLI="$EXAMPLE/bin/rocli"
 
+CONFIG="config.yml"
 TOKEN="token.bin"
 CPAK="cpak_public.pem"
 CPAK_TYPE="pkix-base64-key"
@@ -61,7 +62,7 @@ pocli create ARM_CCA accept-all.rego -i
 ######  Generating Comids and Corim
 loginfo "Creating Endorsements"
 
-"$ROCLI" --config config.yml -o endorsements.json \
+"$ROCLI" --config "$CONFIG" -o endorsements.json \
     --token "$TOKEN" endorsements \
     --cpak "$CPAK" \
     --cpak-type "$CPAK_TYPE"
@@ -71,7 +72,7 @@ cat endorsements.json | jq
 
 loginfo "Creating reference values"
 
-"$ROCLI" --config config.yml -o refvals.json \
+"$ROCLI" --config "$CONFIG" -o refvals.json \
     --token "$TOKEN" refvals
 
 loginfo "Refvals:"
@@ -79,7 +80,7 @@ cat refvals.json | jq
 
 loginfo "Creating Corim"
 
-"$ROCLI" --config config.yml -o corim.json \
+"$ROCLI" --config "$CONFIG" -o corim.json \
     --token "$TOKEN" corim
 
 loginfo "Corim:"

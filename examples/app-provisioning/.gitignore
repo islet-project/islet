@@ -1,7 +1,6 @@
 # repositories/binaries
-veraison/bin/
+bin/
 veraison/services/
-veraison/remote-attestation/
 
 # intermediate files
 metadata.yaml

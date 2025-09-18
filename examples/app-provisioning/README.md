@@ -32,8 +32,13 @@ document) to remedy this is:
 
 ## Prepare/initialize islet
 
+This will initialize Islet dependencies required for it to work and compile two
+rust tools used for this example (`rsictl` and `rocli`).
+
     cd $CCA/islet
     ./scripts/init.sh
+    cd $CCA/islet/examples/app-provisioning
+	make
 
 ## Prepare the provisioning framework
 
@@ -54,15 +59,13 @@ You need to have `libdevmapper-dev` package installed (`sudo apt install libdevm
 
 Warden daemon is responsible for providing resources such as disks and networking to realms. It manages realm lifetime by starting and stopping kvmtool. More details are available at [realm-manager/warden/warden_daemon](https://github.com/islet-project/realm-manager/tree/main/warden/warden_daemon).
 
-You need to have a nightly version of Rust toolchain installed to build warden daemon.
-
     cd $CCA/realm-manager/warden
     make
 
 #### Copy resulting binaries to islet shared dir
 
     mkdir $CCA/islet/out/shared/warden
-    cp -v bin/* $CCA/islet/out/shared/warden
+    cp -v bin/* $CCA/islet/out/shared/warden/
 
 ## Provision the Application/Realm
 
@@ -97,7 +100,13 @@ The token will saved as `$CCA/islet/out/shared/token.bin`
 
 ### Obtain the RIM
 
-#### Using lkvm-rim-measurer tool (TODO: this needs to be simplified)
+#### Using lkvm-rim-measurer tool
+
+> [!CAUTION]
+> This tool needs an update for v1.0-rel0, use the alternative method below for now
+
+> [!WARNING]
+> This section needs to be simplified
 
 To obtain the RIM we can use the lkvm-rim-measurer tool.
 Firstly, clone the lkvm-rim-measurer tool repository.
@@ -150,8 +159,8 @@ For the sha256 measurement algorithm, save the first 64 hexadecimal characters o
 
 #### Alternatively extract the RIM from the token obtained earlier
 
-    cd $CCA/realm-manager/realm/tools/rsictl
-    cargo run -- verify -i $CCA/islet/out/shared/token.bin | grep "Realm initial measurement"
+    cd $CCA/islet/examples/app-provisioning
+    ./bin/rsictl verify -i $CCA/islet/out/shared/token.bin | grep "Realm initial measurement"
 
 The RIM value will be printed between `[]` characters:
 
@@ -245,7 +254,14 @@ the Veraison docker tools won't be able to find them.
 
 ## Setup image registry and example application
 
-### Compile example app #1 (TODO: create a Makefile here)
+### Compile example app #1
+
+> [!CAUTION]
+> TODO: create a Makefile here
+
+> [!WARNING]
+> The rest of the document uses the application from example #2, so unless doing
+> something custom it's preferred to use that one.
 
     cd $CCA/realm-manager/realm/example-application
     docker build . -t example_app
@@ -321,13 +337,19 @@ All the commands below are within the prompt of the client:
 
     create-realm -n 1 -r 256 -k ./nasz-realm -i initramfs.cpio.gz -v 12344 -z 5156ae05-1da0-4e7b-a168-ec8d1869890e -d ./metadata.bin
 
-### Define an application to provision (choose app below for -n)
+### Define an application to provision (choose app below with -n)
 
     create-application -n light_app -v latest -i image-registry.net:1337 -o 32 -d 32 -r 5156ae05-1da0-4e7b-a168-ec8d1869890e
 
 ### Start realm
 
     start-realm -r 5156ae05-1da0-4e7b-a168-ec8d1869890e
+
+We should observe the realm starting sucessfully, image-registry providing the
+light_app application through RA-TLS and the application being run inside the
+realm with:
+
+    INFO  [app_manager::launcher::handler] Application stdout: Example Application
 
 ### Stop realm
 

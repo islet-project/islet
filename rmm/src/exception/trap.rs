@@ -212,7 +212,6 @@ pub extern "C" fn handle_lower_exception(
                     // we are doing lazy restore, being reported as Syndrome::SME
                     // is actually comming from the NW's SME setting.
                     Syndrome::SME => !rec.context.simd.cfg.sve_en,
-                    //Syndrome::SME => !rec.context.simd.cfg.sme_en,
                     _ => false,
                 };
                 if abort {

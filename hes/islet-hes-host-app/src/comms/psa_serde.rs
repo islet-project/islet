@@ -12,7 +12,7 @@ pub const RSS_DELEGATED_SERVICE_HANDLE: psa_handle_t = 0x40000111;
 pub const RSS_DELEGATED_ATTEST_GET_DELEGATED_KEY: i16 = 1001;
 pub const RSS_DELEGATED_ATTEST_GET_PLATFORM_TOKEN: i16 = 1002;
 
-pub const RSS_VHUK_SERVICE_HANDLE: psa_handle_t = 0x40000112;
+pub const RSS_VHUK_SERVICE_HANDLE: psa_handle_t = 0x40000115;
 pub const RSS_VHUK_GET_KEY: i16 = 1006;
 
 pub const PSA_MAX_IOVEC: usize = 4;

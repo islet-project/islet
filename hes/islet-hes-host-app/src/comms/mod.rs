@@ -102,7 +102,7 @@ impl CommsChannel {
                 Ok(stream) => break stream,
                 Err(e) => {
                     if e.kind() == ErrorKind::ConnectionRefused && persistent {
-                        const RECONNECT_SEC: u64 = 5;
+                        const RECONNECT_SEC: u64 = 1;
                         println!("Couldn't connect, retrying in {} seconds...", RECONNECT_SEC);
                         sleep(Duration::from_secs(RECONNECT_SEC));
                         continue;

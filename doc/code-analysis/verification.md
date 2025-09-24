@@ -31,4 +31,4 @@ rmi_version
 $ RMI_TARGET=rmi_granule_undelegate make verify
 ```
 
-For more about Islet's model-checking, please refer to [here](../islet-model-checking.md).
+For more about Islet's model-checking, please refer to [here](./islet-model-checking.md).

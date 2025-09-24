@@ -238,12 +238,12 @@ The other examples of harnesses can be also found in Figure 2-1 and Figure 2-2,
 which describe the harnesses for RMI granule undelegate.
 
 
-![](./res/model-checking/tf-rmm-features-harness.png)  |  ![](./res/model-checking/islet-features-harness.png)
+![](../res/model-checking/tf-rmm-features-harness.png)  |  ![](../res/model-checking/islet-features-harness.png)
 :--------------------------------:|:---------------------------------:
 Figure 1-1. TF-RMM features harness  |  Figure 1-2. Islet features harness
 
 
-![](./res/model-checking/tfrmm_undelegate_harness.png)  |  ![](./res/model-checking/undelegate_harness.png)
+![](../res/model-checking/tfrmm_undelegate_harness.png)  |  ![](../res/model-checking/undelegate_harness.png)
 :--------------------------------:|:---------------------------------:
 Figure 2-1. TF-RMM granule undelegate harness  |  Figure 2-2. Islet granule undelegate harness
 
@@ -255,7 +255,7 @@ in the entire states. We embed the invariants with `is_valid()` predicate
 in target data structures. For example, the below is the specification
 about granule's attributes.
 
-![Specification for Granule's attributes](./res/model-checking/granule_invariant.png)
+![Specification for Granule's attributes](../res/model-checking/granule_invariant.png)
 
 Using the specification's conditions, `is_valid()` predicate can be
 defined in `Granule` and `Granule Status Table` respectively.
@@ -314,7 +314,7 @@ Memory to help verify Islet.
     for tracking GPT's change as shown in Figure 3-1. We also embed EL3's GPT handling
     code in SMC invocation as shown in Figure 3-2.
 
-![](./res/model-checking/el3_modeling1.png)  |  ![](./res/model-checking/el3_modeling2.png)
+![](../res/model-checking/el3_modeling1.png)  |  ![](../res/model-checking/el3_modeling2.png)
 :--------------------------------:|:---------------------------------:
 Figure 3-1. Ghost gpt field for EL3 Modeling  | Figure 3-2. GPT Handling for EL3 Modeling
 
@@ -337,7 +337,7 @@ Figure 3-1. Ghost gpt field for EL3 Modeling  | Figure 3-2. GPT Handling for EL3
     logic regarding valid memory range is also adjusted from dotted line
     (original check) to solid line (modeled check) in Figure 4-2.
 
-![](./res/model-checking/host_mem_modeling1.png)  |  ![](./res/model-checking/host_mem_modeling2.png)
+![](../res/model-checking/host_mem_modeling1.png)  |  ![](../res/model-checking/host_mem_modeling2.png)
 :--------------------------------:|:---------------------------------:
 Figure 4-1. Host Memory Modeling (Declaration)  | Figure 4-2. Host Memory Modeling (Check)
 
@@ -384,7 +384,7 @@ violating the failure conditions of RMI features as shown in Figure 5-2. After
 fixing the line returning the error condition, the verification becomes successful.
 
 
-![](./res/model-checking/features_code.png)  |  ![](./res/model-checking/features_spec_failure.png)
+![](../res/model-checking/features_code.png)  |  ![](../res/model-checking/features_spec_failure.png)
 :--------------------------------:|:---------------------------------:
 Figure 5-1. Buggy RMI Features Code  | Figure 5-2. Failure Conditions of RMI features
 
@@ -400,11 +400,11 @@ verification results successful. Note that without the patch, it could have left
 sensitive information on the target granule, which might be obtained by attackers.
 
 
-    |<img src="./res/model-checking/undelegate_code.png" alt="drawing" width="450"/>|
+    |<img src="../res/model-checking/undelegate_code.png" alt="drawing" width="450"/>|
     |:--:|
     | Figure 6-1. Buggy RMI Granule Undelegate Code  |
 
-    |<img src="./res/model-checking/undelegate_spec_success.png" alt="drawing" width="550"/>|
+    |<img src="../res/model-checking/undelegate_spec_success.png" alt="drawing" width="550"/>|
     |:--:|
     | Figure 6-2. Success Conditions of RMI Granule Undelegate  |
 
@@ -416,7 +416,7 @@ violating the failure condition as well as the success condition of RMI rec dest
 shown in Figure 7-2. After adding the sanitization logic and granule setting code, 
 the verification becomes successful.
 
-![](./res/model-checking/rec_destroy_code.png)  | ![](./res/model-checking/rec_destroy_spec.png)
+![](../res/model-checking/rec_destroy_code.png)  | ![](../res/model-checking/rec_destroy_spec.png)
 :--------------------------------:|:---------------------------------:
 Figure 7-1. Buggy RMI Rec Destroy Code  | Figure 7-2. Conditions of RMI Rec Destroy
 
@@ -428,7 +428,7 @@ not satisfying the conditions for output values (lower and higher) in failure co
 of RMI version as shown in Figure 8-2. After setting the output values beforehand, 
 the verification becomes successful.
 
-![](./res/model-checking/version_code.png)  | ![](./res/model-checking/version_output.png)
+![](../res/model-checking/version_code.png)  | ![](../res/model-checking/version_output.png)
 :--------------------------------:|:---------------------------------:
 Figure 8-1. Buggy RMI Version Code  | Figure 8-2. Outputs of RMI Version
 
@@ -441,7 +441,7 @@ Figure 8-1. Buggy RMI Version Code  | Figure 8-2. Outputs of RMI Version
 RMI features. It says that the total of 5271 verification conditions and the
 total of 4 cover conditions have successfully passed.
 
-    |<img src="./res/model-checking/features_results.png" alt="drawing" width="450"/>|
+    |<img src="../res/model-checking/features_results.png" alt="drawing" width="450"/>|
     |:--:|
     | Figure 9-1. Model Checking Output of RMI Features  |
 
@@ -452,7 +452,7 @@ granule delegate. It says that the total of 5557 verification conditions and the
 total of 14 cover conditions have successfully passed.
 
 
-    |<img src="./res/model-checking/delegate_results.png" alt="drawing" width="450"/>|
+    |<img src="../res/model-checking/delegate_results.png" alt="drawing" width="450"/>|
     |:--:|
     | Figure 9-2. Model Checking Output of RMI Granule Delegate  |
 
@@ -463,7 +463,7 @@ granule undelegate. It says that the total of 5559 verification conditions and
 the total of 14 cover conditions have successfully passed.
 
 
-    |<img src="./res/model-checking/undelegate_results.png" alt="drawing" width="450"/>|
+    |<img src="../res/model-checking/undelegate_results.png" alt="drawing" width="450"/>|
     |:--:|
     | Figure 9-3. Model Checking Output of RMI Granule Undelegate  |
 
@@ -473,7 +473,7 @@ the total of 14 cover conditions have successfully passed.
 realm activate. It says that the total of 5584 verification conditions and
 the total of 12 cover conditions have successfully passed.
 
-    |<img src="./res/model-checking/activate_results.png" alt="drawing" width="450"/>|
+    |<img src="../res/model-checking/activate_results.png" alt="drawing" width="450"/>|
     |:--:|
     | Figure 9-4. Model Checking Output of RMI Realm Activate  |
 
@@ -483,7 +483,7 @@ the total of 12 cover conditions have successfully passed.
 rec aux count. It says that the total of 5495 verification conditions and
 the total of 10 cover conditions have successfully passed.
 
-    |<img src="./res/model-checking/rec_aux_count_results.png" alt="drawing" width="450"/>|
+    |<img src="../res/model-checking/rec_aux_count_results.png" alt="drawing" width="450"/>|
     |:--:|
     | Figure 9-5. Model Checking Output of RMI Rec Aux Count  |
 
@@ -493,7 +493,7 @@ the total of 10 cover conditions have successfully passed.
 rec destroy. It says that the total of 5610 verification conditions and
 the total of 14 cover conditions have successfully passed.
 
-    |<img src="./res/model-checking/rec_destroy_results.png" alt="drawing" width="450"/>|
+    |<img src="../res/model-checking/rec_destroy_results.png" alt="drawing" width="450"/>|
     |:--:|
     | Figure 9-6. Model Checking Output of RMI Rec Destroy  |
 
@@ -503,6 +503,6 @@ the total of 14 cover conditions have successfully passed.
 version. It says that the total of 5468 verification conditions and
 the total of 3 cover conditions have successfully passed.
 
-    |<img src="./res/model-checking/version_results.png" alt="drawing" width="450"/>|
+    |<img src="../res/model-checking/version_results.png" alt="drawing" width="450"/>|
     |:--:|
     | Figure 9-7. Model Checking Output of RMI Version  |

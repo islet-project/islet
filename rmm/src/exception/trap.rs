@@ -11,7 +11,6 @@ use crate::rec::simd;
 use crate::rec::Rec;
 
 use aarch64_cpu::registers::*;
-use armv9a::regs::CPTR_EL2;
 
 #[repr(u16)]
 #[derive(Debug, Copy, Clone)]
@@ -234,7 +233,6 @@ pub extern "C" fn handle_lower_exception(
                 }
                 // Note: To avoid being trapped from RMM's access to simd,
                 //       setting cptr_el2 should come prior to the context restoration.
-                CPTR_EL2.write(CPTR_EL2::TAM::SET);
                 simd::restore_state_lazy(rec);
                 rec.context.simd.is_used = true;
                 RET_TO_REC

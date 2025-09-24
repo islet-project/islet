@@ -428,10 +428,9 @@ pub fn save_state(rec: &mut Rec<'_>) {
     let rec_simd = &mut rec.context.simd;
     let ns_simd = NS_SIMD[get_cpu_id()].lock();
 
+    rec_simd.cptr_el2 =
+        (CPTR_EL2::TAM::SET + CPTR_EL2::TSM::SET + CPTR_EL2::TFP::SET + CPTR_EL2::TZ::SET).value;
     if !rec_simd.is_used {
-        rec_simd.cptr_el2 =
-            (CPTR_EL2::TAM::SET + CPTR_EL2::TSM::SET + CPTR_EL2::TFP::SET + CPTR_EL2::TZ::SET)
-                .value;
         CPTR_EL2.set(ns_simd.cptr_el2);
         if sme_en() {
             SVCR.set(ns_simd.svcr);
@@ -453,11 +452,8 @@ pub fn save_state(rec: &mut Rec<'_>) {
         ZCR_EL2.set(max_len);
         unsafe {
             let save_ffr = true; // Since FEAT_SME is not for Realms, it's always true.
-            if rec_simd.is_used {
-                save_sve(&mut rec_simd.sve, save_ffr);
-                save_fpu_crsr(&mut rec_simd.fpu);
-                rec_simd.is_saved = true;
-            }
+            save_sve(&mut rec_simd.sve, save_ffr);
+            save_fpu_crsr(&mut rec_simd.fpu);
             // Set SVCR before loading context.
             // Otherwise, when SVCR:SM is 0, all simd registers are set to zero.
             if sme_en() {
@@ -472,13 +468,13 @@ pub fn save_state(rec: &mut Rec<'_>) {
     } else {
         // For SIMD and FPU
         unsafe {
+            save_fpu(&mut rec_simd.fpu);
             restore_fpu(&ns_simd.fpu);
         }
     }
     // To maintain immutability of rec.context during its restoration,
     // update the context here in advance.
     rec_simd.is_used = false;
-    rec_simd.cptr_el2 =
-        (CPTR_EL2::TAM::SET + CPTR_EL2::TSM::SET + CPTR_EL2::TFP::SET + CPTR_EL2::TZ::SET).value;
+    rec_simd.is_saved = true;
     CPTR_EL2.set(ns_simd.cptr_el2);
 }

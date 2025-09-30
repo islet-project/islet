@@ -9,11 +9,23 @@ fn check_sysreg_id_access(esr: u64) -> bool {
     (esr.get_masked(ISS::Op0) | esr.get_masked(ISS::Op1) | esr.get_masked(ISS::CRn)) == ISS::Op0
 }
 
+fn check_sysreg_icc_access(esr: u64) -> bool {
+    let esr = ISS::new(esr);
+    // direction: 0b0 - write, 0b1 - read
+    let direction = esr.get_masked_value(ISS::Direction);
+    let esr_iss = esr.get_masked(ISS::Op0 | ISS::Op1 | ISS::CRn | ISS::CRm) as u32;
+
+    // Only writing to the system register is valid.
+    direction == 0 && (esr_iss == ISS_ID_ICC_MASK || esr_iss == ISS_ID_ICC_PMR_EL1)
+}
+
 pub fn handle(rec: &mut Rec<'_>, esr: u64) -> u64 {
     if check_sysreg_id_access(esr) {
         handle_sysreg_id(rec, esr);
+    } else if check_sysreg_icc_access(esr) {
+        return trap::RET_TO_RMM;
     } else {
-        warn!("Unhandled MSR/MRS instruction");
+        warn!("Unhandled MSR/MRS instruction. ESR_EL2:{:X}", esr);
     }
     trap::RET_TO_REC
 }

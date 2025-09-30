@@ -157,3 +157,13 @@ define_iss_id!(ISS_ID_AA64MMFR1_EL1, 3, 0, 0, 7, 1);
 define_iss_id!(ISS_ID_AA64MMFR2_EL1, 3, 0, 0, 7, 2);
 
 define_iss_id!(ISS_ID_AA64ZFR0_EL1, 3, 0, 0, 4, 4);
+
+define_iss_id!(ISS_ID_ICC_DIR_EL1, 3, 0, 0xc, 0xb, 1);
+
+define_iss_id!(ISS_ID_ICC_SGI1R_EL1, 3, 0, 0xc, 0xb, 5);
+
+define_iss_id!(ISS_ID_ICC_SGI0R_EL1, 3, 0, 0xc, 0xb, 7);
+
+define_iss_id!(ISS_ID_ICC_PMR_EL1, 3, 0, 4, 6, 0);
+
+define_iss_id!(ISS_ID_ICC_MASK, 3, 0, 0xc, 0xb, 0);

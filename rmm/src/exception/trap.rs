@@ -194,6 +194,11 @@ pub extern "C" fn handle_lower_exception(
                 debug!("Synchronous: MRS, MSR System Register Instruction");
                 let ret = synchronous::sys_reg::handle(rec, esr as u64);
                 advance_pc(rec);
+                if ret == RET_TO_RMM {
+                    tf.regs[0] = RecExitReason::Sync(ExitSyncType::Undefined).into();
+                    tf.regs[1] = esr as u64;
+                    tf.regs[2] = 0;
+                }
                 ret
             }
             Syndrome::WFX => {

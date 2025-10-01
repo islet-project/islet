@@ -3,6 +3,9 @@ use crate::rmi;
 use crate::rsi;
 use spin::mutex::Mutex;
 
+use crate::alloc::string::ToString;
+use alloc::string::String;
+
 //NOTE: RMI, RSI_CMD_MAX are should be updated whenever there is a new command
 //      which is bigger than the current max value of the commands.
 //      But if RMI, RSI commands are handled by 'Enum', then it can be fixed
@@ -138,11 +141,11 @@ impl Stat {
             ..Default::default()
         }
     }
-    fn cmd_to_str(&self, cmd: usize) -> &'static str {
+    fn cmd_to_str(&self, cmd: usize) -> String {
         match self.kind {
             Kind::RMI => rmi::to_str(cmd),
             Kind::RSI => rsi::to_str(cmd),
-            _ => "Undefined",
+            _ => "Undefined".to_string(),
         }
     }
 

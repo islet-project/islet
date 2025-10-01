@@ -88,7 +88,7 @@ impl Monitor {
                     trace!("let's get STATS.lock() with cmd {}", rmi::to_str(ctx.cmd));
                     crate::stat::STATS.lock().measure(ctx.cmd, || {
                         if let Err(code) = handler(&ctx.arg[..], &mut ctx.ret[..], self) {
-                            self.ret[0] = code.into();
+                            ctx.ret[0] = code.into();
                         }
                     });
                 } else if let Err(code) = handler(&ctx.arg[..], &mut ctx.ret[..], self) {

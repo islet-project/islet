@@ -2,7 +2,7 @@ use super::gic;
 use super::pauth;
 use super::pauth::PauthRegister;
 use super::simd;
-use super::simd::SimdRegister;
+use super::simd::SimdContext;
 use super::timer;
 use super::Rec;
 use crate::rmi::error::Error;
@@ -18,7 +18,7 @@ pub struct Context {
     pub sys_regs: SystemRegister,
     pub gic_state: GICRegister,
     pub timer: TimerRegister,
-    pub simd: SimdRegister,
+    pub simd: SimdContext,
     pub pauth: PauthRegister,
 }
 

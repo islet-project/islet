@@ -9,17 +9,24 @@ use spin::mutex::Mutex;
 use super::Rec;
 use crate::config::NUM_OF_CPU;
 use crate::cpu::get_cpu_id;
+use crate::granule::GranuleState;
 use crate::realm::rd::Rd;
+use crate::rec::RecAuxIndex;
 use crate::rmi::error::Error;
 use crate::simd::{sme_en, SimdConfig, ZCR_EL2_LEN_WIDTH};
+use crate::{get_granule, get_granule_if};
 
 // SIMD context structure
 #[derive(Default, Debug)]
-pub struct SimdRegister {
+pub struct SimdContext {
     pub is_used: bool,
     pub is_saved: bool,
 
     pub cfg: SimdConfig,
+}
+
+#[derive(Default, Debug)]
+pub struct SimdRegister {
     // EL2 trap register for this context
     pub cptr_el2: u64,
     // SME specific Streaming vector control register
@@ -27,6 +34,27 @@ pub struct SimdRegister {
     // SIMD data registers
     pub fpu: FpuRegs,
     pub sve: SveRegs,
+}
+
+impl SimdRegister {
+    pub fn new() -> Self {
+        Default::default()
+    }
+}
+
+impl vmsa::guard::Content for SimdRegister {}
+impl safe_abstraction::raw_ptr::RawPtr for SimdRegister {}
+impl safe_abstraction::raw_ptr::SafetyChecked for SimdRegister {}
+impl safe_abstraction::raw_ptr::SafetyAssured for SimdRegister {
+    fn is_initialized(&self) -> bool {
+        // It is wiped out with zero's on granule delegation.
+        // Then, SimdRegister gets initialized on Rec::init() call.
+        true
+    }
+
+    fn verify_ownership(&self) -> bool {
+        true
+    }
 }
 
 // FPU registers
@@ -84,7 +112,10 @@ pub fn init_simd(rec: &mut Rec<'_>) -> Result<(), Error> {
         svcr = 0;
     }
 
-    let simd_regs = &mut rec.context.simd;
+    let simd_aux = rec.aux[RecAuxIndex::SIMD as usize] as usize;
+    let mut simd_granule = get_granule_if!(simd_aux, GranuleState::RecAux)?;
+    debug!("rec aux granule for simd at 0x{:x}", simd_aux);
+    let mut simd_regs = simd_granule.new_uninit_with::<SimdRegister>(SimdRegister::new())?;
     // Note: As islet-rmm doesn't enable VHE in the realm world as following,
     // HCR_EL2.E2H=0, HCR_EL2.TGE=0
     // the layout of CPTR_EL2 for non E2H is used.
@@ -362,12 +393,21 @@ fn preserve_ffr(svcr: u64) -> bool {
 // is made for the first time since REC_ENTER.
 // See exception/trap.rs.
 pub fn restore_state_lazy(rec: &Rec<'_>) {
-    let rec_simd = &rec.context.simd;
+    let rec_simd_ctxt = &rec.context.simd;
+    let simd_aux = rec.aux[RecAuxIndex::SIMD as usize] as usize;
+    let simd_granule = match get_granule_if!(simd_aux, GranuleState::RecAux) {
+        Ok(guard) => guard,
+        Err(_e) => {
+            error!("Unable to get RecAux granule at 0x{:x}", simd_aux);
+            return;
+        }
+    };
+    let rec_simd = simd_granule.content::<SimdRegister>().unwrap();
     let mut ns_simd = NS_SIMD[get_cpu_id()].lock();
 
     // Disable simd traps during the context mgmt.
     CPTR_EL2.write(CPTR_EL2::TAM::SET);
-    if rec_simd.cfg.sve_en {
+    if rec_simd_ctxt.cfg.sve_en {
         ns_simd.sve.zcr_el2 = ZCR_EL2.get();
         ns_simd.sve.zcr_el12 = ZCR_EL1.get();
         let mut max_len = ns_simd.sve.zcr_el2;
@@ -385,7 +425,7 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
             if sme_en() {
                 SVCR.set(rec_simd.svcr);
             }
-            if rec_simd.is_saved {
+            if rec_simd_ctxt.is_saved {
                 let restore_ffr = true; // Sinde Realm is not supported with SME, it's always true.
                 restore_sve(&rec_simd.sve, restore_ffr);
                 restore_fpu_crsr(&rec_simd.fpu);
@@ -396,7 +436,7 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
     } else {
         unsafe {
             save_fpu(&mut ns_simd.fpu);
-            if rec_simd.is_saved {
+            if rec_simd_ctxt.is_saved {
                 restore_fpu(&rec_simd.fpu);
             }
         }
@@ -404,7 +444,15 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
 }
 
 pub fn restore_state(rec: &Rec<'_>) {
-    let rec_simd = &rec.context.simd;
+    let simd_aux = rec.aux[RecAuxIndex::SIMD as usize] as usize;
+    let simd_granule = match get_granule_if!(simd_aux, GranuleState::RecAux) {
+        Ok(guard) => guard,
+        Err(_e) => {
+            error!("Unable to get RecAux granule at 0x{:x}", simd_aux);
+            return;
+        }
+    };
+    let rec_simd = simd_granule.content::<SimdRegister>().unwrap();
     let mut ns_simd = NS_SIMD[get_cpu_id()].lock();
 
     // Disable simd traps during the context mgmt.
@@ -425,12 +473,21 @@ pub fn restore_state(rec: &Rec<'_>) {
 }
 
 pub fn save_state(rec: &mut Rec<'_>) {
-    let rec_simd = &mut rec.context.simd;
+    let rec_simd_ctxt = &mut rec.context.simd;
+    let simd_aux = rec.aux[RecAuxIndex::SIMD as usize] as usize;
+    let mut simd_granule = match get_granule_if!(simd_aux, GranuleState::RecAux) {
+        Ok(guard) => guard,
+        Err(_e) => {
+            error!("Unable to get RecAux granule at 0x{:x}", simd_aux);
+            return;
+        }
+    };
+    let mut rec_simd = simd_granule.content_mut::<SimdRegister>().unwrap();
     let ns_simd = NS_SIMD[get_cpu_id()].lock();
 
     rec_simd.cptr_el2 =
         (CPTR_EL2::TAM::SET + CPTR_EL2::TSM::SET + CPTR_EL2::TFP::SET + CPTR_EL2::TZ::SET).value;
-    if !rec_simd.is_used {
+    if !rec_simd_ctxt.is_used {
         CPTR_EL2.set(ns_simd.cptr_el2);
         if sme_en() {
             SVCR.set(ns_simd.svcr);
@@ -441,7 +498,7 @@ pub fn save_state(rec: &mut Rec<'_>) {
     CPTR_EL2.write(CPTR_EL2::TAM::SET);
     // Since FEAT_SME is not for Realms, no need to store SVCR which doesn't change.
 
-    if rec_simd.cfg.sve_en {
+    if rec_simd_ctxt.cfg.sve_en {
         rec_simd.sve.zcr_el2 = ZCR_EL2.get();
         rec_simd.sve.zcr_el12 = ZCR_EL1.get();
         let mut max_len = ns_simd.sve.zcr_el2;
@@ -474,7 +531,7 @@ pub fn save_state(rec: &mut Rec<'_>) {
     }
     // To maintain immutability of rec.context during its restoration,
     // update the context here in advance.
-    rec_simd.is_used = false;
-    rec_simd.is_saved = true;
+    rec_simd_ctxt.is_used = false;
+    rec_simd_ctxt.is_saved = true;
     CPTR_EL2.set(ns_simd.cptr_el2);
 }

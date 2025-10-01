@@ -43,4 +43,3 @@ Alternatively, you can run the test directly using:
 All PRs modifying Islet RMM are automatically tested in the CI pipeline. The CI process runs both the ACS test and tf-a-tests to ensure compliance with the RMM specification. PRs must pass these tests before they can be merged.
 
 By following this guidance, Islet ensures that its RMM implementation remains compliant with Arm's RMM specification and maintains high-quality standards.
-```

@@ -113,6 +113,7 @@ class CCAPlatform(ABC):
             "CROSS_COMPILE=%s" % CROSS_COMPILE,
             "PLAT=%s" % self.platform_name,  # Use platform_name from subclass
             "DEBUG=1",
+            "ENABLE_PAUTH=1",
             "TESTS=realm-payload",
             "realm",
             "tftf",
@@ -218,7 +219,7 @@ class CCAPlatform(ABC):
         pass
 
     def prepare_rmm(self, rmm, features):
-        print("[!] Building realm management monitor for FVP: %s" % rmm)
+        print("[!] Building realm management monitor for %s: %s" % (self.platform_name, rmm))
         if rmm == "islet":
             cargo_args = ["cargo", "build", "--release"] + features
             new_env = os.environ.copy()

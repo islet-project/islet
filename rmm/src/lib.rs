@@ -118,7 +118,9 @@ unsafe fn setup_el2() {
             + HCR_EL2::AMO::SET
             + HCR_EL2::IMO::SET
             + HCR_EL2::FMO::SET
-            + HCR_EL2::VM::SET,
+            + HCR_EL2::VM::SET
+            + HCR_EL2::API::SET
+            + HCR_EL2::APK::SET,
         // HCR_EL2::TWI::SET,
     );
     VBAR_EL2.set(addr_of!(vectors) as u64);

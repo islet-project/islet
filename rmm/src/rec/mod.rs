@@ -19,6 +19,13 @@ use vmsa::guard::Content;
 
 const MAX_RECS_ORDER_VALUE: u64 = 4;
 
+#[derive(Copy, Clone, Debug)]
+pub enum RecAuxIndex {
+    SIMD = 0,
+    PMU = 1,
+    Undefined,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum RmmRecAttestState {
     AttestInProgress,

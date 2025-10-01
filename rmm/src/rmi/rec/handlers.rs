@@ -79,6 +79,15 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         match prepare_args(&mut rd, params.mpidr) {
             Ok((vcpuid, vttbr, vmpidr)) => {
                 ret[1] = vcpuid;
+
+                // Transit granule status of param.aux to RecAux from Delegated
+                // before access within rec.init().
+                for i in 0..rmi::MAX_REC_AUX_GRANULES {
+                    let aux = params.aux[i] as usize;
+                    rmm.page_table.map(aux, true);
+                    let mut aux_granule = get_granule_if!(aux, GranuleState::Delegated)?;
+                    set_granule(&mut aux_granule, GranuleState::RecAux)?;
+                }
                 rec.init(owner, vcpuid, params.flags, params.aux, vttbr, vmpidr)?;
             }
             Err(_) => return Err(Error::RmiErrorInput),
@@ -98,13 +107,6 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         #[cfg(not(kani))]
         // `rsi` is currently not reachable in model checking harnesses
         HashContext::new(&mut rd)?.measure_rec_params(&params)?;
-
-        for i in 0..rmi::MAX_REC_AUX_GRANULES {
-            let rec_aux = rec.aux(i) as usize;
-            rmm.page_table.map(rec_aux, true);
-            let mut rec_aux_granule = get_granule_if!(rec_aux, GranuleState::Delegated)?;
-            set_granule(&mut rec_aux_granule, GranuleState::RecAux)?;
-        }
 
         #[cfg(not(feature = "gst_page_table"))]
         rd_granule.inc_count();

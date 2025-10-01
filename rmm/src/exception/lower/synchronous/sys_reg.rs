@@ -56,12 +56,6 @@ fn handle_sysreg_id(rec: &mut Rec<'_>, esr: u64) -> u64 {
         | esr.get_masked(ISS::Op2);
 
     let mut mask: u64 = match idreg as u32 {
-        ISS_ID_AA64ISAR1_EL1 => {
-            (ID_AA64ISAR1_EL1::GPI.mask << ID_AA64ISAR1_EL1::GPI.shift)
-                + (ID_AA64ISAR1_EL1::GPA.mask << ID_AA64ISAR1_EL1::GPA.shift)
-                + (ID_AA64ISAR1_EL1::API.mask << ID_AA64ISAR1_EL1::API.shift)
-                + (ID_AA64ISAR1_EL1::APA.mask << ID_AA64ISAR1_EL1::APA.shift)
-        }
         ISS_ID_AA64PFR0_EL1 => {
             (ID_AA64PFR0_EL1::AMU.mask << ID_AA64PFR0_EL1::AMU.shift)
                 + if !rec.context.simd.cfg.sve_en {
@@ -108,7 +102,7 @@ fn handle_sysreg_id(rec: &mut Rec<'_>, esr: u64) -> u64 {
         ISS_ID_AA64AFR0_EL1 => ID_AA64AFR0_EL1.get(),
         ISS_ID_AA64AFR1_EL1 => ID_AA64AFR1_EL1.get(),
         ISS_ID_AA64ISAR0_EL1 => ID_AA64ISAR0_EL1.get(),
-        ISS_ID_AA64ISAR1_EL1 => ID_AA64ISAR1_EL1.get() & mask,
+        ISS_ID_AA64ISAR1_EL1 => ID_AA64ISAR1_EL1.get(),
         ISS_ID_AA64MMFR0_EL1 => ID_AA64MMFR0_EL1.get(),
         ISS_ID_AA64MMFR1_EL1 => ID_AA64MMFR1_EL1.get(),
         ISS_ID_AA64MMFR2_EL1 => ID_AA64MMFR2_EL1.get(), //0x10211122,

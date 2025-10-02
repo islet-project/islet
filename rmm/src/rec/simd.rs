@@ -112,9 +112,9 @@ pub fn init_simd(rec: &mut Rec<'_>) -> Result<(), Error> {
         svcr = 0;
     }
 
-    let simd_aux = rec.aux[RecAuxIndex::SIMD as usize] as usize;
+    let simd_aux = rec.aux(RecAuxIndex::SIMD as usize) as usize;
     let mut simd_granule = get_granule_if!(simd_aux, GranuleState::RecAux)?;
-    debug!("rec aux granule for simd at 0x{:x}", simd_aux);
+    debug!("RecAux granule for simd at 0x{:x}", simd_aux);
     let mut simd_regs = simd_granule.new_uninit_with::<SimdRegister>(SimdRegister::new())?;
     // Note: As islet-rmm doesn't enable VHE in the realm world as following,
     // HCR_EL2.E2H=0, HCR_EL2.TGE=0
@@ -394,7 +394,7 @@ fn preserve_ffr(svcr: u64) -> bool {
 // See exception/trap.rs.
 pub fn restore_state_lazy(rec: &Rec<'_>) {
     let rec_simd_ctxt = &rec.context.simd;
-    let simd_aux = rec.aux[RecAuxIndex::SIMD as usize] as usize;
+    let simd_aux = rec.aux(RecAuxIndex::SIMD as usize) as usize;
     let simd_granule = match get_granule_if!(simd_aux, GranuleState::RecAux) {
         Ok(guard) => guard,
         Err(_e) => {
@@ -410,12 +410,9 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
     if rec_simd_ctxt.cfg.sve_en {
         ns_simd.sve.zcr_el2 = ZCR_EL2.get();
         ns_simd.sve.zcr_el12 = ZCR_EL1.get();
-        let mut max_len = ns_simd.sve.zcr_el2;
-        if max_len < rec_simd.sve.zcr_el2 {
-            max_len = rec_simd.sve.zcr_el2;
-        }
-        // Save at max to prevent leakage across worlds
-        ZCR_EL2.set(max_len);
+        // To prevent cross-world leakage, set to rec's len
+        ZCR_EL2.set(rec_simd.sve.zcr_el2);
+        ZCR_EL1.set(rec_simd.sve.zcr_el12);
         #[cfg(not(any(test, miri, fuzzing)))]
         unsafe {
             // ns_simd.svcr is save at restore_state() on REC_ENTER
@@ -425,14 +422,13 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
             if sme_en() {
                 SVCR.set(rec_simd.svcr);
             }
+
             if rec_simd_ctxt.is_saved {
                 let restore_ffr = true; // Sinde Realm is not supported with SME, it's always true.
                 restore_sve(&rec_simd.sve, restore_ffr);
                 restore_fpu_crsr(&rec_simd.fpu);
             }
         }
-        ZCR_EL2.set(rec_simd.sve.zcr_el2);
-        ZCR_EL1.set(rec_simd.sve.zcr_el12);
     } else {
         unsafe {
             save_fpu(&mut ns_simd.fpu);
@@ -444,7 +440,7 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
 }
 
 pub fn restore_state(rec: &Rec<'_>) {
-    let simd_aux = rec.aux[RecAuxIndex::SIMD as usize] as usize;
+    let simd_aux = rec.aux(RecAuxIndex::SIMD as usize) as usize;
     let simd_granule = match get_granule_if!(simd_aux, GranuleState::RecAux) {
         Ok(guard) => guard,
         Err(_e) => {
@@ -473,8 +469,8 @@ pub fn restore_state(rec: &Rec<'_>) {
 }
 
 pub fn save_state(rec: &mut Rec<'_>) {
+    let simd_aux = rec.aux(RecAuxIndex::SIMD as usize) as usize;
     let rec_simd_ctxt = &mut rec.context.simd;
-    let simd_aux = rec.aux[RecAuxIndex::SIMD as usize] as usize;
     let mut simd_granule = match get_granule_if!(simd_aux, GranuleState::RecAux) {
         Ok(guard) => guard,
         Err(_e) => {
@@ -501,12 +497,6 @@ pub fn save_state(rec: &mut Rec<'_>) {
     if rec_simd_ctxt.cfg.sve_en {
         rec_simd.sve.zcr_el2 = ZCR_EL2.get();
         rec_simd.sve.zcr_el12 = ZCR_EL1.get();
-        let mut max_len = ns_simd.sve.zcr_el2;
-        if max_len < rec_simd.sve.zcr_el2 {
-            max_len = rec_simd.sve.zcr_el2;
-        }
-        // Save context at maximum to prevent leakage
-        ZCR_EL2.set(max_len);
         unsafe {
             let save_ffr = true; // Since FEAT_SME is not for Realms, it's always true.
             save_sve(&mut rec_simd.sve, save_ffr);
@@ -516,6 +506,7 @@ pub fn save_state(rec: &mut Rec<'_>) {
             if sme_en() {
                 SVCR.set(ns_simd.svcr);
             }
+            // To prevent cross-world leakage, restore ns's context of rec's len.
             let restore_ffr = preserve_ffr(ns_simd.svcr);
             restore_sve(&ns_simd.sve, restore_ffr);
             restore_fpu_crsr(&ns_simd.fpu);

@@ -315,6 +315,7 @@ class CCAPlatform(ABC):
         # Script paths should be well-defined (e.g., relative to ROOT)
         self.run(["cp", LAUNCH_REALM, SHARED_PATH], cwd=ROOT)
         self.run(["cp", LAUNCH_REALM_DEBIAN, SHARED_PATH], cwd=ROOT)
+        self.run(["cp", LAUNCH_REALM_METADATA, SHARED_PATH], cwd=ROOT)
         self.run(["cp", TEST_REALM, SHARED_PATH], cwd=ROOT)
         self.run(["cp", CONFIGURE_NET, SHARED_PATH], cwd=ROOT)
         self.run(["cp", SET_REALM_IP, SHARED_PATH], cwd=ROOT)

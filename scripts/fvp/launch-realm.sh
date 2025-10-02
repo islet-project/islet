@@ -5,7 +5,9 @@ cd /shared
 if [ $# -gt 0 ]; then
 	case "$1" in
 		net)
+			echo "Running network configuration script"
 			./configure-net.sh &
+			shift
 			;;
 	esac
 fi
@@ -24,4 +26,5 @@ fi
 	-c 1 \
 	-k linux.realm \
 	-i rootfs-realm.cpio.gz \
-	-p "earlycon=ttyS0 printk.devkmsg=on"
+	-p "earlycon=ttyS0 printk.devkmsg=on" \
+	"$@"

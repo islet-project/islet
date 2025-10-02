@@ -217,6 +217,10 @@ class FVPPlatform(CCAPlatform):
             "-C", "SVE.ScalableVectorExtension.has_sme=1", # to test SME
             "-C", "cluster0.has_arm_v9-2=1",
             "-C", "cluster1.has_arm_v9-2=1",
+            "-C", "cluster0.has_enhanced_pac=1",
+            "-C", "cluster1.has_enhanced_pac=1",
+            "-C", "cluster0.has_pointer_authentication=1",
+            "-C", "cluster1.has_pointer_authentication=1",
             "-f", FVP_CONFIG,  # FVP_CONFIG from config_fvp
             "-C", "cluster0.NUM_CORES=4", # overwrite # of cores in FVP_CONFIG
             "-C", "cluster1.NUM_CORES=4",

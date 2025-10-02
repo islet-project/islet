@@ -1,6 +1,7 @@
 pub mod context;
 pub mod gic;
 pub mod mmio;
+pub mod pauth;
 pub mod sea;
 pub mod simd;
 pub mod timer;
@@ -17,6 +18,13 @@ use core::cell::OnceCell;
 use vmsa::guard::Content;
 
 const MAX_RECS_ORDER_VALUE: u64 = 4;
+
+#[derive(Copy, Clone, Debug)]
+pub enum RecAuxIndex {
+    SIMD = 0,
+    PMU = 1,
+    Undefined,
+}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum RmmRecAttestState {
@@ -124,6 +132,7 @@ impl Rec<'_> {
         self.context.sys_regs.vttbr = vttbr;
         self.context.sys_regs.vmpidr = vmpidr;
         self.aux.copy_from_slice(&aux);
+        pauth::init_pauth(self);
         timer::init_timer(self);
         gic::init_gic(self);
         simd::init_simd(self)?;

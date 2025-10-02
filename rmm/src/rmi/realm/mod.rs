@@ -148,6 +148,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             let mut meta_granule = get_granule_if!(meta, GranuleState::Metadata)?;
             set_granule(&mut meta_granule, GranuleState::Delegated)?;
             rd.set_metadata(None);
+            rmm.page_table.unmap(meta);
         }
 
         #[cfg(kani)]
@@ -208,13 +209,15 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
     // x1: rd - a physicall address of the RD for the target Realm
     // x2: mdg - a physicall address of the delegated granule used for storage of the metadata
     // x3: meta_ptr - a physicall address of the host provided (NS) metadata granule
-    listen!(rmi, rmi::ISLET_REALM_SET_METADATA, |arg, _ret, _rmm| {
+    listen!(rmi, rmi::ISLET_REALM_SET_METADATA, |arg, _ret, rmm| {
         let rd_addr = arg[0];
         let mdg_addr = arg[1];
         let meta_ptr = arg[2];
 
+        rmm.page_table.map(meta_ptr, false);
         let realm_metadata: Box<IsletRealmMetadata> =
             Box::new(host::copy_from(meta_ptr).ok_or(Error::RmiErrorInput)?);
+        rmm.page_table.unmap(meta_ptr);
         realm_metadata.dump();
 
         if let Err(e) = realm_metadata.verify_signature() {
@@ -240,6 +243,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             Err(Error::RmiErrorRealm(0))?;
         }
 
+        rmm.page_table.map(mdg_addr, true);
         let mut metadata_granule = get_granule_if!(mdg_addr, GranuleState::Delegated)?;
         let mut metadata_obj = metadata_granule.content_mut::<IsletRealmMetadata>()?;
 

@@ -6,10 +6,9 @@ use p384::{
 };
 
 use super::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
-use crate::granule::{GranuleState, GRANULE_SIZE};
+use crate::granule::GRANULE_SIZE;
 use crate::measurement::{Measurement, MEASUREMENTS_SLOT_MAX_SIZE};
 use crate::rmi::error::Error;
-use crate::{get_granule, get_granule_if};
 
 const FMT_VERSION: usize = 1;
 pub const REALM_ID_SIZE: usize = 128;
@@ -59,13 +58,6 @@ const _: () = assert!(core::mem::offset_of!(IsletRealmMetadata, version_patch) =
 const _: () = assert!(core::mem::offset_of!(IsletRealmMetadata, public_key) == 0xf0);
 
 impl IsletRealmMetadata {
-    pub fn from_ns(metadata_addr: usize) -> core::result::Result<Self, Error> {
-        let g_realm_metadata = get_granule_if!(metadata_addr, GranuleState::Undelegated)?;
-        let realm_metadata = g_realm_metadata.content::<Self>()?;
-
-        Ok(*realm_metadata)
-    }
-
     fn realm_id_as_str(&self) -> Option<&str> {
         let Ok(cstr) = CStr::from_bytes_until_nul(&self.realm_id) else {
             return None;

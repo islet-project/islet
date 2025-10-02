@@ -213,7 +213,8 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         let mdg_addr = arg[1];
         let meta_ptr = arg[2];
 
-        let realm_metadata = Box::new(IsletRealmMetadata::from_ns(meta_ptr)?);
+        let realm_metadata: Box<IsletRealmMetadata> =
+            Box::new(host::copy_from(meta_ptr).ok_or(Error::RmiErrorInput)?);
         realm_metadata.dump();
 
         if let Err(e) = realm_metadata.verify_signature() {

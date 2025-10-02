@@ -116,18 +116,18 @@ pub fn realm_sealing_key(
     info.flags = flags;
 
     if let Some(meta_addr) = rd.metadata() {
-        let g_metadata = get_granule_if!(meta_addr, GranuleState::Metadata)?;
-        let metadata = g_metadata.content::<IsletRealmMetadata>()?;
+        let metadata_granule = get_granule_if!(meta_addr, GranuleState::Metadata)?;
+        let metadata_obj = metadata_granule.content::<IsletRealmMetadata>()?;
 
-        if flags & RSI_ISLET_SLK_SVN != 0 && metadata.svn() < svn {
+        if flags & RSI_ISLET_SLK_SVN != 0 && metadata_obj.svn() < svn {
             warn!("The SVN parameter is invalid!");
             Err(Error::RmiErrorInput)?
         }
 
-        info.public_key = *metadata.public_key();
+        info.public_key = *metadata_obj.public_key();
 
         if flags & RSI_ISLET_SLK_REALM_ID != 0 {
-            info.realm_id = *metadata.realm_id();
+            info.realm_id = *metadata_obj.realm_id();
         }
 
         if flags & RSI_ISLET_SLK_SVN != 0 {

@@ -30,15 +30,15 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
 
         if let Some(meta) = rd.metadata() {
             debug!("Realm metadata is in use!");
-            let g_metadata = get_granule_if!(meta, GranuleState::Metadata)?;
-            let metadata = g_metadata.content::<IsletRealmMetadata>()?;
+            let metadata_granule = get_granule_if!(meta, GranuleState::Metadata)?;
+            let metadata_obj = metadata_granule.content::<IsletRealmMetadata>()?;
 
-            if !metadata.equal_rd_rim(&rd.measurements[MEASUREMENTS_SLOT_RIM]) {
+            if !metadata_obj.equal_rd_rim(&rd.measurements[MEASUREMENTS_SLOT_RIM]) {
                 error!("Calculated rim and those read from metadata are not the same!");
                 return Err(Error::RmiErrorRealm(0));
             }
 
-            if !metadata.equal_rd_hash_algo(rd.hash_algo()) {
+            if !metadata_obj.equal_rd_hash_algo(rd.hash_algo()) {
                 error!("Provided measurement hash algorithm and metadata hash algorithm are different!");
                 return Err(Error::RmiErrorRealm(0));
             }
@@ -239,12 +239,11 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             Err(Error::RmiErrorRealm(0))?;
         }
 
-        let mut g_metadata = get_granule_if!(mdg_addr, GranuleState::Delegated)?;
-        let mut meta = g_metadata.content_mut::<IsletRealmMetadata>()?;
-        *meta = *realm_metadata.clone();
+        let mut metadata_granule = get_granule_if!(mdg_addr, GranuleState::Delegated)?;
+        let mut metadata_obj = metadata_granule.content_mut::<IsletRealmMetadata>()?;
 
-        set_granule(&mut g_metadata, GranuleState::Metadata)?;
-
+        *metadata_obj = *realm_metadata.clone();
+        set_granule(&mut metadata_granule, GranuleState::Metadata)?;
         rd.set_metadata(Some(mdg_addr));
 
         Ok(())

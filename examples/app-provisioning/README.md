@@ -77,9 +77,9 @@ attestation using RSI call. Warden daemon has a command for that.
 #### Launch islet
 
     cd $CCA/islet
-    ./scripts/fvp-cca --normal=linux-net --realm=linux --rmm=islet --rmm-log-level info --hes
+    ./scripts/qemu-cca --normal=linux-net --realm=linux --rmm=islet --rmm-log-level info --hes
 
-#### Start the warden daemon (telnet 5000)
+#### Start the warden daemon ('host' terminal)
 
     export RUST_LOG=debug
     ./warden/warden_daemon -p 1337 -v ./lkvm -u /tmp/usocket12344 -d ./warden/dnsmasq -w /tmp/workdir -t 3200 --lkvm-runner --cca-enable --dns-records /image-registry.net/192.168.10.1 &
@@ -96,7 +96,8 @@ All the commands below are within the prompt of the client:
     create-application -n light_app -v latest -i image-registry.net:1337 -o 32 -d 32 -r 5156ae05-1da0-4e7b-a168-ec8d1869890e
     fetch-attestation-token -r 5156ae05-1da0-4e7b-a168-ec8d1869890e -o token.bin
 
-The token will saved as `$CCA/islet/out/shared/token.bin`
+The token will saved as `$CCA/islet/out/shared/token.bin`. QEMU can be closed
+now with Ctrl-C on the `./scripts/qemu-cca` terminal.
 
 ### Obtain the RIM
 
@@ -311,9 +312,9 @@ For detailed instructions see: https://github.com/islet-project/image-registry/t
 ## Launch islet
 
     cd $CCA/islet
-    ./scripts/fvp-cca --normal=linux-net --realm=linux --rmm=islet --rmm-log-level info --hes
+    ./scripts/qemu-cca --normal=linux-net --realm=linux --rmm=islet --rmm-log-level info --hes --run-only
 
-## Setup network in normal world linux (paste this in telnet 5000 console)
+## Setup network in normal world linux (paste this in the 'host' terminal)
 
     echo 1 > /proc/sys/net/ipv4/ip_forward
     echo 'nameserver 8.8.8.8' > /etc/resolv.conf

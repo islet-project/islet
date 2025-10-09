@@ -133,11 +133,11 @@ that will be fed to realm verifier.
 
 ### Using kvmtool-rim-measurer
 
-[!CAUTION]
-This tool needs an update for v1.0-rel0, use the alternative method below for now
+> [!CAUTION]
+> This tool needs an update for v1.0-rel0, use the alternative method below for now
 
-[!WARNING]
-This section needs to be simplified
+> [!WARNING]
+> This section needs to be simplified
 
 This is performed by a small helper program called `kvmtool-rim-measurer`. It basically
 runs a modified lkvm tool that calculates and displays the RIM
@@ -258,7 +258,7 @@ To bootstrap the Veraison services use the `CCA/islet/examples/veraison/bootstra
 
 In details, it does a couple of things:
 * Cloning the `https://github.com/veraison/services` repo to `CCA/islet/exmaples/veraison/services` .
-* Applies `./veraison-patch` to fix things and `./veraison-no-auth-patch` to disable endpoints authentication.
+* Applies `veraison-gopls-version.patch` to fix compilation and `veraison-no-auth.patch` to disable endpoints authentication.
 * Builds Docker containers by running `CCA/islet/exmaples/veraison/services/deployments/docker/Makefile`.
 * Start `Veraison` by running `veraison start`.
 * Inserts the `./accept-all.rego` policy which makes `Veraison` accept all implementation IDs etc. (normally you are supposed to create a set of rules checking various parts of the attestation token).
@@ -292,12 +292,12 @@ acts as Reliant Party with communication to realm and Veraison
 services (this binary takes several parameters, most should not be of
 any concern apart from passing latest reference values in `reference.json`):
 
-    CCA/islet/examples/veraison $ ./bin/reliant-party -r <path/to/reference.json>
+    CCA/islet/examples/veraison $ RUST_LOG=info ./bin/reliant-party -r <path/to/reference.json>
 
 If needed, '-b' option can be used to pass different network interface binding
 (the default is 0.0.0.0:1337):
 
-    CCA/islet/examples/veraison $ ./bin/reliant-party -r <path/to/reference.json> -b <LOCAL_IP:PORT>
+    CCA/islet/examples/veraison $ RUST_LOG=info ./bin/reliant-party -r <path/to/reference.json> -b <LOCAL_IP:PORT>
 
 Reliant-party awaits on given IP:PORT for communication from Realm and
 utilizes our `ratls` Rust library and `realm-verifier` library (for `reference.json`
@@ -314,10 +314,10 @@ It will initialize RATLS connection to verification service by performing the ne
 * send the received token to verification service
 * establish safe connection if verification services agrees to do so
 
-This is done with the following command on the realm (the default server_ip:port
-when run on the same machine is 192.168.10.1:1337):
+This is done with the following command on the realm (use 192.168.10.1:1337 when
+run on the same machine or any other <SERVER_IP:PORT> when needed)
 
-    shared # ./bin/realm-application -r root-ca.crt -u <SERVER_IP:PORT>
+    shared # RUST_LOG=info ./bin/realm-application -r root-ca.crt -u 192.168.10.1:1337
 
 That command will take a very long time as Realm on FVP is slow and it does
 asymmetric cryptography (RSA key generation).
@@ -325,16 +325,7 @@ asymmetric cryptography (RSA key generation).
 # Verification success
 
 When verification succeeds, both `realm-application` and `realm-verifier` should not
-output any errors. For both binaries you can set RUST_LOG
-environmental variable to change log level (info, debug):
+output any errors.
 
-Reliant party:
-
-    CCA/islet/examples/veraison $ RUST_LOG=info ./bin/reliant-party -r <path/to/reference.json> -b <LOCAL_IP:PORT>
-
-Realm:
-
-    shared # RUST_LOG=info ./bin/realm-application -r root-ca.crt -u <SERVER_IP:PORT>
-
-With that log level realm client should report successful socket write
-with 'GIT' message and verifying server should output that message.
+With the info log level (as set above) realm client should report successful
+socket write with 'GIT' message and verifying server should output that message.

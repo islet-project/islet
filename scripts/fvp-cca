@@ -123,11 +123,6 @@ class FVPPlatform(CCAPlatform):
         print("[!] Building boot image for FVP...")
         self.make(BUILD_SCRIPT, build_args)
 
-    def prepare_tap_network(self):
-        args = self.args
-        print("[!] Configuring a tap network for FVP...")
-        self.run(["./scripts/configure_tap.sh", args.host_ip, args.host_tap_ip, args.platform_ip, args.route_ip, args.gateway, args.ifname], cwd=ROOT)
-
     def prepare_run_arguments(self):
         run_args = []
         if self.args.debug:
@@ -319,5 +314,5 @@ class FVPPlatform(CCAPlatform):
 if __name__ == "__main__":
     # Import multiprocessing here as it's used in default_optee_build_args
     # which might be called during CCAPlatform.main() when creating an instance for the parser.
-    import multiprocessing 
+    import multiprocessing
     CCAPlatform.main(FVPPlatform)

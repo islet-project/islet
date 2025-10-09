@@ -108,12 +108,6 @@ class QEMUPlatform(CCAPlatform):
         # QEMU does not build a separate boot.img like FVP in this context.
         # The kernel and initrd are passed directly to QEMU.
 
-    def prepare_tap_network(self):
-        print("[TODO] Configuring a tap network for QEMU...")
-        # Original script had this as TODO and returned.
-        # Actual implementation would involve QEMU specific tap setup commands.
-        return
-
     def prepare_run_arguments(self):
         # Original script had this as TODO.
         # QEMU arguments are different from FVP.
@@ -166,11 +160,18 @@ class QEMUPlatform(CCAPlatform):
         print("[!] RUNNING QEMU...")
         self.make(BUILD_SCRIPT, run_args)
 
-
     def run_nw_linux_net(self):
-        print("[TODO] Running QEMU for linux with the tap network...")
-        # Original script had sys.exit(1)
-        sys.exit(1) # Not implemented in original
+        user_name = os.environ['USER']
+        self.prepare_tap_network()
+        print(f"[!] Running QEMU for linux with the tap network for user {user_name}...")
+        run_args = self.default_optee_build_args("run-only")
+        run_args.append(f"TAP_NETWORK=ARM{user_name}")
+        if self.args.rmm == "islet":
+            run_args.append("EXTRA_CMDLINE=kvm-rme.save_host_context=1")
+            run_args.append("QEMU_LPA2=n") # From original qemu-cca
+
+        print("[!] RUNNING QEMU...")
+        self.make(BUILD_SCRIPT, run_args)
 
     def run_acs(self):
         print("[TODO] Running QEMU for ACS...")

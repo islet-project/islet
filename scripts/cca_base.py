@@ -241,9 +241,10 @@ class CCAPlatform(ABC):
     def prepare_nw_linux(self):
         pass
 
-    @abstractmethod
     def prepare_tap_network(self):
-        pass
+        args = self.args
+        print("[!] Configuring a tap network for FVP...")
+        self.run(["./scripts/configure_tap.sh", args.host_ip, args.host_tap_ip, args.platform_ip, args.route_ip, args.gateway, args.ifname], cwd=ROOT)
 
     def prepare_kvmtool(self, lkvm="lkvm"):
         print("[!] Building kvmtool...")

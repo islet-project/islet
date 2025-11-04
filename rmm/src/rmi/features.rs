@@ -46,15 +46,6 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         feat_reg0
             .set_masked_value(FeatureReg0::S2SZ, S2SZ_VALUE)
             .set_masked_value(FeatureReg0::LPA2, LPA2_VALUE)
-            .set_masked_value(
-                FeatureReg0::PMU_EN,
-                if pmu::pmu_present() {
-                    SUPPORTED
-                } else {
-                    NOT_SUPPORTED
-                },
-            )
-            .set_masked_value(FeatureReg0::PMU_NUM_CTRS, pmu::pmu_num_ctrs())
             .set_masked_value(FeatureReg0::HASH_SHA_256, HASH_SHA_256_VALUE)
             .set_masked_value(FeatureReg0::HASH_SHA_512, HASH_SHA_512_VALUE)
             .set_masked_value(FeatureReg0::MAX_RECS_ORDER, rec::max_recs_order() as u64);
@@ -70,6 +61,15 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
                 },
             )
             .set_masked_value(FeatureReg0::SVE_VL, simd::max_sve_vl())
+            .set_masked_value(
+                FeatureReg0::PMU_EN,
+                if pmu::pmu_present() {
+                    SUPPORTED
+                } else {
+                    NOT_SUPPORTED
+                },
+            )
+            .set_masked_value(FeatureReg0::PMU_NUM_CTRS, pmu::pmu_num_ctrs())
             .set_masked_value(FeatureReg0::GICV3_NUM_LRS, gic::nr_lrs() as u64);
         #[cfg(any(miri, test, fuzzing))]
         feat_reg0

@@ -37,6 +37,8 @@ pub struct Rd {
     pub vcpu_index: usize,
     metadata: Option<usize>,
     simd_cfg: SimdConfig,
+    pmu_en: bool,
+    pmu_num_ctrs: usize,
 }
 
 impl Rd {
@@ -51,6 +53,8 @@ impl Rd {
         rpv: [u8; 64],
         sve_en: bool,
         sve_vl: u64,
+        pmu_en: bool,
+        pmu_num_ctrs: usize,
     ) {
         self.vmid = vmid;
         self.state = State::New;
@@ -64,8 +68,12 @@ impl Rd {
         self.rpv.copy_from_slice(rpv.as_slice());
         self.metadata = None;
         self.simd_cfg.sve_en = sve_en;
+        self.pmu_en = pmu_en;
         if sve_en {
             self.simd_cfg.sve_vq = sve_vl;
+        }
+        if pmu_en {
+            self.pmu_num_ctrs = pmu_num_ctrs;
         }
         self.num_recs = 0;
     }
@@ -104,6 +112,10 @@ impl Rd {
 
     pub fn ipa_bits(&self) -> usize {
         self.ipa_bits
+    }
+
+    pub fn pmu_config(&self) -> (bool, usize) {
+        (self.pmu_en, self.pmu_num_ctrs)
     }
 
     pub fn rec_index(&self) -> usize {

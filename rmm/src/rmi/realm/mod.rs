@@ -99,6 +99,8 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
                 params.rpv,
                 params.sve_en(),
                 params.sve_vl as u64,
+                params.pmu_en(),
+                params.pmu_num_ctrs as usize,
             )
         })?;
 

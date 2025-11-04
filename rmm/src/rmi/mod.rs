@@ -68,6 +68,9 @@ pub const ERROR_INPUT: usize = 1;
 pub const ERROR_REC: usize = 3;
 pub const SUCCESS_REC_ENTER: usize = 4;
 
+pub const PMU_OVERFLOW_NOT_ACTIVE: u8 = 0;
+pub const PMU_OVERFLOW_ACTIVE: u8 = 1;
+
 // RmiRttEntryState represents the state of an RTTE
 pub mod rtt_entry_state {
     pub const RMI_UNASSIGNED: usize = 0;

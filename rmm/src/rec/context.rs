@@ -1,6 +1,8 @@
 use super::gic;
 use super::pauth;
 use super::pauth::PauthRegister;
+use super::pmu;
+use super::pmu::PmuRegister;
 use super::simd;
 use super::simd::SimdContext;
 use super::timer;
@@ -16,10 +18,12 @@ pub struct Context {
     pub elr_el2: u64,
     pub spsr_el2: u64,
     pub sys_regs: SystemRegister,
+    pub mdcr_el2: u64,
     pub gic_state: GICRegister,
     pub timer: TimerRegister,
     pub simd: SimdContext,
     pub pauth: PauthRegister,
+    pub pmu: PmuRegister,
 }
 
 pub struct RegOffset;
@@ -87,6 +91,7 @@ impl Context {
         TPIDR_EL2.set(rec as *const _ as u64);
         gic::restore_state(rec);
         pauth::restore_state(rec);
+        pmu::restore_state(rec);
         #[cfg(not(fuzzing))]
         timer::restore_state(rec);
         #[cfg(not(any(test, miri, fuzzing)))]
@@ -102,6 +107,7 @@ impl Context {
     pub unsafe fn from_current(rec: &mut Rec<'_>) {
         gic::save_state(rec);
         pauth::save_state(rec);
+        pmu::save_state(rec);
         #[cfg(not(fuzzing))]
         timer::save_state(rec);
         #[cfg(not(any(test, miri, fuzzing)))]

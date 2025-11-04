@@ -241,6 +241,7 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         #[cfg(not(any(miri, test, fuzzing)))]
         activate_stage2_mmu(&rec);
 
+        crate::rec::pmu::save_host_state(&rec);
         let mut ret_ns;
         loop {
             ret_ns = true;
@@ -303,6 +304,8 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         #[cfg(not(any(miri, test, fuzzing)))]
         crate::rec::gic::send_state_to_host(&rec, &mut run)?;
         crate::rec::timer::send_state_to_host(&rec, &mut run)?;
+        crate::rec::pmu::send_state_to_host(&rec, &mut run)?;
+        crate::rec::pmu::restore_host_state(&rec);
 
         // NOTICE: do not modify `run` after copy_to_ptr(). it won't have any effect.
         rmm.page_table.map(run_pa, false);

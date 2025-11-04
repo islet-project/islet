@@ -21,6 +21,7 @@ pub mod logger;
 pub mod mm;
 #[cfg(not(any(test, kani, miri, fuzzing)))]
 pub mod panic;
+pub mod pmu;
 pub mod realm;
 pub mod rec;
 pub mod rmi;
@@ -60,6 +61,7 @@ use crate::monitor::Monitor;
 use crate::rmm_el3::setup_el3_ifc;
 
 use aarch64_cpu::registers::*;
+use armv9a::{MDCR_EL2, PMCR_EL0};
 use core::ptr::addr_of;
 
 #[cfg(not(kani))]
@@ -132,6 +134,15 @@ unsafe fn setup_el2() {
             + ICC_SRE_EL2::DIB::SET
             + ICC_SRE_EL2::DFB::SET
             + ICC_SRE_EL2::SRE::SET,
+    );
+    MDCR_EL2.write(
+        MDCR_EL2::MTPME::SET
+            + MDCR_EL2::HCCD::SET
+            + MDCR_EL2::HPMD::SET
+            + MDCR_EL2::TDA::SET
+            + MDCR_EL2::TPM::SET
+            + MDCR_EL2::TPMCR::SET
+            + MDCR_EL2::HPMN.val(PMCR_EL0.read(PMCR_EL0::N)),
     );
 }
 

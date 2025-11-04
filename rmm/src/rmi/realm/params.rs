@@ -1,6 +1,7 @@
 use crate::const_assert_eq;
 use crate::granule::{GRANULE_SHIFT, GRANULE_SIZE};
 use crate::measurement::Hashable;
+use crate::pmu;
 use crate::realm::mm::rtt::{RTT_PAGE_LEVEL, RTT_STRIDE};
 use crate::rmi::error::Error;
 use crate::rmi::features;
@@ -111,6 +112,11 @@ impl Params {
         flags.get_masked_value(RmiRealmFlags::Sve) == SUPPORTED
     }
 
+    pub fn pmu_en(&self) -> bool {
+        let flags = RmiRealmFlags::new(self.flags);
+        flags.get_masked_value(RmiRealmFlags::Pmu) == SUPPORTED
+    }
+
     pub fn verify_compliance(&self, rd: usize) -> Result<(), Error> {
         trace!("{:?}", self);
         if self.rtt_base as usize == rd {
@@ -159,7 +165,11 @@ impl Params {
         if !simd::validate(self.sve_en(), self.sve_vl as u64) {
             return Err(Error::RmiErrorInput);
         }
-        if flags.get_masked_value(RmiRealmFlags::Pmu) != features::PMU_EN_VALUE {
+        if self.pmu_en()
+            && (!pmu::pmu_present()
+                || self.pmu_num_ctrs > pmu::pmu_num_ctrs() as u8
+                || (self.pmu_num_ctrs == 0 && !pmu::hpmn0_present()))
+        {
             return Err(Error::RmiErrorInput);
         }
 

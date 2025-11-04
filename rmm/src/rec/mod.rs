@@ -2,6 +2,7 @@ pub mod context;
 pub mod gic;
 pub mod mmio;
 pub mod pauth;
+pub mod pmu;
 pub mod sea;
 pub mod simd;
 pub mod timer;
@@ -133,6 +134,7 @@ impl Rec<'_> {
         self.context.sys_regs.vmpidr = vmpidr;
         self.aux.copy_from_slice(&aux);
         pauth::init_pauth(self);
+        pmu::init_pmu(self);
         timer::init_timer(self);
         gic::init_gic(self);
         simd::init_simd(self)?;
@@ -283,6 +285,11 @@ impl Rec<'_> {
     pub fn ipa_bits(&self) -> Result<usize, Error> {
         let owner = self.get_owner()?;
         Ok(owner.ipa_bits())
+    }
+
+    pub fn pmu_config(&self) -> Result<(bool, usize), Error> {
+        let owner = self.get_owner()?;
+        Ok(owner.pmu_config())
     }
 
     pub fn from_current(&mut self) {

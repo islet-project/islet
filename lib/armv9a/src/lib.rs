@@ -6,6 +6,7 @@
 pub mod r#macro;
 
 pub mod regs;
+pub use regs::pmu::*;
 pub use regs::*;
 pub use tock_registers::registers::InMemoryRegister;
 

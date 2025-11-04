@@ -43,7 +43,10 @@ const CLEAR_MASK: u64 = 0x1_FFFF_FFFF;
 
 pub fn init_pmu(rec: &mut Rec<'_>) {
     let (pmu_enabled, pmu_num_ctrs) = rec.pmu_config().expect("REASON");
+    #[cfg(not(any(miri, test, fuzzing)))]
     let mdcr_el2 = MDCR_EL2.get();
+    #[cfg(any(miri, test, fuzzing))]
+    let mdcr_el2 = 0;
     let mask: u64 = MDCR_EL2::TPM::SET.value
         | MDCR_EL2::TPMCR::SET.value
         | (MDCR_EL2::HPMN.mask << MDCR_EL2::HPMN.shift);
@@ -142,7 +145,14 @@ pub fn pmu_overflow_active() -> bool {
         && PMCR_EL0.read(PMCR_EL0::E) != 0
 }
 
+#[cfg(not(any(miri, test, fuzzing)))]
 pub fn send_state_to_host(_rec: &Rec<'_>, run: &mut Run) -> Result<(), Error> {
     run.set_pmu_overflow(pmu_overflow_active());
+    Ok(())
+}
+
+#[cfg(any(miri, test, fuzzing))]
+pub fn send_state_to_host(_rec: &Rec<'_>, run: &mut Run) -> Result<(), Error> {
+    run.set_pmu_overflow(false);
     Ok(())
 }

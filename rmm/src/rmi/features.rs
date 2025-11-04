@@ -1,6 +1,7 @@
 use crate::event::RmiHandle;
 use crate::gic;
 use crate::listen;
+use crate::pmu;
 use crate::rec;
 use crate::rmi;
 use crate::simd;
@@ -26,13 +27,11 @@ define_bits!(
 
 const S2SZ_VALUE: u64 = 48;
 pub const LPA2_VALUE: u64 = 0;
-pub const PMU_EN_VALUE: u64 = NOT_SUPPORTED;
-const PMU_NUM_CTRS_VALUE: u64 = 0;
 const HASH_SHA_256_VALUE: u64 = SUPPORTED;
 const HASH_SHA_512_VALUE: u64 = SUPPORTED;
 
-const NOT_SUPPORTED: u64 = 0;
-const SUPPORTED: u64 = 1;
+pub const NOT_SUPPORTED: u64 = 0;
+pub const SUPPORTED: u64 = 1;
 
 const FEATURE_REGISTER_0_INDEX: usize = 0;
 
@@ -47,8 +46,15 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         feat_reg0
             .set_masked_value(FeatureReg0::S2SZ, S2SZ_VALUE)
             .set_masked_value(FeatureReg0::LPA2, LPA2_VALUE)
-            .set_masked_value(FeatureReg0::PMU_EN, PMU_EN_VALUE)
-            .set_masked_value(FeatureReg0::PMU_NUM_CTRS, PMU_NUM_CTRS_VALUE)
+            .set_masked_value(
+                FeatureReg0::PMU_EN,
+                if pmu::pmu_present() {
+                    SUPPORTED
+                } else {
+                    NOT_SUPPORTED
+                },
+            )
+            .set_masked_value(FeatureReg0::PMU_NUM_CTRS, pmu::pmu_num_ctrs())
             .set_masked_value(FeatureReg0::HASH_SHA_256, HASH_SHA_256_VALUE)
             .set_masked_value(FeatureReg0::HASH_SHA_512, HASH_SHA_512_VALUE)
             .set_masked_value(FeatureReg0::MAX_RECS_ORDER, rec::max_recs_order() as u64);

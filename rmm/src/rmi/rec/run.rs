@@ -3,6 +3,7 @@ use armv9a::{define_bitfield, define_bits, define_mask};
 use crate::const_assert_eq;
 use crate::granule::GRANULE_SIZE;
 use crate::rmi::error::Error;
+use crate::rmi::{PMU_OVERFLOW_ACTIVE, PMU_OVERFLOW_NOT_ACTIVE};
 
 use autopadding::*;
 
@@ -140,6 +141,14 @@ impl Run {
 
     pub fn set_cntp_cval(&mut self, val: u64) {
         self.exit.cntp_cval = val;
+    }
+
+    pub fn set_pmu_overflow(&mut self, val: bool) {
+        if val {
+            self.exit.pmu_ovf = PMU_OVERFLOW_ACTIVE;
+        } else {
+            self.exit.pmu_ovf = PMU_OVERFLOW_NOT_ACTIVE;
+        }
     }
 
     pub fn exit_reason(&self) -> u8 {

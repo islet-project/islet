@@ -49,11 +49,7 @@ fn handle_sysreg_id(rec: &mut Rec<'_>, esr: u64) -> u64 {
         return trap::RET_TO_REC;
     }
 
-    let idreg = esr.get_masked(ISS::Op0)
-        | esr.get_masked(ISS::Op1)
-        | esr.get_masked(ISS::CRn)
-        | esr.get_masked(ISS::CRm)
-        | esr.get_masked(ISS::Op2);
+    let idreg = esr.get_masked(ISS::Op0 | ISS::Op1 | ISS::CRn | ISS::CRm | ISS::Op2);
 
     let mut mask: u64 = match idreg as u32 {
         ISS_ID_AA64PFR0_EL1 => {
@@ -79,7 +75,6 @@ fn handle_sysreg_id(rec: &mut Rec<'_>, esr: u64) -> u64 {
                 + (ID_AA64DFR0_EL1::CTX_CMPs.mask << ID_AA64DFR0_EL1::CTX_CMPs.shift)
                 + (ID_AA64DFR0_EL1::WRPs.mask << ID_AA64DFR0_EL1::WRPs.shift)
                 + (ID_AA64DFR0_EL1::BRPs.mask << ID_AA64DFR0_EL1::BRPs.shift)
-                + (ID_AA64DFR0_EL1::PMUVer.mask << ID_AA64DFR0_EL1::PMUVer.shift)
                 + (ID_AA64DFR0_EL1::TraceVer.mask << ID_AA64DFR0_EL1::TraceVer.shift)
                 + (ID_AA64DFR0_EL1::DebugVer.mask << ID_AA64DFR0_EL1::DebugVer.shift)
         }

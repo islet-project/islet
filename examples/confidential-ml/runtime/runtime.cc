@@ -30,6 +30,13 @@
 #include <stdio.h>
 #include <unistd.h>
 
+#include "certifier_framework.h"
+#include "certifier_utilities.h"
+#include "certifier_algorithms.h"
+
+using namespace certifier::framework;
+using namespace certifier::utilities;
+
 // operations are: cold-init, get-certifier, run-runtime-server
 DEFINE_bool(print_all, false,  "verbose");
 DEFINE_string(operation, "", "operation");
@@ -42,6 +49,9 @@ DEFINE_string(runtime_host, "localhost", "address for runtime");
 DEFINE_int32(runtime_model_port, 8124, "port for runtime (used to deliver model)");
 DEFINE_int32(runtime_data_port, 8125, "port for runtime (used to deliver data for device1)");
 DEFINE_int32(runtime_data_port2, 8126, "port for runtime (used to deliver data for device2)");
+
+DEFINE_string(server_app_host, "localhost", "address for app server");
+DEFINE_int32(server_app_port, 8124, "port for server app server");
 
 DEFINE_int32(gui_server_port, -1, "gui server port for sending HTTP GET");
 DEFINE_string(model_type, "word", "model type: word or code");
@@ -59,7 +69,7 @@ DEFINE_string(measurement_file, "example_app.measurement", "measurement");
 #include "../common/code_model.h"
 #include "../common/util.h"
 
-static cc_trust_data* app_trust_data = nullptr;
+static cc_trust_manager *app_trust_mgr = nullptr;
 static char *ckpt_path = "./checkpoint/model.ckpt";
 static char *aggr_ckpt_path = "./checkpoint/aggr_model.ckpt";
 static char *local_ckpt_path[] = {"./checkpoint/local_model0.ckpt", "./checkpoint/local_model1.ckpt"};
@@ -72,6 +82,7 @@ static CodeModel code_model;
 static bool is_gui_logging = false;
 static bool is_code_model = false;
 static bool is_malicious_mode = false;
+static string enclave_type("simulated-enclave");
 
 using namespace std;
 
@@ -240,9 +251,7 @@ void *thread_func(void *arg) {
 
   LOG("thread run: port number: %d\n", targ->port);
   server_dispatch(FLAGS_runtime_host, targ->port,
-                  app_trust_data->serialized_policy_cert_,
-                  app_trust_data->private_auth_key_,
-                  app_trust_data->private_auth_key_.certificate(),
+                  *app_trust_mgr,
                   targ->callback);
 }
 
@@ -255,6 +264,48 @@ void test_aggregation() {
   word_model.init(model, len);
   word_model.aggregate(local_ckpt_path, aggr_ckpt_path);
 }
+
+// Parameters for simulated enclave
+bool get_enclave_parameters(string **s, int *n) {
+
+  // serialized attest key, measurement, serialized endorsement, in that order
+  string *args = new string[3];
+  if (args == nullptr) {
+    return false;
+  }
+  *s = args;
+
+  if (!read_file_into_string(FLAGS_data_dir + FLAGS_attest_key_file,
+                             &args[0])) {
+    printf("%s() error, line %d, Can't read attest file\n", __func__, __LINE__);
+    goto err;
+  }
+
+  if (!read_file_into_string(FLAGS_data_dir + FLAGS_measurement_file,
+                             &args[1])) {
+    printf("%s() error, line %d, Can't read measurement file\n",
+           __func__,
+           __LINE__);
+    goto err;
+  }
+
+  if (!read_file_into_string(FLAGS_data_dir + FLAGS_platform_attest_endorsement,
+                             &args[2])) {
+    printf("%s() error, line %d, Can't read endorsement file\n",
+           __func__,
+           __LINE__);
+    goto err;
+  }
+
+  *n = 3;
+  return true;
+
+err:
+  delete[] args;
+  *s = nullptr;
+  return false;
+}
+
 
 int main(int an, char** av) {
   gflags::ParseCommandLineFlags(&an, &av, true);
@@ -273,63 +324,69 @@ int main(int an, char** av) {
   }
 
   SSL_library_init();
-  string enclave_type("simulated-enclave");
   string purpose("authentication");
 
   string store_file(FLAGS_data_dir);
   store_file.append(FLAGS_policy_store_file);
-  app_trust_data = new cc_trust_data(enclave_type, purpose, store_file);
-  if (app_trust_data == nullptr) {
+  app_trust_mgr = new cc_trust_manager(enclave_type, purpose, store_file);
+  if (app_trust_mgr == nullptr) {
     LOG("couldn't initialize trust object\n");
     return 1;
   }
 
   // Init policy key info
-  if (!app_trust_data->init_policy_key(initialized_cert_size, initialized_cert)) {
+  if (!app_trust_mgr->init_policy_key(initialized_cert, initialized_cert_size)) {
     LOG("Can't init policy key\n");
     return 1;
   }
 
-  // Init simulated enclave
-  string attest_key_file_name(FLAGS_data_dir);
-  attest_key_file_name.append(FLAGS_attest_key_file);
-  string platform_attest_file_name(FLAGS_data_dir);
-  platform_attest_file_name.append(FLAGS_platform_attest_endorsement);
-  string measurement_file_name(FLAGS_data_dir);
-  measurement_file_name.append(FLAGS_measurement_file);
-  string attest_endorsement_file_name(FLAGS_data_dir);
-  attest_endorsement_file_name.append(FLAGS_platform_attest_endorsement);
-
-  if (!app_trust_data->initialize_simulated_enclave_data(attest_key_file_name,
-      measurement_file_name, attest_endorsement_file_name)) {
-    LOG("Can't init simulated enclave\n");
+  // Get parameters
+  string *params = nullptr;
+  int n = 0;
+  if (!get_enclave_parameters(&params, &n)) {
+    printf("%s() error, line %d, get enclave parameters\n", __func__, __LINE__);
     return 1;
   }
 
+  if (!app_trust_mgr->initialize_enclave(n, params)) {
+    LOG("Can't init simulated enclave\n");
+    return 1;
+  }
+  if (params != nullptr) {
+    delete[] params;
+    params = nullptr;
+  }
+
   // Standard algorithms for the enclave
-  string public_key_alg("rsa-2048");
-  string symmetric_key_alg("aes-256");
-  string hash_alg("sha-256");
-  string hmac_alg("sha-256-hmac");
+  string public_key_alg(Enc_method_rsa_2048);
+  string auth_symmetric_key_alg(Enc_method_aes_256_cbc_hmac_sha256);
 
   // Carry out operation
   int ret = 0;
   if (FLAGS_operation == "cold-init") {
-    if (!app_trust_data->cold_init(public_key_alg,
-                                   symmetric_key_alg, hash_alg, hmac_alg)) {
+    if (!app_trust_mgr->cold_init(public_key_alg, auth_symmetric_key_alg, "simple-app-home_domain", FLAGS_policy_host, FLAGS_policy_port, FLAGS_server_app_host, FLAGS_server_app_port)) {
       LOG("cold-init failed\n");
       ret = 1;
+      goto done;
     }
+    LOG("cold-init success\n");
   } else if (FLAGS_operation == "get-certifier") {
-    if (!app_trust_data->certify_me(FLAGS_policy_host, FLAGS_policy_port)) {
-      LOG("certification failed\n");
+    if (!app_trust_mgr->warm_restart()) {
+      printf("%s() error, line %d, warm-restart failed\n", __func__, __LINE__);
       ret = 1;
+      goto done;
     }
+    if (!app_trust_mgr->certify_me()) {
+      printf("%s() error, line %d, certification failed\n", __func__, __LINE__);
+      ret = 1;
+      goto done;
+    }
+    LOG("get-certifier done\n");
   } else if (FLAGS_operation == "run-runtime-server") {
     // word prediction model: ML (training + inference), FL (aggregator)
     // code model: ML (inference only)
 
-    if (!app_trust_data->warm_restart()) {
+    if (!app_trust_mgr->warm_restart()) {
       LOG("warm-restart failed\n");
       ret = 1;
       goto done;
@@ -380,10 +437,10 @@ int main(int an, char** av) {
   }
 
 done:
-  // app_trust_data->print_trust_data();
-  app_trust_data->clear_sensitive_data();
-  if (app_trust_data != nullptr) {
-    delete app_trust_data;
+  // app_trust_mgr->print_trust_data();
+  app_trust_mgr->clear_sensitive_data();
+  if (app_trust_mgr != nullptr) {
+    delete app_trust_mgr;
   }
   word_model.finalize();
   return ret;

@@ -19,6 +19,13 @@
 #include <string.h>
 #include <errno.h>
 
+#include "certifier_framework.h"
+#include "certifier_utilities.h"
+#include "certifier_algorithms.h"
+
+using namespace certifier::framework;
+using namespace certifier::utilities;
+
 //  Copyright (c) 2021-22, VMware Inc, and the Certifier Authors.  All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -53,6 +60,9 @@ DEFINE_string(attest_key_file, "attest_key_file.bin", "attest key");
 DEFINE_string(measurement_file, "model_provider.measurement", "measurement");
 DEFINE_string(model_file, "model.tflite", "model file");
 
+#define LOG(...) do { \
+  printf(__VA_ARGS__); \
+} while(0)
 
 // model_provider performs three possible roles
 //    cold-init: This creates application keys and initializes the policy store.
@@ -60,7 +70,7 @@ DEFINE_string(model_file, "model.tflite", "model file");
 //    send-model: This sends ML model to Runtime which is capable of doing ML operations and passing the model to devices.
 
 #include "../certifier-data/policy_key.cc"
-cc_trust_data* app_trust_data = nullptr;
+static cc_trust_manager *app_trust_mgr = nullptr;
 const int max_model_size = 1024 * 256;  // 256k
 
 // -----------------------------------------------------------------------------------------
@@ -100,6 +110,47 @@ void send_model(secure_authenticated_channel& channel, string &model_file_name) 
   }
 }
 
+// Parameters for simulated enclave
+bool get_enclave_parameters(string **s, int *n) {
+
+  // serialized attest key, measurement, serialized endorsement, in that order
+  string *args = new string[3];
+  if (args == nullptr) {
+    return false;
+  }
+  *s = args;
+
+  if (!read_file_into_string(FLAGS_data_dir + FLAGS_attest_key_file,
+                             &args[0])) {
+    printf("%s() error, line %d, Can't read attest file\n", __func__, __LINE__);
+    goto err;
+  }
+
+  if (!read_file_into_string(FLAGS_data_dir + FLAGS_measurement_file,
+                             &args[1])) {
+    printf("%s() error, line %d, Can't read measurement file\n",
+           __func__,
+           __LINE__);
+    goto err;
+  }
+
+  if (!read_file_into_string(FLAGS_data_dir + FLAGS_platform_attest_endorsement,
+                             &args[2])) {
+    printf("%s() error, line %d, Can't read endorsement file\n",
+           __func__,
+           __LINE__);
+    goto err;
+  }
+
+  *n = 3;
+  return true;
+
+err:
+  delete[] args;
+  *s = nullptr;
+  return false;
+}
+
 int main(int an, char** av) {
   gflags::ParseCommandLineFlags(&an, &av, true);
   an = 1;
@@ -118,76 +169,78 @@ int main(int an, char** av) {
 
   string store_file(FLAGS_data_dir);
   store_file.append(FLAGS_policy_store_file);
-  app_trust_data = new cc_trust_data(enclave_type, purpose, store_file);
-  if (app_trust_data == nullptr) {
+  app_trust_mgr = new cc_trust_manager(enclave_type, purpose, store_file);
+  if (app_trust_mgr == nullptr) {
     printf("couldn't initialize trust object\n");
     return 1;
   }
 
   // Init policy key info
-  if (!app_trust_data->init_policy_key(initialized_cert_size, initialized_cert)) {
+  if (!app_trust_mgr->init_policy_key(initialized_cert, initialized_cert_size)) {
     printf("Can't init policy key\n");
     return 1;
   }
 
-  // Init simulated enclave
-  string attest_key_file_name(FLAGS_data_dir);
-  attest_key_file_name.append(FLAGS_attest_key_file);
-  string platform_attest_file_name(FLAGS_data_dir);
-  platform_attest_file_name.append(FLAGS_platform_attest_endorsement);
-  string measurement_file_name(FLAGS_data_dir);
-  measurement_file_name.append(FLAGS_measurement_file);
-  string attest_endorsement_file_name(FLAGS_data_dir);
-  attest_endorsement_file_name.append(FLAGS_platform_attest_endorsement);
-
-  if (!app_trust_data->initialize_simulated_enclave_data(attest_key_file_name,
-      measurement_file_name, attest_endorsement_file_name)) {
-    printf("Can't init simulated enclave\n");
+  // Get parameters
+  string *params = nullptr;
+  int n = 0;
+  if (!get_enclave_parameters(&params, &n)) {
+    printf("%s() error, line %d, get enclave parameters\n", __func__, __LINE__);
     return 1;
   }
 
+  if (!app_trust_mgr->initialize_enclave(n, params)) {
+    LOG("Can't init simulated enclave\n");
+    return 1;
+  }
+  if (params != nullptr) {
+    delete[] params;
+    params = nullptr;
+  }
+
   // Standard algorithms for the enclave
-  string public_key_alg("rsa-2048");
-  string symmetric_key_alg("aes-256");
-  string hash_alg("sha-256");
-  string hmac_alg("sha-256-hmac");
+  string public_key_alg(Enc_method_rsa_2048);
+  string auth_symmetric_key_alg(Enc_method_aes_256_cbc_hmac_sha256);
 
   // Carry out operation
   int ret = 0;
   if (FLAGS_operation == "cold-init") {
-    if (!app_trust_data->cold_init(public_key_alg,
-                                   symmetric_key_alg, hash_alg, hmac_alg)) {
-      printf("cold-init failed\n");
+    if (!app_trust_mgr->cold_init(public_key_alg, auth_symmetric_key_alg, "simple-app-home_domain", FLAGS_policy_host, FLAGS_policy_port, FLAGS_policy_host, FLAGS_policy_port)) {
+      LOG("cold-init failed\n");
       ret = 1;
+      goto done;
     }
   } else if (FLAGS_operation == "get-certifier") {
-    if (!app_trust_data->certify_me(FLAGS_policy_host, FLAGS_policy_port)) {
-      printf("certification failed\n");
+    if (!app_trust_mgr->warm_restart()) {
+      printf("%s() error, line %d, warm-restart failed\n", __func__, __LINE__);
       ret = 1;
+      goto done;
+    }
+    if (!app_trust_mgr->certify_me()) {
+      printf("%s() error, line %d, certification failed\n", __func__, __LINE__);
+      ret = 1;
+      goto done;
     }
   } else if (FLAGS_operation == "send-model") {
     string model_file_name(FLAGS_model_file);
     string my_role("client");
     secure_authenticated_channel channel(my_role);
 
-    if (!app_trust_data->warm_restart()) {
+    if (!app_trust_mgr->warm_restart()) {
       printf("warm-restart failed\n");
       ret = 1;
       goto done;
     }
 
     printf("running as client\n");
-    if (!app_trust_data->cc_auth_key_initialized_ ||
-        !app_trust_data->cc_policy_info_initialized_) {
+    if (!app_trust_mgr->cc_auth_key_initialized_ ||
+        !app_trust_mgr->cc_policy_info_initialized_) {
       printf("trust data not initialized\n");
       ret = 1;
       goto done;
     }
 
-    if (!channel.init_client_ssl(FLAGS_runtime_host, FLAGS_runtime_model_port,
-                                 app_trust_data->serialized_policy_cert_,
-                                 app_trust_data->private_auth_key_,
-                                 app_trust_data->private_auth_key_.certificate())) {
+    if (!channel.init_client_ssl(FLAGS_runtime_host, FLAGS_runtime_model_port, *app_trust_mgr)) {
       printf("Can't init client app\n");
       ret = 1;
       goto done;
@@ -199,10 +252,10 @@ int main(int an, char** av) {
   }
 
 done:
-  // app_trust_data->print_trust_data();
-  app_trust_data->clear_sensitive_data();
-  if (app_trust_data != nullptr) {
-    delete app_trust_data;
+  // app_trust_mgr->print_trust_data();
+  app_trust_mgr->clear_sensitive_data();
+  if (app_trust_mgr != nullptr) {
+    delete app_trust_mgr;
   }
   return ret;
 }

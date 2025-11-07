@@ -21,3 +21,6 @@ mm_rtt_fold_unassigned
 mm_rtt_fold_unassigned_ns
 mm_rtt_fold_assigned_ns
 exception_non_emulatable_da_2
+exception_rec_exit_irq
+gic_timer_nsel2_trig
+gic_timer_rel1_trig

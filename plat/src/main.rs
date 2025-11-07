@@ -1,6 +1,5 @@
 #![no_std]
 #![no_main]
-#![feature(naked_functions)]
 #![warn(rust_2018_idioms)]
 #![deny(warnings)]
 

@@ -31,7 +31,7 @@ pub unsafe extern "C" fn current_cpu_stack(cpu_id: usize) -> usize {
 // x1 : Version for this Boot interface
 // x2 : platform core count
 // x3 : Base address for the EL3 <-> RMM shared area
-#[naked]
+#[unsafe(naked)]
 #[link_section = ".head.text"]
 #[no_mangle]
 unsafe extern "C" fn rmm_entry() -> ! {

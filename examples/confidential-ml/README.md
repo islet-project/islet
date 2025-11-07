@@ -31,7 +31,7 @@ In ML setting, it works as following:
 5. <device> do inference with a newly trained model.
 ```
 
-In FL setting, it works as following:
+In FL setting, it works as following (DEPRECATED. DO NOT TRY THIS):
 ```
 1. <model-provider> sends a model to runtime.
 2. <runtime> receives a model.

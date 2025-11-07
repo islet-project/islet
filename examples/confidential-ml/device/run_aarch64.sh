@@ -1,32 +1,22 @@
 #!/bin/sh
 
-rm -f checkpoint/model.ckpt
+PROVISION_DIR=/shared/device
+MEASUREMENT_FILE=device.measurement
+HOST_IP=192.168.10.1
 
-HOST=$1
-PORT=$2
-MODEL_TYPE=$3   # "word" or "code"
-IS_FL=$4        # 0 for ML, 1 for FL
+#LD_PRELOAD=./libc.so.6:./ld-linux-aarch64.so.1 
+./device.exe --print_all=true \
+      --operation=cold-init --data_dir=$PROVISION_DIR/ --measurement_file=${MEASUREMENT_FILE} \
+      --policy_store_file=policy_store --runtime_host=$HOST_IP --runtime_data_port=8125 --policy_host=$HOST_IP \
 
-GUI_RX_PORT=-1
-if [ "$5" ]; then
-  GUI_RX_PORT=$5
-fi
+#LD_PRELOAD=./libc.so.6:./ld-linux-aarch64.so.1 
+./device.exe --print_all=true \
+      --operation=get-certifier --data_dir=$PROVISION_DIR/ --measurement_file=${MEASUREMENT_FILE} \
+      --policy_store_file=policy_store --runtime_host=$HOST_IP --runtime_data_port=8125 --policy_host=$HOST_IP \
 
-GUI_TX_PORT=-1
-if [ "$6" ]; then
-  GUI_TX_PORT=$6
-fi
+#LD_PRELOAD=./libc.so.6:./ld-linux-aarch64.so.1 
+./device.exe --print_all=true --operation=run-shell --data_dir=$PROVISION_DIR/ --measurement_file=${MEASUREMENT_FILE} \
+      --policy_store_file=policy_store --runtime_host=$HOST_IP --runtime_data_port=8125 --policy_host=$HOST_IP \
+      --model_type=code --is_fl=0 \
+      --gui_rx_port=-1 --gui_tx_port=-1
 
-DEVICE_HOST=localhost
-if [ "$7" ]; then
-  DEVICE_HOST=$7
-fi
-
-date -s "2023-09-18 00:00:00" # [hack to skip time check]
-ln -s /shared/examples/lib/libtensorflowlite.so /lib/libtensorflowlite.so
-ln -s /shared/examples/lib/libtensorflowlite_flex.so /lib/libtensorflowlite_flex.so
-
-./device.exe --print_all=true --operation=run-shell --data_dir=./data/ \
-      --policy_store_file=policy_store --runtime_host="${HOST}" --runtime_data_port=${PORT} \
-      --model_type="${MODEL_TYPE}" --is_fl=${IS_FL} \
-      --gui_rx_port=${GUI_RX_PORT} --gui_tx_port=${GUI_TX_PORT} --device_host="${DEVICE_HOST}"

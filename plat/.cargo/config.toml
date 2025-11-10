@@ -4,6 +4,5 @@ target = "aarch64-unknown-none-softfloat"
 [target.aarch64-unknown-none-softfloat]
 rustflags = [
   "-C", "target-feature=+ecv",
-  "-C", "target-feature=+sme",
   "-C", "target-feature=+tlb-rmi"
 ]

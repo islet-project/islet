@@ -41,10 +41,7 @@ lazy_static! {
             // Set to maximum
             ZCR_EL2.write(ZCR_EL2::LEN.val(SVE_VQ_ARCH_MAX));
             // Get vl in bytes
-            let vl_b: u64;
-            unsafe {
-                asm!("rdvl {}, #1", out(reg) vl_b);
-            }
+            let vl_b = unsafe { get_vector_length_bytes() };
             sve_vq = ((vl_b << 3)/ QUARD_WORD) - 1;
             sve_en = true;
             trace!("sve_vq={:?}", sve_vq);
@@ -71,6 +68,16 @@ lazy_static! {
             sme_en,
         }
     };
+}
+
+/// Get the SVE vector length in bytes using the RDVL instruction
+#[target_feature(enable = "sve")]
+unsafe fn get_vector_length_bytes() -> u64 {
+    let vl_b: u64;
+    unsafe {
+        asm!("rdvl {}, #1", out(reg) vl_b);
+    }
+    vl_b
 }
 
 pub fn validate(en: bool, sve_vl: u64) -> bool {

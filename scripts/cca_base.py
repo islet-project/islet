@@ -207,6 +207,7 @@ class CCAPlatform(ABC):
                 features += ["--features", "stat"]
             if args.normal_world == "acs":
                 features += ["--features", "gst_page_table"]
+                features += ["--features", "ns_state_save"]
 
             features += ["--features", self.platform_name]
 

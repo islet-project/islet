@@ -18,6 +18,7 @@ max_level_debug = ["log/max_level_debug", "islet_rmm/max_level_debug"]
 max_level_trace = ["log/max_level_trace", "islet_rmm/max_level_trace"]
 stat = ["islet_rmm/stat"]
 gst_page_table = ["islet_rmm/gst_page_table"]
+ns_state_save = ["islet_rmm/ns_state_save"]
 fvp = ["islet_rmm/fvp"]
 qemu = ["islet_rmm/qemu"]
 

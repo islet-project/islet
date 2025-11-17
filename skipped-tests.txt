@@ -1,7 +1,5 @@
 cmd_multithread_realm_mp
-exception_rec_exit_wfi
 exception_rec_exit_wfe
 attestation_rec_exit_irq
-gic_timer_rel1_trig
 mm_gpf_exception
 cmd_secure_test

@@ -233,9 +233,18 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         crate::rsi::ripas::complete_ripas(&mut rec, &run)?;
 
         let wfx_flag = run.entry_flags();
-        if wfx_flag.get_masked(EntryFlag::TRAP_WFI | EntryFlag::TRAP_WFE) != 0 {
-            warn!("Islet does not support re-configuring the WFI(E) trap");
-            warn!("TWI(E) in HCR_EL2 is currently fixed to 'no trap'");
+        #[cfg(not(any(miri, test, fuzzing)))]
+        {
+            let hcr_el2 = HCR_EL2.get();
+            let mut wfx = 0;
+            let wfx_mask = !(3 << 13);
+            if wfx_flag.get_masked(EntryFlag::TRAP_WFI) != 0 {
+                wfx |= 1 << 13;
+            }
+            if wfx_flag.get_masked(EntryFlag::TRAP_WFE) != 0 {
+                wfx |= 1 << 14;
+            }
+            HCR_EL2.set((hcr_el2 & wfx_mask) | wfx);
         }
 
         #[cfg(not(any(miri, test, fuzzing)))]

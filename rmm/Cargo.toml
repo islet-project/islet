@@ -40,6 +40,7 @@ stat = []
 gst_page_table = []
 fvp = []
 qemu = []
+ns_state_save = []
 
 # The below are features relevant for model checking
 mc_rmi_features = []

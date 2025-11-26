@@ -9,7 +9,6 @@ extern crate log;
 mod entry;
 mod plat;
 
-use aarch64_cpu::registers::*;
 use islet_rmm::allocator;
 use islet_rmm::config::PlatformMemoryLayout;
 use islet_rmm::cpu;
@@ -24,15 +23,19 @@ extern "C" {
 #[no_mangle]
 pub unsafe fn main(x0: u64, x1: u64, x2: u64, x3: u64) -> ! {
     let cpuid: usize = x0 as usize;
-    info!(
-        "booted on core {:2} with EL{}!",
-        cpuid,
-        CurrentEL.read(CurrentEL::EL) as u8
-    );
-    info!(
-        "boot args: x0:0x{:X}, x1:0x{:X}, x2:0x{:X}, x3:0x{:X}",
-        x0, x1, x2, x3
-    );
+    // Do not print here until MMU is turned on, except on cpu0.
+    // Cores other than cpu0 at this point are still in its mmu
+    // off state with d-cache disabled and i-cache enabled.
+    // This may cause incosistencies between cpus with mmu enabled
+    // and cpus with mmu disabled.
+    // Logging involves buffer allocation and its internal data struct
+    // for heap (linked_list) could be corrupted due to the reason above.
+    if x0 == 0 {
+        info!(
+            "boot args: x0:0x{:X}, x1:0x{:X}, x2:0x{:X}, x3:0x{:X}",
+            x0, x1, x2, x3
+        );
+    }
 
     if cpuid != cpu::get_cpu_id() {
         panic!(

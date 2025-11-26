@@ -79,6 +79,11 @@ use core::ptr::addr_of;
 pub unsafe fn start(cpu_id: usize, layout: PlatformMemoryLayout) {
     let el3_shared_buf = layout.el3_shared_buf;
     setup_mmu_cfg(layout);
+    info!(
+        "booted on core {:2} with EL{}!",
+        cpu_id,
+        CurrentEL.read(CurrentEL::EL) as u8
+    );
     setup_el2();
     #[cfg(feature = "gst_page_table")]
     setup_gst();

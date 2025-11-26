@@ -3,7 +3,7 @@
 set -e
 
 # Control these variables
-EXPECTED=95
+EXPECTED=97
 TIMEOUT=30
 
 ROOT=$(git rev-parse --show-toplevel)

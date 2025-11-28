@@ -391,3 +391,19 @@ pub fn run() -> Result<[usize; 4], Error> {
 pub fn max_recs_order() -> usize {
     MAX_RECS_ORDER_VALUE as usize
 }
+
+// Note: Islet intends to manage states only for the realm world.
+//       Handling the ns state here does not align Islet's desgin.
+//       Save the host state only if necessary.
+pub fn save_host_state(rec: &Rec<'_>) {
+    pmu::save_host_state(rec);
+    // TODO: Apply 'ns_state_save' feature to the save_host_state func.
+    // For that, we need to move the code here from the corresponding patches
+    // in the nw-linux.
+    timer::save_host_state(rec);
+}
+
+pub fn restore_host_state(rec: &Rec<'_>) {
+    pmu::restore_host_state(rec);
+    timer::restore_host_state(rec);
+}

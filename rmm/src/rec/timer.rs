@@ -55,8 +55,6 @@ pub fn set_cnthctl(rec: &mut Rec<'_>, val: u64) {
 #[cfg(not(fuzzing))]
 pub fn restore_state(rec: &Rec<'_>) {
     let timer = &rec.context.timer;
-    #[cfg(feature = "ns_state_save")]
-    ns_timer::save();
 
     CNTVOFF_EL2.set(timer.cntvoff_el2);
     CNTPOFF_EL2.set(timer.cntpoff_el2);
@@ -78,8 +76,6 @@ pub fn save_state(rec: &mut Rec<'_>) {
     timer.cntp_cval_el0 = CNTP_CVAL_EL0.get();
     timer.cntp_ctl_el0 = CNTP_CTL_EL0.get();
     timer.cnthctl_el2 = CNTHCTL_EL2.get();
-    #[cfg(feature = "ns_state_save")]
-    ns_timer::restore();
 }
 
 pub fn send_state_to_host(rec: &Rec<'_>, run: &mut Run) -> Result<(), Error> {
@@ -90,4 +86,14 @@ pub fn send_state_to_host(rec: &Rec<'_>, run: &mut Run) -> Result<(), Error> {
     run.set_cntp_ctl(timer.cntp_ctl_el0);
     run.set_cntp_cval(timer.cntp_cval_el0 - timer.cntpoff_el2);
     Ok(())
+}
+
+pub fn save_host_state(_rec: &Rec<'_>) {
+    #[cfg(feature = "ns_state_save")]
+    ns_timer::save();
+}
+
+pub fn restore_host_state(_rec: &Rec<'_>) {
+    #[cfg(feature = "ns_state_save")]
+    ns_timer::restore();
 }

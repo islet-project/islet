@@ -374,6 +374,7 @@ pub fn run_prepare(rd: &Rd, vcpu: usize, rec: &mut Rec<'_>, incr_pc: usize) -> R
     if incr_pc == 1 {
         rec.context.elr_el2 += 4;
     }
+    timer::update_timer_assertion(rec);
     debug!("resuming: {:#x}", rec.context.elr_el2);
     rec.into_current();
 

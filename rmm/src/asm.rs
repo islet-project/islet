@@ -81,3 +81,14 @@ pub fn dcache_flush(addr: usize, len: usize) {
         }
     }
 }
+
+#[inline(always)]
+pub fn isb() {
+    #[cfg(target_arch = "aarch64")]
+    unsafe {
+        core::arch::asm!("isb", options(nomem, nostack))
+    }
+
+    #[cfg(not(target_arch = "aarch64"))]
+    unimplemented!()
+}

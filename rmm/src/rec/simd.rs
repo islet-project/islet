@@ -75,14 +75,15 @@ lazy_static! {
 // SVE registers
 const NUM_VECTOR_REGS: usize = 32;
 const NUM_PREDICATE_REGS: usize = 16;
+const MAX_VQ_LEN: usize = 1 << ZCR_EL2_LEN_WIDTH;
 #[derive(Default, Debug)]
 pub struct SveRegs {
     // lower 128bits of each z register are shared with v
     // implementation-defined lengh: 128bits~2048bits. get it from zcr_el2
-    pub z: [[u128; NUM_VECTOR_REGS]; ZCR_EL2_LEN_WIDTH as usize],
+    pub z: [[u128; NUM_VECTOR_REGS]; MAX_VQ_LEN],
     // Each predicate register is 1/8 of the Zx length.
-    pub p: [[u16; NUM_PREDICATE_REGS]; ZCR_EL2_LEN_WIDTH as usize],
-    pub ffr: u64,
+    pub p: [[u16; NUM_PREDICATE_REGS]; MAX_VQ_LEN],
+    pub ffr: [u16; MAX_VQ_LEN],
     pub zcr_el2: u64,
     pub zcr_el12: u64,
 }
@@ -189,7 +190,7 @@ pub unsafe fn restore_fpu(fpu: &FpuRegs) {
     let addr_q: u64 = fpu.q.as_ptr() as u64;
     unsafe {
         asm!(
-             "ldp q0, q1, [x0]",
+             "ldp q0, q1, [{addr_q}]",
              "ldp q2, q3, [{addr_q}, #32]",
              "ldp q4, q5, [{addr_q}, #64]",
              "ldp q6, q7, [{addr_q}, #96]",

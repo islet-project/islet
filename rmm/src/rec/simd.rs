@@ -13,7 +13,7 @@ use crate::granule::GranuleState;
 use crate::realm::rd::Rd;
 use crate::rec::RecAuxIndex;
 use crate::rmi::error::Error;
-use crate::simd::{sme_en, SimdConfig, ZCR_EL2_LEN_WIDTH};
+use crate::simd::{sme_en, SimdConfig, MAX_VQ};
 use crate::{get_granule, get_granule_if};
 
 // SIMD context structure
@@ -75,15 +75,15 @@ lazy_static! {
 // SVE registers
 const NUM_VECTOR_REGS: usize = 32;
 const NUM_PREDICATE_REGS: usize = 16;
-const MAX_VQ_LEN: usize = 1 << ZCR_EL2_LEN_WIDTH;
+
 #[derive(Default, Debug)]
 pub struct SveRegs {
     // lower 128bits of each z register are shared with v
     // implementation-defined lengh: 128bits~2048bits. get it from zcr_el2
-    pub z: [[u128; NUM_VECTOR_REGS]; MAX_VQ_LEN],
+    pub z: [[u128; NUM_VECTOR_REGS]; MAX_VQ as usize],
     // Each predicate register is 1/8 of the Zx length.
-    pub p: [[u16; NUM_PREDICATE_REGS]; MAX_VQ_LEN],
-    pub ffr: [u16; MAX_VQ_LEN],
+    pub p: [[u16; NUM_PREDICATE_REGS]; MAX_VQ as usize],
+    pub ffr: [u16; MAX_VQ as usize],
     pub zcr_el2: u64,
     pub zcr_el12: u64,
 }

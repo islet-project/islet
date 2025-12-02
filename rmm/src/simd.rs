@@ -7,9 +7,18 @@ use lazy_static::lazy_static;
 // Vector length (VL) = size of a Z-register in bytes
 // Vector quadwords (VQ) = size of a Z-register in units of 128 bits
 // Minimum length of a SVE vector: 128 bits
-pub const ZCR_EL2_LEN_WIDTH: u64 = 4;
+const ZCR_EL2_LEN_WIDTH: u64 = 4;
 const SVE_VQ_ARCH_MAX: u64 = (1 << ZCR_EL2_LEN_WIDTH) - 1;
 const QUARD_WORD: u64 = 128;
+// Note: Limit maximun vq to 4 to avoid exceeding a page boundary.
+// Currunt rmm implmentation maps a physical page to a virtual address
+// using its physical address (i.e. identical mapping).
+// Discontiguous Aux granules cannot not be accessed contiguously
+// in their virtual address. For this reason, limit vq up to 4(~2184 bytes).
+// Z regs = 16bytes * 32 regs * 4 vq
+// P regs = 2 bytes * 16 regs * 4 vq
+// FFR reg = 2 bytes * 4 vq
+pub const MAX_VQ: u64 = 4;
 
 #[derive(Default, Debug)]
 // SIMD configuration structure
@@ -43,6 +52,9 @@ lazy_static! {
             // Get vl in bytes
             let vl_b = unsafe { get_vector_length_bytes() };
             sve_vq = ((vl_b << 3)/ QUARD_WORD) - 1;
+            if sve_vq > MAX_VQ {
+                sve_vq = MAX_VQ - 1;
+            }
             sve_en = true;
             trace!("sve_vq={:?}", sve_vq);
         }

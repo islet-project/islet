@@ -6,6 +6,11 @@ pub const MAX_EVCNT: usize = 31;
 
 #[allow(non_upper_case_globals)]
 const FEAT_PMUv3p7: u64 = 7;
+#[cfg(not(feature = "qemu"))]
+const PMU_MIN_VER: u64 = FEAT_PMUv3p7;
+#[cfg(feature = "qemu")]
+const PMU_MIN_VER: u64 = 5; // FEAT_PMUv3p5
+
 // ID_AA64DFR0_EL1
 // HPMN0, bits [63:60] :
 // Zero PMU event counters for a Guest operating system.
@@ -16,7 +21,7 @@ pub fn pmu_present() -> bool {
         "PMUVer: v3p{:?}",
         ID_AA64DFR0_EL1.read(ID_AA64DFR0_EL1::PMUVer)
     );
-    ID_AA64DFR0_EL1.read(ID_AA64DFR0_EL1::PMUVer) >= FEAT_PMUv3p7
+    ID_AA64DFR0_EL1.read(ID_AA64DFR0_EL1::PMUVer) >= PMU_MIN_VER
 }
 
 pub fn hpmn0_present() -> bool {

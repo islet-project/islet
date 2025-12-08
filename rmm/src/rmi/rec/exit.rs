@@ -17,7 +17,7 @@ use crate::rmi::rec::run::Run;
 use crate::Monitor;
 use crate::{rmi, rsi};
 use armv9a::{
-    EsrEl2, DFSC_PERM_FAULTS, DFSC_PERM_FAULT_MASK, EMULATABLE_ABORT_MASK, INST_ABORT_MASK,
+    EsrEl2, DFSC_PERM_FAULTS, DFSC_PERM_FAULT_MASK, EMULATABLE_ABORT_MASK, INST_ABORT_MASK, ISS,
     NON_EMULATABLE_ABORT_MASK, SERROR_MASK, WFX_MASK,
 };
 
@@ -113,12 +113,37 @@ pub fn handle_realm_exit(
             run.set_exit_reason(rmi::EXIT_SYNC);
             run.set_esr(realm_exit_res[1] as u64);
             run.set_hpfar(realm_exit_res[2] as u64);
+            let _ = match get_sys_write_val(rec, realm_exit_res[1] as u64)? {
+                Some(val) => run.set_gpr(0, val),
+                None => unimplemented!(),
+            };
             rmi::SUCCESS
         }
         _ => rmi::SUCCESS,
     };
 
     Ok((return_to_ns, ret))
+}
+
+fn get_sys_write_val(rec: &Rec<'_>, esr_el2: u64) -> Result<Option<u64>, Error> {
+    let esr = ISS::new(esr_el2);
+    // direction: 0b0 - write, 0b1 - read
+    let direction = esr.get_masked_value(ISS::Direction);
+    let rt = esr.get_masked_value(ISS::Rt) as usize;
+    // We know that ExitSyncType::Undefined is from sys regs access trap.
+    // Thus, omit checking the EC again.
+
+    // MSR (read) case
+    if direction != 0 {
+        return Ok(None);
+    }
+    // MRS (write) case
+    let write_val = match rt == 31 {
+        true => 0, // xzr
+        false => get_reg(rec, rt)? as u64,
+        //rec.context.gp_regs[rt]);
+    };
+    Ok(Some(write_val))
 }
 
 fn get_write_val(rec: &Rec<'_>, esr_el2: u64) -> Result<u64, Error> {

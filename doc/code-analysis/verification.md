@@ -1,5 +1,8 @@
 # Verification
 
+> [!NOTE]
+> This document regards an older version of Islet (tag [v1.0-seur](https://github.com/islet-project/islet/releases/tag/v1.0-seur)).
+
 We formally verify Islet using [Kani](https://github.com/model-checking/kani/)'s model
 checking. Our verification harnesses adopt the same input and output conditions as well
 as similar structures used in [TF-RMM](https://www.trustedfirmware.org/projects/tf-rmm/)'s

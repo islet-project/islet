@@ -8,7 +8,7 @@ You can run Confidential Applications not only on Arm FVP(arm64)
 but also on Host PC(x86_64, simulated version) with `Islet SDK`.
 
 For more information about `Islet SDK`,
-please refer [this document](https://islet-project.github.io/islet/components/sdk.html).
+please refer [this document](../components/sdk.md).
 
 ## Setting Rust environment
 The first step is to prepare Rust environment.
@@ -43,7 +43,7 @@ Sealing result Ok(())
 
 ## Example code snippet
 Below is code snippet of the example.
-You can refer [the whole example code](https://github.com/islet-project/islet/blob/main/sdk/examples/simulated.rs).
+You can refer [the whole example code](https://github.com/islet-project/islet/blob/main/sdk/examples/attest_n_seal.rs).
 
 ```rust
 use islet_sdk::prelude::*;

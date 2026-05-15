@@ -1,5 +1,5 @@
 # Contents
-- [1.1. About CCA](https://islet-project.github.io/islet/getting-started/cca.html)
-- [1.2. How to Build and Run Islet](https://islet-project.github.io/islet/getting-started/islet-how-to.html)
-- [1.3. Application Developer](https://islet-project.github.io/islet/getting-started/app-dev.html)
-- [1.4. Verification](https://islet-project.github.io/islet/getting-started/verification.html)
+- [1.1. About CCA](./cca.html)
+- [1.2. How to Build and Run Islet](./islet-how-to.html)
+    - [1.2.1 Network Configuration](./network.html)
+- [1.3. Application Developer](./app-dev.html)

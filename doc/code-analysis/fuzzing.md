@@ -1,5 +1,8 @@
 # Fuzz Testing Guide for Islet RMM
 
+> [!NOTE]
+> This document regards an older version of Islet (tag [ccav1.0-eac5](https://github.com/islet-project/islet/releases/tag/ccav1.0-eac5)).
+
 ## Overview
 Islet is built in Rust, which inherently ensures memory safety by design. To further enhance security, we employ tools like **Miri** to verify that `unsafe` code adheres to safety rules and **Kani**, a model checker, for formal verification. Beyond these measures, we also incorporate fuzz testing, a proven method for discovering vulnerabilities, into the Islet RMM development process. We utilize **cargo fuzz**, which leverages **libFuzzer**, to perform fuzz testing effectively.
 
@@ -138,9 +141,9 @@ By default, `rust-fuzz` fuzzes a raw bytearray which is not suitable for Islet R
 ```
 
 - The above snippet demonstrates an example of RSI fuzzing. Much of the setup remains similar to RMI fuzzing.
-- The `MEASUREMENT_EXTEND` RSI command is run using `REC_ENTER` RMI command as seen in lines 26-40. 
+- The `MEASUREMENT_EXTEND` RSI command is run using `REC_ENTER` RMI command as seen in lines 26-40.
 
-In normal contexts, `REC_ENTER` takes only two arguments but in fuzzing contexts, it can take a variable number of arguments. The third argument is the RSI call command and further arguments are passed as arguments to the RSI call. This is needed as realm code is not exercised in fuzzing. 
+In normal contexts, `REC_ENTER` takes only two arguments but in fuzzing contexts, it can take a variable number of arguments. The third argument is the RSI call command and further arguments are passed as arguments to the RSI call. This is needed as realm code is not exercised in fuzzing.
 
 The same method can also be used to simulate non-RSI realm exit scenarios by using the pseudo-call `REC_ENTER_EXIT_CMD` followed by the exit code and their arguments as shows in the below example.
 

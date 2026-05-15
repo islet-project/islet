@@ -1,4 +1,4 @@
-# App provisioning on islet instruction
+# Application provisioning
 
 Islet project implements an application provisioning mechanism that provides a generic way to install applications from a registry. It uses docker containers (OCI) as application image format – this way, Islet can benefit from the existing infrastructure & standards for creating and shipping applications.
 

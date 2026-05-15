@@ -2,70 +2,71 @@
 
 In most TEEs, interacting with the host (or the non-secure environment) is the most error-prone part
 as the host can pass anything for malicious purposes.
-For example, the paper named [A Tale of Two Worlds](https://people.cs.kuleuven.be/~jo.vanbulck/ccs19-tale.pdf) demonstrated that
-many TEE SDKs made some mistakes while implementing such interfaces.
-Also, it's not trivial to mitigate [Iago attacks](https://hovav.net/ucsd/dist/iago.pdf) that most TEEs inherently are affected by.
+For example, the paper [A Tale of Two Worlds](https://people.cs.kuleuven.be/~jo.vanbulck/ccs19-tale.pdf) demonstrated that
+many TEE SDKs made mistakes when implementing such interfaces.
+It is also not trivial to mitigate [Iago attacks](https://hovav.net/ucsd/dist/iago.pdf), which affect most TEEs by design.
 
-As Islet aims to bring the best level of security, we take those problems seriously and try to tackle them through the syntax of Rust.
-This page shows the way we're doing that aspect.
+As Islet aims to provide the best level of security, we take these problems seriously and try to tackle them through Rust's syntax.
+This page describes how we address these issues.
 
 ## Secure host memory access
 
-In ARM CCA, for some cases, RMM needs to map host memory and read/write something from/to that memory.
-For example, when `RMI_REALM_CREATE` is invoked, RMM has to get a physical memory address where parameters are placed at
-and read them from that memory.
-These accesses must be securely done as insecure implementations may open things up for attackers to break ARM CCA.
+In ARM CCA, for some cases, RMM needs to map host memory and read data from or write data to that memory.
+For example, when `RMI_REALM_CREATE` is invoked, RMM must read parameters from a physical memory address provided by the host.
+These accesses must be performed securely, as insecure implementations may allow attackers to compromise ARM CCA.
 
-We use `copy_from_host_or_ret!` and `copy_to_host_or_ret!` as a means of secure host memory access.
+To improve the security of host memory access, dedicated helper functions are defined in `rmm/src/host.rs`:
+
+- `copy_from()` to copy raw data from a memory pointer into a newly instantiated data structure that implements the `SafetyChecked` and `SafetyAssured` traits.
+- `copy_to_obj()` to copy raw data from a memory pointer into an existing data structure that implements the `SafetyChecked` and `SafetyAssured` traits.
+- `copy_to_ptr()` to copy a data structure that implements the `SafetyChecked` and `SafetyAssured` traits into a memory region pointed to by a raw pointer.
+
+Here is an example of `copy_from()` usage in the `REALM_CREATE` handler:
 ```rust
 listen!(mainloop, rmi::REALM_CREATE, |arg, ret, rmm| {
-    let rmi = rmm.rmi;
-    let mm = rmm.mm;
+    // ...
+    let params_ptr = arg[1];
     // key arguments
     // -- Params: the type of what the host passes
     // -- arg[1]: a physical address that points to where we should read from
-    let params = copy_from_host_or_ret!(Params, arg[1], mm);
+    let params = host::copy_from::<Params>(params_ptr).ok_or(Error::RmiErrorInput)?;
     // ... use params ...
 }
 ```
 
-What these two macros do is,
-1. do per-struct security checks and map host memory into RMM only if it passes all checks.
-2. copy from/to host memory to RMM stack memory that is bound to each CPU.
-3. unmap host memory
+What these functions do:
+1. Perform per-struct security checks, such as checking the granule physical address and its state
+2. Copy data between host memory and RMM memory
 
-After it gets done, we can access `params` that reside in RMM memory, not host memory.
-So it's secure against concurrency-based attacks such as double-fetch attacks. 
+Once this is done, we can access `params`, which resides in RMM memory, not host memory.
+This makes the access secure against concurrency-based attacks such as double-fetch attacks.
 
-If some additional security checks on some field value are needed (e.g., `Params.hash_algo` should be either 0 or 1),
-you can do it via `validate()` in `Accessor` trait. The specified validation is called before RMM accesses host memory.
-```rust
-impl HostAccessor for Params {
-    fn validate(&self) -> bool {
-        if self.hash_algo == 0 || self.hash_algo == 1 {
-            true
-        } else {
-            false
-        }
-    }
-}
-```
+If additional security checks on field values are needed, RMM structures such as `Params` and `Run` implement an additional `verify_compliance()` function (e.g., `rmm/src/rmi/realm/params.rs`) that performs checks before the structure is used.
 
 ## RMI/RSI command validation
 
 In ARM CCA, each RMI/RSI command has a different number of input/output parameters.
-So we need to take special care in accessing such parameters.
+Therefore, special care is needed when accessing these parameters.
 
-To catch any mistakes regarding this in advance, Islet developers must explicitly define `Constraint` as follows.
+To catch such mistakes in advance, Islet developers must explicitly define a `Constraint` for each command.
+
+For RMI calls, constraints are defined in `rmm/src/rmi/constraint.rs`:
+
 ```rust
-// (1) define RMI/RSI constraints
-lazy_static! {
-    static ref CONSTRAINTS: BTreeMap<Command, Constraint> = {
-        // This line says that RMI_DATA_CREATE has 6 input arguments and 1 output argument.
-        m.insert(rmi::DATA_CREATE, Constraint::new(rmi::DATA_CREATE, 6, 1));
+fn pick(cmd: Command) -> Option<Constraint> {
+    let constraint = match cmd {
+        rmi::VERSION => Constraint::new(rmi::VERSION, 2, 3),
+        rmi::GRANULE_DELEGATE => Constraint::new(rmi::GRANULE_DELEGATE, 2, 1),
+        rmi::GRANULE_UNDELEGATE => Constraint::new(rmi::GRANULE_UNDELEGATE, 2, 1),
+        rmi::DATA_CREATE => Constraint::new(rmi::DATA_CREATE, 6, 1),
+        ...
     }
 }
+```
 
+These constraints are verified by the `validate()` function defined in `rmm/src/rmi/constraint.rs`. The `validate()` function is used by the main RMI command dispatching loop defined in `islet/rmm/src/event/mainloop.rs`.
+
+```rust
 // (2) check defined constraints at runtime
 listen!(mainloop, rmi::DATA_CREATE, |arg, _ret, rmm| {
     // when you access arg[0], nothing happens because it doesn't cause an out-of-bound access.
@@ -75,3 +76,5 @@ listen!(mainloop, rmi::DATA_CREATE, |arg, _ret, rmm| {
     let xxx = arg[7];
 }
 ```
+
+For RSI calls, constraints are defined in `islet/rmm/src/rsi/constraint.rs`. The analogous `validate()` function is called during handling of RSI commands and is defined in `rmm/src/rsi/constraint.rs`.

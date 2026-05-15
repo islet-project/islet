@@ -17,7 +17,17 @@ The first step is to prepare to build our project.
 // Start FVP on host
 $ ./scripts/fvp-cca --normal-world=linux --realm=linux --rmm=islet
 
-// Run a linux realm on fvp
+// Run Linux in a realm
+$ ./launch-realm.sh
+```
+
+Alternatively it is possible to run Islet stack on Qemu RME by using a following command.
+
+```bash
+// Start Qemu RME on host
+$ ./scripts/qemu-cca --normal-world=linux --realm=linux --rmm=islet
+
+// Run Linux in a realm
 $ ./launch-realm.sh
 ```
 
@@ -58,6 +68,9 @@ $ ./scripts/fvp-cca --normal-world=tf-a-tests --rmm=islet
 $ ./scripts/fvp-cca --normal-world=tf-a-tests --rmm=tf-rmm
 ```
 
+> [!NOTE]
+> tf-a-tests are not supported on Qemu RME stack.
+
 ## Testing RMMs with [ACS](https://github.com/ARM-software/cca-rmm-acs)
 ```
 # Islet RMM
@@ -66,3 +79,6 @@ $ ./scripts/fvp-cca --normal-world=acs --rmm=islet
 # TF RMM
 $ ./scripts/fvp-cca --normal-world=acs --rmm=tf-rmm
 ```
+
+> [!NOTE]
+> ACS is not supported on Qemu RME stack.

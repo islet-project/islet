@@ -1,0 +1,112 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-2.0-only
+# Copyright (C) 2023, Arm Ltd
+# All rights reserved
+#
+
+TASKSET=${TASKSET:-taskset}
+LKVM=${LKVM:-lkvm}
+ARGS="--realm --irqchip=gicv3 --console=serial --network mode=none --nodefaults --loglevel error --restricted_mem"
+PMU_ARGS="--pmu --pmu-counters=8"
+
+TESTDIR="."
+while getopts "d:" option; do
+	case "${option}" in
+		d) TESTDIR=${OPTARG};;
+		?)
+			exit 1
+			;;
+	esac
+done
+if [[ ! -d ${TESTDIR} ]]; then
+	echo "Invalid directory: ${TESTDIR}"
+	exit 1
+fi
+
+function set_all_cpu_except {
+	cpu_except=$1
+	cd /sys/devices/system/cpu
+	for c in $(find . -maxdepth 1 -type d -name "cpu[0-9]*")
+	do
+		if [ $(basename $c) != "cpu${cpu_except}" ]
+		then
+			echo $2 > $c/online
+		fi
+	done
+	cd -
+}
+
+function run_on_cpu0 {
+	# Check if we have TASKSET command available
+	$TASKSET --help &>/dev/null
+	no_taskset=$?
+	if [ $no_taskset -eq 0 ]
+	then
+		cmd_prefix="$TASKSET -c 0 "
+	else
+		set_all_cpu_except 0 0
+		cmd_prefix=""
+	fi
+
+	while read cmd
+	do
+		echo "Running on CPU0: ${cmd}"
+		${cmd_prefix} ${cmd}
+	done
+
+	if [ $no_taskset -ne 0 ]
+	then
+		set_all_cpu_except 0 1
+	fi
+}
+
+function run_tests {
+	DIR="$1"
+
+	$LKVM run $ARGS -c 2 -m 16 -k $DIR/selftest.flat -p "setup smp=2 mem=16"
+	$LKVM run $ARGS -c 2 -m 6 -k $DIR/selftest.flat -p "setup smp=2 sve-vl=128" --sve-max-vl=128
+	$LKVM run $ARGS -c 2 -m 6 -k $DIR/selftest.flat -p "setup smp=2 sve-vl=256" --sve-max-vl=256
+	$LKVM run $ARGS -c 1 -m 16 -k $DIR/selftest.flat -p "vectors-kernel"
+	$LKVM run $ARGS -c 1 -m 16 -k $DIR/selftest.flat -p "vectors-user"
+	$LKVM run $ARGS -c 4 -m 32 -k $DIR/selftest.flat -p "smp"
+	$LKVM run $ARGS -c 4 -m 32 -k $DIR/selftest.flat -p "memstress"
+
+	$LKVM run $ARGS -c 1 -m 32 -k $DIR/realm-ns-memory.flat
+
+	$LKVM run $ARGS -c 4 -m 32 -k $DIR/psci.flat
+
+	$LKVM run $ARGS -c 4 -m 32 -k $DIR/gic.flat -p "ipi"
+	$LKVM run $ARGS -c 4 -m 32 -k $DIR/gic.flat -p "active"
+
+	$LKVM run $ARGS -c 1 -m 16 -k $DIR/timer.flat
+	$LKVM run $ARGS $PMU_ARGS -c 2 -m 16 -k $DIR/pmu.flat -p "cycle-counter 0"
+	$LKVM run $ARGS $PMU_ARGS -c 2 -m 16 -k $DIR/pmu.flat -p "pmu-event-introspection"
+	$LKVM run $ARGS $PMU_ARGS -c 2 -m 16 -k $DIR/pmu.flat -p "pmu-event-counter-config"
+	$LKVM run $ARGS $PMU_ARGS -c 2 -m 16 -k $DIR/pmu.flat -p "pmu-basic-event-count"
+	$LKVM run $ARGS $PMU_ARGS -c 2 -m 16 -k $DIR/pmu.flat -p "pmu-mem-access"
+	$LKVM run $ARGS $PMU_ARGS -c 2 -m 16 -k $DIR/pmu.flat -p "pmu-mem-access-reliability"
+	$LKVM run $ARGS $PMU_ARGS -c 2 -m 16 -k $DIR/pmu.flat -p "pmu-sw-incr"
+	$LKVM run $ARGS $PMU_ARGS -c 2 -m 16 -k $DIR/pmu.flat -p "pmu-chained-counters"
+	$LKVM run $ARGS $PMU_ARGS -c 2 -m 16 -k $DIR/pmu.flat -p "pmu-chained-sw-incr"
+	$LKVM run $ARGS $PMU_ARGS -c 2 -m 16 -k $DIR/pmu.flat -p "pmu-chain-promotion"
+	$LKVM run $ARGS $PMU_ARGS -c 2 -m 16 -k $DIR/pmu.flat -p "pmu-overflow-interrupt"
+
+	$LKVM run $ARGS -c 1 -m 16 -k $DIR/realm-rsi.flat -p "version"
+	$LKVM run $ARGS -c 1 -m 16 -k $DIR/realm-rsi.flat -p "host_call hvc"
+	$LKVM run $ARGS -c 1 -m 16 -k $DIR/realm-sea.flat
+
+	$LKVM run $ARGS -c 1 -m 24 -k $DIR/realm-attest.flat -p "attest"
+	$LKVM run $ARGS -c 2 -m 24 -k $DIR/realm-attest.flat -p "attest_smp"
+	$LKVM run $ARGS -c 1 -m 24 -k $DIR/realm-attest.flat -p "extend"
+	$LKVM run $ARGS -c 2 -m 24 -k $DIR/realm-attest.flat -p "extend_smp"
+	$LKVM run $ARGS -c 1 -m 24 -k $DIR/realm-attest.flat -p "extend_and_attest"
+	$LKVM run $ARGS -c 1 -m 24 -k $DIR/realm-attest.flat -p "measurement"
+
+	run_on_cpu0 << EOF
+$LKVM run $ARGS -c 4 -m 64 -k $DIR/fpu.flat
+$LKVM run $ARGS -c 4 -m 64 --sve-max-vl 128 -k $DIR/fpu.flat
+EOF
+
+}
+
+run_tests "${TESTDIR}"

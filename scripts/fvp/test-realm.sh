@@ -13,5 +13,5 @@ if [ "$1" == "attest" ]; then
 	LKVM=$LKVM $LKVM run $ARGS -c 1 -m 24 -k ./realm-attest.flat -p "extend_and_attest"
 	LKVM=$LKVM $LKVM run $ARGS -c 1 -m 24 -k ./realm-attest.flat -p "measurement"
 else
-	LKVM=$LKVM ./run-realm-tests
+	LKVM=$LKVM ./run-realm-tests-islet
 fi

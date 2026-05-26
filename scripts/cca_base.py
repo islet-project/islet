@@ -330,6 +330,9 @@ class CCAPlatform(ABC):
         self.place_script_at_shared()
         if not no_kvm_unit_tests:
             self.run([f"cp", "-R", f"{OUT}/kvm-unit-tests", SHARED_PATH], cwd=ROOT)
+            # Copy run-realm-tests-islet that is adjusted to our Islet SW environment
+            # Note that this script is based on run-realm-tests from kvm-unit-tests repository
+            self.run(["cp", RUN_REALM_TESTS, f"{SHARED_PATH}/kvm-unit-tests/"], cwd=ROOT)
 
         if realm_ip and platform_ip and platform_tap_ip:
             # Use platform_ip for FVP_IP/QEMU_IP replacement

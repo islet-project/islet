@@ -3,7 +3,7 @@
 set -e
 
 LKVM="/shared/lkvm"
-ARGS="--realm --irqchip=gicv3 --console=serial --network mode=none --nodefaults"
+ARGS="--realm --irqchip=gicv3 --console=serial --network mode=none --nodefaults --restricted_mem"
 
 cd kvm-unit-tests
 

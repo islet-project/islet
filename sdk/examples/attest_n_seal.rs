@@ -8,7 +8,7 @@ fn attestation() -> Result<(), Error> {
 
     let (realm_claims, plat_claims) = parse(&claims).unwrap();
     assert_eq!(&realm_claims.challenge[..user_data.len()], user_data);
-    assert_eq!(plat_claims.profile, "http://arm.com/CCA-SSD/1.0.0");
+    assert_eq!(plat_claims.profile, "tag:arm.com,2023:cca_platform#1.0.0");
 
     Ok(())
 }

@@ -36,7 +36,7 @@ mod tests {
         let claims = verify(&report).unwrap();
         let (realm_claims, plat_claims) = parse(&claims).unwrap();
         assert_eq!(user_data, &realm_claims.challenge[..user_data.len()]);
-        assert_eq!("http://arm.com/CCA-SSD/1.0.0", plat_claims.profile);
+        assert_eq!("tag:arm.com,2023:cca_platform#1.0.0", plat_claims.profile);
     }
 
     #[test]

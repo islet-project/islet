@@ -10,6 +10,7 @@ LAUNCH_REALM = os.path.join(SCRIPT, "fvp/launch-realm.sh")
 LAUNCH_REALM_DEBIAN = os.path.join(SCRIPT, "fvp/launch-realm-debian.sh")
 LAUNCH_REALM_METADATA = os.path.join(SCRIPT, "fvp/launch-realm-metadata.sh")
 TEST_REALM = os.path.join(SCRIPT, "fvp/test-realm.sh")
+RUN_REALM_TESTS = os.path.join(SCRIPT, "fvp/run-realm-tests-islet")
 CONFIGURE_NET = os.path.join(SCRIPT, "fvp/configure-net.sh")
 SET_REALM_IP = os.path.join(SCRIPT, "fvp/set-realm-ip.sh")
 

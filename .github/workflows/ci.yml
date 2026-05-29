@@ -163,7 +163,8 @@ jobs:
 
     - name: Check third-party Rust dependencies
       run: |
-        cargo install --locked cargo-vet
+        rustup toolchain install stable
+        cargo +stable install --locked cargo-vet
         cargo vet init
         cargo vet
 

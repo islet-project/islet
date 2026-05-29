@@ -1,0 +1,1137 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Hardware Enforced Security - Islet Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../custom-e13467ec.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-a1d0a429.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-a89a4569.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Islet Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="hardware-enforced-security"><a class="header" href="#hardware-enforced-security">Hardware Enforced Security</a></h1>
+<h2 id="introduction"><a class="header" href="#introduction">Introduction</a></h2>
+<p>This project provides an implementation of Islet HES that is reification of CCA
+Hardware Enforced Security (chapter “Hardware enforced security” of <a href="https://developer.arm.com/documentation/DEN0096/latest">ARM CCA
+Security Model 1.0</a>). It
+consists of two main parts:</p>
+<ul>
+<li><strong>HES library</strong> - a platform-independent (<code>no_std</code>) Rust library that
+implements HES functionalities. It is intended to be the basis of a solution
+that can be adapted to real hardware platforms in the future.</li>
+<li><strong>HES host application</strong> - a hardware HES simulator that runs on the host
+machine (not on dedicated hardware) and is designed to be used together with
+Islet RMM and the Islet CCA stack.</li>
+</ul>
+<p>The project is written in Rust - a modern language that has built-in mechanisms
+preventing common memory bugs (memory leaks, buffer overflows, etc.). This
+greatly minimizes the occurrence of potential vulnerabilities.</p>
+<p>The main goals of the Islet HES project are:</p>
+<ul>
+<li>Provide the HES library that is intended to be the basis of a solution that
+can be adapted to real hardware platforms in the future (running e.g. on an
+ARM Cortex-M processor).</li>
+<li>Provide the implementation of the HES application running on the host. The HES
+application is going to provide attestation and measured boot functionality.</li>
+<li>Making the HES implementation a platform for experimentation and development
+of additional functions (not currently defined in CCA specs).</li>
+</ul>
+<blockquote class="blockquote-tag blockquote-tag-important">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Important</p>
+<p>The current Islet HES works only as a host application and due to that as
+outlined in the section below it cannot satisfy all security requirements of a
+real hardware HES implementation. The short term goal is to have a working
+solution for the purpose of interoperability with Islet RMM. The long term
+goal is to have such implementation running on a real secure hardware/OS while
+reusing many software components (Islet HES library) of the current
+implementation.</p>
+</blockquote>
+<h2 id="hes-technical-background"><a class="header" href="#hes-technical-background">HES technical background</a></h2>
+<p>CCA <strong>Hardware Enforced Security</strong> (HES) is a separate from the main Processing
+Element component that offers a crucial set of security features for an ARM
+CCA-enabled platform (note that PE (Processing Element) or AP (Application
+Processor) are used in this document interchangeably). These security features
+can be hosted on a dedicated, isolated, trusted subsystem or as a tenant within
+a multi-tenant trusted subsystem. The hosting platform and runtime together
+constitute what is known as a HES host. The HES host has its own verified boot
+process, provides secure non-volatile storage and cryptographic functionality.</p>
+<p><img src="./images/hes.png" alt="HES"></p>
+<p><em>Figure 1: CCA Hardware Enforced Security according to <a href="https://developer.arm.com/documentation/DEN0096/latest">ARM CCA Security Model 1.0</a></em></p>
+<p>Physically HES host can be implemented by using a dedicated MCU (Microcontroller
+Unit) which shares no critical resources with the main PE. This greatly reduces
+the potential attack surface and ensures that the firmware running on the
+application PE cannot affect the internal state of the HES host, such as boot
+measurements or boot state. Physical isolation of critical resources, such as
+secrets, prevents from leaking sensitive information to PE.</p>
+<p>According to <a href="https://developer.arm.com/documentation/DEN0096/latest">ARM CCA Security Model
+1.0</a> CCA HES provides
+the following services and interfaces to an application PE:</p>
+<ul>
+<li>CCA platform attestation service</li>
+<li>Interface to capture measurements and associated identity metadata for the
+Monitor, RMM firmware and boot code</li>
+<li>CCA HES can also provide an interface for capturing measurements from other
+trusted subsystems (like ARM’s System Control Processor responsible for power
+management)</li>
+</ul>
+<p>The critical requirement from security point of view is that these interfaces
+should only be accessible to components belonging to CCA System Security
+(e.g. trusted subsystems) and Monitor Security Domains (Monitor, PE initial
+boot) (chapter 4 <strong>Hardware Enforced Security</strong> of <strong>ARM CCA Security Model</strong>).</p>
+<p>CCA HES should also have access to internal HES services providing HES boot
+measurements and measurements sent by external systems (e.g. the bootloaders
+running on the main PE), cryptographic functionality, secrets and other metadata
+(e.g. identification of the platform).</p>
+<p>HES host boots from its own non-volatile memory, such as ROM or FLASH, and loads
+HES firmware independently, without any PE intervention. HES provides only a
+fixed set of functionalities exposed to main PE. HES can run as a tenant within
+a multi-tenant trusted subsystem. But also in this case, HES should boot without
+intervention of REE side and start to serve its functionality before the main PE
+is started. The HES communication channel with the main PE must be accessible
+only to Monitor software and boot loaders.</p>
+<p>ARM CCA Security Model requires that at minimum, HES should have an immutable
+initial boot-loader that servers as a Root of Trust. In the reference
+implementation of HES host called
+<a href="https://trustedfirmware-m.readthedocs.io/en/tf-mv2.2.2/platform/arm/rse/index.html">RSE</a>,
+RSE takes the role of Root of Trust not only for the firmware running on RSE but
+also for other PEs on the platform. For example, RSE loads, and authenticates
+the BL1 image for the main PE. ARM CCA Security Model, allows the main PE to
+have its own initial immutable bootloader (BL1), although in this case the main
+PE (AP) should start its own booting process, only after successful booting of
+HES. Depending on the architecture, this can be achieved by keeping the main PE
+in reset until HES boots and starts serving its functionality. This approach
+serves two purposes:</p>
+<ul>
+<li>first, if the HES security is compromised (i.e., if one of the loaded HES
+images fails verification due to tampering), the entire platform will become
+useless</li>
+<li>second, the service for capturing measurements from the PE will be ready to
+serve.</li>
+</ul>
+<h2 id="requirements"><a class="header" href="#requirements">Requirements</a></h2>
+<p>In this section we list the requirements for the Islet HES implementation. For
+the host application, obviously none of the CCA Security Model’s requirements
+related to the underlying hardware platform can be satisfied as the application
+serves only as a simulated HES, it’s running neither on a real hardware nor even
+an emulated one. Nevertheless, the HES implementation can provide interfaces
+that allow for future deployments on real hardware platforms.</p>
+<p>REQ01: Islet HES should be implemented as a library implementing a subset of HES
+functionalities in a platform independent way (Rust no_std). This library can be
+used in the future to prepare an implementation running on a dedicated trusted
+subsystem, or as a tenant on a multi-tenant trusted subsystem (fulfilling the
+R005 of CCA SM).</p>
+<p>REQ02: An accompanying application should be written that implements a simulated
+HES application running on the host that utilizes HES functionalities from the
+library. It should provide a communication channel that makes it possible to
+communicate with the PE and provide its services.</p>
+<p>REQ03: Islet HES should provide following services to PE:</p>
+<ul>
+<li>delegated attestation service (R0043, R0090, R0129, R0091, R0092, R0093, R0025
+of CCA SM)</li>
+<li>service for capturing measurements (R0010, R0011, R0012, R0013, R0051, R0052,
+R0130, R0073, R0080, R0083, R0084, R0085 of CCA SM)</li>
+</ul>
+<p>The external interface for delegated attestation should implement following
+functionality:</p>
+<ul>
+<li>fetching the delegated attestation key</li>
+<li>fetching a CCA platform attestation token</li>
+</ul>
+<p>The API should conform to the following declarations located in
+<a href="https://github.com/islet-project/3rd-tf-a/tree/main/include/lib/psa/delegated_attestation.h">include/lib/psa/delegated_attestation.h</a>
+of the TF-A source code.</p>
+<pre><code class="language-C">psa_status_t
+rse_delegated_attest_get_delegated_key(uint8_t   ecc_curve,
+                                       uint32_t  key_bits,
+                                       uint8_t  *key_buf,
+                                       size_t    key_buf_size,
+                                       size_t   *key_size,
+                                       uint32_t  hash_algo);
+
+psa_status_t
+rse_delegated_attest_get_token(const uint8_t *dak_pub_hash,
+                               size_t         dak_pub_hash_size,
+                               uint8_t       *token_buf,
+                               size_t         token_buf_size,
+                               size_t        *token_size);
+</code></pre>
+<p>The format of CCA platform token must conform to the description included in the
+<strong>Chapter A7 Realm measurement and attestation</strong> of <a href="https://developer.arm.com/documentation/den0137/1-0rel0">Realm Management Monitor
+specification</a>.</p>
+<p>Since preliminary implementation of measured boot and attestation in TF-A is
+intended to work together with the reference HES named
+<a href="https://trustedfirmware-a.readthedocs.io/en/latest/design_documents/rse.html">RSE</a>,
+the Islet HES should follow the implementations of TF-M/RSE and the additional
+<a href="https://git.trustedfirmware.org/plugins/gitiles/TF-M/tf-m-extras.git/+/refs/heads/main/partitions/delegated_attestation/">delegated
+attestation</a>
+functionality.</p>
+<p>The external interface for measured boot should implement following functionality:</p>
+<ul>
+<li>extending boot measurements</li>
+</ul>
+<p>The API should conform to the following function declaration defined in
+<a href="https://github.com/islet-project/3rd-tf-a/blob/main/include/lib/psa/measured_boot.h">include/lib/psa/measured_boot.h</a>
+in the TF-A source code.</p>
+<pre><code class="language-C">psa_status_t
+rse_measured_boot_extend_measurement(uint8_t index,
+                                     const uint8_t *signer_id,
+                                     size_t signer_id_size,
+                                     const uint8_t *version,
+                                     size_t version_size,
+                                     uint32_t measurement_algo,
+                                     const uint8_t *sw_type,
+                                     size_t sw_type_size,
+                                     const uint8_t *measurement_value,
+                                     size_t measurement_value_size,
+                                     bool lock_measurement);
+
+psa_status_t rse_measured_boot_read_measurement(uint8_t index,
+                                                uint8_t *signer_id,
+                                                size_t signer_id_size,
+                                                size_t *signer_id_len,
+                                                uint8_t *version,
+                                                size_t version_size,
+                                                size_t *version_len,
+                                                uint32_t *measurement_algo,
+                                                uint8_t *sw_type,
+                                                size_t sw_type_size,
+                                                size_t *sw_type_len,
+                                                uint8_t *measurement_value,
+                                                size_t measurement_value_size,
+                                                size_t *measurement_value_len,
+                                                bool *is_locked);
+</code></pre>
+<p>The implementation of measured boot in Islet HES should follow the
+implementation of <a href="https://git.trustedfirmware.org/plugins/gitiles/TF-M/tf-m-extras.git/+/refs/heads/main/partitions/measured_boot/">measured
+boot</a>
+in RSE (TF-M).</p>
+<p>The implementation of attestation and measured boot functionality require
+additional functionality such as:</p>
+<ul>
+<li>cryptographic functionality (hashing, signing, encryption, key derivation, TRNG, etc.)</li>
+<li>library for <a href="https://www.rfc-editor.org/rfc/rfc7049">CBOR</a></li>
+<li>library for <a href="https://www.rfc-editor.org/rfc/rfc8152">COSE</a></li>
+</ul>
+<p>REQ04: The serialization/de-serialization and PSA protocol layer for the API
+exposed to PE (measured boot and attestation) should be as much as possible
+compatible with the existing mechanisms implemented in TF-A and TF-M (RSE). Have
+a look at:</p>
+<ul>
+<li><a href="https://trustedfirmware-a.readthedocs.io/en/latest/design_documents/rse.html">https://trustedfirmware-a.readthedocs.io/en/latest/design_documents/rse.html</a></li>
+<li><a href="https://trustedfirmware-m.readthedocs.io/en/latest/platform/arm/rse/index.html">https://trustedfirmware-m.readthedocs.io/en/latest/platform/arm/rse/index.html</a></li>
+<li><a href="https://github.com/islet-project/3rd-tf-a/blob/main/lib/psa/measured_boot.c">https://github.com/islet-project/3rd-tf-a/blob/main/lib/psa/measured_boot.c</a></li>
+<li><a href="https://github.com/islet-project/3rd-tf-a/blob/main/drivers/measured_boot/rse/rse_measured_boot.c">https://github.com/islet-project/3rd-tf-a/blob/main/drivers/measured_boot/rse/rse_measured_boot.c</a></li>
+<li><a href="https://github.com/islet-project/3rd-tf-a/blob/main/lib/psa/delegated_attestation.c">https://github.com/islet-project/3rd-tf-a/blob/main/lib/psa/delegated_attestation.c</a></li>
+</ul>
+<p>REQ05: The Islet HES should provide:</p>
+<ul>
+<li>measured boot for HES SW components that are not immutable (R0010, R0011,
+R0012, R0013, R0159, R0054, R0068, R0069, R0070 of CCA SM)</li>
+<li>a simulated interface for communication between the main PE and HES</li>
+</ul>
+<h2 id="architecture"><a class="header" href="#architecture">Architecture</a></h2>
+<p>This chapter will describe the architecture of Islet HES. To put Islet HES in
+context, we start from the brief description of the whole system that as it’s
+being used in the attestation demo. Then, we describe the Islet HES itself,
+its building blocks, functionality and other details.</p>
+<h3 id="cca-remote-attestation-high-level-design-for-the-demo"><a class="header" href="#cca-remote-attestation-high-level-design-for-the-demo">CCA Remote Attestation High Level Design for the demo</a></h3>
+<p>The information regarding running the demo is available in:
+<a href="https://github.com/islet-project/islet/tree/main/examples/veraison"><code>examples/veraison</code></a>.</p>
+<p><img src="./images/hes-hld.png" alt="demo"></p>
+<p><em>Figure 2: High level diagram showing the SW/FW stack used for development and demoing Arm CCA functionality</em></p>
+<p>ARM CCA Security Model recommends to have HES in a CCA enabled platform. The
+platform should also support Realm Management Extension (RME) to be fully
+compatible with the ARM CCA requirements. During the research phase, there was
+no platform (HW or emulated) that is equipped with both HES and a main PE that
+supports RME. This led to the design of a simple simulated HES that would
+provided necessary interfaces to the PE. Another question that we had to deal
+with was how to implement the communication channel between these two entities.</p>
+<p>From this we decided that:</p>
+<ul>
+<li>The main PE that supports RME will be emulated either on AEM FVP or a RME
+enabled QEMU.</li>
+<li>The Islet HES will run directly on the host.</li>
+<li>The UART device from PE/TF-A side will be used to create a communication
+channel with HES. This UART is then mapped as a TCP connection by either FVP
+or QEMU. HES host application uses TCP directly.</li>
+</ul>
+<p>The above diagram represents the system for the attestation demo. The ARM
+FVP/QEMU hosts all software components that supports ARM CCA. The main clients
+of HES are boot loaders of TF-A and RMMD. During the boot process of the main
+PE, the boot loaders send the measurements to the HES via PSA remote call
+API. Originally, TF-A uses a mailbox interface for transferring messages between
+PE and RSE. For our purposes, we replaced the MHU (Message Handling Unit) driver
+with UART, at the same time keeping the binary compatibility of the messages.</p>
+<p>Another functionality that HES is going to provide is the delegated
+attestation. During the initialization of RMM, RMM requests the Delegated
+Attestation Key from the HES that is used to sign the Realm attestation
+token. The key is retrieved only once an cached by RMM. The CCA platform
+attestation token is requested from HES only once during the platform startup
+and then cached. Upon the Reliant Party request (it is a remote party client)
+RMM prepares a realm attestation token. This token altogether with the CCA
+platform attestation token is concatenated and sent back to the requester. The
+Reliant Party then relays the attestation token to the Verifier which checks its
+signature and verifies measurements against the reference values stored in the
+Verifier’s database. The results of verification are sent back to the Reliant
+Party that according to some policy may decide if it can trust the Realm and the
+whole platform.</p>
+<h3 id="islet-hes-architecture"><a class="header" href="#islet-hes-architecture">Islet HES architecture</a></h3>
+<p>The user space HES application is built-up from the following components:</p>
+<ul>
+<li>Attestation - the main responsibility of this component is preparation of the
+CCA platform attestation token. The interfaces exposed to external PEs include
+fetching the attestation token and fetching the delegated attestation
+key. This component utilizes information gathered by the measured boot
+component and functions provided by auxiliary modules like CBOR and COSE
+(creating the binary representation of the CCA platform attestation token,
+creating a digital signature) and Key derivation.The source code is available in
+<ul>
+<li><a href="https://github.com/islet-project/islet/tree/main/hes/islet-hes/src/attestation/mod.rs"><code>hes/islet-hes/src/attestation/mod.rs</code></a>.</li>
+</ul>
+</li>
+<li>Measured boot - the main function of this component is gathering measurements
+from the external PEs. During initialization of the HES application, this
+component also fetches local measurements from the platform HES host measured
+boot component. The attestation component makes use of measurements gathered
+by this component to build the CCA platform attestation token. The measured
+boot component uses also the hash functions provided by the Crypto component.
+The source code is available in the following files:
+<ul>
+<li><a href="https://github.com/islet-project/islet/blob/main/hes/islet-hes/src/measured_boot/measurement.rs"><code>hes/islet-hes/src/measured_boot/measurement.rs</code></a>.</li>
+<li><a href="https://github.com/islet-project/islet/blob/main/hes/islet-hes/src/measured_boot/manager.rs"><code>hes/islet-hes/src/measured_boot/manager.rs</code></a>,</li>
+</ul>
+</li>
+<li>Hardware abstraction layer - this component is an interface for a simulated
+hardware that makes it immediately clear what data should be obtained from the
+underlying secure hardware itself. The current implementation stubs, hardcodes
+or reads the values from files, but in case of a real hardware implementation
+all those values/functionalities should be obtained/implemented in the secure
+hardware itself (as per CCA HES Security Model). The source code is available
+in:
+<ul>
+<li><a href="https://github.com/islet-project/islet/blob/main/hes/islet-hes/src/hw/mod.rs"><code>hes/islet-hes/src/hw/mod.rs</code></a>.</li>
+</ul>
+</li>
+<li>Communication - the main functionality of this component is handling the
+communication protocol and serialization/de-serialization of messages
+exchanged between the main PE and the HES. This includes de-serialization of
+received binary messages, routing particular calls to attestation and measured
+boot components, serialization of responses that are to be sent back to the
+main PE/TF-A via the UART device. The source code is available in the
+following files:
+<ul>
+<li><a href="https://github.com/islet-project/islet/blob/main/hes/islet-hes-host-app/src/comms/psa_serde.rs"><code>hes/islet-hes-host-app/src/comms/psa_serde.rs</code></a>,</li>
+<li><a href="https://github.com/islet-project/islet/blob/main/hes/islet-hes-host-app/src/comms/mod.rs"><code>hes/islet-hes-host-app/src/comms/mod.rs</code></a>.</li>
+</ul>
+</li>
+<li>CPAK generator - a standalone tool for deriving the CCA Platform Attestation
+Key (CPAK) public key from the provisioned GUK (and optionally the BL2 boot
+loader image hash). It follows the same key derivation scheme as the HES
+library’s Key derivation component. The derived CPAK public key is used during
+the preparation of endorsements and reference values that are provisioned to
+the Veraison verification service, so that the Verifier can verify the
+signature of CCA platform attestation tokens. The source code is available in:
+<ul>
+<li><a href="https://github.com/islet-project/islet/blob/main/hes/cpak-generator/src/main.rs"><code>hes/cpak-generator/src/main.rs</code></a>.</li>
+</ul>
+</li>
+<li>Auxiliary components: CBOR, COSE, Key derivation, Crypto - the attestation and
+measured boot component rely on these components. The Key derivation component
+interacts with the Crypto component and reads seed data from the OTP (HUK, GUK
+keys), Lifecycle manager, and Measured boot components.</li>
+</ul>
+<p>Apart from the implemented functionalities, some external components and
+interfaces for platform specific are utilized.</p>
+<p>The required external components are:</p>
+<ul>
+<li><a href="https://crates.io/crates/ciborium">ciborium</a> - Rust crate library compatible
+with CBOR format for platform token creation,</li>
+<li><a href="https://crates.io/crates/coset">coset</a> - Rust crate library compatible with
+COSE_sign1 for platform token signing and creation, which utilizes the
+ciborium crate for CBOR parsing and allows usage of custom crypto API for
+token signing,</li>
+<li><a href="https://github.com/RustCrypto">RustCrypto</a> - set of crates implementing the
+required cryptographic functionalities (key derivation, signatures etc.),</li>
+</ul>
+<p>Supported (hardware provisioned on a real hardware) keys are:</p>
+<ul>
+<li>HUK - as a 256 bit symmetric key,</li>
+<li>GUK - as a 256 bit symmetric key,</li>
+<li>CPAK - (optional, can be derived manually) as an ECC_FAMILY_SECP_R1 asymmetric key,</li>
+</ul>
+<h3 id="component-dependencies"><a class="header" href="#component-dependencies">Component dependencies</a></h3>
+<p><img src="images/hes-dependencies.png" alt="HES component dependencies"></p>
+<p><em>Figure 3: HES component dependency diagram</em></p>
+<h3 id="directory-structure"><a class="header" href="#directory-structure">Directory structure</a></h3>
+<p>This section describes the content of
+<a href="https://github.com/islet-project/islet/tree/main/hes">https://github.com/islet-project/islet/tree/main/hes</a>
+directory.</p>
+<ul>
+<li><a href="https://github.com/islet-project/islet/blob/main/hes/cpak-generator"><code>cpak-generator</code></a>:
+A tool for deriving the CPAK public key from GUK (and optionally the BL2 hash).
+It is used during the preparation of endorsements and reference values for the
+Veraison verification service.</li>
+<li><a href="https://github.com/islet-project/islet/blob/main/hes/islet-hes"><code>islet-hes</code></a>:
+The HES library crate implementing the core HES functionalities (attestation,
+measured boot, hardware abstraction layer) in a platform-independent way.
+<ul>
+<li><a href="https://github.com/islet-project/islet/blob/main/hes/islet-hes/src/attestation"><code>islet-hes/src/attestation</code></a>:
+Delegated attestation component - preparation of CCA platform attestation
+tokens and fetching of the delegated attestation key.</li>
+<li><a href="https://github.com/islet-project/islet/blob/main/hes/islet-hes/src/hw"><code>islet-hes/src/hw</code></a>:
+Hardware abstraction layer - interface for simulated hardware data. The
+current implementation stubs, hardcodes or reads the values from files.</li>
+<li><a href="https://github.com/islet-project/islet/blob/main/hes/islet-hes/src/measured_boot"><code>islet-hes/src/measured_boot</code></a>:
+Measured boot component - gathering and managing boot measurements from
+external PEs and from the HES host itself.</li>
+</ul>
+</li>
+<li><a href="https://github.com/islet-project/islet/blob/main/hes/islet-hes-host-app"><code>islet-hes-host-app</code></a>:
+The HES host application that simulates a hardware HES on the host machine.
+It includes the communication component (PSA message serialization and the
+UART/TCP channel) and the main application loop.</li>
+<li><a href="https://github.com/islet-project/islet/blob/main/hes/key-derivation"><code>key-derivation</code></a>:
+Key derivation library - implements the key derivation schemes (CPAK, DAK
+derivation from GUK) following the same scheme as TF-M’s RSE.</li>
+</ul>
+<h3 id="initialization"><a class="header" href="#initialization">Initialization</a></h3>
+<p>During the initialization of the Islet HES the following actions are performed:</p>
+<ul>
+<li>derivation of 256bit CPAK_seed from GUK (and optionally BL2 hash) using counter-mode KDF,</li>
+<li>derivation of asymmetric CPAK from CPAK_seed</li>
+<li>derivation of 256bit DAK seed from GUK</li>
+<li>initialization of dummy measurements for hardware/platform components</li>
+<li>initialization of the communication component</li>
+</ul>
+<p>After the initialization of all HES components, the application goes into the
+idle mode and waits in the loop for the incoming requests from the communication
+channel.</p>
+<h3 id="cryptographic-keys"><a class="header" href="#cryptographic-keys">Cryptographic Keys</a></h3>
+<p>Minimum CCA hardware provisioned keys are (<a href="https://developer.arm.com/documentation/DEN0096/latest">CCA Security Model 1.0 Ch
+5.1</a>):</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Parameter</th><th>Description</th><th>Secret</th></tr>
+</thead>
+<tbody>
+<tr><td>HUK</td><td>Hardware unique symmetric key. It represents a randomly unique seed for each manufactured instance of a CCA enabled system.</td><td>Yes</td></tr>
+<tr><td>GUK</td><td>Group unique symmetric key. It represents a randomly unique seed that may be shared with some group of manufactured CCA enabled systems with the same immutable hardware security properties.</td><td>Yes</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>HUK</strong> is randomly generated at manufacture and can only be accessed by CCA HES
+at any point in the security lifecycle of the system.</p>
+<p><strong>GUK</strong> is at least randomly unique for some group of manufactured instances of
+a CCA enabled system and can only be accessed by CCA HES, other than temporarily
+at security provisioning (it can be stored temporarily outside of system for the
+purpose of manufacture provisioning, but must not be collected or stored
+persistently outside of the system).</p>
+<p>The most important derived parameters of CCA (<a href="https://developer.arm.com/documentation/DEN0096/latest">CCA Security Model 1.0 Ch
+5.2</a>):</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Parameter</th><th>Description</th><th>Private</th><th>Ownership</th><th>Source</th></tr>
+</thead>
+<tbody>
+<tr><td>Derivation root keys for Monitor security domain</td><td>Virtual HUK/GUK, derived uniquely for Monitor security domain at boot.</td><td>Yes</td><td>Monitor security domain</td><td>PE initial boot, or CCA HES</td></tr>
+<tr><td>Derivation root keys for Realm Management security domain</td><td>Vritual HUK/GUK, derived uniquely for Realm Management security domain at boot.</td><td>Yes</td><td>Realm Management security domain</td><td>Monitor security domain</td></tr>
+<tr><td>CCA platform attestation key (CPAK)</td><td>Asymmetric attestation key for the CCA platform. Identifies the immutable security properties of the CCA system security domain</td><td>Yes, private portion</td><td>CCA HES</td><td>Typcally derived from GUK, or equivalent.</td></tr>
+<tr><td>CPAK ID</td><td>Pubic identifier of CPAK</td><td>No</td><td>CCA HES</td><td>Hash of public part of CPAK.Uniquely identifies the immutable hardware security properties of a CCA platform.</td></tr>
+</tbody>
+</table>
+</div>
+<p>The following tables outline general recommendations for parameters sizes and
+algorithms in CCA implementation (<a href="https://developer.arm.com/documentation/DEN0096/latest">CCA Security Model 1.0 Ch
+12.3.</a>):</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Parameter type</th><th>Sizes</th><th>Information</th></tr>
+</thead>
+<tbody>
+<tr><td>Public identifier</td><td>512 bits</td><td>Typically a hash of a public key or a certificate.Arm does not recommend using truncated hashes for public identifiers.</td></tr>
+<tr><td>Counter values used as unique identifiers</td><td>64 bits</td><td></td></tr>
+<tr><td>Seeds used for symmetric key derivations</td><td>256 bits</td><td></td></tr>
+<tr><td>Symmetric keys</td><td>256 bits</td><td>AES-256</td></tr>
+<tr><td>Asymmetric keys</td><td>RSA: 3072 bits, ECC: 384 bits</td><td>RSA 3072, ECC Curve-P384</td></tr>
+</tbody>
+</table>
+</div>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Operation</th><th>Algorithm</th><th>Information</th></tr>
+</thead>
+<tbody>
+<tr><td>General encryption</td><td>AES-256</td><td></td></tr>
+<tr><td>Hash function</td><td>SHA-512</td><td>NIST SP 800-107</td></tr>
+<tr><td>Signing - RSA operation</td><td>RSA-PKCS#1 v2.2, RFC 8017, FIPS PUB 186-4</td><td>RSASSA-PSS 3072, EMS-PSS, SHA-512</td></tr>
+<tr><td>Signing - ECC option</td><td>ECDSA, RFC 6979, FIPS PUB 186-4</td><td>Curve P-384, SHA-512</td></tr>
+<tr><td>Signing - Symmetric</td><td>HMAC-SHA512, RFC 2014, NIST SP 800-107</td><td>512 bits, Arm does not recommend truncating HMAC.</td></tr>
+<tr><td>Key derivations</td><td>NIST SP 800-108, Counter mode, HMAC-SHA512, RFC 2014, NIST SP 800-107</td><td></td></tr>
+</tbody>
+</table>
+</div>
+<p>The Islet HES application utilizes the same scheme of key derivation as
+implemented in TF-M’s RSE. The RSE-based implementation derives the seeds and
+keys based on the following graph:</p>
+<p><img src="./images/key-derivation.png" title="large-view" alt="Key derivation process"></p>
+<p><em>Figure 4: The key derivation process</em></p>
+<h3 id="measured-boot-and-attestation"><a class="header" href="#measured-boot-and-attestation">Measured boot and attestation</a></h3>
+<p>Measured Boot component provides interfaces to extend and read measurements
+(hash values and metadata) during various stages of a power cycle. The
+measurements are extended by the boot loaders running on AP (via the external
+interface - UART in our case). They are read by the delegated attestation
+component and used to generate the CCA platform attestation token. All of these
+measurements are fetched by Measured Boot component during its initialization.</p>
+<p>Each software component claim comprises of the following measurements which are
+extended and read by Measured Boot component.</p>
+<ul>
+<li>Measurement type: It represents the role of the software component.</li>
+<li>Measurement value: It represents a hash of the invariant software component in
+memory at start-up time. The value must be a cryptographic hash of 256 bits or
+stronger.</li>
+<li>Version: It represents the issued software version.</li>
+<li>Signer ID: It represents the hash of a signing authority public key.</li>
+<li>Measurement description: It represents the way in which the measurement value
+of the software component is computed.</li>
+</ul>
+<p>These measurements are used as software component claims of the platform token.</p>
+<p>The ARM CCA based implementation utilizes a model where the responsibility of
+creating the overall attestation token is split between different parties (HES
+and RMM). The overall token is a composition of sub-tokens, where each sub-token
+is produced by an individual entity within the system. Each sub-token is signed
+with a different key, which is owned by the sub-token producer. The signing keys
+are derived in a chain. Each key is derived by the producer of the previous (in
+the chain) attestation token. The sub-tokens must be cryptographically bound to
+each other, to make the key chain back traceable to the CPAK, which is used to
+sign the platform attestation token. The cryptographic binding is achieved by
+including the hash of the public key in the challenge claim of the predecessor
+attestation token.</p>
+<p>The following diagram shows the simplified flow of delegated key derivation and the CCA platform token creation:</p>
+<p><img src="./images/delegated-flow.png" title="large-view" alt="Delegated Attest Flow"></p>
+<p><em>Figure 5: The sequence diagram of the delegated attestation process</em></p>
+<p>A CCA attestation token according to <a href="https://developer.arm.com/documentation/den0137/1-0rel0">RMM specification
+A7.2.1</a> is a collection
+of claims about the state of a Realm and of the CCA platform on which the Realm
+is running. A CCA attestation token consists of two parts:</p>
+<ul>
+<li>Realm token: contains attributes of the Realm, including:
+<ul>
+<li>Realm Initial Measurement</li>
+<li>Realm Extensible Measurements</li>
+</ul>
+</li>
+<li>CCA platform token: contains attributes of the CCA platform on which the Realm is running, including:
+<ul>
+<li>CCA platform identity</li>
+<li>CCA platform lifecycle state</li>
+<li>CCA platform software component measurements</li>
+</ul>
+</li>
+</ul>
+<p>The CCA platform token contains structured data in CBOR, wrapped with a
+COSE_Sign1 envelope according to COSE standard signed by the CPAK.</p>
+<p>The CCA attestation token is defined as follows (using <a href="https://datatracker.ietf.org/doc/rfc8610/">Concise Data Definition
+Language</a>):</p>
+<pre><code>cca-token = #6.399(cca-token-collection) ; CMW Collection
+                                         ; (draft-ietf-rats-msg-wrap)
+cca-platform-token = bstr .cbor COSE_Sign1_Tagged
+cca-realm-delegated-token = bstr .cbor COSE_Sign1_Tagged
+cca-token-collection = {
+    44234 =&gt; cca-platform-token          ; 44234 = 0xACCA
+    44241 =&gt; cca-realm-delegated-token
+}
+
+; EAT standard definitions
+COSE_Sign1_Tagged = #6.18(COSE_Sign1)
+
+; Deliberately shortcut these definitions until EAT is finalised and able to
+; pull in the full set of definitions
+COSE_Sign1 = "COSE-Sign1 placeholder"
+</code></pre>
+<p>The composition of the CCA attestation token is summarized in the following figure:</p>
+<p><img src="./images/token.png" alt="Attestation token"></p>
+<p><em>Figure 6: The structure of the Arm CCA attestation token</em></p>
+<p>The details of claims carried by the CCA platform token are described in <a href="https://developer.arm.com/documentation/den0137/1-0rel0">RMM
+specification
+A7.2.3.2</a>. Here is an
+excerpt.</p>
+<p>The CCA platform token claim map is defined as follows (represented in CDDL):</p>
+<pre><code>cca-platform-claims = (cca-platform-claim-map)
+
+cca-platform-claim-map = {
+    cca-platform-profile
+	cca-platform-challenge
+	cca-platform-implementation-id
+	cca-platform-instance-id
+	cca-platform-config
+	cca-platform-lifecycle
+	cca-platform-sw-components
+	? cca-platform-verification-service
+	cca-platform-hash-algo-id
+}
+
+cca-platform-profile-label = 265 ; EAT profile
+cca-platform-profile-type = "tag:arm.com,2023:cca_platform#1.0.0"
+cca-platform-profile = (
+	cca-platform-profile-label =&gt; cca-platform-profile-type
+)
+
+cca-hash-type = bytes .size 32 / bytes .size 48 / bytes .size 64
+cca-platform-challenge-label = 10
+cca-platform-challenge = (
+	cca-platform-challenge-label =&gt; cca-hash-type
+)
+
+cca-platform-implementation-id-label = 2396 ; PSA implementation ID
+cca-platform-implementation-id-type = bytes .size 32
+cca-platform-implementation-id = (
+	cca-platform-implementation-id-label =&gt; cca-platform-implementation-id-type
+)
+
+cca-platform-instance-id-label = 256 ; EAT ueid
+; TODO: require that the first byte of cca-platform-instance-id-type is 0x01
+; EAT UEIDs need to be 7 - 33 bytes
+cca-platform-instance-id-type = bytes .size 33
+cca-platform-instance-id = (
+	cca-platform-instance-id-label =&gt; cca-platform-instance-id-type
+)
+
+cca-platform-config-label = 2401 ; PSA platform range
+                                 ; TBD: add to IANA registration
+cca-platform-config-type = bytes
+cca-platform-config = (
+	cca-platform-config-label =&gt; cca-platform-config-type
+)
+
+cca-platform-lifecycle-label = 2395 ; PSA lifecycle
+cca-platform-lifecycle-unknown-type = 0x0000..0x00ff
+cca-platform-lifecycle-assembly-and-test-type = 0x1000..0x10ff
+cca-platform-lifecycle-cca-platform-rot-provisioning-type = 0x2000..0x20ff
+cca-platform-lifecycle-secured-type = 0x3000..0x30ff
+cca-platform-lifecycle-non-cca-platform-rot-debug-type = 0x4000..0x40ff
+cca-platform-lifecycle-recoverable-cca-platform-rot-debug-type = 0x5000..0x50ff
+cca-platform-lifecycle-decommissioned-type = 0x6000..0x60ff
+cca-platform-lifecycle-type =
+	cca-platform-lifecycle-unknown-type /
+	cca-platform-lifecycle-assembly-and-test-type /
+	cca-platform-lifecycle-cca-platform-rot-provisioning-type /
+	cca-platform-lifecycle-secured-type /
+	cca-platform-lifecycle-non-cca-platform-rot-debug-type /
+	cca-platform-lifecycle-recoverable-cca-platform-rot-debug-type /
+	cca-platform-lifecycle-decommissioned-type
+cca-platform-lifecycle = (
+	cca-platform-lifecycle-label =&gt; cca-platform-lifecycle-type
+)
+
+cca-platform-sw-components-label = 2399 ; PSA software components
+cca-platform-sw-component = {
+  ? 1 =&gt; text,          ; component type
+    2 =&gt; cca-hash-type, ; measurement value
+  ? 4 =&gt; text,          ; version
+    5 =&gt; cca-hash-type, ; signer id
+  ? 6 =&gt; text,          ; hash algorithm identifier
+}
+cca-platform-sw-components = (
+	cca-platform-sw-components-label =&gt; [ + cca-platform-sw-component ]
+)
+
+cca-platform-verification-service-label = 2400 ; PSA verification service
+cca-platform-verification-service-type = text
+cca-platform-verification-service = (
+	cca-platform-verification-service-label =&gt;
+		cca-platform-verification-service-type
+)
+
+cca-platform-hash-algo-id-label = 2402 ; PSA platform range
+                                       ; TBD: add to IANA registration
+cca-platform-hash-algo-id = (
+	cca-platform-hash-algo-id-label =&gt; text
+)
+
+</code></pre>
+<p>The CCA platform profile claim identifies the EAT profile to which the CCA
+platform token conforms. Note that because the platform token is expected to be
+issued when bound to a Realm token, the profile document should include a
+description of the Realm claims. It s identified using the EAT profile label
+(265).</p>
+<p>The CCA platform challenge claim contains a hash of the public key used to sign
+the Realm token. It is identified using the EAT nonce label (10).</p>
+<p>The CCA platform Implementation ID claim uniquely identifies the implementation
+of the CCA platform. The value of the CCA platform Implementation ID claim can
+be used by a verification service to locate the details of the CCA platform
+implementation from an endorser or manufacturer. Such details are used by a
+verification service to determine the security properties or certification
+status of the CCA platform implementation. The semantics of the CCA platform
+Implementation ID value are defined by the manufacturer or a particular
+certification scheme. For example, the ID could take the form of a product
+serial number, database ID, or other appropriate identifier.</p>
+<p>The CCA platform Instance ID claim represents the unique identifier of the CPAK
+for the CCA platform. The CCA platform Instance ID claim is identified using the
+EAT UEID label (256). The first byte of its value must be 0x01
+(https://datatracker.ietf.org/doc/draft-ietf-rats-eat/ ). RSE implementation
+defines it as <strong>instance_id= 0x01 || hash(CPAK_pub</strong>.</p>
+<p>The CCA platform config claim describes the set of chosen implementation options
+of the CCA platform. As an example, these may include a description of the level
+of physical memory protection which is provided. The CCA platform config claim
+is expected to contain the System Properties field which is present in the Root
+Non-volatile Storage (RNVS) public parameters.</p>
+<p>The CCA platform lifecycle claim identifies the lifecycle state of the CCA
+platform. The value of the CCA platform lifecycle claim is an integer which is
+divided as follows:</p>
+<ul>
+<li>value[15:8]: CCA platform lifecycle state</li>
+<li>value[7:0]: IMPLEMENTATION DEFINED</li>
+</ul>
+<p>The CCA platform software components claim is a list of software components
+which can affect the behavior of the CCA platform. It is expected that an
+implementation will describe the expected software component values within the
+profile. The CCA platform software component type is a string which represents
+the role of the software component. It s intended for use as a hint to help the
+relying party understand how to evaluate the CCA platform software component
+measurement value. The CCA platform software component measurement value
+represents a hash of the state of the software component in memory at the time
+it was initialized. The CCA platform software component version is a text string
+whose meaning is defined by the software component vendor. The CCA platform
+software component signer ID is the hash of a signing authority public key for
+the software component. It can be used by a verifier to ensure that the software
+component was signed by an expected trusted source. The CCA platform software
+hash algorithm ID identifies the way in which the hash algorithm used to measure
+the CCA platform software component. The CCA platform verification service claim
+is a hint which can be used by a relying party to locate a verifier for the
+token. Its value is a text string which can be used to locate the service or a
+URL specifying the address of the service. The CCA platform hash algorithm ID
+claim identifies the algorithm used to calculate the extended measurements in
+the CCA platform token.</p>
+<p>All of these values are stubbed for the demo purpose. On a real HW platform most
+of these values should be provided by the underlying platform. For example, a
+CCA platform implementation ID may represent a unique identifier of the
+implementation of immutable RoT, this value can be stored in ROM altogether with
+the immutable boot loader image.</p>
+<h2 id="security-provisioning"><a class="header" href="#security-provisioning">Security provisioning</a></h2>
+<p>The process of provisioning secrets and other data (e.g. identity) is platform
+specific. Provisioned data may take the form of a signed and encrypted bundle
+transferred to a platform via some dedicated interface, or injected directly to
+RAM via JTAG interface (TF-M RSE case). Apart from platform specific keys (used
+for verified boot etc.), the CCA requires to have provisioned two dedicated
+keys: GUK and HUK (see Cryptographic keys).</p>
+<p>In case of Islet HES, these secrets are hard coded in the
+<a href="https://github.com/islet-project/islet/tree/main/hes/res">files</a> read by the
+source code or in the <a href="https://github.com/islet-project/islet/tree/main/hes/islet-hes-host-app/src/main.rs#L369">source
+code</a>
+itself. Nevertheless, the derived CPAK public key and the platform identity
+metadata should be delivered to the Verifier to be able to verify the signature
+of the CCA platform attestation token.</p>
+<p>Here is a minimum list of provisioned secrets that are needed by the HES
+application (doesn’t include secrets that are required by the underlying
+platform):</p>
+<ul>
+<li><strong>HUK</strong> (for more information refer to the Cryptographic Keys chapter) -
+currently not used in key derivation, but it can be used in future use cases
+(e.g. derivation of sealing keys)</li>
+<li><strong>GUK</strong> (for more information refer to the Cryptographic Keys chapter)</li>
+</ul>
+<h3 id="cpak_pub-derivation"><a class="header" href="#cpak_pub-derivation">CPAK_pub derivation</a></h3>
+<p>During the security provisioning phase, a vendor/manufacturer should provision
+GUK and HUK keys to the HES. The GUK key is used in the CPAK derivation
+process. The private part of CPAK is used to sign the CCA platform attestation
+token. To verify the authenticity of the token, a verifier should have access to
+the public part of CPAK.</p>
+<p>In our case, the CPAK_pub is derived from GUK (and optionally the image of the
+2nd level boot loader if present) using a dedicated tool. This tool is following
+the same derivation scheme as described in the Cryptographic Keys chapter. It’s
+available in
+<a href="https://github.com/islet-project/islet/blob/main/hes/cpak-generator/src/main.rs"><code>hes/cpak-generator/src/main.rs</code></a>.</p>
+<p>The <code>cpak_generator</code> tool is being used during the preparation of endorsements
+and reference values. The derived CPAK_pub keys are used to verify the
+signature of generated CCA platform tokens.</p>
+<h3 id="endorsements-and-reference-values-provisioning"><a class="header" href="#endorsements-and-reference-values-provisioning">Endorsements and reference values provisioning</a></h3>
+<p>In this section we describe the process and the tools used for preparation of
+endorsements and reference values (https://datatracker.ietf.org/doc/rfc9334/)
+that have to be provisioned to a verification service. In our case the
+<a href="https://github.com/veraison">Veraison</a> project is acting as a verification
+service. The Veraison project is officially referred by ARM in their
+documentation and is a part of
+<a href="https://datatracker.ietf.org/wg/rats/about/">IETF/RATS</a> project. The intention
+of Veraison’s developers is not only to support ARM CCA but also other
+attestation technologies.</p>
+<p>The described process of provisioning and the tools developed for the Islet HES
+are being used in the attestation demo. For more information about the demo,
+Veraison and processes detailed further in this section please refer to the
+following links:</p>
+<ul>
+<li><a href="https://github.com/islet-project/islet/tree/main/examples/veraison">https://github.com/islet-project/islet/tree/main/examples/veraison</a></li>
+<li><a href="https://github.com/islet-project/islet/blob/main/examples/veraison/RUN.md">https://github.com/islet-project/islet/blob/main/examples/veraison/RUN.md</a></li>
+<li><a href="https://github.com/islet-project/islet/blob/main/examples/veraison/provisioning/run.sh">https://github.com/islet-project/islet/blob/main/examples/veraison/provisioning/run.sh</a></li>
+</ul>
+<p><img src="./images/endorsements.png" title="large-view" alt="Endorsements pipeline"></p>
+<p><em>Figure 7: The process of generating endorsements and reference values intended to be provisioned to the Veraison verification service</em></p>
+<p>The above diagram show the process of creating
+<a href="https://www.ietf.org/archive/id/draft-birkholz-rats-corim-03.html#name-comid">CoRIM</a>
+(Concise Reference Integrity Manifest) documents containing the endorsements and
+reference values. CoRIM documents can bundle multiple
+<a href="https://datatracker.ietf.org/doc/draft-birkholz-rats-corim/">CoMID</a> (Concise
+Module Identifiers) and
+<a href="https://datatracker.ietf.org/doc/draft-ietf-sacm-coswid/">CoSWID</a> (Concise
+Software Identification Tags) documents. CoMID format describes the hardware and
+firmware modules, whereas CoSWID format describes the software components. The
+CoMID, CoRIM and CoSWID files utilize the CBOR encoding. In case of ARM CCA
+scheme implemented in Veraison, only CoMID documents are used to carry
+reference-triples and attest-key-triples (For more info please refer to
+<a href="https://github.com/veraison/docs/tree/main/demo/cca">https://github.com/veraison/docs/tree/main/demo/cca</a>
+and
+<a href="https://github.com/veraison/services/tree/main/scheme/arm-cca">https://github.com/veraison/services/tree/main/scheme/arm-cca</a>).</p>
+<p>The <code>rocli</code> tool mentioned on the diagram is a custom developed helper that is
+available
+<a href="https://github.com/islet-project/rocli">in the <code>rocli</code> repository</a>.</p>
+<p>The generated CoRIM documents are intended to be provisioned to the <a href="https://github.com/veraison/services/tree/main/provisioning">Veraison
+provisioning
+service</a> by using
+the cocli submit command. See more here:</p>
+<ul>
+<li><a href="https://github.com/veraison/docs/blob/main/api/endorsement-provisioning/README.md">https://github.com/veraison/docs/blob/main/api/endorsement-provisioning/README.md</a></li>
+<li><a href="https://github.com/veraison/docs/blob/main/demo/cca/manual-end-to-end.md">https://github.com/veraison/docs/blob/main/demo/cca/manual-end-to-end.md</a></li>
+</ul>
+<p><img src="./images/cot.png" title="large-view" alt="Chain of Trust in attestation"></p>
+<p><em>Figure 8: Details regarding relation between the keys used to sign and verify the CCA Platform and Realm tokens</em></p>
+<p>The above diagram helps to better understand what keys are used and how they are
+related to each other in the context of the CCA remote attestation.</p>
+<p>The HES is in the possession of the GUK that is kept in secret. GUK is used in
+derivations of CPAK and DAK. The CPAK priv, which is also held securely in HES,
+is used to sign the CCA platform attestation token.</p>
+<p>The public part of CPAK altogether with the identification data (instance-id,
+implementation-id) should be securely provisioned to the Verifier via mutually
+authenticated secure channel during the manufacturing process at the
+manufacturer’s premises.</p>
+<p>The ARM CCA enabled system generates an attestation token being a concatenation
+of the CCA platform attestation token and the Realm attestation token. The Realm
+attestation token is signed using the private part of RAK, the public part of
+RAK is included in the Realm attestation token.</p>
+<p>To protect from reply attacks, the nonce sent by the Verifier is included into
+the Realm attestation token. To cryptographically bind the Realm attestation
+token to the CCA platform attestation token, the hash of public part of RAK is
+included in the CCA platform attestation token.</p>
+<p>The Verifier can check the authenticity of the CCA platform attestation token by
+using previously provisioned CPAK pub. The authenticity of the Realm attestation
+token can be checked by verifying the signature against the RAK pub.</p>
+<h2 id="communication-channel"><a class="header" href="#communication-channel">Communication channel</a></h2>
+<p>On the real hardware the communication channel between main PE and HES is
+utilizing a hardware mailbox channel like
+<a href="https://github.com/islet-project/3rd-tf-a/blob/main/drivers/arm/mhu/mhu_v2_x.c">MHU</a>.</p>
+<p>In our case the PE running on FVP/QEMU utilizes a simple custom developed <a href="https://github.com/islet-project/3rd-tf-a/blob/hes/drivers/arm/rse/rse_comms_serial.c">UART
+channel</a>
+that is placed instead of the MHU in the TF-A. The measured boot and delegated
+attestation have been restored for the FVP and QEMU platforms to utilize the
+aforementioned channel. The modified TF-A sources are available <a href="https://github.com/islet-project/3rd-tf-a/tree/hes">on the <code>hes</code>
+branch of <code>tf-a</code> repository</a>.</p>
+<p>The UART is mapped onto TCP device on the host by FVP or QEMU in their
+respective configuration options. Islet HES host application uses TCP to
+establish connection with the FVP or QEMU and use this channel to exchange
+messages.</p>
+<blockquote class="blockquote-tag blockquote-tag-important">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Important</p>
+<p>The current UART/TCP channel implementation between PE and HES is NOT secure
+and is only used for the purpose of development and simulating the HES without
+a real hardware. In case of implementing HES on an actual hardware a secure
+hardware level channel needs to be used (as per CCA HES Security
+Model). E.g. like the aforementioned MHU mailbox on ARM platforms. The target
+hardware/OS used is out of scope of this document.</p>
+</blockquote>
+<p>The communication mechanism does follow the RSE protocol and serialization (as
+described in REQ04). This way the HES communication is compatible with the ARM’s
+TF-A/TF-M RSE. This approach reduces the amount of changes in the TF-A source
+code while adding the support for UART device. It also enable easier porting of
+the Islet HES to ARM platforms that currently utilize RSE in the role of HES.</p>
+<p>The analysis of the TF-A and TF-M RSE source code tells us that the HES works
+passively. HES waits for a message, handles it and sends a response back to the
+main PE. The protocol works synchronously. There is no handling of multiple
+messages at the same time. HES is blocked until it handles a message and sends
+the results back to the Secure Monitor.</p>
+<p>TF-A also sends messages synchronously. After sending a request (e.g. extending
+measurements) it waits for the response message.</p>
+<p>The main requirement is that the high level API should follow the <code>psa_call()</code>
+format
+(<a href="https://github.com/islet-project/3rd-tf-a/blob/main/drivers/arm/rse/rse_comms.c">drivers/arm/rse/rse_comms.c</a>),
+and the low level format of the exchanged messages should be compatible with the
+description of “embed” protocol described in the RSE documentation
+https://trustedfirmware-m.readthedocs.io/en/tf-mv2.2.2/platform/arm/rse/rse_comms.html</p>
+<p>Here is an excerpt from the RSE documentation that describe the format of
+messages exchanged between the HES and the Secure Monitor. Note that the
+structures are adjusted to consider only the embed protocol.</p>
+<p>The requests messages encoded by the Secure Monitor should be implemented as the
+following structure (note that the endianness of the binary representations of
+the messages should be the same on both sides):</p>
+<pre><code class="language-C">__PACKED_STRUCT serialized_psa_msg_t {
+    struct serialized_rse_comms_header_t header;
+    struct rse_embed_msg_t embed;
+};
+</code></pre>
+<p>Replies from the Islet HES should take form:</p>
+<pre><code class="language-C">__PACKED_STRUCT serialized_psa_reply_t {
+    struct serialized_rse_comms_header_t header;
+    struct rse_embed_reply_t embed;
+};
+</code></pre>
+<p>All messages carry the following header:</p>
+<pre><code class="language-C">__PACKED_STRUCT serialized_rse_comms_header_t {
+    uint8_t protocol_ver;
+    uint8_t seq_num;
+    uint16_t client_id;
+};
+</code></pre>
+<p>The <code>protocol_ver</code> should be set to 0. This means that the “embed” protocol is used.</p>
+<p>The embed protocol embeds the <code>psa_call</code> iovecs into the messages directly sent over the channel (UART, socket).</p>
+<p>The embed message has the following format:</p>
+<pre><code class="language-C">__PACKED_STRUCT rse_embed_msg_t {
+    psa_handle_t handle;
+    uint32_t ctrl_param;
+    uint16_t io_size[PSA_MAX_IOVEC];
+    uint8_t payload[RSE_COMMS_PAYLOAD_MAX_SIZE];
+};
+</code></pre>
+<p>The handle is the <code>psa_call</code> handle parameter and the <code>ctrl_param</code> packs the
+type, <code>in_len</code> and <code>out_len</code> parameters of <code>psa_call</code> into one parameter.</p>
+<p>The <code>io_size</code> array contains the sizes of the up to <code>PSA_MAX_IOVEC(4)</code> iovecs in
+order with the invec sizes before the outvec sizes.</p>
+<p>The payload array then contains the invec data packed contiguously in order. The
+length of this parameter is variable, equal to the sum of the invec lengths in
+<code>io_size</code>. The caller does not need to pad the payload to the maximum size. The
+maximum payload size for this protocol, <code>RSE_COMMS_PAYLOAD_MAX_SIZE (0x40 + 0x800)</code>, is a build-time option.</p>
+<p>Replies in the embed protocol take the form:</p>
+<pre><code class="language-C">__PACKED_STRUCT rse_embed_reply_t {
+    int32_t return_val;
+    uint16_t out_size[PSA_MAX_IOVEC];
+    uint8_t payload[RSE_COMMS_PAYLOAD_MAX_SIZE];
+};
+</code></pre>
+<p>The <code>return_val</code> is the return value of the <code>psa_call()</code> invocation, the
+<code>out_size</code> is the (potentially updated) sizes of the outvecs and the payload
+buffer contains the outvec data serialized contiguously in outvec order.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../components/vendor_specific_smcs.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../components/sdk.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../components/vendor_specific_smcs.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../components/sdk.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../zoom-d2cae294.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

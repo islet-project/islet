@@ -1,0 +1,18 @@
+@startuml
+hide footbox
+
+entity Host
+entity RMM
+
+note over Host, RMM: D1.2.1 Realm creation flow
+Host -> Host: (mdg, meta_ptr) = alloc_granules()
+Host -> Host: Initialize meta_ptr
+note over Host:  Realm metadata (meta_ptr) is passed as an NS granule
+Host -> RMM: RMI_GRANULE_DELEGATE(mdg)
+RMM --> Host: RMI_SUCCESS
+Host -> RMM: RMI_ISLET_REALM_SET_METADATA(rd, mdg, meta_ptr)
+note over RMM:- populate the metadata granule (mdg) with the metadata (pointed by meta_ptr)\n- set the rd.g_metadata := granule(mdg)\n- transition the metadata granule (mdg) state to METADATA
+RMM --> Host: RMI_SUCCESS
+Host -> Host: free_granule(meta_ptr)
+note over Host, RMM: RMI_REALM_ACTIVATE
+@enduml

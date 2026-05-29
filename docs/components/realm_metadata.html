@@ -1,0 +1,579 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Realm metadata - Islet Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../custom-e13467ec.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-a1d0a429.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-a89a4569.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Islet Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="realm-metadata"><a class="header" href="#realm-metadata">Realm metadata</a></h1>
+<h2 id="introduction"><a class="header" href="#introduction">Introduction</a></h2>
+<p>Currently, neither the <a href="https://developer.arm.com/documentation/DEN0096/latest/">Arm CCA Security Model 1.0</a> nor the <a href="https://developer.arm.com/documentation/den0137/1-0rel0/?lang=en">Realm Management Monitor specification</a> describes any mechanism that provides a metadata block with identity information about a launched Realm (similar to “ID block” in <a href="https://www.amd.com/en/developer/sev.html">AMD SEV-SNP</a>, or SIGSTRUCT in <a href="https://www.intel.com/content/www/us/en/products/docs/accelerator-engines/software-guard-extensions.html">Intel SGX</a>). Such metadata can be used in <strong>sealing key derivation</strong> or <strong>authenticated boot</strong> of realm images.</p>
+<p>The current Arm CCA Security Model is aligned with the general concepts of <a href="https://confidentialcomputing.io/wp-content/uploads/sites/10/2023/03/CCC-A-Technical-Analysis-of-Confidential-Computing-v1.3_unlocked.pdf">Confidential Computing</a> (CC). CC targets mainly <strong>Cloud Computing</strong> environments, where there is freedom of choice on what can be launched in realms. It is up to external entities to determine whether a particular VM and a platform are trustworthy. This trust decision is achieved by the <strong>remote attestation</strong> process. In this process, the verification of the Realm (and platform) is delayed and delegated to an external Verifier and a Reliant Party that wants to establish trust in the Realm.</p>
+<p>This is opposite to the security model used in mobile environments. For example, in the case of <strong>Android Virtualization Framework</strong> (AVF), all critical software components are authenticated before launching (via Android Verified Boot). This means that not only the firmware but also the virtual machine images (like Microdroid) are authenticated right before launching.</p>
+<p>In the Islet project, we have designed and implemented the <strong>realm metadata</strong> mechanism for the following reasons:</p>
+<ol>
+<li>We need to have sealing keys immune to software and firmware updates. This can be solved by using a similar approach as described in the <a href="https://pigweed.googlesource.com/open-dice/+/refs/heads/main/docs/specification.md">Open Profile for DICE</a> specification. Instead of using Realm Initial Measurements (RIMs) as a key material, we can use so-called “Authority Data”. The authority data allows us to identify the developer of a particular realm image. We can combine authority data with the realm identifier to reliably identify a particular realm. This can be done by providing RMM with an additional signed metadata structure that contains supplementary information about a launched Realm image.</li>
+<li>The authenticated metadata block provides information (e.g., realm ID, security version number) that could be used to implement a <strong>rollback protection</strong> mechanism (Note that this case is not in the scope of the current design and implementation).</li>
+<li>We can use the realm metadata block to implement <strong>authenticated boot</strong> of realms (similar to Arm’s “secure boot”). The reason why such an authenticated boot could be useful is that the On-device Confidential Computing solution targets mobile phones, TV sets, and other devices with limited resources. Thus, contrary to classical Confidential Computing, the platform should be able to protect itself from running unauthorized code that may exhaust resources (e.g., DDoS attacks mentioned in section 5.2.2 of <a href="https://confidentialcomputing.io/wp-content/uploads/sites/10/2023/03/CCC-A-Technical-Analysis-of-Confidential-Computing-v1.3_unlocked.pdf">A Technical Analysis of Confidential Computing</a>). Additional authentication of launched realms gives greater control over the software running in a realm (Note that this case is not in the scope of the current design and implementation).</li>
+</ol>
+<h2 id="general-description"><a class="header" href="#general-description">General description</a></h2>
+<p>Our design is based on the following assumptions:</p>
+<ul>
+<li>The realm metadata structure populated during the Realm creation process should not be measured (it should not affect the RIM).</li>
+<li>An additional RMI should be used to pass the Realm metadata</li>
+<li>The metadata should contain the following information
+<ul>
+<li><code>Format Version</code> - a version of the manifest’s format</li>
+<li><code>Realm ID</code> - a unique identifier of the Realm Image</li>
+<li><code>RIM</code> - Realm Initial Measurement - it binds the Realm image to the metadata structure</li>
+<li><code>SVN</code> - Security Version Number - it should be increased only when there is a new release of a Realm image that fixes security issues. SVN can be used by a rollback protection mechanism</li>
+<li><code>Version</code> - a version of the Realm Image. A scheme similar to semantic versioning could be used here (simplified <a href="https://semver.org/">https://semver.org/</a> that uses only the “version core” expression)</li>
+<li><code>Public Key</code> - used for verification of the metadata block - it also uniquely identifies the owner of the realm</li>
+<li><code>Signature</code></li>
+</ul>
+</li>
+<li>The metadata should be cryptographically signed using a realm owner’s private key associated with the <code>Public Key</code>. This allows checking the integrity and authenticity of the metadata block.</li>
+</ul>
+<p>The other assumption is that the realm metadata mechanism should fit into the existing RMM implementation in the least invasive way possible. First and foremost, the existing APIs described in the RMM specification should not change, and the additional interface should be provided using vendor-specific SMCs.</p>
+<p>The provisioning of a realm metadata structure should be performed using the following steps:</p>
+<ol>
+<li>The realm is created using the standard <strong>RMI_REALM_CREATE</strong> call</li>
+<li>A realm metadata structure is populated using the <strong>RMI_ISLET_REALM_SET_METADATA</strong> call. This is an optional step. During provisioning, the RMM performs an additional verification (signature, validity) step of the provided structure. After successful verification, the handle to the metadata block is saved in the Realm Descriptor.</li>
+<li>The realm content is populated in a standard way (<strong>RMI_DATA_CREATE</strong>, etc.)</li>
+<li>During <strong>RMI_REALM_ACTIVATE</strong> handling, when the RIM calculated in runtime is ready and stable, the computed RIM is compared against the RIM taken from the populated realm metadata structure. Of course, this check occurs only if the realm metadata block was previously provisioned using <strong>RMI_ISLET_REALM_SET_METADATA</strong>. As mentioned earlier, provisioning of the realm metadata block is currently optional, and we also allow populating and launching realms in a standard way.</li>
+</ol>
+<p>Note that the <strong>RMI_ISLET_REALM_SET_METADATA</strong> command can be called anytime between the <strong>RMI_REALM_CREATE</strong> and <strong>RMI_REALM_ACTIVATE</strong> calls.</p>
+<h2 id="rmm-interface-specification"><a class="header" href="#rmm-interface-specification">RMM interface specification</a></h2>
+<p>This section describes the changes in the RMM interfaces to provide additional realm metadata functionality.</p>
+<h3 id="changes-in-the-realm-management-interface-rmi"><a class="header" href="#changes-in-the-realm-management-interface-rmi">Changes in the Realm Management Interface (RMI)</a></h3>
+<h4 id="rmi_islet_realm_set_metadata-command"><a class="header" href="#rmi_islet_realm_set_metadata-command">RMI_ISLET_REALM_SET_METADATA command</a></h4>
+<p>To pass the additional Realm metadata (represented as the <strong>RmiIsletRealmMetadata</strong> structure), we introduce an additional vendor-specific command <strong>RMI_ISLET_REALM_SET_METADATA</strong> (see <a href="./vendor_specific_smcs.html">Vendor specific SMC Allocation for Realm Metadata mechanism and Sealing Keys Derivation</a>).</p>
+<p>Currently <strong>RMI_ISLET_REALM_SET_METADATA</strong> takes the following input values:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Name</th><th>Register</th><th>Bits</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>fid</td><td>X0</td><td>63:0</td><td>UInt64</td><td>FID, value 0xC7000150</td></tr>
+<tr><td>rd</td><td>X1</td><td>63:0</td><td>Address</td><td>PA of the RD for the target Realm</td></tr>
+<tr><td>mdg</td><td>X2</td><td>63:0</td><td>Address</td><td>PA of the delegated granule for storing the RmiIsletRealmMetadata (metadata granule)</td></tr>
+<tr><td>meta_ptr</td><td>X3</td><td>63:0</td><td>Address</td><td>PA of the host provided RmiIsletRealmMetadata structure</td></tr>
+</tbody>
+</table>
+</div>
+<p>In the current design we try to keep the size of the Realm metadata structure as small as possible. Currently, the size of <strong>RmiIsletRealmMetadata</strong> is 432 bytes, and it easily fits within only one extra granule (4096 bytes) that has to be delegated to the Realm World and assigned to the realm descriptor (note that the abstract <strong>RmmRealm</strong> type should also be adjusted to keep the pointer to the delegated metadata granule - this and other changes are described in the <a href="#changes-in-the-rmm-specification">Changes in the RMM specification</a> section).</p>
+<p>Here is a detailed description of the <strong>RmiIsletRealmMetadata</strong> structure.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Name</th><th>Byte offset</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>fmt_version</code></td><td>0x0</td><td>UInt64</td><td>The version of the manifest format (0x1 for this very format)</td></tr>
+<tr><td><code>realm_id</code></td><td>0x8</td><td>UInt8[128]</td><td>The identifier of the realm - a left-padded ASCII string containing printable characters, where the end of the string is marked as ‘\0’ and unused remaining bytes should be filled with zeros.</td></tr>
+<tr><td><code>rim</code></td><td>0x88</td><td><code>RmmRealmMeasurement</code> (UInt8[64])</td><td>The expected Realm Initial Measurement (RMM spec C1.17, 512 bits)</td></tr>
+<tr><td><code>hash_algo</code></td><td>0xc8</td><td>UInt64</td><td>A hash algorithm used to calculate RIM (0x1 - SHA-256, 0x2 - SHA-512)</td></tr>
+<tr><td><code>svn</code></td><td>0xd0</td><td>UInt64</td><td>Security Version Number (increased only if security issues are patched)</td></tr>
+<tr><td><code>version_major</code></td><td>0xd8</td><td>UInt64</td><td>Version Major number</td></tr>
+<tr><td><code>version_minor</code></td><td>0xe0</td><td>UInt64</td><td>Version Minor number</td></tr>
+<tr><td><code>version_patch</code></td><td>0xe8</td><td>UInt64</td><td>Version Patch number</td></tr>
+<tr><td><code>public_key</code></td><td>0xf0</td><td>UInt8[96]</td><td>The public key encoded as two 384-bit Big Integers (x and y)</td></tr>
+<tr><td><code>signature</code></td><td>0x150</td><td>UInt8[96]</td><td>The signature is encoded as two 384-bit Big Integers (r and s according to “4.1.3, Signing Operation” of <a href="https://www.secg.org/sec1-v2.pdf">SEC 1: Elliptic Curve Cryptography</a>)</td></tr>
+</tbody>
+</table>
+</div>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>The little-endian byte order is used for encoding numbers. The signature should be calculated from the first 0x150 bytes of the <strong>RmiIsletRealmMetadata</strong> structure. The proposed signature algorithm is <strong>ECDSA P-384</strong> with <strong>SHA-384</strong> (hash-then-sign, <a href="https://std.neuromancer.sk/secg/secp384r1">secp384r1</a>).</p>
+</blockquote>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>It is recommended to use a reverse domain name (<a href="https://en.wikipedia.org/wiki/Reverse_domain_name_notation">https://en.wikipedia.org/wiki/Reverse_domain_name_notation</a>) or similar notation to encode the <code>realm_id</code> field, because this format includes a globally unique domain name of a realm owner and also a particular realm name, which significantly reduces naming collisions.</p>
+</blockquote>
+<p>Here are the details of how the <strong>RMI_ISLET_REALM_SET_METADATA</strong> command is handled:</p>
+<ul>
+<li>Firstly, the host performs a standard procedure of realm creation using the <strong>RMI_REALM_CREATE</strong> command as described in the “D1.2.1 Realm creation flow” section of <a href="https://developer.arm.com/documentation/den0137/1-0rel0/?lang=en">RMM spec 1.0-REL0</a>.</li>
+<li>Once the realm is created, the host allocates two granules: one granule pointed to by <code>meta_ptr</code> that is used to pass the <code>RmiIsletRealmMetadata</code> content, and one granule (<code>mdg</code>) that is used to keep the metadata on the Realm World side.</li>
+<li>The metadata structure pointed to by <code>meta_ptr</code> is initialized.</li>
+<li>The host calls RMI_GRANULE_DELEGATE(mdg) to delegate a dedicated metadata granule to the Realm World</li>
+<li>The host calls RMI_ISLET_REALM_SET_METADATA(rd, mdg, meta_ptr)
+<ul>
+<li>The metadata structure passed via <code>meta_ptr</code> is copied into the RMM</li>
+<li>The copy of the metadata structure is validated and its authenticity and integrity are checked</li>
+<li>The Realm Descriptor is checked: its state should be NEW and its metadata field should be empty</li>
+<li>The metadata granule (<code>mdg</code>) content is populated using the previously verified metadata structure copy</li>
+<li>In the last step, the state of the metadata granule (mdg) is changed to METADATA and assigned to the Realm Descriptor</li>
+</ul>
+</li>
+<li>The host frees the memory pointed to by <code>meta_ptr</code></li>
+</ul>
+<p>This procedure is depicted in the sequence diagram below.</p>
+<p><img src="./metadata-sequence.png" alt="Metadata handling sequence diagram"></p>
+<p><em>Figure 1: Handling of realm metadata - sequence diagram</em></p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>The <strong>RMI_ISLET_REALM_SET_METADATA</strong> can be called only once on a valid Realm Descriptor (rd) initialized using <strong>RMI_REALM_CREATE</strong>, and before <strong>RMI_REALM_ACTIVATE</strong> call (i.e. it can be performed when the realm state is RmmRealmState::REALM_NEW).</p>
+</blockquote>
+<p>Here are more details about <strong>RMI_ISLET_REALM_SET_METADATA</strong> command.</p>
+<p><strong>Output values</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Name</th><th>Register</th><th>Bits</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>result</td><td>X0</td><td>63:0</td><td>RmiCommandReturnCode</td><td>Command return status</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Failure conditions</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>ID</th><th>Condition</th></tr>
+</thead>
+<tbody>
+<tr><td>rd_align</td><td>pre: !AddrIsGranuleAligned(rd)<br>post: ResultEqual(result, RMI_ERROR_INPUT)</td></tr>
+<tr><td>rd_bound</td><td>pre:    !PaIsDelegable(rd)<br>post:    ResultEqual(result, RMI_ERROR_INPUT)</td></tr>
+<tr><td>rd_state</td><td>pre:    Granule(rd).state != RD<br>post:    ResultEqual(result, RMI_ERROR_INPUT)</td></tr>
+<tr><td>realm_state</td><td>pre:    Realm(rd).state != REALM_NEW<br>post:    ResultEqual(result, RMI_ERROR_REALM)</td></tr>
+<tr><td>mdg_align</td><td>pre:    !AddrIsGranuleAligned(mdg)<br>post:    ResultEqual(result, RMI_ERROR_INPUT)</td></tr>
+<tr><td>mdg_bound</td><td>pre:    !PaIsDelegable(mdg)<br>post:    ResultEqual(result, RMI_ERROR_INPUT)</td></tr>
+<tr><td>mdg_state</td><td>pre:    Granule(mdg) != DELEGATED<br>post:    ResultEqual(result, RMI_ERROR_INPUT)</td></tr>
+<tr><td>meta_ptr_align</td><td>pre:    !AddrIsGranuleAligned(meta_ptr)<br>post:    ResultEqual(result, RMI_ERROR_INPUT)</td></tr>
+<tr><td>meta_ptr_bound</td><td>pre:    !PaIsDelegable(meta_ptr)<br>post:    ResultEqual(result, RMI_ERROR_INPUT)</td></tr>
+<tr><td>meta_ptr_pas</td><td>pre:    !GranuleAccessPermitted(meta_ptr, PAS_NS)<br>post:    ResultEqual(result, RMI_ERROR_INPUT)</td></tr>
+<tr><td>meta_ptr_format</td><td>pre:  meta_ptr.fmt_version != 0x1<br>post: ResultEqual(result, RMI_ERROR_INPUT)</td></tr>
+<tr><td>meta_ptr_hash</td><td>pre: meta_ptr.hash_algo != 0x1 &amp;&amp; meta_ptr.hash_algo != 0x2<br>post: ResultEqual(result, RMI_ERROR_INPUT)</td></tr>
+<tr><td>meta_ptr_realm_id</td><td>pre: !IsRealmIdFormatValid(meta_ptr.realm_id)<br>post: ResultEqual(result, RMI_ERROR_INPUT)</td></tr>
+<tr><td>metadata_valid</td><td>pre: !RmiIsletRealmMetadataIsValid(meta_ptr)<br>post: ResultEqual(result, RMI_ERROR_INPUT)</td></tr>
+</tbody>
+</table>
+</div>
+<p>Where <code>IsRealmIdFormatValid(addr)</code> is a function that returns a boolean value of TRUE, only when the address points to a string:</p>
+<ul>
+<li>terminated with ‘\0’</li>
+<li>is of length greater than zero</li>
+<li>contains only printable ASCII characters</li>
+</ul>
+<p>The <code>RmiIsletRealmMetadataIsValid</code> function performs following steps:</p>
+<ul>
+<li>it check whether is <code>fmt_version</code> is valid (it should be 0x1)</li>
+<li>it verifies the <code>signature</code> using the embedded <code>public_key</code> over the metadata using a digital signature algorithm (<strong>ECDSA P-384</strong> with <strong>SHA-384</strong> (hash-then-sign)) as described earlier in this section. The <code>RmiIsletRealmMetadataIsValid</code> function is used during the handling of <strong>RMI_ISLET_REALM_SET_METADATA</strong> and is described in the <a href="#realm-authentication-process">Realm authentication process</a> section.</li>
+</ul>
+<p><strong>Success conditions</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>ID</th><th>Condition</th></tr>
+</thead>
+<tbody>
+<tr><td>mdg_state</td><td>Granule(mdg).state == METADATA</td></tr>
+</tbody>
+</table>
+</div>
+<h4 id="rmi_realm_activate-command"><a class="header" href="#rmi_realm_activate-command">RMI_REALM_ACTIVATE command</a></h4>
+<p>This section describes the changes to <strong>RMI_REALM_ACTIVATE</strong> handling.</p>
+<p><strong>Failure conditions (B4.3.8.2)</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>ID</th><th>Condition</th></tr>
+</thead>
+<tbody>
+<tr><td>rim_is_valid</td><td>pre: Realm(rd).g_metadata != Zeros() &amp;&amp; !RmiIsletRIMIsValid(Realm(rd), Realm(rd).g_metadata)<br>post: ResultEqual(result, RMI_ERROR_REALM)</td></tr>
+</tbody>
+</table>
+</div>
+<p>The function <code>RmiIsletRIMIsValid()</code> checks if:</p>
+<ul>
+<li>the RIM read from the RD is the same as that provided in the realm metadata structure</li>
+<li>the hash algorithm used to calculate the RIM read from the RD is the same as that provided in the realm metadata structure</li>
+</ul>
+<p>If both conditions are successful, the function returns true.</p>
+<h4 id="changes-in-the-rmm-specification"><a class="header" href="#changes-in-the-rmm-specification">Changes in the RMM specification</a></h4>
+<p>Here are the related changes in the RMM specification (RMM specification, 1.0-rel0).</p>
+<p><strong>A2.2.3 Granule lifecycle</strong>
+<strong>A.2.2.3.1 States</strong></p>
+<p>Additional granule state.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Granule state</th><th>Description</th><th>GPT entry</th></tr>
+</thead>
+<tbody>
+<tr><td>METADATA</td><td>Realm Metadata</td><td>GPT_REALM</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>A2.2.3.2 State transitions</strong></p>
+<p>Additional state transitions.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>From state</th><th>To state</th><th>Events</th></tr>
+</thead>
+<tbody>
+<tr><td>METADATA</td><td>DELEGATED</td><td>RMI_REALM_DESTROY</td></tr>
+<tr><td>DELEGATED</td><td>METADATA</td><td>RMI_ISLET_REALM_SET_METADATA</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>C1.16 RmmRealm type</strong></p>
+<p>Additional field in RmmRealm type pointing to the physical address of realm metadata granule.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Name</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>metadata</td><td>Address</td><td>The physical address of a granule containing the Realm metadata (RmiIsletRealmMetadata)</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>B4.3.10.3 Success conditions (RMI_REALM_DESTROY)</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>ID</th><th>Condition</th></tr>
+</thead>
+<tbody>
+<tr><td>metadata_state</td><td>Granule(Realm(rd).metadata).state == DELEGATED</td></tr>
+</tbody>
+</table>
+</div>
+<p>Note that the metadata granule should be zeroed and transitioned to the <strong>DELEGATED</strong> state.</p>
+<h2 id="realm-authentication-process"><a class="header" href="#realm-authentication-process">Realm authentication process</a></h2>
+<blockquote class="blockquote-tag blockquote-tag-important">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Important</p>
+<p>Current implementation <strong>does not</strong> provide <strong>authenticated boot</strong> and <strong>rollback protection</strong> functionalities for Realms. If in the future such a need arises, this section provides implementation guidance on how such functionality could be implemented.</p>
+</blockquote>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>If <strong>rollback protection</strong> has to be enabled, a <strong>Secure Version Storage</strong> has to be available to the RMM. Usually it can be provided as a <strong>Trusted Application</strong> (TA) running in a secure world (TrustZone); this application can have exclusive access to a hardware <strong>Replay Protected Memory Block</strong> (RPMB) eMMC device used as secure storage resistant to rollback attacks.</p>
+</blockquote>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>If the realm <strong>authenticated boot</strong> is going to be used, the <a href="https://csrc.nist.gov/glossary/term/trust_anchor">Trust Anchor</a> in the form of a public key for verification of the authenticity of the Realm image should be embedded within the Islet RMM binary. Note that this is the simplest way of providing the Trust Anchor for authenticated boot. In future versions of the realm metadata mechanism, the embedded public key can be encoded as an X.509 leaf certificate (or CBOR Encoded X.509 Certificates) together with an intermediate certificate chain, and the Islet RMM can have access to a root CA certificate. In this case, the whole certificate chain up to the root CA certificate will be verified. This scheme will allow splitting the roles of a realm owner and the CCA supply chain (an entity that is responsible for preparation of the CCA platform (HW, firmware including Islet RMM)). At the same time, it will require additional PKI infrastructure on the CCA supply chain side for verifying and signing CSRs sent by Realm owners.</p>
+</blockquote>
+<p>The Realm metadata verification procedure (within the scope of the <code>RmiIsletRealmMetadataIsValid</code> procedure) should be performed while handling <strong>RMI_ISLET_REALM_SET_METADATA</strong>, and it should include the following steps:</p>
+<ol>
+<li>If the <code>RmiIsletRealmMetadata</code> block <strong>has not been</strong> provided by <strong>RMI_ISLET_REALM_SET_METADATA</strong> command, the handling of <strong>RMI_REALM_ACTIVATE</strong> should proceed in a standard way. Otherwise during the handling of <strong>RMI_ISLET_REALM_SET_METADATA</strong>, RMM needs to:</li>
+<li>Check if the <code>RmiIsletRealmMetadata.fmt_version</code> is valid.</li>
+<li>Check the integrity of the <code>RmiIsletRealmMetadata</code> by checking the signature using <code>ECDSA P-384</code> with SHA-384 algorithm and <code>RmiIsletRealmMetadata.public_key</code>.</li>
+</ol>
+<p>Any failure of the above steps should result in a failure of the realm metadata setting process and thus the launching process of the realm.</p>
+<p>If the <code>RmiIsletRealmMetadata</code> block <strong>has been provided</strong> by the <strong>RMI_ISLET_REALM_SET_METADATA</strong> call, the <strong>RMI_REALM_ACTIVATE</strong> should perform the following steps:</p>
+<ol>
+<li>(<strong>Optional</strong> step - only if <strong>authenticated boot</strong> is going to be implemented) RMM should check if the <code>public_key</code> read from the <code>RmiIsletRealmMetadata</code> is the same as the key <strong>embedded</strong> in the RMM binary.</li>
+<li>Check whether the RIM calculated during the loading process of the realm and the RIM read from the provided <strong>RmiIsletRealmMetadata</strong> are the same.</li>
+<li>Check if the <strong>hash algorithm</strong> used to calculate RIM in runtime is the same as that provided in the <code>RmiIsletRealmMetadata</code> structure</li>
+<li>(<strong>Optional</strong> step, when the <strong>rollback protection</strong> is going to be implemented) In case when the rollback protection is enabled, the RMM should compare the <code>RmiIsletRealmMetadata.svn</code> against the <code>svn</code> read from the <code>Version Storage</code> identified by the <code>public_key</code> and <code>realm_id</code> pair.
+<ul>
+<li>If the <code>RmiIsletRealmMetadata.svn</code> is less than that read from the <code>Version Storage</code>, the launching process should be interrupted.</li>
+<li>If the values are the same, the launching process should continue.</li>
+<li>If the <code>RmiIsletRealmMetadata.svn</code> is greater than that read from the <code>Version Storage</code>, the corresponding <code>svn</code> in the <code>Version Storage</code> should be updated (it should be set to <code>RmiIsletRealmMetadata.svn</code>), and the launching process should continue.</li>
+</ul>
+</li>
+</ol>
+<p>Any failure of the above steps should result in the <strong>failure</strong> of the realm activation process. Note that the steps should be performed in this very order.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Note, if the <strong>RmiIsletRealmMetadata</strong> was not populated, the <strong>RMI_REALM_ACTIVATE</strong> call should be handled in a standard way.</p>
+</blockquote>
+<h2 id="required-changes-in-firmware-and-software-components"><a class="header" href="#required-changes-in-firmware-and-software-components">Required changes in firmware and software components</a></h2>
+<p><img src="./generating-metadata.png" alt="The workflow of generating a binary file containing a realm metadata structure"></p>
+<p><em>Figure 2: The workflow of generating a binary file containing a realm metadata structure</em></p>
+<h3 id="realm-metadata-tool"><a class="header" href="#realm-metadata-tool">realm-metadata-tool</a></h3>
+<p>To generate a binary version of the <code>RmiIsletRealmMetadata</code> structure, a dedicated command-line tool called <a href="https://github.com/islet-project/realm-metadata-tool">realm-metadata-tool</a> has been implemented. The tool takes a manifest file in YAML format and the private key (in PEM format) and produces a binary file containing the <code>RmiIsletRealmMetadata</code> structure. For more information, please refer to the realm-metadata-tool <a href="https://github.com/islet-project/realm-metadata-tool/blob/main/README.md">README</a> document. Note that to obtain the RIM needed by the manifest file, one can use a kvmtool-based RIM measurer, which can be found <a href="https://github.com/islet-project/3rd-kvmtool/tree/kvmtool-rim-measurer/aosp/cca/v4">here</a>.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>Note that the management of the keys used to sign the realm metadata structure is the responsibility of the Realm owner. The same applies to the storage, management, and distribution of realm images and their associated metadata.</p>
+</blockquote>
+<h3 id="kvmtool"><a class="header" href="#kvmtool">kvmtool</a></h3>
+<p>The path to the generated metadata binary file from <strong>realm-metadata-tool</strong> can be passed to the <a href="https://github.com/islet-project/3rd-kvmtool/tree/aosp/cca/v4">kvmtool</a> via the <code>--metadata</code> option. During the Realm setup, kvmtool transfers that metadata blob using dedicated ioctls to the host Linux kernel KVM layer, which then transfers it to the Islet RMM using the <strong>RMI_ISLET_REALM_SET_METADATA</strong> command.</p>
+<p>The source code of the kvmtool capable of handling <strong>realm metadata</strong> can be found <a href="https://github.com/islet-project/3rd-kvmtool/tree/aosp/cca/v4">here</a>.</p>
+<h3 id="linux-kernel-host"><a class="header" href="#linux-kernel-host">Linux kernel (host)</a></h3>
+<p>The <a href="https://github.com/islet-project/3rd-android-kernel/blob/android16-6.12/cca-host/v5/arch/arm64/kvm/rme.c">KVM/RME</a> layer of the host Linux kernel has been extended to handle an additional <code>KVM_CAP_ARM_RME_POPULATE_METADATA</code> command used by kvmtool to pass the realm metadata.
+The source code of the host Linux kernel that can handle <strong>realm metadata</strong> can be found <a href="https://github.com/islet-project/3rd-android-kernel">here</a>.</p>
+<h3 id="islet-rmm"><a class="header" href="#islet-rmm">Islet RMM</a></h3>
+<p><strong>Islet RMM</strong> provides implementation of <strong>realm metadata</strong> handling in the following files:</p>
+<ul>
+<li><a href="https://github.com/islet-project/islet/blob/main/rmm/src/rmi/realm/mod.rs">rmm/src/rmi/realm/mod.rs</a> implements a handler for the <strong>RMI_ISLET_REALM_SET_METADATA</strong> RMI, metadata handling during realm activation and destruction</li>
+<li><a href="https://github.com/islet-project/islet/blob/main/rmm/src/rmi/metadata.rs">rmm/src/rmi/metadata.rs</a> implements <code>RmiIsletRealmMetadata</code> structure and the main <strong>realm metadata</strong> functionality.</li>
+</ul>
+<h3 id="tf-a"><a class="header" href="#tf-a">TF-A</a></h3>
+<p>The <strong>TF-A</strong> source code has been modified to route additional RMI for handling realm metadata (<a href="https://github.com/islet-project/3rd-tf-a/blob/hes/services/islet_svc/islet_svc_setup.c">services/islet_svc/islet_svc_setup.c</a>).</p>
+<h2 id="security-analysis-and-threat-model"><a class="header" href="#security-analysis-and-threat-model">Security analysis and threat model</a></h2>
+<p>This section discusses the security properties of the realm metadata mechanism, potential attack vectors, and how the design mitigates them.</p>
+<h3 id="trust-assumptions"><a class="header" href="#trust-assumptions">Trust assumptions</a></h3>
+<ul>
+<li>The <strong>RMM</strong> is trusted to correctly enforce the realm metadata verification and RIM comparison logic.</li>
+<li>The <strong>host</strong> (including the hypervisor, kvmtool, and the Linux kernel KVM layer) is <strong>not trusted</strong> — it may be compromised or malicious.</li>
+<li>The <strong>realm owner’s private key</strong> is trusted to be kept secret and properly protected by the realm owner.</li>
+<li>The <strong>TF-A</strong> (EL3 firmware) is trusted to correctly route SMCs to the RMM.</li>
+</ul>
+<h3 id="threat-model"><a class="header" href="#threat-model">Threat model</a></h3>
+<h4 id="t1-metadata-tampering"><a class="header" href="#t1-metadata-tampering">T1: Metadata tampering</a></h4>
+<p><strong>Threat</strong>: A compromised host modifies one or more fields of the <code>RmiIsletRealmMetadata</code> structure (e.g., changes the <code>realm_id</code>, <code>svn</code>, or <code>rim</code>) before or during the <code>RMI_ISLET_REALM_SET_METADATA</code> call.</p>
+<p><strong>Mitigation</strong>: The metadata structure is cryptographically signed using ECDSA P-384 with SHA-384. The signature covers the first 0x150 bytes of the structure, which includes all mutable fields except <code>signature</code>. Any modification to the signed portion invalidates the signature, and the <code>RmiIsletRealmMetadataIsValid</code> check will fail, causing the <code>RMI_ISLET_REALM_SET_METADATA</code> command to return an error. The RMM copies the metadata from the host-provided NS granule into its own memory before performing verification, ensuring that the host cannot modify the data after verification.</p>
+<h4 id="t2-signature-forgery"><a class="header" href="#t2-signature-forgery">T2: Signature forgery</a></h4>
+<p><strong>Threat</strong>: An attacker attempts to forge a valid signature on a crafted or modified metadata block without possessing the realm owner’s private key.</p>
+<p><strong>Mitigation</strong>: The use of ECDSA P-384 with SHA-384 provides a 192-bit security level against signature forgery, which is considered well beyond the reach of computational attacks. The RMM verifies the signature using the <code>public_key</code> embedded in the metadata structure itself. Note that in the current design (without authenticated boot), the RMM does not verify that the <code>public_key</code> belongs to a trusted authority — it only verifies that the signature is valid for the given public key. This means any entity can create a validly signed metadata block. The security guarantee in the current design is <strong>integrity and self-consistency</strong>, not <strong>authorization</strong>. Authorization requires the authenticated boot extension (see <a href="#realm-authentication-process">Realm authentication process</a>).</p>
+<h4 id="t3-metadata-replay-rollback-attack"><a class="header" href="#t3-metadata-replay-rollback-attack">T3: Metadata replay (rollback attack)</a></h4>
+<p><strong>Threat</strong>: A compromised host replays a previously valid metadata block corresponding to an older version of the realm image (with known vulnerabilities) to launch a realm with downgraded security.</p>
+<p><strong>Mitigation</strong>: The current implementation <strong>does not</strong> provide rollback protection. The <code>svn</code> field is included in the metadata structure to support future rollback protection, but without a Secure Version Storage (e.g., RPMB-backed storage accessible via a TrustZone TA), the RMM cannot detect replay of older metadata blocks. If rollback protection is implemented in the future, the RMM would compare the <code>svn</code> in the metadata against the stored SVN value, rejecting downgrades as described in the <a href="#realm-authentication-process">Realm authentication process</a> section.</p>
+<h4 id="t4-rim-mismatch--realm-image-substitution"><a class="header" href="#t4-rim-mismatch--realm-image-substitution">T4: RIM mismatch / realm image substitution</a></h4>
+<p><strong>Threat</strong>: A compromised host provides a validly signed metadata block but attempts to load a different realm image whose computed RIM does not match the <code>rim</code> field in the metadata.</p>
+<p><strong>Mitigation</strong>: During <code>RMI_REALM_ACTIVATE</code>, the RMM compares the RIM computed during the realm loading process against the <code>rim</code> field stored in the metadata structure. If they do not match, the activation is rejected (<code>RMI_ERROR_REALM</code>). This ensures that the metadata is bound to the specific realm image being launched. Additionally, the <code>hash_algo</code> field is verified to match the algorithm used for RIM computation, preventing algorithm substitution attacks.</p>
+<h4 id="t5-metadata-removal--bypass-attack"><a class="header" href="#t5-metadata-removal--bypass-attack">T5: Metadata removal / bypass attack</a></h4>
+<p><strong>Threat</strong>: A compromised host simply does not provide metadata via <code>RMI_ISLET_REALM_SET_METADATA</code>, thereby bypassing all metadata-based checks and launching a realm without authentication.</p>
+<p><strong>Mitigation</strong>: In the current design, providing metadata is <strong>optional</strong>. A realm can be launched without metadata, and in that case, <code>RMI_REALM_ACTIVATE</code> proceeds in the standard way without RIM comparison against a metadata-provided value. This is by design — the current mechanism provides <strong>opt-in</strong> authentication. If <strong>authenticated boot</strong> is implemented in the future, the RMM would require metadata for all realms (or for a specific class of realms) and reject activation attempts without valid metadata. This would require embedding a trust anchor (public key) in the RMM binary.</p>
+<h4 id="t6-denial-of-service-via-invalid-metadata"><a class="header" href="#t6-denial-of-service-via-invalid-metadata">T6: Denial of service via invalid metadata</a></h4>
+<p><strong>Threat</strong>: A compromised host provides invalid metadata (e.g., with an invalid signature or mismatched RIM) to prevent a legitimate realm from launching.</p>
+<p><strong>Mitigation</strong>: The host is already in full control of the realm lifecycle and can deny service by simply not creating the realm. This is an inherent property of the CCA security model where the host manages the realm lifecycle. The metadata mechanism does not introduce a new DoS vector beyond what already exists. If the host provides invalid metadata, the realm creation fails, but the host can retry without metadata.</p>
+<h4 id="t7-key-compromise"><a class="header" href="#t7-key-compromise">T7: Key compromise</a></h4>
+<p><strong>Threat</strong>: The realm owner’s private key used to sign the metadata is compromised, allowing an attacker to create validly signed metadata for arbitrary realm images.</p>
+<p><strong>Mitigation</strong>: The current design does not include a key revocation mechanism. If the private key is compromised, the attacker can forge metadata for any realm signed with that key. Potential mitigations include:</p>
+<ul>
+<li>Embedding a list of revoked public keys in the RMM binary (requires RMM updates).</li>
+<li>Including a key identifier and revocation list in a future <code>fmt_version</code> of the metadata structure.</li>
+<li>Using short-lived certificates with expiration times (would require additional fields in the metadata structure).</li>
+</ul>
+<p>Key compromise handling is deferred to a future design iteration.</p>
+<h4 id="t8-metadata-structure-replacement-after-initial-setting"><a class="header" href="#t8-metadata-structure-replacement-after-initial-setting">T8: Metadata structure replacement after initial setting</a></h4>
+<p><strong>Threat</strong>: A compromised host attempts to call <code>RMI_ISLET_REALM_SET_METADATA</code> multiple times to replace the metadata with a different block.</p>
+<p><strong>Mitigation</strong>: The <code>RMI_ISLET_REALM_SET_METADATA</code> command can only be called <strong>once</strong> per realm. The RMM checks that the Realm Descriptor’s metadata field is empty before accepting a new metadata block. If metadata has already been set, the command returns an error. This prevents the host from replacing metadata after initial provisioning.</p>
+<h4 id="t9-side-channel-attacks-on-signature-verification"><a class="header" href="#t9-side-channel-attacks-on-signature-verification">T9: Side-channel attacks on signature verification</a></h4>
+<p><strong>Threat</strong>: An attacker uses side-channel analysis (timing, power, etc.) to extract information about the private key during signature verification in the RMM.</p>
+<p><strong>Mitigation</strong>: The RMM performs signature <strong>verification</strong> (not signing), so the private key is never present in the RMM’s memory. Side-channel attacks on ECDSA verification do not leak the private key. However, implementers should ensure that the verification implementation is constant-time to prevent timing side-channels that could potentially leak information about the public key or the message being verified.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../components/sealing.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../components/vendor_specific_smcs.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../components/sealing.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../components/vendor_specific_smcs.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../zoom-d2cae294.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

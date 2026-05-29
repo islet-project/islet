@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["init_pauth","restore_state","save_state"],"struct":["PauthRegister"]};

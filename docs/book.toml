@@ -1,0 +1,14 @@
+[book]
+authors = ["Islet Contributors"]
+language = "en"
+#multilingual = false
+src = "."
+title = "Islet Documentation"
+
+[build]
+build-dir = "../out/book"
+
+[output.html]
+additional-js = [ "zoom.js" ]
+additional-css = [ "custom.css" ]
+

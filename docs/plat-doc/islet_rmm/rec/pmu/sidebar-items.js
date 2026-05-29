@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["init_pmu","pmu_overflow_active","restore_host_state","restore_state","save_host_state","save_state","send_state_to_host"],"struct":["PmuRegister"]};

@@ -1,0 +1,9 @@
+(function() {
+    const implementors = Object.fromEntries([["islet_rmm",[["impl SafetyAssured for <a class=\"struct\" href=\"islet_rmm/realm/config/struct.RealmConfig.html\" title=\"struct islet_rmm::realm::config::RealmConfig\">RealmConfig</a>",0],["impl SafetyAssured for <a class=\"struct\" href=\"islet_rmm/realm/rd/struct.Rd.html\" title=\"struct islet_rmm::realm::rd::Rd\">Rd</a>",0],["impl SafetyAssured for <a class=\"struct\" href=\"islet_rmm/rec/simd/struct.SimdRegister.html\" title=\"struct islet_rmm::rec::simd::SimdRegister\">SimdRegister</a>",0],["impl SafetyAssured for <a class=\"struct\" href=\"islet_rmm/rec/struct.Rec.html\" title=\"struct islet_rmm::rec::Rec\">Rec</a>&lt;'_&gt;",0],["impl SafetyAssured for <a class=\"struct\" href=\"islet_rmm/rmi/metadata/struct.IsletRealmMetadata.html\" title=\"struct islet_rmm::rmi::metadata::IsletRealmMetadata\">IsletRealmMetadata</a>",0],["impl SafetyAssured for <a class=\"struct\" href=\"islet_rmm/rmi/realm/params/struct.Params.html\" title=\"struct islet_rmm::rmi::realm::params::Params\">Params</a>",0],["impl SafetyAssured for <a class=\"struct\" href=\"islet_rmm/rmi/rec/params/struct.Params.html\" title=\"struct islet_rmm::rmi::rec::params::Params\">Params</a>",0],["impl SafetyAssured for <a class=\"struct\" href=\"islet_rmm/rmi/rec/run/struct.Run.html\" title=\"struct islet_rmm::rmi::rec::run::Run\">Run</a>",0],["impl SafetyAssured for <a class=\"struct\" href=\"islet_rmm/rsi/hostcall/struct.HostCall.html\" title=\"struct islet_rmm::rsi::hostcall::HostCall\">HostCall</a>",0]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":59,"fragment_lengths":[1497]}

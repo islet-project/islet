@@ -1,0 +1,9 @@
+(function() {
+    const implementors = Object.fromEntries([["islet_sdk",[["impl&lt;'de&gt; <a class=\"trait\" href=\"https://docs.rs/serde/1.0.170/serde/de/trait.Deserialize.html\" title=\"trait serde::de::Deserialize\">Deserialize</a>&lt;'de&gt; for <a class=\"struct\" href=\"islet_sdk/report/struct.Report.html\" title=\"struct islet_sdk::report::Report\">Report</a>",0]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":59,"fragment_lengths":[316]}

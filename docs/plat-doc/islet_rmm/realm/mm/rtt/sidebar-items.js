@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["RTT_MIN_BLOCK_LEVEL","RTT_PAGE_LEVEL","RTT_STRIDE"],"fn":["create","data_create","data_destroy","destroy","fold","get_ripas","init_ripas","map_unprotected","read_entry","set_ripas","unmap_unprotected"]};

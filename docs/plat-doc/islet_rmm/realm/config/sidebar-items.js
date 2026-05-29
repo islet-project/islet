@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["realm_config"],"struct":["RealmConfig"]};

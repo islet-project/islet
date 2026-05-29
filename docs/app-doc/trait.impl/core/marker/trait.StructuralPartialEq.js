@@ -1,0 +1,9 @@
+(function() {
+    const implementors = Object.fromEntries([["islet_hes",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/marker/trait.StructuralPartialEq.html\" title=\"trait core::marker::StructuralPartialEq\">StructuralPartialEq</a> for <a class=\"enum\" href=\"islet_hes/enum.AttestationError.html\" title=\"enum islet_hes::AttestationError\">AttestationError</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/marker/trait.StructuralPartialEq.html\" title=\"trait core::marker::StructuralPartialEq\">StructuralPartialEq</a> for <a class=\"enum\" href=\"islet_hes/enum.MeasurementError.html\" title=\"enum islet_hes::MeasurementError\">MeasurementError</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/marker/trait.StructuralPartialEq.html\" title=\"trait core::marker::StructuralPartialEq\">StructuralPartialEq</a> for <a class=\"enum\" href=\"islet_hes/enum.MeasurementType.html\" title=\"enum islet_hes::MeasurementType\">MeasurementType</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/marker/trait.StructuralPartialEq.html\" title=\"trait core::marker::StructuralPartialEq\">StructuralPartialEq</a> for <a class=\"struct\" href=\"islet_hes/struct.Measurement.html\" title=\"struct islet_hes::Measurement\">Measurement</a>",0],["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/marker/trait.StructuralPartialEq.html\" title=\"trait core::marker::StructuralPartialEq\">StructuralPartialEq</a> for <a class=\"struct\" href=\"islet_hes/struct.MeasurementMetaData.html\" title=\"struct islet_hes::MeasurementMetaData\">MeasurementMetaData</a>",0]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":59,"fragment_lengths":[1628]}

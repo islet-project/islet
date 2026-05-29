@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["RMI_ASSIGNED","RMI_TABLE","RMI_UNASSIGNED"]};

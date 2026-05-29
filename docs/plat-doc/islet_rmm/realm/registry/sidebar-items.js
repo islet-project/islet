@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["remove"],"static":["VMID_SET"]};

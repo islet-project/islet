@@ -1,0 +1,55 @@
+@startuml hes-dependencies
+skinparam componentStyle rectangle
+skinparam nodesep 60
+skinparam ranksep 40
+skinparam packageBackgroundColor WhiteSmoke
+skinparam packageBorderColor Gray
+
+title Islet HES - Component Dependencies
+
+package "islet-hes (HES library)" #F9F9F9 {
+    component "Attestation" as attestation
+    component "Measured Boot" as measured_boot
+    component "Hardware\nAbstraction" as hw_abstract
+    component "Key Derivation" as key_deriv
+
+    attestation --> measured_boot : reads measurements
+    attestation --> key_deriv : derives CPAK, DAK
+    measured_boot --> hw_abstract : reads platform measurements
+    key_deriv --> hw_abstract : reads HUK, GUK from OTP
+}
+
+package "islet-hes-host-app\n(HES host application)" #F0F8FF {
+    component "Communication" as comms
+    component "Main Loop" as main_loop
+}
+
+comms --> attestation : routes delegated attestation calls
+comms --> measured_boot : routes measured boot calls
+main_loop --> comms
+
+component "cpak-generator" as cpak_gen #FFF8DC
+
+cpak_gen --> key_deriv : derives CPAK from GUK
+
+package "External crates" #F5F5F5 {
+    component "RustCrypto" as rust_crypto
+    component "ciborium (CBOR)" as ciborium
+    component "coset (COSE)" as coset
+}
+
+attestation --> ciborium : creates platform token
+attestation --> coset : signs platform token
+key_deriv --> rust_crypto
+measured_boot --> rust_crypto : hashes measurements
+cpak_gen --> rust_crypto
+comms --> coset
+
+legend right
+  Gray   = islet-hes library (no_std)
+  Blue   = islet-hes-host-app (std)
+  Yellow = cpak-generator tool
+  Light  = External crates
+endlegend
+
+@enduml

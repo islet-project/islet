@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["ICH_HCR_EL2_EOI_COUNT_MASK","ICH_HCR_EL2_INIT","ICH_HCR_EL2_NS_MASK"],"fn":["get_ap0r","get_ap1r","get_lr","nr_aprs","nr_lrs","pri_res0_mask","set_ap0r","set_ap1r","set_lr","valid_vintid"],"struct":["GIC_FEATURES","GicFeatures"]};

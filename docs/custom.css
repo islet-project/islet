@@ -1,0 +1,36 @@
+/* Allow images to be wider than the text block if needed */
+.content main img[title="large-view"] {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    max-width: 170%; /* Allows it to expand beyond the text width */
+    width: auto;
+
+    left: 20%;
+    transform: translateX(-20%);
+}
+
+/* Optional: Create a specific class for extra-large diagrams */
+.large-diagram {
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+}
+
+.fullscreen-img {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+    object-fit: contain;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 9999;
+    margin: 0 !important;
+    padding: 20px;
+    cursor: zoom-out;
+}
+

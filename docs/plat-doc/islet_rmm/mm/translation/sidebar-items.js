@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["drop_page_table","get_page_table","init_page_table"],"struct":["PageTable"]};

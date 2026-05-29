@@ -1,0 +1,566 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Sealing Key Derivation - Islet Documentation</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../custom-e13467ec.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-a1d0a429.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-a89a4569.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Islet Documentation</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="sealing-key-derivation"><a class="header" href="#sealing-key-derivation">Sealing Key Derivation</a></h1>
+<h2 id="introduction"><a class="header" href="#introduction">Introduction</a></h2>
+<p>Sealing is a concept that is commonly used in many <a href="https://en.wikipedia.org/wiki/Confidential_computing">Confidential Computing</a> technologies, like AMD SNP-SEV or Intel SGX. Sealing refers to a process of encrypting the data within a trusted execution environment (TEE), where an encryption key is bound to an enclave’s identity, its state and a platform. This way, only the same enclave that encrypted the data is able to decrypt it (unsealing). Sealing requires a key derivation mechanism that is secure and allows binding the key to the enclave’s identity, its state and a particular hardware platform.</p>
+<p>This document describes the design and implementation of the Sealing Key Derivation mechanism for the Islet project.</p>
+<h2 id="general-description"><a class="header" href="#general-description">General description</a></h2>
+<p>The diagrams below show the sealing key derivation scheme for <strong>Arm CCA</strong> capable platforms. Here are the main ideas behind this design:</p>
+<ol>
+<li>
+<p>The sealing key should be bound to a particular hardware platform, thus the key derivation scheme takes as an input HUK (Hardware Unique Key, described in section “5.1 Hardware provisioned parameters” of <a href="https://developer.arm.com/documentation/DEN0096/latest/">Arm CCA Security Model 1.0</a>). Binding the sealing key to HUK prevents unauthorized transfer of sealed data to another hardware platform.</p>
+</li>
+<li>
+<p>The sealing key should be bound to the security lifecycle state of CCA Platform. This makes the sealed data inaccessible when someone tries to switch the platform into any other mode than Secured (<a href="https://developer.arm.com/documentation/DEN0096/latest/">Arm CCA Security Model 1.0</a>). In particular, it prevents accessing the sealed data when the device is switched into non-secure debug modes.</p>
+</li>
+<li>
+<p>The key derivation process by default takes an authority-based Virtual Hardware Unique Key (<strong><strong>VHUK_A</strong></strong>), a Realm Personalization Value, flags provided in the RSI command, and so-called Authority Data (please refer to the <a href="https://pigweed.googlesource.com/open-dice/+/refs/heads/main/docs/specification.md">Open Profile for DICE specification</a>), which is identity information about the developer who created a particular firmware or software component. Relying on the Authority Data makes the derived keys immune to software and firmware updates as long as the realm and firmware come from the same developers.</p>
+</li>
+<li>
+<p>The key derivation process is partially configurable. We can choose the input key material (authority-based or measurement-based <strong>Virtual Hardware Unique Keys</strong>). We can configure whether to include <strong>RIM</strong> (Realm Initial Measurement), <strong>Realm ID</strong> and <strong>SVN</strong> (Security Version Number) as key material during the key derivation process. This flexibility might be required when a Realm developer wants to seal the data to a particular Realm binary (setting the RIM flag), sacrificing the immutability of the sealing keys to SW/FW updates. This approach is similar to those implemented in <a href="https://eprint.iacr.org/2016/086.pdf">Intel SGX</a> and AMD <a href="https://www.amd.com/content/dam/amd/en/documents/epyc-technical-docs/specifications/56860.pdf">SNP-SEV</a>.</p>
+</li>
+<li>
+<p>We rely on the idea of a layered derivation process used by the “<a href="https://pigweed.googlesource.com/open-dice/+/refs/heads/main/docs/specification.md">Open Profile for DICE</a>” specification. In our design, RMM produces the Realm sealing key for an operating system and indirectly to user space privileged services. For example, one of these services might be an application manager that is responsible for downloading, updating and launching applications. The application manager may use the Realm sealing key to derive secure persistent storage keys for its own purposes (e.g., persistent storage for downloaded applications) and a dedicated application sealing key (e.g., by using boot measurements of an application as info in the key derivation process). This layered approach ensures that any change of any of the firmware or software components placed below the application will result in a change of the application sealing key. As a result, the application is able to access its sealed data if and only if it is running on the same platform that uses the same firmware as at the moment when the data was sealed.</p>
+</li>
+</ol>
+<p>The key derivation methods to be secure should follow well-known standards and recommendations such as <a href="https://datatracker.ietf.org/doc/html/rfc5869">RFC5869</a>, <a href="https://csrc.nist.gov/pubs/sp/800/108/r1/final">NIST SP 800-108r1</a>, and <a href="https://csrc.nist.gov/pubs/sp/800/56/c/r2/final">NIST SP 800-56cr2</a>.</p>
+<h3 id="security-considerations"><a class="header" href="#security-considerations">Security considerations</a></h3>
+<p>Currently we’re using an emulated environment and a stand-alone Islet HES application. In the future, Islet HES may be ported to real hardware platforms. Thus, it’s worth mentioning what should be taken into account while porting HES to such platforms.</p>
+<p>According to the <a href="https://developer.arm.com/documentation/DEN0096/latest/">Arm CCA Security Model 1.0</a>, <strong>Hardware Unique Keys</strong> once provisioned to the HES should not be collected at the platform manufacturer’s premises, i.e., all copies should be destroyed once provisioned into CCA HES. The recommended solution is when HES generates the <strong>HUK</strong> itself internally during the first run and saves it within shielded locations (e.g., <strong>One Time Programmable</strong> memory). This approach effectively reduces the likelihood of the leakage of the key. Whether generated outside or inside the HES, the <strong>HUK</strong> should be generated using a high-quality RNG (Random Number Generator) that follows the recommendations of the <a href="https://nvlpubs.nist.gov/nistpubs/SpecialPublications/NIST.SP.800-133r2.pdf">NIST SP 800-133r2</a> and <a href="https://datatracker.ietf.org/doc/html/rfc4086">RFC4086</a> documents. This ensures the high entropy of the initial key material.</p>
+<h2 id="key-derivation-process"><a class="header" href="#key-derivation-process">Key derivation process</a></h2>
+<p>The process of sealing key derivation is split into three components: the CCA <strong>HES</strong> (Hardware Enforced Security), the Islet RMM and the Realm components.</p>
+<h3 id="derivation-process-of-virtual-hardware-unique-keys-in-hes"><a class="header" href="#derivation-process-of-virtual-hardware-unique-keys-in-hes">Derivation process of Virtual Hardware Unique Keys in HES</a></h3>
+<p><img src="./VHUK_derivation_HES.png" title="large-view" alt="VHUK derivation in HES"></p>
+<p><em>Figure 1: Sealing key derivation process in HES</em></p>
+<p>The first step of the sealing key derivation process takes place in CCA HES, which produces <strong>Virtual Hardware Unique Keys</strong> (VHUKs) used as an <strong>IKM</strong> (<strong>Input Key Material</strong>) of the realm sealing key derivation process.</p>
+<p>During the platform startup, HES gathers all firmware measurements from the AP (Application Processor) and other trusted subsystems. This information together with the <strong>HUK</strong> (<strong>Hardware Unique Key</strong>) and the security lifecycle state of CCA Platform is used to derive a 256-bit long <strong><strong>VHUK_A</strong></strong> (<strong>Authority-based Virtual HUK</strong>) and a 256-bit long <strong><strong>VHUK_M</strong></strong> (<strong>Measurement-based Virtual HUK</strong>).</p>
+<p>The derivation process of <strong>VHUK_A</strong> and <strong>VHUK_M</strong> is performed on demand and is requested by RMM (Realm Management Monitor) during its initialization.</p>
+<p>When deriving the <strong>VHUK_A</strong>, HES uses the collected signer_id and sw_type fields of the measurement_metadata_t structures of each firmware component. This makes the <strong>VHUK_A</strong> immune to firmware updates (including HES firmware and other trusted subsystems).</p>
+<p>In the case of <strong>VHUK_M</strong>, the inputs include full boot measurements of all firmware components (struct measurement_t). <strong>VHUK_M</strong> is bound to particular versions of CCA Platform firmware.</p>
+<p>Both Virtual Hardware Keys are bound to a particular instance of hardware (thanks to HUK). This prevents an attacker from unauthorized migration of the sealed data to another platform. Binding the keys to the lifecycle prevents accessing the sealed data when the platform runs in a debug mode.</p>
+<p>The key derivation function used here is described in chapter 4.1 “KDF in Counter Mode” of <a href="https://csrc.nist.gov/pubs/sp/800/108/r1/final">NIST SP800-108</a> where PRF (Pseudorandom Function) is based on SHA-256 and AES ECB. This is the same function that is already used for derivation of CPAK (CCA Platform Attestation Key) and DAK (Delegated Attestation Key that is also an alias of RAK - Realm Attestation Key).</p>
+<h3 id="derivation-process-of-realm-sealing-keys-in-rmm"><a class="header" href="#derivation-process-of-realm-sealing-keys-in-rmm">Derivation process of Realm Sealing Keys in RMM</a></h3>
+<p>During the RMM initialization, <strong>VHUK_A</strong> and <strong>VHUK_M</strong> are fetched from the HES via the TF-A’s RMMD service. RMM caches both VHUKs for further derivations of Realm Sealing Keys (SLKs).</p>
+<p>The diagram below depicts the details of the derivation process of realm sealing keys.</p>
+<p><img src="./SLK_derivation_RMM.png" title="large-view" alt="Sealing Keys derivation in Islet RMM"></p>
+<p><em>Figure 2: Sealing key derivation process in Islet RMM</em></p>
+<p>After launching a Realm, the realm may request its own <strong>Realm SLK</strong> (Realm Sealing Key) by calling a dedicated <strong>RSI</strong> (<strong>Realm Service Interface</strong>) command <strong>RSI_ISLET_REALM_SEALING_KEY</strong> passing appropriate parameters.</p>
+<p>The key derivation process is performed on demand, while handling the RSI command.</p>
+<p>By default, the key derivation function takes as an input the <strong>VHUK_A</strong> (Authority-Based VHUK), the flags (passed as RSI input values), <strong>Realm Public Key</strong> and the <strong>Realm Personalization Value</strong>.</p>
+<p>Optionally, <strong>RIM</strong> (<strong>Realm Initial Measurement</strong>), <strong>Realm ID</strong>, and user-provided <strong>SVN</strong> (<strong>Security Version Number</strong>) can be fed into the key derivation function.</p>
+<p>Note that the <strong>Realm Public Key</strong> and the <strong>Realm ID</strong> are extracted from the <strong>RmiIsletRealmMetadata</strong> structure described in the <a href="./realm_metadata.html">Realm metadata</a> document.</p>
+<p>A caller may also choose the input key material, whether it is a <strong>VHUK_M</strong> (based on measurements) or <strong>VHUK_A</strong> (Authority-based VHUK). When the SVN flag is set, a caller must provide an SVN number (it can be previously retrieved by the realm software using the <strong>RSI_ISLET_REALM_METADATA</strong> command). The provided SVN number must be less than or equal to the SVN of the currently running realm (the SVN of the currently running realm is included in the RmiIsletRealmMetadata structure provided during the launch of the realm). This rule allows migrating sealed data from older realm versions to the newer ones while at the same time preventing older, possibly vulnerable, realms from accessing data created by the newer realm version. A similar mechanism is implemented in Intel SGX and AMD SEV-SNP. For more information please refer to section <em>5.7.2 Certificate-Based Enclave Identity</em> of <a href="https://eprint.iacr.org/2016/086.pdf">Intel SGX explained</a> document and this article <a href="https://www.intel.com/content/dam/develop/external/us/en/documents/hasp-2013-innovative-technology-for-attestation-and-sealing-413939.pdf">https://www.intel.com/content/dam/develop/external/us/en/documents/hasp-2013-innovative-technology-for-attestation-and-sealing-413939.pdf</a>.</p>
+<p>In the case when the realm has not been provisioned with the RmiIsletRealmMetadata block, the sealing key is to be derived from the fixed key material, i.e., RIM, hash algorithm, flags and the chosen VHUK. This allows realms that have not been provisioned with their metadata to still use the sealing mechanism. However, these derived keys are bound to the initial measurement of the realm, so in case of an update of such a realm, the sealing keys will change.</p>
+<p>The key derivation function used in this derivation process is <strong>HKDF</strong> SHA-256 (<strong>HMAC-based Key Derivation Function</strong>) described in <a href="https://datatracker.ietf.org/doc/html/rfc5869">RFC5869</a>. The HKDF takes four parameters: the length of the output key, the initial key material (ikm), the constant salt parameter (generated using a high-entropy source) and the info parameter that allows binding the keys to different contexts. The info parameter is a fixed-length buffer that contains concatenated key material (inputs labeled as info0 to info5 in the diagram). Note that when a particular component of the info buffer is not used, it is substituted with the all-zeros buffer of the same length as the original component. The generated Realm Sealing Key is 256 bits long.</p>
+<h3 id="derivation-process-of-persistent-storage-keys-in-realm"><a class="header" href="#derivation-process-of-persistent-storage-keys-in-realm">Derivation process of Persistent Storage Keys in Realm</a></h3>
+<p>The diagram below depicts an <strong>example</strong> of how the Realm Sealing Keys can be utilized by software components running in a realm.</p>
+<p><img src="./SLK_derivation_Realm.png" title="large-view" alt="Sealing Keys derivation in a Realm"></p>
+<p><em>Figure 3: Sealing key derivation process in a Realm</em></p>
+<p>The resulting “Realm SLK” (256 bits) can be used by Realm software components (e.g., Application Manager, applications) to perform further derivations of encryption keys for persistent storage.</p>
+<p>In the example, the privileged Application Manager service derives two keys:</p>
+<ul>
+<li>PSK for App Manager - the Persistent Storage Key for encryption of the Application Manager’s private data (e.g., provisioned applications, state, etc.). Note that the HKDF doesn’t take salt here, which means that the salt is a zero-filled buffer.</li>
+<li>Application SLK - the Application Sealing Key derived from the “Realm SLK”, Application Public Key and the Application ID (read from the application’s manifest). If the persistent data has to be bound to a concrete binary version of the application, the Hash of the Application should be used as part of the info parameter.</li>
+</ul>
+<p>The Application derives only one key:</p>
+<ul>
+<li>PSK for Application - it is a Persistent Storage Key derived from the “Application SLK” provided by the Application Manager Service.</li>
+</ul>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>The diagram is showing only an <strong>example</strong> how the “Realm SLK” could be used by the realm software for key derivations. The application provisioning mechanism and Arm CCA on Android subprojects use slightly different approach although conceptually they are similar to this example.</p>
+</blockquote>
+<blockquote class="blockquote-tag blockquote-tag-caution">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M4.47.22A.749.749 0 0 1 5 0h6c.199 0 .389.079.53.22l4.25 4.25c.141.14.22.331.22.53v6a.749.749 0 0 1-.22.53l-4.25 4.25A.749.749 0 0 1 11 16H5a.749.749 0 0 1-.53-.22L.22 11.53A.749.749 0 0 1 0 11V5c0-.199.079-.389.22-.53Zm.84 1.28L1.5 5.31v5.38l3.81 3.81h5.38l3.81-3.81V5.31L10.69 1.5ZM8 4a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5A.75.75 0 0 1 8 4Zm0 8a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Caution</p>
+<p>The sealing keys should not be revealed or transferred outside a realm.</p>
+</blockquote>
+<blockquote class="blockquote-tag blockquote-tag-important">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Important</p>
+<p>It is <strong>not recommended</strong> to use Realm Sealing Keys directly, but instead derive other symmetric keys from them (e.g., a symmetric encryption key for persistent secure storage).</p>
+</blockquote>
+<blockquote class="blockquote-tag blockquote-tag-important">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Important</p>
+<p>In the diagram we have the PSK (Persistent Storage Key) for the Application Manager and PSK for Application derived from SLKs. Although these two symmetric PSKs could be used to directly encrypt/decrypt data, it might be better to use them indirectly, i.e., by sealing randomly generated keys. And then use those randomly generated keys to encrypt data. This might simplify a data migration mechanism, as the encrypted data could be transferred directly to another device without the need for on-the-fly decryption.</p>
+</blockquote>
+<h2 id="required-changes-in-firmware-and-software-components"><a class="header" href="#required-changes-in-firmware-and-software-components">Required changes in firmware and software components</a></h2>
+<p>The Sealing Key functionality requires some changes in the Islet project. The following components have been modified:</p>
+<h3 id="hes"><a class="header" href="#hes">HES</a></h3>
+<ol>
+<li>Implementation of the derivation of Virtual Hardware Unique Keys as described in the diagram. The key derivation function is based on CTR mode KDF described in NIST SP800-108, where PRF (Pseudo Random Function) uses SHA-256 and AES ECB. This KDF function is already implemented <a href="https://github.com/islet-project/islet/blob/370c5b342994767ef86f1ed394d3d8c3ed21da0c/hes/key-derivation/src/lib.rs#L27">here</a> and used for derivation of CPAK (CCA Platform Attestation Key) and DAK (Delegated Attestation Key). For more information about key derivation please refer to the HES documentation.</li>
+<li>Implementation of handling of an additional command over the communication channel that allows fetching the VHUKs from the HES. Note that, for demoing, and due to limitations of our setup (an emulated environment), the communication between the Arm emulator (Arm VFP) and a stand-alone HES application goes through an FVP’s UART interface. This mechanism was already implemented for handling the measured boot and DAK (RAK) retrieval (for more information please refer to the HES documentation).</li>
+</ol>
+<h3 id="tf-armmd"><a class="header" href="#tf-armmd">TF-A/RMMD</a></h3>
+<ol>
+<li>The RMMD of TF-A (<a href="https://github.com/islet-project/3rd-tf-a/tree/hes/services/std_svc/rmmd">services/std_svc/rmmd</a>) has been extended with an additional SMC command (<strong>RMM_ISLET_GET_VHUK</strong>) for retrieval of VHUKs.</li>
+<li>The TF-A’s <a href="https://github.com/islet-project/3rd-tf-a/tree/hes/lib/psa">lib/psa/</a> has been extended with additional functionality used to retrieve VHUK and to exchange the messages between the main AP and the HES via the UART-based channel (<a href="https://github.com/islet-project/3rd-tf-a/blob/hes/plat/arm/board/fvp/fvp_realm_vhuk.c">fvp</a> and <a href="https://github.com/islet-project/3rd-tf-a/blob/hes/plat/qemu/common/qemu_realm_vhuk.c">qemu</a>) and to route additional SMC’s (<a href="https://github.com/islet-project/3rd-tf-a/blob/hes/services/islet_svc/islet_svc_setup.c">services/islet_svc/islet_svc_setup.c</a>)</li>
+</ol>
+<h3 id="islet-rmm"><a class="header" href="#islet-rmm">Islet RMM</a></h3>
+<ol>
+<li>The fetching of VHUKs during the initialization process of Islet RMM has been added (<a href="https://github.com/islet-project/islet/blob/main/rmm/src/rmm_el3/mod.rs">islet/rmm/src/rmm_el3/mod.rs</a> and <a href="https://github.com/islet-project/islet/blob/main/rmm/src/rmm_el3/iface.rs">iface.rs</a>). The VHUKs are fetched only once and cached during the initialization of Islet RMM.</li>
+<li>The Islet RMM has been extended with the implementation of Realm Sealing Key derivation process. The derivation process is performed while handling the <a href="https://github.com/islet-project/islet/blob/main/rmm/src/rsi/sealing.rs">RSI_ISLET_REALM_SEALING_KEY</a> command.</li>
+</ol>
+<h3 id="realm"><a class="header" href="#realm">Realm</a></h3>
+<ol>
+<li>The Linux kernel driver (<a href="https://github.com/islet-project/linux-rsi">linux-rsi</a> project) has been modified to expose the <strong>RSI_ISLET_REALM_SEALING_KEY</strong> command to privileged user space services.</li>
+<li>The key derivation scheme has been implemented by <a href="https://github.com/islet-project/realm-manager/tree/main/realm">App Manager</a> in the case of the Application Provisioning mechanism. In the case of <a href="https://github.com/islet-project/odcc-android-cc-docs">Confidential Computing on Android</a> solution, the derivation scheme re-uses the Sealing CDI derivation scheme presented in Open Profile for DICE. For more details please refer to the <a href="https://islet-project.github.io/odcc-android-cc-docs/design/arm-cca-microdroid-integration.html#sealing-key-derivation">Sealing Key Derivation</a> section of the <a href="https://islet-project.github.io/odcc-android-cc-docs/design/arm-cca-microdroid-integration.html">Arm CCA and Microdroid Integration</a> document.</li>
+</ol>
+<p>The conceptual diagram below depicts components involved in the sealing key derivation process and interfaces between these components.</p>
+<p><img src="./Components.png" alt="Components involved in Sealing Key Derivation mechanism"></p>
+<p><em>Figure 4: Components involved in Sealing Key Derivation mechanism</em></p>
+<h2 id="rmm-interface"><a class="header" href="#rmm-interface">RMM interface</a></h2>
+<p>This section describes changees in the specification of the RMM’s RSI interfaces required to provide sealing key retrieval functionality.</p>
+<h3 id="rsi_islet_realm_sealing_key-command"><a class="header" href="#rsi_islet_realm_sealing_key-command">RSI_ISLET_REALM_SEALING_KEY command</a></h3>
+<p>This additional RMI command allows Realms to retrieve their Realm Sealing Keys. Here are the details of the API for RSI_ISLET_REALM_SEALING_KEY.</p>
+<p><strong>Input values</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Name</th><th>Register</th><th>Bits</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>fid</code></td><td>X0</td><td>63:0</td><td>UInt64</td><td>FID for RSI_ISLET_REALM_SEALING_KEY, value 0xC7000191 (refer to <a href="./vendor_specific_smcs.html">Vendor specific SMC Allocation for Realm Metadata mechanism and Sealing Keys Derivation</a>)</td></tr>
+<tr><td><code>flags</code></td><td>X1</td><td>63:0</td><td>RsiIsletSealingFlags</td><td>Flags describing what optional key material should be fed into the KDF during the key derivation process. The flags are described below.</td></tr>
+<tr><td><code>svn</code></td><td>X2</td><td>63:0</td><td>UInt64</td><td>An optional SVN value used when 3rd bit of flags register is used. Provided svn number must be less than or equal to the svn extracted from the RmiIsletRealmMetadata structure.</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>RsiIsletSealingFlags type</strong></p>
+<p>The RsiIsletSealingFlags is a concrete type.
+The width of the RsiIsletSealingFlags fieldset is 64 bits.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Name</th><th>Bits</th><th>Description</th><th>Value</th></tr>
+</thead>
+<tbody>
+<tr><td><code>KEY</code></td><td>0</td><td>Allows selecting the input key material (IKM) for the key derivation process.</td><td>RsiIsletSealingIkm</td></tr>
+<tr><td><code>RIM</code></td><td>1</td><td>Determines whether the RIM and a hash algorithm are used as an info component for the key derivation process.</td><td>RsiIsletSealingRim</td></tr>
+<tr><td><code>REALM_ID</code></td><td>2</td><td>Determines whether the realm_id of RmiIsletRealmMetadata is used as an info component for the key derivation process.</td><td>RsiIsletSealingRealmId</td></tr>
+<tr><td><code>SVN</code></td><td>3</td><td>Determines whether the svn provided as an input of this command is used as an info component for the key derivation process.</td><td>RsiIsletSealingSvn</td></tr>
+<tr><td></td><td>4:63</td><td>Reserved</td><td></td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>RsiIsletSealingIkm type</strong></p>
+<p>The RsiIsletSealingIkm is a concrete type.
+The width of the RsiIsletSealingIkm fieldset is 1 bit.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Encoding</th><th>Name</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>0</td><td><code>RSI_ISLET_SLK_USE_IKM_VHUK_A</code></td><td><code>**VHUK_A**</code> is used as an input key material</td></tr>
+<tr><td>1</td><td><code>RSI_ISLET_SLK_USE_IKM_VHUK_M</code></td><td><code>**VHUK_M**</code> is used as an input key material</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>RsiIsletSealingRim type</strong></p>
+<p>The <code>RsiIsletSealingRim</code> is a concrete type.
+The width of the <code>RsiIsletSealingRim</code> fieldset is 1 bit.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Encoding</th><th>Name</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>0</td><td><code>RSI_ISLET_SLK_NO_RIM</code></td><td>Don’t use RIM and hash algorithm as an info component. Instead, zeros are mixed in.</td></tr>
+<tr><td>1</td><td><code>RSI_ISLET_SLK_RIM</code></td><td>Use RIM and a hash algorithm as an info component.</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>RsiIsletSealingRealmId type</strong></p>
+<p>The <code>RsiIsletSealingRealmId</code> is a concrete type.
+The width of the <code>RsiIsletSealingRealmId</code> fieldset is 1 bit.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Encoding</th><th>Name</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>0</td><td><code>RSI_ISLET_SLK_NO_REALM_ID</code></td><td>Don’t use realm_id extracted from the <code>RmiIsletRealmMetadata</code> structure as an info component. Instead, zeros are mixed in.</td></tr>
+<tr><td>1</td><td><code>RSI_ISLET_SLK_REALM_ID</code></td><td>Use realm_id extracted from the <code>RmiIsletRealmMetadata</code> structure as an info component.</td></tr>
+</tbody>
+</table>
+</div>
+<p>For more info please refer to the <a href="./realm_metadata.html">Realm metadata</a> document.</p>
+<p><strong>RsiIsletSealingSvn type</strong></p>
+<p>The <code>RsiIsletSealingSvn</code> is a concrete type.
+The width of the <code>RsiIsletSealingSvn</code> fieldset is 1 bit.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Encoding</th><th>Name</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>0</td><td><code>RSI_ISLET_SLK_NO_SVN</code></td><td>Don’t use the svn provided by the <code>RSI_ISLET_REALM_SEALING_KEY</code> command as an info component. Instead, zeros are mixed in.</td></tr>
+<tr><td>1</td><td><code>RSI_ISLET_SLK_SVN</code></td><td>Use svn provided by the <code>RSI_ISLET_REALM_SEALING_KEY</code> command as an info component.</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Output values</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Name</th><th>Register</th><th>Bits</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>result</code></td><td>X0</td><td>63:0</td><td><code>RsiCommandReturnCode</code></td><td>Status code</td></tr>
+<tr><td><code>slk_0</code></td><td>X1</td><td>63:0</td><td>Bits64</td><td>Doubleword 0 of the Realm sealing key</td></tr>
+<tr><td><code>slk_1</code></td><td>X2</td><td>63:0</td><td>Bits64</td><td>Doubleword 1 of the Realm sealing key</td></tr>
+<tr><td><code>slk_2</code></td><td>X3</td><td>63:0</td><td>Bits64</td><td>Doubleword 2 of the Realm sealing key</td></tr>
+<tr><td><code>slk_3</code></td><td>X4</td><td>63:0</td><td>Bits64</td><td>Doubleword 3 of the Realm sealing key</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Failure conditions</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>ID</th><th>Condition</th></tr>
+</thead>
+<tbody>
+<tr><td>svn_valid</td><td>pre: IsSet(flags, SVN) &amp;&amp; rd.RmiIsletRealmMetadata != 0 &amp;&amp; (svn == 0 || svn &gt; RmiIsletRealmMetadata.svn)<br>post: result == RSI_ERROR_INPUT</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Common use cases</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Input values</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td>flags:<br>KEY=0 (<strong>VHUK_A</strong>) RIM=0 REALM_ID=1 SVN=0</td><td>Derives the key immune to software and firmware updates as long as the realm and firmware are produced by the same developers. It is possible for older software to access the sealed data of newer ones. Recommended for sealing data that represents the state of the realm or when it is user data that comes from the host side.</td></tr>
+<tr><td>flags:<br>KEY=0 (<strong>VHUK_A</strong>) RIM=0 REALM_ID=1 SVN=1 svn: &lt;number&gt;</td><td>Derives the key immune to software and firmware updates as long as the realm and firmware are produced by the same developers. Older versions of realms have no access to data sealed by newer versions. Recommended for sealing data that represents the state of the realm or when it is user data that comes from the host side.</td></tr>
+<tr><td>flags:<br>KEY=1 (<strong>VHUK_M</strong>) RIM=1 REALM_ID=1 SVN=0</td><td>The sealing key is bound to particular binary versions of firmware and realm. When using that key, an updated version won’t have access to the previous versions. Recommended for sealing critical data such as keys and certificates provisioned from external entities upon the remote attestation process. For such critical data, an update of an application will require re-provisioning preceded by a remote attestation of the realm and the platform.</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="rmmd-interface"><a class="header" href="#rmmd-interface">RMMD interface</a></h2>
+<p>This section describes the required changes to the RMMD (TF-A) interface to allow fetching the Virtual Unique Keys from HES.</p>
+<h3 id="rmm_islet_get_vhuk-command"><a class="header" href="#rmm_islet_get_vhuk-command">RMM_ISLET_GET_VHUK command</a></h3>
+<p>This command is used by RMM to retrieve the VHUK via the RMMD service. A dedicated SMC handler implemented in RMMD should request the VHUK from the HES and return it to the RMM.</p>
+<p><strong>Input values</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Name</th><th>Register</th><th>Bits</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>fid</code></td><td>X0</td><td>63:0</td><td>UInt64</td><td>FID for <code>RMM_ISLET_GET_VHUK</code>, value 0xC70001B0</td></tr>
+<tr><td><code>keyid</code></td><td>X1</td><td>63:0</td><td>UInt64</td><td>VHUK key identifier:<br>0x1 - <code>VHUK_A</code> - Authority-based VHUK that is immune to firmware updates (as long as the firmware originates from the same developer and is of the same type)<br>0x2 - <code>VHUK_M</code> - Measurement-based VHUK that is derived from the measurements of the firmware. This makes the key bound to particular firmware binaries.</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Output values</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Name</th><th>Register</th><th>Bits</th><th>Type</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>result</code></td><td>X0</td><td>63:0</td><td>UInt64</td><td>Status code (E_RMM_* defined in tf-a/include/services/rmmds_svc.h)</td></tr>
+<tr><td><code>vhuk_0</code></td><td>X1</td><td>63:0</td><td>Bits64</td><td>Doubleword 0 of the VHUK</td></tr>
+<tr><td><code>vhuk_1</code></td><td>X2</td><td>63:0</td><td>Bits64</td><td>Doubleword 1 of the VHUK</td></tr>
+<tr><td><code>vhuk_2</code></td><td>X3</td><td>63:0</td><td>Bits64</td><td>Doubleword 2 of the VHUK</td></tr>
+<tr><td><code>vhuk_3</code></td><td>X4</td><td>63:0</td><td>Bits64</td><td>Doubleword 3 of the VHUK</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Failure conditions</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>ID</th><th>Condition</th></tr>
+</thead>
+<tbody>
+<tr><td>vhuk_id</td><td>pre: keyid != 0x1 &amp;&amp; keyid != 0x2 post: result == E_RMM_INVAL</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="security-analysis-and-threat-model"><a class="header" href="#security-analysis-and-threat-model">Security analysis and threat model</a></h2>
+<p>This section discusses the security properties of the sealing key derivation mechanism, potential attack vectors, and how the design mitigates them.</p>
+<h3 id="trust-assumptions"><a class="header" href="#trust-assumptions">Trust assumptions</a></h3>
+<ul>
+<li>The <strong>HES</strong> (Hardware Enforced Security) is trusted to correctly derive VHUKs, protect the HUK, and securely communicate with TF-A/RMMD.</li>
+<li>The <strong>HUK</strong> (Hardware Unique Key) is trusted to be generated using a high-quality RNG, stored in a shielded location, and never leaked outside the HES.</li>
+<li>The <strong>TF-A/RMMD</strong> is trusted to correctly route VHUK retrieval requests between the RMM and HES, and to not expose VHUKs to untrusted components.</li>
+<li>The <strong>RMM</strong> is trusted to correctly implement the sealing key derivation process, protect cached VHUKs and derived sealing keys, and enforce SVN constraints.</li>
+<li>The <strong>realm software</strong> that requests a sealing key via <code>RSI_ISLET_REALM_SEALING_KEY</code> is trusted to protect the returned sealing key and use it appropriately. However, different realms on the same platform are <strong>not trusted</strong> by each other.</li>
+<li>The <strong>host</strong> (hypervisor, kvmtool, Linux kernel KVM layer) is <strong>not trusted</strong> — it may be compromised or malicious.</li>
+</ul>
+<h3 id="threat-model"><a class="header" href="#threat-model">Threat model</a></h3>
+<h4 id="t1-huk-extraction"><a class="header" href="#t1-huk-extraction">T1: HUK extraction</a></h4>
+<p><strong>Threat</strong>: An attacker attempts to extract the HUK from the HES, for example by exploiting a vulnerability in the HES firmware, through physical attacks on the hardware, or by accessing HUK copies retained at the manufacturer’s premises.</p>
+<p><strong>Mitigation</strong>: The HUK should be generated internally by the HES during first run and stored in a shielded location (e.g., One Time Programmable memory). All copies at the manufacturer’s premises should be destroyed after provisioning, as recommended by the Arm CCA Security Model 1.0. The HUK should be generated using a high-quality RNG following NIST SP 800-133r2 and RFC 4086. Physical extraction countermeasures (e.g., tamper detection, side-channel resistance) depend on the specific hardware implementation and are outside the scope of this design. If the HUK is compromised, all sealing keys across all realms on the platform can be derived by the attacker, making HUK protection the most critical security requirement.</p>
+<h4 id="t2-vhuk-extraction-from-rmm-memory"><a class="header" href="#t2-vhuk-extraction-from-rmm-memory">T2: VHUK extraction from RMM memory</a></h4>
+<p><strong>Threat</strong>: An attacker attempts to extract cached VHUK_A or VHUK_M from the RMM’s memory, for example through a vulnerability in the RMM or through DMA attacks.</p>
+<p><strong>Mitigation</strong>: The RMM runs at R-EL2 with memory access controls that prevent the host and realms from directly accessing RMM memory. The VHUKs are cached during RMM initialization and used for on-demand key derivation. Access to RMM memory from the host or realms is prevented by the CCA hardware isolation guarantees. The RMM must ensure that VHUKs are never written to shared memory regions or logged. If a VHUK is compromised, all realm sealing keys derived from that VHUK can be computed by the attacker (assuming they also know the derivation inputs).</p>
+<h4 id="t3-vhuk-interception-during-transfer-from-hes-to-rmm"><a class="header" href="#t3-vhuk-interception-during-transfer-from-hes-to-rmm">T3: VHUK interception during transfer from HES to RMM</a></h4>
+<p><strong>Threat</strong>: An attacker intercepts the VHUK while it is being transferred from the HES to the RMM via the TF-A/RMMD service.</p>
+<p><strong>Mitigation</strong>: The VHUK transfer occurs through the TF-A (EL3) SMC interface, which is the most privileged software level on the AP. The communication channel between HES and TF-A is implementation-specific. In the current emulated environment, UART is used, which does not provide confidentiality — this is acceptable only for demo/debug purposes. On real hardware, the HES-to-TF-A communication channel must be secured (e.g., using encrypted and authenticated channels, or a hardware-protected internal bus). The TF-A must ensure that VHUKs are not exposed to less privileged components (NS-EL2, NS-EL1, etc.) during the transfer.</p>
+<h4 id="t4-sealing-key-extraction-by-another-realm"><a class="header" href="#t4-sealing-key-extraction-by-another-realm">T4: Sealing key extraction by another realm</a></h4>
+<p><strong>Threat</strong>: A malicious realm attempts to derive the sealing key of a different realm by calling <code>RSI_ISLET_REALM_SEALING_KEY</code> with parameters that would produce the target realm’s key.</p>
+<p><strong>Mitigation</strong>: The RMM binds the sealing key derivation to the calling realm’s identity. The Realm Public Key and Realm ID used in the derivation are extracted from the <code>RmiIsletRealmMetadata</code> structure associated with the calling realm’s descriptor — they are <strong>not</strong> taken from the RSI command inputs. This means a realm cannot substitute another realm’s identity in the key derivation process. Additionally, the VHUK is bound to the platform hardware (via HUK), so a realm on a different platform cannot derive the same sealing key even with identical derivation parameters.</p>
+<h4 id="t5-svn-downgrade-in-sealing-key-derivation"><a class="header" href="#t5-svn-downgrade-in-sealing-key-derivation">T5: SVN downgrade in sealing key derivation</a></h4>
+<p><strong>Threat</strong>: A realm requests a sealing key with an SVN value greater than its current SVN (as stored in <code>RmiIsletRealmMetadata</code>), attempting to derive a key that belongs to a newer version of the realm and access its sealed data.</p>
+<p><strong>Mitigation</strong>: The <code>RSI_ISLET_REALM_SEALING_KEY</code> command enforces that the provided SVN must be less than or equal to the SVN in the <code>RmiIsletRealmMetadata</code> structure. This is checked as a failure condition (<code>svn_valid</code>). This ensures that older (or current) realm versions cannot derive keys belonging to newer versions, while newer versions can still derive keys of older versions (supporting forward migration of sealed data).</p>
+<h4 id="t6-sealing-key-exposure-outside-the-realm"><a class="header" href="#t6-sealing-key-exposure-outside-the-realm">T6: Sealing key exposure outside the realm</a></h4>
+<p><strong>Threat</strong>: The sealing key is leaked outside the realm, for example by being written to shared memory, logged, or transmitted over a network.</p>
+<p><strong>Mitigation</strong>: The sealing key is returned directly to the calling realm via registers (X1–X4) in the RSI response, never written to shared memory by the RMM. It is the realm software’s responsibility to protect the sealing key after receiving it. The document explicitly warns that sealing keys should not be revealed or transferred outside a realm. If realm software is compromised, the sealing key can be extracted — this is an inherent limitation of software-based key protection within a TEE.</p>
+<h4 id="t7-key-derivation-manipulation-via-flag-tampering"><a class="header" href="#t7-key-derivation-manipulation-via-flag-tampering">T7: Key derivation manipulation via flag tampering</a></h4>
+<p><strong>Threat</strong>: An attacker (e.g., a compromised host or middleware) modifies the flags parameter of the <code>RSI_ISLET_REALM_SEALING_KEY</code> call to cause the realm to derive a different key than intended, potentially one the attacker can predict.</p>
+<p><strong>Mitigation</strong>: The flags parameter is provided by the realm software itself (running at RL-EL1/RL-EL0), not by the host. The RSI call is made directly by the realm via an SMC instruction, and the host cannot intercept or modify the parameters. The RMM uses the flags as provided by the realm. If the realm software is compromised, it could intentionally use incorrect flags, but this is equivalent to T6 (the realm software itself is untrusted).</p>
+<h4 id="t8-replay-of-sealed-data"><a class="header" href="#t8-replay-of-sealed-data">T8: Replay of sealed data</a></h4>
+<p><strong>Threat</strong>: An attacker replays previously sealed (encrypted) data to a realm, causing the realm to process stale or incorrect state.</p>
+<p><strong>Mitigation</strong>: The sealing key derivation mechanism provides confidentiality and binding to identity/state, but does not inherently provide replay protection for sealed data. Replay protection is the responsibility of the realm software that uses the sealing keys. For example, the realm software should include version counters, timestamps, or sequence numbers within the sealed data payload and verify them during unsealing. The SVN mechanism provides some protection against rollback of the realm itself, but not against replay of sealed data blobs.</p>
+<h4 id="t9-cross-platform-sealing-key-derivation-key-migration"><a class="header" href="#t9-cross-platform-sealing-key-derivation-key-migration">T9: Cross-platform sealing key derivation (key migration)</a></h4>
+<p><strong>Threat</strong>: An attacker attempts to derive the sealing key for one platform on a different platform, enabling unauthorized migration of sealed data.</p>
+<p><strong>Mitigation</strong>: The sealing key derivation is bound to the platform’s HUK via the VHUK. Since the HUK is unique to each hardware instance and never leaves the HES, an attacker on a different platform cannot derive the same VHUK or sealing key, even with full knowledge of the derivation parameters and algorithm. This effectively prevents unauthorized migration of sealed data across platforms.</p>
+<h4 id="t10-side-channel-attacks-on-key-derivation"><a class="header" href="#t10-side-channel-attacks-on-key-derivation">T10: Side-channel attacks on key derivation</a></h4>
+<p><strong>Threat</strong>: An attacker uses side-channel analysis (timing, power, electromagnetic) to extract information about the VHUK or sealing keys during the key derivation process in the RMM or HES.</p>
+<p><strong>Mitigation</strong>: The key derivation functions used (HKDF SHA-256 in RMM, NIST SP 800-108 KDF in HES) should be implemented with constant-time operations to prevent timing side-channels. The RMM and HES execute in isolated environments (R-EL2 and secure subsystem, respectively) which limits the attacker’s ability to perform high-resolution side-channel measurements. However, on real hardware, implementers should ensure that all cryptographic operations are constant-time and that cache-timing attacks are mitigated (e.g., by flushing caches between realm switches).</p>
+<h4 id="t11-weak-or-reused-salt-in-hkdf"><a class="header" href="#t11-weak-or-reused-salt-in-hkdf">T11: Weak or reused salt in HKDF</a></h4>
+<p><strong>Threat</strong>: The salt parameter used in the HKDF derivation of realm sealing keys is weak, predictable, or reused across derivations, reducing the security of the derived keys.</p>
+<p><strong>Mitigation</strong>: The salt is generated using a high-entropy source as stated in the document. The RMM must ensure that the salt is generated using a cryptographically secure random number generator and that it is unique per platform. The salt is a constant parameter (not per-derivation), which is acceptable for HKDF as long as the IKM (VHUK) has sufficient entropy (256 bits). The security of HKDF relies on the entropy of the IKM, not on the secrecy of the salt.</p>
+<h4 id="t12-sealing-key-derivation-without-realm-metadata"><a class="header" href="#t12-sealing-key-derivation-without-realm-metadata">T12: Sealing key derivation without realm metadata</a></h4>
+<p><strong>Threat</strong>: A realm that has not been provisioned with <code>RmiIsletRealmMetadata</code> uses the fallback sealing key derivation path, which derives keys from RIM and hash algorithm instead of realm identity (public key, realm ID). This makes the sealing keys bound to the exact binary measurement, meaning any software update changes the key and makes previously sealed data inaccessible.</p>
+<p><strong>Mitigation</strong>: This is a known design trade-off, not a vulnerability. The fallback path exists to support realms that do not use the metadata mechanism. The document clearly states that keys derived via this path are bound to the initial measurement and will change upon updates. Realm developers who need update-resilient sealing keys should use the metadata-based path. The fallback path does not weaken the security of metadata-based sealing keys, since the derivation inputs are different.</p>
+<h4 id="t13-vhuk-caching-and-rmm-re-initialization"><a class="header" href="#t13-vhuk-caching-and-rmm-re-initialization">T13: VHUK caching and RMM re-initialization</a></h4>
+<p><strong>Threat</strong>: The VHUKs are cached in the RMM and fetched only once during initialization. If the firmware state changes after RMM initialization (e.g., due to a late firmware update or hot-plug event), the cached VHUK_M no longer reflects the current firmware measurements, leading to incorrect sealing key derivation.</p>
+<p><strong>Mitigation</strong>: The VHUKs are derived during platform boot before any realms are created. The Arm CCA security model ensures that firmware measurements are stable by the time the RMM is initialized. If the platform firmware is updated, a full reboot is required, which triggers re-derivation of VHUKs. The RMM should not support re-derivation of VHUKs after initialization to prevent a compromised host from triggering re-derivation with manipulated measurements.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../components/remote_attestation.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../components/realm_metadata.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../components/remote_attestation.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../components/realm_metadata.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../zoom-d2cae294.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

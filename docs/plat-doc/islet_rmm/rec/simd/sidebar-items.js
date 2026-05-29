@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["init_simd","restore_fpu","restore_fpu_crsr","restore_state","restore_state_lazy","restore_sve","save_state"],"struct":["FpuRegs","SimdContext","SimdRegister","SveRegs"]};

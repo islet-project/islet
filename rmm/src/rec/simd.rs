@@ -136,6 +136,7 @@ pub fn init_simd(rec: &mut Rec<'_>) -> Result<(), Error> {
 /// # Safety
 ///
 /// Use neon only for (re)storing Rec's simd context
+#[allow(aarch64_softfloat_neon)]
 #[target_feature(enable = "neon")]
 unsafe fn save_fpu(fpu: &mut FpuRegs) {
     let addr_q: u64 = fpu.q.as_ptr() as u64;
@@ -166,6 +167,7 @@ unsafe fn save_fpu(fpu: &mut FpuRegs) {
 /// # Safety
 ///
 /// Use neon only for (re)storing Rec's simd context
+#[allow(aarch64_softfloat_neon)]
 #[target_feature(enable = "neon")]
 unsafe fn save_fpu_crsr(fpu: &mut FpuRegs) {
     let fpsr: u64;
@@ -185,6 +187,7 @@ unsafe fn save_fpu_crsr(fpu: &mut FpuRegs) {
 /// # Safety
 ///
 /// Use neon only for (re)storing Rec's simd context
+#[allow(aarch64_softfloat_neon)]
 #[target_feature(enable = "neon")]
 pub unsafe fn restore_fpu(fpu: &FpuRegs) {
     let addr_q: u64 = fpu.q.as_ptr() as u64;
@@ -215,6 +218,7 @@ pub unsafe fn restore_fpu(fpu: &FpuRegs) {
 /// # Safety
 ///
 /// Use neon only for (re)storing Rec's simd context
+#[allow(aarch64_softfloat_neon)]
 #[target_feature(enable = "neon")]
 pub unsafe fn restore_fpu_crsr(fpu: &FpuRegs) {
     unsafe {
@@ -230,6 +234,7 @@ pub unsafe fn restore_fpu_crsr(fpu: &FpuRegs) {
 /// # Safety
 ///
 /// Use neon only for (re)storing Rec's simd context
+#[allow(aarch64_softfloat_neon)]
 #[target_feature(enable = "sve")]
 unsafe fn save_sve(sve: &mut SveRegs, save_ffr: bool) {
     let addr_z: u64 = sve.z.as_ptr() as u64;
@@ -305,6 +310,7 @@ unsafe fn save_sve(sve: &mut SveRegs, save_ffr: bool) {
 /// # Safety
 ///
 /// Use neon only for (re)storing Rec's simd context
+#[allow(aarch64_softfloat_neon)]
 #[inline(never)]
 #[target_feature(enable = "sve")]
 pub unsafe fn restore_sve(sve: &SveRegs, restore_ffr: bool) {

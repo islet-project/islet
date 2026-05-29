@@ -39,3 +39,4 @@
 - [Rust Crates](./crates/index.md)
   - [Realm Management Monitor](./plat-doc/islet_rmm/index.html)
   - [Confidential Application SDK](./app-doc/islet_sdk/index.html)
+  - [Islet HES](./hes-doc/islet_hes/index.html)

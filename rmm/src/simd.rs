@@ -83,6 +83,7 @@ lazy_static! {
 }
 
 /// Get the SVE vector length in bytes using the RDVL instruction
+#[allow(aarch64_softfloat_neon)]
 #[target_feature(enable = "sve")]
 unsafe fn get_vector_length_bytes() -> u64 {
     let vl_b: u64;

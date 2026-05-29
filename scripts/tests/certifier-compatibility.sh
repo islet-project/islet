@@ -13,6 +13,9 @@ sudo apt-get install -y -qq --no-install-recommends --fix-missing \
 
 git submodule update --init --depth 1 $CERTIFIER
 
+# Apply the workaround to Certifier Framework (after upgrade RMM spec to 1.0-rel0)
+git -C $CERTIFIER apply $ROOT/sdk/patches/certifier.patch
+
 cd $CERTIFIER
 ./CI/scripts/test.sh test-ISLET-SDK-shim_test
 ./CI/scripts/test.sh test-run_example-simple_app_under_islet-using-shim

@@ -1,0 +1,39 @@
+diff --git a/sample_apps/run_example.sh b/sample_apps/run_example.sh
+index 9543c68..9d4a66c 100755
+--- a/sample_apps/run_example.sh
++++ b/sample_apps/run_example.sh
+@@ -1112,7 +1112,7 @@ function get_measurement_of_trusted_simple_app_under_islet() {
+     # a simulated version targeting x86_64. (The actual version only works on aarch64.)
+     # If you want to manually obtain the mrenclave value, refer to the islet CLI at the link below.
+     # https://github.com/islet-project/islet/blob/main/examples/cross-platform-e2ee/README.md#2-configure-measurements-and-policies
+-    local mrenclave="580bd77074f789f34841ea9920579ff29a59b9452b606f73811132b31c689da9"
++    local mrenclave="17859ae3cb06985b628d1bf89995336440f84c51759e649bb749a121324394dc"
+     local measurement_file="example_app.measurement"
+ 
+     run_pushd "${PROV_DIR}"
+diff --git a/src/islet/islet_shim.cc b/src/islet/islet_shim.cc
+index c233ed0..39da148 100644
+--- a/src/islet/islet_shim.cc
++++ b/src/islet/islet_shim.cc
+@@ -22,7 +22,7 @@ using namespace certifier::utilities;
+ 
+ // Some reasonable size to allocate an attestation report on-stack buffers.
+ // Typical attestation report size is over 1K.
+-#define BUFFER_SIZE 2048
++#define BUFFER_SIZE 4096
+ 
+ static const char CLAIM_TITLE_USER_DATA[] = "User data";
+ static const char CLAIM_TITLE_RIM[] = "Realm initial measurement";
+diff --git a/src/islet/islet_test/shim_test.cc b/src/islet/islet_test/shim_test.cc
+index a5fe14e..ee0b52b 100644
+--- a/src/islet/islet_test/shim_test.cc
++++ b/src/islet/islet_test/shim_test.cc
+@@ -24,7 +24,7 @@ static void print_buf(int sz, byte *buf) {
+ 
+ // Some reasonable size to allocate an attestation report on-stack buffers.
+ // Typical attestation report size is over 1K.
+-#define BUFFER_SIZE 2048
++#define BUFFER_SIZE 4096
+ 
+ bool attestation_test() {
+   byte report[BUFFER_SIZE];

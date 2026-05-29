@@ -143,7 +143,7 @@ pub trait PageTableMethods<A: Address, L, E: Entry, const N: usize> {
         level: usize,
         no_valid_check: bool,
         func: F,
-    ) -> Result<(Option<EntryGuard<'_, E::Inner>>, usize), Error>;
+    ) -> Result<(Option<EntryGuard<'a, E::Inner>>, usize), Error>;
     /// Traverses page tables from the root and locate the page table at a specific level.
     ///
     /// (input)
@@ -257,7 +257,7 @@ impl<A: Address, L: Level, E: Entry, const N: usize> PageTableMethods<A, L, E, N
         level: usize,
         no_valid_check: bool,
         mut func: F,
-    ) -> Result<(Option<EntryGuard<'_, E::Inner>>, usize), Error> {
+    ) -> Result<(Option<EntryGuard<'a, E::Inner>>, usize), Error> {
         assert!(L::THIS_LEVEL == S::MAP_TABLE_LEVEL);
         if level > S::MAP_TABLE_LEVEL {
             return Err(Error::MmInvalidLevel);
@@ -329,7 +329,7 @@ where
         level: usize,
         no_valid_check: bool,
         mut func: F,
-    ) -> Result<(Option<EntryGuard<'_, E::Inner>>, usize), Error> {
+    ) -> Result<(Option<EntryGuard<'a, E::Inner>>, usize), Error> {
         assert!(L::THIS_LEVEL <= S::MAP_TABLE_LEVEL);
         if level > S::MAP_TABLE_LEVEL {
             return Err(Error::MmInvalidLevel);

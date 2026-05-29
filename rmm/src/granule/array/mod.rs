@@ -26,7 +26,7 @@ pub static mut GRANULE_REGION: [u8; GRANULE_MEM_SIZE] = [0; GRANULE_MEM_SIZE];
 
 #[cfg(not(any(kani, miri, test, fuzzing)))]
 pub fn validate_addr(addr: usize) -> bool {
-    if addr % GRANULE_SIZE != 0 {
+    if !addr.is_multiple_of(GRANULE_SIZE) {
         // if the address is out of range.
         warn!("address need to be aligned 0x{:X}", addr);
         return false;
@@ -77,7 +77,7 @@ pub fn granule_addr_to_index(addr: usize) -> usize {
 }
 
 pub fn is_granule_aligned(addr: usize) -> bool {
-    addr % GRANULE_SIZE == 0
+    addr.is_multiple_of(GRANULE_SIZE)
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

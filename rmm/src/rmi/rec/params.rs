@@ -56,7 +56,7 @@ impl core::fmt::Debug for Params {
             .field("flags", &format_args!("{:#X}", &self.flags))
             .field("mpidr", &format_args!("{:#X}", &self.mpidr))
             .field("pc", &format_args!("{:#X}", &self.pc))
-            .field("gprs", &format_args!("{:#X?}", &self.gprs))
+            .field("gprs", &format_args!("{:#X?}", self.gprs))
             .field("num_aux", &self.num_aux)
             .field("aux", &self.aux)
             .finish()

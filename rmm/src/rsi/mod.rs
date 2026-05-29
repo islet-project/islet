@@ -84,7 +84,7 @@ pub fn do_host_call(
     let ipa = get_reg(rec, 1).unwrap_or(0x0);
 
     let struct_size = core::mem::size_of::<HostCall>();
-    if ipa % struct_size != 0
+    if !ipa.is_multiple_of(struct_size)
         || !rd.addr_in_par(ipa)
         || ipa / GRANULE_SIZE != (ipa + struct_size - 1) / GRANULE_SIZE
     {

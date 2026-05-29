@@ -123,7 +123,7 @@ impl Params {
             return Err(Error::RmiErrorInput);
         }
 
-        if self.rtt_base as usize % GRANULE_SIZE != 0 {
+        if !(self.rtt_base as usize).is_multiple_of(GRANULE_SIZE) {
             return Err(Error::RmiErrorInput);
         }
 

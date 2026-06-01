@@ -17,7 +17,6 @@ cd ${ROOT}/sdk
 cargo doc --lib --no-deps -p islet_sdk
 cp -R ${ROOT}/out/x86_64-unknown-linux-gnu/doc ${ROOT}/doc/app-doc
 
-
 # HES crate
 rm -rf ${ROOT}/doc/hes-doc
 cd ${ROOT}/hes

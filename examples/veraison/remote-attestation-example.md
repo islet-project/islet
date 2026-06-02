@@ -1,4 +1,6 @@
-# Introduction
+# Remote Attestation Example
+
+## Introduction
 
 The process consists of several parts:
 
@@ -37,7 +39,7 @@ The following repos will be used:
 
 * Veraison services project: [https://github.com/veraison/services](https://github.com/veraison/services)
 
-# Preparation
+## Preparation
 
 Only the Islet repository should be checked manually:
 
@@ -59,7 +61,7 @@ The files installed are:
 * `rocli` installed in `CCA/islet/examples/veraison/bin`
 * `reliant-party` installed in `CCA/islet/examples/veraison/bin`
 
-# Provisioning
+## Provisioning
 
 This is emulated by generating CPAK public key using one of camellia-hes
 utilities:
@@ -73,11 +75,11 @@ respectively as:
     CCA/islet/hes/out/cpak_public.bin
     CCA/islet/hes/out/cpak_public.pem
 
-# Gathering measurements
+## Gathering measurements
 
 There are 2 things we need to measure here. Platform and realm.
 
-## Platform measurement
+### Platform measurement
 
 The platform measurement is done by getting the whole CCA token. Platform
 measurements are saved there.
@@ -121,7 +123,7 @@ The generated token is saved as the following file:
 
     CCA/islet/out/shared/token.bin
 
-## Realm measurement
+### Realm measurement
 
 Realm measurement is done by generating a json file containing realm information
 that will be fed to realm verifier.
@@ -156,7 +158,7 @@ Display the token using `rsictl` command:
 
 RIM value is between `[]` characters.
 
-### Create a refence measurement values file
+#### Create a refence measurement values file
 
 Create a `reference.json` file using the commands below (replace the
 `PASTE_THE_OBTAINED_RIM_HEX_STRING_HERE` with the RIM obtained from one of the
@@ -202,7 +204,7 @@ The resulting json will be saved as the following file:
 
 Caveat: only RIM is supported for now, the REMs are placeholders.
 
-# Provisioning/Measurement summary
+## Provisioning/Measurement summary
 
 Those 2 processes should end with the following things
 
@@ -216,7 +218,7 @@ Those 2 processes should end with the following things
 CPAK keys, token and measurement files should be _sent_ to verification services
 using a _safe_ communication channel.
 
-# Running realm for verification purposes
+## Running realm for verification purposes
 
 This is done in almost the same way we run realm to get the token.
 
@@ -245,7 +247,7 @@ This is how it looks:
     shared # insmod rsi.ko
     shared # date -s "2025-09-12 12:00"
 
-# Running and provisioning verification services (Veraison, realm-verifier)
+## Running and provisioning verification services (Veraison, realm-verifier)
 
 To bootstrap the Veraison services use the `CCA/islet/examples/veraison/bootstrap.sh`:
 
@@ -298,7 +300,7 @@ Reliant-party awaits on given IP:PORT for communication from Realm and
 utilizes our `ratls` Rust library and `realm-verifier` library (for `reference.json`
 reference values verification) to verify client CCA token.
 
-# Verification itself
+## Verification itself
 
 On the realm side (the one we already run) just trigger the verification
 process. This is done using `realm-application` (`CCA/islet/examples/veraison/realm-application`).
@@ -317,7 +319,7 @@ run on the same machine or any other <SERVER_IP:PORT> when needed)
 That command will take some time as computation inside Realm can be slow and it does
 asymmetric cryptography (RSA key generation).
 
-# Verification success
+## Verification success
 
 When verification succeeds, both `realm-application` and `realm-verifier` should not
 output any errors.

@@ -34,7 +34,7 @@
   - [Confidential Machine Learning](./usecases/confidential_ml.md)
   - [Cross Platform E2EE](./usecases/cross-platform-e2ee.md)
   - [Remote Attestation](./usecases/remote-attestation.md)
-    - [Remote Attestation Example](./usecases/remote-attestation-running.md)
+    - [Remote Attestation Example](./usecases/remote-attestation-example.md)
   - [Application Provisioning](./usecases/app-provisioning.md)
 - [Rust Crates](./crates/index.md)
   - [Realm Management Monitor](./plat-doc/islet_rmm/index.html)

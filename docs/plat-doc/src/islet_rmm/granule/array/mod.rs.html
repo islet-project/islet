@@ -26,7 +26,7 @@
 <a href=#26 id=26 data-nosnippet>26</a>
 <a href=#27 id=27 data-nosnippet>27</a><span class="attr">#[cfg(not(any(kani, miri, test, fuzzing)))]
 <a href=#28 id=28 data-nosnippet>28</a></span><span class="kw">pub fn </span>validate_addr(addr: usize) -&gt; bool {
-<a href=#29 id=29 data-nosnippet>29</a>    <span class="kw">if </span>addr % GRANULE_SIZE != <span class="number">0 </span>{
+<a href=#29 id=29 data-nosnippet>29</a>    <span class="kw">if </span>!addr.is_multiple_of(GRANULE_SIZE) {
 <a href=#30 id=30 data-nosnippet>30</a>        <span class="comment">// if the address is out of range.
 <a href=#31 id=31 data-nosnippet>31</a>        </span><span class="macro">warn!</span>(<span class="string">"address need to be aligned 0x{:X}"</span>, addr);
 <a href=#32 id=32 data-nosnippet>32</a>        <span class="kw">return </span><span class="bool-val">false</span>;
@@ -77,8 +77,8 @@
 <a href=#77 id=77 data-nosnippet>77</a>}
 <a href=#78 id=78 data-nosnippet>78</a>
 <a href=#79 id=79 data-nosnippet>79</a><span class="kw">pub fn </span>is_granule_aligned(addr: usize) -&gt; bool {
-<a href=#80 id=80 data-nosnippet>80</a>    addr % GRANULE_SIZE == <span class="number">0
-<a href=#81 id=81 data-nosnippet>81</a></span>}
+<a href=#80 id=80 data-nosnippet>80</a>    addr.is_multiple_of(GRANULE_SIZE)
+<a href=#81 id=81 data-nosnippet>81</a>}
 <a href=#82 id=82 data-nosnippet>82</a>
 <a href=#83 id=83 data-nosnippet>83</a><span class="attr">#[derive(Clone, Copy, Debug, PartialEq)]
 <a href=#84 id=84 data-nosnippet>84</a></span><span class="kw">pub struct </span>GranuleState {

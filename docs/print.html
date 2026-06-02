@@ -37,10 +37,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-a1d0a429.js";
+            window.path_to_searchindex_js = "searchindex-a8777266.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-a89a4569.js"></script>
+        <script src="toc-75d474b1.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -3990,7 +3990,7 @@ fn my_function_with_asm() {
 <li><a href="#cross-platform-end-to-end-encryption-e2ee">5.2. Cross Platform E2EE</a></li>
 <li><a href="#remote-attestation">5.3. Remote Attestation</a>
 <ul>
-<li><a href="#introduction-6">5.3.1 Remote Attestation Example</a></li>
+<li><a href="#remote-attestation-example">5.3.1 Remote Attestation Example</a></li>
 </ul>
 </li>
 <li><a href="#application-provisioning">5.4. Application Provisioning</a></li>
@@ -4234,9 +4234,10 @@ Additionally, to prevent replay attacks, the server will generate a random chall
 <li>At last, the <code>Realm measurements</code> are used to check the realm part.</li>
 <li>If all checks finish successfully, the handshake concludes and an encrypted <code>TCP</code> connection between the <code>RaTlsClient</code> and <code>RaTlsServer</code> is opened and ready to transfer sensitive data.</li>
 </ul>
-<p>For more detailed instructions, refer to <a href="usecases/RUN.html">RUN</a>. It contains a step-by-step guide of running the attestation demo using <code>Islet</code>.</p>
+<p>For more detailed instructions, refer to <a href="#remote-attestation-example">Remote Attestation Example</a>. It contains a step-by-step guide of running the attestation demo using <code>Islet</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="introduction-6"><a class="header" href="#introduction-6">Introduction</a></h1>
+<h1 id="remote-attestation-example"><a class="header" href="#remote-attestation-example">Remote Attestation Example</a></h1>
+<h2 id="introduction-6"><a class="header" href="#introduction-6">Introduction</a></h2>
 <p>The process consists of several parts:</p>
 <ul>
 <li>provisioning</li>
@@ -4279,7 +4280,7 @@ A library for verifying platform token with reference values using Veraison serv
 <p>Veraison services project: <a href="https://github.com/veraison/services">https://github.com/veraison/services</a></p>
 </li>
 </ul>
-<h1 id="preparation"><a class="header" href="#preparation">Preparation</a></h1>
+<h2 id="preparation"><a class="header" href="#preparation">Preparation</a></h2>
 <p>Only the Islet repository should be checked manually:</p>
 <pre><code>CCA/islet
 </code></pre>
@@ -4298,7 +4299,7 @@ CCA/islet/examples/veraison $ make
 <li><code>rocli</code> installed in <code>CCA/islet/examples/veraison/bin</code></li>
 <li><code>reliant-party</code> installed in <code>CCA/islet/examples/veraison/bin</code></li>
 </ul>
-<h1 id="provisioning"><a class="header" href="#provisioning">Provisioning</a></h1>
+<h2 id="provisioning"><a class="header" href="#provisioning">Provisioning</a></h2>
 <p>This is emulated by generating CPAK public key using one of camellia-hes
 utilities:</p>
 <pre><code>CCA/islet/hes/cpak-generator $ cargo run
@@ -4309,9 +4310,9 @@ respectively as:</p>
 <pre><code>CCA/islet/hes/out/cpak_public.bin
 CCA/islet/hes/out/cpak_public.pem
 </code></pre>
-<h1 id="gathering-measurements"><a class="header" href="#gathering-measurements">Gathering measurements</a></h1>
+<h2 id="gathering-measurements"><a class="header" href="#gathering-measurements">Gathering measurements</a></h2>
 <p>There are 2 things we need to measure here. Platform and realm.</p>
-<h2 id="platform-measurement"><a class="header" href="#platform-measurement">Platform measurement</a></h2>
+<h3 id="platform-measurement"><a class="header" href="#platform-measurement">Platform measurement</a></h3>
 <p>The platform measurement is done by getting the whole CCA token. Platform
 measurements are saved there.</p>
 <p>This is performed by some specifically prepared realm (e.g. one provided by
@@ -4346,7 +4347,7 @@ matter. Now we can kill the QEMU (ctrl-c on the QEMU terminal).</p>
 <p>The generated token is saved as the following file:</p>
 <pre><code>CCA/islet/out/shared/token.bin
 </code></pre>
-<h2 id="realm-measurement"><a class="header" href="#realm-measurement">Realm measurement</a></h2>
+<h3 id="realm-measurement"><a class="header" href="#realm-measurement">Realm measurement</a></h3>
 <p>Realm measurement is done by generating a json file containing realm information
 that will be fed to realm verifier.</p>
 <h3 id="using-kvmtool-rim-measurer"><a class="header" href="#using-kvmtool-rim-measurer">Using kvmtool-rim-measurer</a></h3>
@@ -4377,7 +4378,7 @@ those files can be taken from <code>CCA/islet/out/shared</code>, these files inc
 Realm initial measurement      (#44238) = [ace992744cb08283a2c5a31785b2d307a7936825751f9affc64ea37b02d9effb]
 </code></pre>
 <p>RIM value is between <code>[]</code> characters.</p>
-<h3 id="create-a-refence-measurement-values-file"><a class="header" href="#create-a-refence-measurement-values-file">Create a refence measurement values file</a></h3>
+<h4 id="create-a-refence-measurement-values-file"><a class="header" href="#create-a-refence-measurement-values-file">Create a refence measurement values file</a></h4>
 <p>Create a <code>reference.json</code> file using the commands below (replace the
 <code>PASTE_THE_OBTAINED_RIM_HEX_STRING_HERE</code> with the RIM obtained from one of the
 previous steps):</p>
@@ -4417,7 +4418,7 @@ EOF
 <pre><code>CCA/islet/examples/veraison/reference.json
 </code></pre>
 <p>Caveat: only RIM is supported for now, the REMs are placeholders.</p>
-<h1 id="provisioningmeasurement-summary"><a class="header" href="#provisioningmeasurement-summary">Provisioning/Measurement summary</a></h1>
+<h2 id="provisioningmeasurement-summary"><a class="header" href="#provisioningmeasurement-summary">Provisioning/Measurement summary</a></h2>
 <p>Those 2 processes should end with the following things</p>
 <ul>
 <li>Prepared realm that won’t be modified anymore:
@@ -4429,7 +4430,7 @@ For now we use the one generated by qemu-cca</li>
 </ul>
 <p>CPAK keys, token and measurement files should be <em>sent</em> to verification services
 using a <em>safe</em> communication channel.</p>
-<h1 id="running-realm-for-verification-purposes"><a class="header" href="#running-realm-for-verification-purposes">Running realm for verification purposes</a></h1>
+<h2 id="running-realm-for-verification-purposes"><a class="header" href="#running-realm-for-verification-purposes">Running realm for verification purposes</a></h2>
 <p>This is done in almost the same way we run realm to get the token.</p>
 <p>Run the QEMU with HES and network this time. Use the –run-only param from now on
 not to regenerate the realm anymore so our measurements won’t get stale:</p>
@@ -4453,7 +4454,7 @@ shared # ./set-realm-ip.sh
 shared # insmod rsi.ko
 shared # date -s "2025-09-12 12:00"
 </code></pre>
-<h1 id="running-and-provisioning-verification-services-veraison-realm-verifier"><a class="header" href="#running-and-provisioning-verification-services-veraison-realm-verifier">Running and provisioning verification services (Veraison, realm-verifier)</a></h1>
+<h2 id="running-and-provisioning-verification-services-veraison-realm-verifier"><a class="header" href="#running-and-provisioning-verification-services-veraison-realm-verifier">Running and provisioning verification services (Veraison, realm-verifier)</a></h2>
 <p>To bootstrap the Veraison services use the <code>CCA/islet/examples/veraison/bootstrap.sh</code>:</p>
 <pre><code>CCA/islet/examples/veraison $ ./bootstrap.sh
 </code></pre>
@@ -4499,7 +4500,7 @@ any concern apart from passing latest reference values in <code>reference.json</
 <p>Reliant-party awaits on given IP:PORT for communication from Realm and
 utilizes our <code>ratls</code> Rust library and <code>realm-verifier</code> library (for <code>reference.json</code>
 reference values verification) to verify client CCA token.</p>
-<h1 id="verification-itself"><a class="header" href="#verification-itself">Verification itself</a></h1>
+<h2 id="verification-itself"><a class="header" href="#verification-itself">Verification itself</a></h2>
 <p>On the realm side (the one we already run) just trigger the verification
 process. This is done using <code>realm-application</code> (<code>CCA/islet/examples/veraison/realm-application</code>).
 It will initialize RATLS connection to verification service by performing the necessary steps:</p>
@@ -4515,7 +4516,7 @@ run on the same machine or any other &lt;SERVER_IP:PORT&gt; when needed)</p>
 </code></pre>
 <p>That command will take some time as computation inside Realm can be slow and it does
 asymmetric cryptography (RSA key generation).</p>
-<h1 id="verification-success"><a class="header" href="#verification-success">Verification success</a></h1>
+<h2 id="verification-success"><a class="header" href="#verification-success">Verification success</a></h2>
 <p>When verification succeeds, both <code>realm-application</code> and <code>realm-verifier</code> should not
 output any errors.</p>
 <p>With the info log level (as set above) realm client should report successful
@@ -4813,6 +4814,7 @@ realm with:</p>
 <ul>
 <li><a href="https://islet-project.github.io/islet/plat-doc/monitor/index.html">6.1. Realm Management Monitor</a></li>
 <li><a href="https://islet-project.github.io/islet/app-doc/islet_sdk/index.html">6.2. Confidential Application SDK</a></li>
+<li><a href="https://islet-project.github.io/islet/hes-doc/islet_hes/index.html">6.3. Islet HES</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="realm-management-monitor"><a href="#realm-management-monitor" class="header">Realm Management Monitor</a></h1>

@@ -70,4 +70,4 @@ Additionally, to prevent replay attacks, the server will generate a random chall
 * At last, the `Realm measurements` are used to check the realm part.
 * If all checks finish successfully, the handshake concludes and an encrypted `TCP` connection between the `RaTlsClient` and `RaTlsServer` is opened and ready to transfer sensitive data.
 
-For more detailed instructions, refer to [RUN](./RUN.md). It contains a step-by-step guide of running the attestation demo using `Islet`.
+For more detailed instructions, refer to [Remote Attestation Example](./remote-attestation-example.md). It contains a step-by-step guide of running the attestation demo using `Islet`.

@@ -212,10 +212,12 @@ pub extern "C" fn handle_lower_exception(
                 debug!("Synchronous: SIMD");
                 let abort: bool = match Syndrome::from(esr) {
                     Syndrome::SVE => !rec.context.simd.cfg.sve_en,
-                    // Note: Since only FEAT_SVE is set for Realms and
-                    // we are doing lazy restore, being reported as Syndrome::SME
-                    // is actually comming from the NW's SME setting.
-                    Syndrome::SME => !rec.context.simd.cfg.sve_en,
+                    // Note: Before lazy restore (!is_used), SVCR.SM may still
+                    // hold the NS world's streaming mode setting, causing an
+                    // SVE access to be reported as Syndrome::SME. Once lazy
+                    // restore has run (is_used) and cleared SVCR, any SME trap
+                    // is a genuine SME instruction from the Realm and must abort.
+                    Syndrome::SME => !rec.context.simd.cfg.sve_en || rec.context.simd.is_used,
                     _ => false,
                 };
                 if abort {

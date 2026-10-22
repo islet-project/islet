@@ -128,32 +128,34 @@ pub fn init_simd(rec: &mut Rec<'_>) -> Result<(), Error> {
 
 /// # Safety
 ///
-/// Use neon only for (re)storing Rec's simd context
+/// Use neon only for (re)storing Rec's simd context. The q registers are
+/// saved in pairs via `stp`, i.e. at fixed byte offsets of 32 bytes
+/// (2 * a 16-byte register); those offsets are asm literals by design.
 #[allow(aarch64_softfloat_neon)]
+#[inline(never)]
 #[target_feature(enable = "neon")]
 unsafe fn save_fpu(fpu: &mut FpuRegs) {
     let addr_q: u64 = fpu.q.as_ptr() as u64;
     unsafe {
         asm!(
-        "stp q0, q1, [{addr_q}]",
-        "stp q2, q3, [{addr_q}, #32]",
-        "stp q4, q5, [{addr_q}, #64]",
-        "stp q6, q7, [{addr_q}, #96]",
-        "stp q8, q9, [{addr_q}, #128]",
-        "stp q10, q11, [{addr_q}, #160]",
-        "stp q12, q13, [{addr_q}, #192]",
-        "stp q14, q15, [{addr_q}, #224]",
-        "stp q16, q17, [{addr_q}, #256]",
-        "stp q18, q19, [{addr_q}, #288]",
-        "stp q20, q21, [{addr_q}, #320]",
-        "stp q22, q23, [{addr_q}, #352]",
-        "stp q24, q25, [{addr_q}, #384]",
-        "stp q26, q27, [{addr_q}, #416]",
-        "stp q28, q29, [{addr_q}, #448]",
-        "stp q30, q31, [{addr_q}, #480]",
-        addr_q = in(reg) addr_q,
+            "stp q0, q1, [{addr_q}]",
+            "stp q2, q3, [{addr_q}, #32]",
+            "stp q4, q5, [{addr_q}, #64]",
+            "stp q6, q7, [{addr_q}, #96]",
+            "stp q8, q9, [{addr_q}, #128]",
+            "stp q10, q11, [{addr_q}, #160]",
+            "stp q12, q13, [{addr_q}, #192]",
+            "stp q14, q15, [{addr_q}, #224]",
+            "stp q16, q17, [{addr_q}, #256]",
+            "stp q18, q19, [{addr_q}, #288]",
+            "stp q20, q21, [{addr_q}, #320]",
+            "stp q22, q23, [{addr_q}, #352]",
+            "stp q24, q25, [{addr_q}, #384]",
+            "stp q26, q27, [{addr_q}, #416]",
+            "stp q28, q29, [{addr_q}, #448]",
+            "stp q30, q31, [{addr_q}, #480]",
+            addr_q = in(reg) addr_q,
         );
-        save_fpu_crsr(fpu);
     }
 }
 
@@ -161,16 +163,17 @@ unsafe fn save_fpu(fpu: &mut FpuRegs) {
 ///
 /// Use neon only for (re)storing Rec's simd context
 #[allow(aarch64_softfloat_neon)]
+#[inline(never)]
 #[target_feature(enable = "neon")]
 unsafe fn save_fpu_crsr(fpu: &mut FpuRegs) {
     let fpsr: u64;
     let fpcr: u64;
     unsafe {
         asm!(
-        "mrs {fpsr}, fpsr",
-        "mrs {fpcr}, fpcr",
-        fpsr = out(reg) fpsr,
-        fpcr = out(reg) fpcr,
+            "mrs {fpsr}, fpsr",
+            "mrs {fpcr}, fpcr",
+            fpsr = out(reg) fpsr,
+            fpcr = out(reg) fpcr,
         );
     }
     fpu.fpsr = fpsr;
@@ -181,30 +184,30 @@ unsafe fn save_fpu_crsr(fpu: &mut FpuRegs) {
 ///
 /// Use neon only for (re)storing Rec's simd context
 #[allow(aarch64_softfloat_neon)]
+#[inline(never)]
 #[target_feature(enable = "neon")]
-pub unsafe fn restore_fpu(fpu: &FpuRegs) {
+unsafe fn restore_fpu(fpu: &FpuRegs) {
     let addr_q: u64 = fpu.q.as_ptr() as u64;
     unsafe {
         asm!(
-             "ldp q0, q1, [{addr_q}]",
-             "ldp q2, q3, [{addr_q}, #32]",
-             "ldp q4, q5, [{addr_q}, #64]",
-             "ldp q6, q7, [{addr_q}, #96]",
-             "ldp q8, q9, [{addr_q}, #128]",
-             "ldp q10, q11, [{addr_q}, #160]",
-             "ldp q12, q13, [{addr_q}, #192]",
-             "ldp q14, q15, [{addr_q}, #224]",
-             "ldp q16, q17, [{addr_q}, #256]",
-             "ldp q18, q19, [{addr_q}, #288]",
-             "ldp q20, q21, [{addr_q}, #320]",
-             "ldp q22, q23, [{addr_q}, #352]",
-             "ldp q24, q25, [{addr_q}, #384]",
-             "ldp q26, q27, [{addr_q}, #416]",
-             "ldp q28, q29, [{addr_q}, #448]",
-             "ldp q30, q31, [{addr_q}, #480]",
-             addr_q = in(reg) addr_q,
+            "ldp q0, q1, [{addr_q}]",
+            "ldp q2, q3, [{addr_q}, #32]",
+            "ldp q4, q5, [{addr_q}, #64]",
+            "ldp q6, q7, [{addr_q}, #96]",
+            "ldp q8, q9, [{addr_q}, #128]",
+            "ldp q10, q11, [{addr_q}, #160]",
+            "ldp q12, q13, [{addr_q}, #192]",
+            "ldp q14, q15, [{addr_q}, #224]",
+            "ldp q16, q17, [{addr_q}, #256]",
+            "ldp q18, q19, [{addr_q}, #288]",
+            "ldp q20, q21, [{addr_q}, #320]",
+            "ldp q22, q23, [{addr_q}, #352]",
+            "ldp q24, q25, [{addr_q}, #384]",
+            "ldp q26, q27, [{addr_q}, #416]",
+            "ldp q28, q29, [{addr_q}, #448]",
+            "ldp q30, q31, [{addr_q}, #480]",
+            addr_q = in(reg) addr_q,
         );
-        restore_fpu_crsr(fpu);
     }
 }
 
@@ -212,14 +215,15 @@ pub unsafe fn restore_fpu(fpu: &FpuRegs) {
 ///
 /// Use neon only for (re)storing Rec's simd context
 #[allow(aarch64_softfloat_neon)]
+#[inline(never)]
 #[target_feature(enable = "neon")]
-pub unsafe fn restore_fpu_crsr(fpu: &FpuRegs) {
+unsafe fn restore_fpu_crsr(fpu: &FpuRegs) {
     unsafe {
         asm!(
-             "msr fpsr, {fpsr}",
-             "msr fpcr, {fpcr}",
-             fpsr = in(reg) fpu.fpsr,
-             fpcr = in(reg) fpu.fpcr,
+            "msr fpsr, {fpsr}",
+            "msr fpcr, {fpcr}",
+            fpsr = in(reg) fpu.fpsr,
+            fpcr = in(reg) fpu.fpcr,
         );
     }
 }
@@ -228,12 +232,13 @@ pub unsafe fn restore_fpu_crsr(fpu: &FpuRegs) {
 ///
 /// Use neon only for (re)storing Rec's simd context
 #[allow(aarch64_softfloat_neon)]
+#[inline(never)]
 #[target_feature(enable = "sve")]
 unsafe fn save_sve(sve: &mut SveRegs, save_ffr: bool) {
     let addr_z: u64 = sve.z.as_ptr() as u64;
     let addr_p: u64 = sve.p.as_ptr() as u64;
     unsafe {
-        // Save the z regster bank
+        // Save the z register bank
         asm!(
             "str z0, [{addr_z}, #0, MUL VL]",
             "str z1, [{addr_z}, #1, MUL VL]",
@@ -306,11 +311,11 @@ unsafe fn save_sve(sve: &mut SveRegs, save_ffr: bool) {
 #[allow(aarch64_softfloat_neon)]
 #[inline(never)]
 #[target_feature(enable = "sve")]
-pub unsafe fn restore_sve(sve: &SveRegs, restore_ffr: bool) {
+unsafe fn restore_sve(sve: &SveRegs, restore_ffr: bool) {
     let addr_z: u64 = sve.z.as_ptr() as u64;
     let addr_p: u64 = sve.p.as_ptr() as u64;
     unsafe {
-        // Restore the z regster bank
+        // Restore the z register bank
         asm!(
             "ldr z0, [{addr_z}, #0, MUL VL]",
             "ldr z1, [{addr_z}, #1, MUL VL]",
@@ -357,23 +362,23 @@ pub unsafe fn restore_sve(sve: &SveRegs, restore_ffr: bool) {
         }
         // Restore the p register bank
         asm!(
-        "ldr p0, [{addr_p}, #0, MUL VL]",
-        "ldr p1, [{addr_p}, #1, MUL VL]",
-        "ldr p2, [{addr_p}, #2, MUL VL]",
-        "ldr p3, [{addr_p}, #3, MUL VL]",
-        "ldr p4, [{addr_p}, #4, MUL VL]",
-        "ldr p5, [{addr_p}, #5, MUL VL]",
-        "ldr p6, [{addr_p}, #6, MUL VL]",
-        "ldr p7, [{addr_p}, #7, MUL VL]",
-        "ldr p8, [{addr_p}, #8, MUL VL]",
-        "ldr p9, [{addr_p}, #9, MUL VL]",
-        "ldr p10, [{addr_p}, #10, MUL VL]",
-        "ldr p11, [{addr_p}, #11, MUL VL]",
-        "ldr p12, [{addr_p}, #12, MUL VL]",
-        "ldr p13, [{addr_p}, #13, MUL VL]",
-        "ldr p14, [{addr_p}, #14, MUL VL]",
-        "ldr p15, [{addr_p}, #15, MUL VL]",
-        addr_p = in(reg) addr_p,
+            "ldr p0, [{addr_p}, #0, MUL VL]",
+            "ldr p1, [{addr_p}, #1, MUL VL]",
+            "ldr p2, [{addr_p}, #2, MUL VL]",
+            "ldr p3, [{addr_p}, #3, MUL VL]",
+            "ldr p4, [{addr_p}, #4, MUL VL]",
+            "ldr p5, [{addr_p}, #5, MUL VL]",
+            "ldr p6, [{addr_p}, #6, MUL VL]",
+            "ldr p7, [{addr_p}, #7, MUL VL]",
+            "ldr p8, [{addr_p}, #8, MUL VL]",
+            "ldr p9, [{addr_p}, #9, MUL VL]",
+            "ldr p10, [{addr_p}, #10, MUL VL]",
+            "ldr p11, [{addr_p}, #11, MUL VL]",
+            "ldr p12, [{addr_p}, #12, MUL VL]",
+            "ldr p13, [{addr_p}, #13, MUL VL]",
+            "ldr p14, [{addr_p}, #14, MUL VL]",
+            "ldr p15, [{addr_p}, #15, MUL VL]",
+            addr_p = in(reg) addr_p,
         );
     }
 }
@@ -418,7 +423,6 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
         // To prevent cross-world leakage, set to rec's len
         ZCR_EL2.set(rec_simd.sve.zcr_el2);
         ZCR_EL1.set(rec_simd.sve.zcr_el12);
-        #[cfg(not(any(test, miri, fuzzing)))]
         unsafe {
             let save_ffr = preserve_ffr(ns_simd.svcr);
             save_sve(&mut ns_simd.sve, save_ffr);
@@ -427,11 +431,9 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
                 SVCR.set(rec_simd.svcr);
             }
 
-            if rec_simd_ctx.is_saved {
-                let restore_ffr = true; // Sinde Realm is not supported with SME, it's always true.
-                restore_sve(&rec_simd.sve, restore_ffr);
-                restore_fpu_crsr(&rec_simd.fpu);
-            }
+            let restore_ffr = true; // Since Realm is not supported with SME, it's always true.
+            restore_sve(&rec_simd.sve, restore_ffr);
+            restore_fpu_crsr(&rec_simd.fpu);
         }
         // Leave TFP=0 and TZ=0 for the Realm, but re-enable TSM=1 since SME
         // is not supported for Realms.
@@ -439,9 +441,9 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
     } else {
         unsafe {
             save_fpu(&mut ns_simd.fpu);
-            if rec_simd_ctx.is_saved {
-                restore_fpu(&rec_simd.fpu);
-            }
+            save_fpu_crsr(&mut ns_simd.fpu);
+            restore_fpu(&rec_simd.fpu);
+            restore_fpu_crsr(&rec_simd.fpu);
         }
         // Leave TFP=0 for the Realm, but keep TZ=1 and TSM=1 so SVE and SME
         // instructions remain trapped for this non-SVE Realm.
@@ -506,7 +508,9 @@ pub fn save_state(rec: &mut Rec<'_>) {
         // For SIMD and FPU
         unsafe {
             save_fpu(&mut rec_simd.fpu);
+            save_fpu_crsr(&mut rec_simd.fpu);
             restore_fpu(&ns_simd.fpu);
+            restore_fpu_crsr(&ns_simd.fpu);
         }
     }
 

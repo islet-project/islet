@@ -249,6 +249,10 @@ class FVPPlatform(CCAPlatform):
         fvp_args = [
             FVP_BIN,
             "--plugin", "%s" % SVE_LIB,
+            # The ScalableVectorExtension plugin overrides cluster*.sve.veclen
+            # from FVP_CONFIG with its own veclen (8 x 64-bit units = 512 bits,
+            # matching MAX_VQ = 4 and --sve-max-vl=512 in launch-realm.sh).
+            "-C", "SVE.ScalableVectorExtension.veclen=8",
             "-C", "bp.flashloader0.fname=%s/fip.bin" % OUT,
             "-C", "bp.secureflashloader.fname=%s/bl1.bin" % OUT,
             "-C", "bp.virtioblockdevice.image_path=%s/boot.img" % OUT,

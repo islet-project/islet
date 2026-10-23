@@ -7,13 +7,14 @@ use lazy_static::lazy_static;
 use spin::mutex::Mutex;
 
 use super::Rec;
+use crate::asm::isb;
 use crate::config::NUM_OF_CPU;
 use crate::cpu::get_cpu_id;
 use crate::granule::GranuleState;
 use crate::realm::rd::Rd;
 use crate::rec::RecAuxIndex;
 use crate::rmi::error::Error;
-use crate::simd::{sme_en, SimdConfig, MAX_VQ};
+use crate::simd::{sme_en, sve_en as host_sve_en, SimdConfig, MAX_VQ};
 use crate::{get_granule, get_granule_if};
 
 // SIMD context structure
@@ -27,8 +28,6 @@ pub struct SimdContext {
 
 #[derive(Default, Debug)]
 pub struct SimdRegister {
-    // EL2 trap register for this context
-    pub cptr_el2: u64,
     // SME specific Streaming vector control register
     pub svcr: u64,
     // SIMD data registers
@@ -117,11 +116,6 @@ pub fn init_simd(rec: &mut Rec<'_>) -> Result<(), Error> {
     let mut simd_granule = get_granule_if!(simd_aux, GranuleState::RecAux)?;
     debug!("RecAux granule for simd at 0x{:x}", simd_aux);
     let mut simd_regs = simd_granule.new_uninit_with::<SimdRegister>(SimdRegister::new())?;
-    // Note: As islet-rmm doesn't enable VHE in the realm world as following,
-    // HCR_EL2.E2H=0, HCR_EL2.TGE=0
-    // the layout of CPTR_EL2 for non E2H is used.
-    simd_regs.cptr_el2 =
-        (CPTR_EL2::TAM::SET + CPTR_EL2::TSM::SET + CPTR_EL2::TFP::SET + CPTR_EL2::TZ::SET).value;
     simd_regs.sve.zcr_el2 = zcr_el2;
     simd_regs.svcr = svcr;
     Ok(())
@@ -135,32 +129,34 @@ pub fn init_simd(rec: &mut Rec<'_>) -> Result<(), Error> {
 
 /// # Safety
 ///
-/// Use neon only for (re)storing Rec's simd context
+/// Use neon only for (re)storing Rec's simd context. The q registers are
+/// saved in pairs via `stp`, i.e. at fixed byte offsets of 32 bytes
+/// (2 * a 16-byte register); those offsets are asm literals by design.
 #[allow(aarch64_softfloat_neon)]
+#[inline(never)]
 #[target_feature(enable = "neon")]
 unsafe fn save_fpu(fpu: &mut FpuRegs) {
     let addr_q: u64 = fpu.q.as_ptr() as u64;
     unsafe {
         asm!(
-        "stp q0, q1, [{addr_q}]",
-        "stp q2, q3, [{addr_q}, #32]",
-        "stp q4, q5, [{addr_q}, #64]",
-        "stp q6, q7, [{addr_q}, #96]",
-        "stp q8, q9, [{addr_q}, #128]",
-        "stp q10, q11, [{addr_q}, #160]",
-        "stp q12, q13, [{addr_q}, #192]",
-        "stp q14, q15, [{addr_q}, #224]",
-        "stp q16, q17, [{addr_q}, #256]",
-        "stp q18, q19, [{addr_q}, #288]",
-        "stp q20, q21, [{addr_q}, #320]",
-        "stp q22, q23, [{addr_q}, #352]",
-        "stp q24, q25, [{addr_q}, #384]",
-        "stp q26, q27, [{addr_q}, #416]",
-        "stp q28, q29, [{addr_q}, #448]",
-        "stp q30, q31, [{addr_q}, #480]",
-        addr_q = in(reg) addr_q,
+            "stp q0, q1, [{addr_q}]",
+            "stp q2, q3, [{addr_q}, #32]",
+            "stp q4, q5, [{addr_q}, #64]",
+            "stp q6, q7, [{addr_q}, #96]",
+            "stp q8, q9, [{addr_q}, #128]",
+            "stp q10, q11, [{addr_q}, #160]",
+            "stp q12, q13, [{addr_q}, #192]",
+            "stp q14, q15, [{addr_q}, #224]",
+            "stp q16, q17, [{addr_q}, #256]",
+            "stp q18, q19, [{addr_q}, #288]",
+            "stp q20, q21, [{addr_q}, #320]",
+            "stp q22, q23, [{addr_q}, #352]",
+            "stp q24, q25, [{addr_q}, #384]",
+            "stp q26, q27, [{addr_q}, #416]",
+            "stp q28, q29, [{addr_q}, #448]",
+            "stp q30, q31, [{addr_q}, #480]",
+            addr_q = in(reg) addr_q,
         );
-        save_fpu_crsr(fpu);
     }
 }
 
@@ -168,16 +164,17 @@ unsafe fn save_fpu(fpu: &mut FpuRegs) {
 ///
 /// Use neon only for (re)storing Rec's simd context
 #[allow(aarch64_softfloat_neon)]
+#[inline(never)]
 #[target_feature(enable = "neon")]
 unsafe fn save_fpu_crsr(fpu: &mut FpuRegs) {
     let fpsr: u64;
     let fpcr: u64;
     unsafe {
         asm!(
-        "mrs {fpsr}, fpsr",
-        "mrs {fpcr}, fpcr",
-        fpsr = out(reg) fpsr,
-        fpcr = out(reg) fpcr,
+            "mrs {fpsr}, fpsr",
+            "mrs {fpcr}, fpcr",
+            fpsr = out(reg) fpsr,
+            fpcr = out(reg) fpcr,
         );
     }
     fpu.fpsr = fpsr;
@@ -188,30 +185,30 @@ unsafe fn save_fpu_crsr(fpu: &mut FpuRegs) {
 ///
 /// Use neon only for (re)storing Rec's simd context
 #[allow(aarch64_softfloat_neon)]
+#[inline(never)]
 #[target_feature(enable = "neon")]
-pub unsafe fn restore_fpu(fpu: &FpuRegs) {
+unsafe fn restore_fpu(fpu: &FpuRegs) {
     let addr_q: u64 = fpu.q.as_ptr() as u64;
     unsafe {
         asm!(
-             "ldp q0, q1, [{addr_q}]",
-             "ldp q2, q3, [{addr_q}, #32]",
-             "ldp q4, q5, [{addr_q}, #64]",
-             "ldp q6, q7, [{addr_q}, #96]",
-             "ldp q8, q9, [{addr_q}, #128]",
-             "ldp q10, q11, [{addr_q}, #160]",
-             "ldp q12, q13, [{addr_q}, #192]",
-             "ldp q14, q15, [{addr_q}, #224]",
-             "ldp q16, q17, [{addr_q}, #256]",
-             "ldp q18, q19, [{addr_q}, #288]",
-             "ldp q20, q21, [{addr_q}, #320]",
-             "ldp q22, q23, [{addr_q}, #352]",
-             "ldp q24, q25, [{addr_q}, #384]",
-             "ldp q26, q27, [{addr_q}, #416]",
-             "ldp q28, q29, [{addr_q}, #448]",
-             "ldp q30, q31, [{addr_q}, #480]",
-             addr_q = in(reg) addr_q,
+            "ldp q0, q1, [{addr_q}]",
+            "ldp q2, q3, [{addr_q}, #32]",
+            "ldp q4, q5, [{addr_q}, #64]",
+            "ldp q6, q7, [{addr_q}, #96]",
+            "ldp q8, q9, [{addr_q}, #128]",
+            "ldp q10, q11, [{addr_q}, #160]",
+            "ldp q12, q13, [{addr_q}, #192]",
+            "ldp q14, q15, [{addr_q}, #224]",
+            "ldp q16, q17, [{addr_q}, #256]",
+            "ldp q18, q19, [{addr_q}, #288]",
+            "ldp q20, q21, [{addr_q}, #320]",
+            "ldp q22, q23, [{addr_q}, #352]",
+            "ldp q24, q25, [{addr_q}, #384]",
+            "ldp q26, q27, [{addr_q}, #416]",
+            "ldp q28, q29, [{addr_q}, #448]",
+            "ldp q30, q31, [{addr_q}, #480]",
+            addr_q = in(reg) addr_q,
         );
-        restore_fpu_crsr(fpu);
     }
 }
 
@@ -219,14 +216,15 @@ pub unsafe fn restore_fpu(fpu: &FpuRegs) {
 ///
 /// Use neon only for (re)storing Rec's simd context
 #[allow(aarch64_softfloat_neon)]
+#[inline(never)]
 #[target_feature(enable = "neon")]
-pub unsafe fn restore_fpu_crsr(fpu: &FpuRegs) {
+unsafe fn restore_fpu_crsr(fpu: &FpuRegs) {
     unsafe {
         asm!(
-             "msr fpsr, {fpsr}",
-             "msr fpcr, {fpcr}",
-             fpsr = in(reg) fpu.fpsr,
-             fpcr = in(reg) fpu.fpcr,
+            "msr fpsr, {fpsr}",
+            "msr fpcr, {fpcr}",
+            fpsr = in(reg) fpu.fpsr,
+            fpcr = in(reg) fpu.fpcr,
         );
     }
 }
@@ -235,12 +233,13 @@ pub unsafe fn restore_fpu_crsr(fpu: &FpuRegs) {
 ///
 /// Use neon only for (re)storing Rec's simd context
 #[allow(aarch64_softfloat_neon)]
+#[inline(never)]
 #[target_feature(enable = "sve")]
 unsafe fn save_sve(sve: &mut SveRegs, save_ffr: bool) {
     let addr_z: u64 = sve.z.as_ptr() as u64;
     let addr_p: u64 = sve.p.as_ptr() as u64;
     unsafe {
-        // Save the z regster bank
+        // Save the z register bank
         asm!(
             "str z0, [{addr_z}, #0, MUL VL]",
             "str z1, [{addr_z}, #1, MUL VL]",
@@ -313,11 +312,11 @@ unsafe fn save_sve(sve: &mut SveRegs, save_ffr: bool) {
 #[allow(aarch64_softfloat_neon)]
 #[inline(never)]
 #[target_feature(enable = "sve")]
-pub unsafe fn restore_sve(sve: &SveRegs, restore_ffr: bool) {
+unsafe fn restore_sve(sve: &SveRegs, restore_ffr: bool) {
     let addr_z: u64 = sve.z.as_ptr() as u64;
     let addr_p: u64 = sve.p.as_ptr() as u64;
     unsafe {
-        // Restore the z regster bank
+        // Restore the z register bank
         asm!(
             "ldr z0, [{addr_z}, #0, MUL VL]",
             "ldr z1, [{addr_z}, #1, MUL VL]",
@@ -364,43 +363,57 @@ pub unsafe fn restore_sve(sve: &SveRegs, restore_ffr: bool) {
         }
         // Restore the p register bank
         asm!(
-        "ldr p0, [{addr_p}, #0, MUL VL]",
-        "ldr p1, [{addr_p}, #1, MUL VL]",
-        "ldr p2, [{addr_p}, #2, MUL VL]",
-        "ldr p3, [{addr_p}, #3, MUL VL]",
-        "ldr p4, [{addr_p}, #4, MUL VL]",
-        "ldr p5, [{addr_p}, #5, MUL VL]",
-        "ldr p6, [{addr_p}, #6, MUL VL]",
-        "ldr p7, [{addr_p}, #7, MUL VL]",
-        "ldr p8, [{addr_p}, #8, MUL VL]",
-        "ldr p9, [{addr_p}, #9, MUL VL]",
-        "ldr p10, [{addr_p}, #10, MUL VL]",
-        "ldr p11, [{addr_p}, #11, MUL VL]",
-        "ldr p12, [{addr_p}, #12, MUL VL]",
-        "ldr p13, [{addr_p}, #13, MUL VL]",
-        "ldr p14, [{addr_p}, #14, MUL VL]",
-        "ldr p15, [{addr_p}, #15, MUL VL]",
-        addr_p = in(reg) addr_p,
+            "ldr p0, [{addr_p}, #0, MUL VL]",
+            "ldr p1, [{addr_p}, #1, MUL VL]",
+            "ldr p2, [{addr_p}, #2, MUL VL]",
+            "ldr p3, [{addr_p}, #3, MUL VL]",
+            "ldr p4, [{addr_p}, #4, MUL VL]",
+            "ldr p5, [{addr_p}, #5, MUL VL]",
+            "ldr p6, [{addr_p}, #6, MUL VL]",
+            "ldr p7, [{addr_p}, #7, MUL VL]",
+            "ldr p8, [{addr_p}, #8, MUL VL]",
+            "ldr p9, [{addr_p}, #9, MUL VL]",
+            "ldr p10, [{addr_p}, #10, MUL VL]",
+            "ldr p11, [{addr_p}, #11, MUL VL]",
+            "ldr p12, [{addr_p}, #12, MUL VL]",
+            "ldr p13, [{addr_p}, #13, MUL VL]",
+            "ldr p14, [{addr_p}, #14, MUL VL]",
+            "ldr p15, [{addr_p}, #15, MUL VL]",
+            addr_p = in(reg) addr_p,
         );
     }
 }
 
-fn preserve_ffr(svcr: u64) -> bool {
+// Returns true if the PE implements FEAT_SME and the given SVCR value indicates
+// Streaming SVE mode (SVCR.SM == 1).
+//
+// In Armv9-A, FEAT_SME is architecturally independent of non-streaming FEAT_SVE:
+// a PE may implement FEAT_SME without FEAT_SVE (`host_sve_en() == false` and
+// `sme_en() == true`). When `SVCR.SM == 1` on any SME-capable PE, the full
+// Streaming SVE register file (`Z0..Z31` of width `SVL`, `P0..P15`, and `FFR`
+// when `FEAT_SME_FA64` is enabled) is active and must be saved/restored using
+// SVE instructions rather than 128-bit FPU `Q0..Q31` loads/stores.
+fn is_streaming(svcr: u64) -> bool {
     let svcr: InMemoryRegister<u64, SVCR::Register> = InMemoryRegister::new(svcr);
-    let mut rtn = true;
+    sme_en() && svcr.read(SVCR::SM) != 0
+}
 
-    let is_streaming = sme_en() && svcr.read(SVCR::SM) != 0;
-    if is_streaming {
-        rtn = SMCR_EL2.read(SMCR_EL2::FA64) != 0;
+// In Streaming SVE mode (`SVCR.SM == 1`), `rdffr`/`wrffr` are legal only if the
+// full A64 instruction set is enabled in streaming mode (`SMCR_EL2.FA64 == 1`).
+// In normal SVE mode (`SVCR.SM == 0`), `FFR` is always accessible.
+fn preserve_ffr(svcr: u64) -> bool {
+    if is_streaming(svcr) {
+        SMCR_EL2.read(SMCR_EL2::FA64) != 0
+    } else {
+        true
     }
-    rtn
 }
 
 // This function is called when a SIMD access in Realm
 // is made for the first time since REC_ENTER.
 // See exception/trap.rs.
 pub fn restore_state_lazy(rec: &Rec<'_>) {
-    let rec_simd_ctxt = &rec.context.simd;
+    let rec_simd_ctx = &rec.context.simd;
     let simd_aux = rec.aux(RecAuxIndex::SIMD as usize) as usize;
     let simd_granule = match get_granule_if!(simd_aux, GranuleState::RecAux) {
         Ok(guard) => guard,
@@ -412,72 +425,118 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
     let rec_simd = simd_granule.content::<SimdRegister>().unwrap();
     let mut ns_simd = NS_SIMD[get_cpu_id()].lock();
 
-    // Disable simd traps during the context mgmt.
+    // Disable simd traps during the context mgmt and synchronize before
+    // accessing any SIMD/SVE/SME registers at EL2.
     CPTR_EL2.write(CPTR_EL2::TAM::SET);
-    if rec_simd_ctxt.cfg.sve_en {
-        ns_simd.sve.zcr_el2 = ZCR_EL2.get();
-        ns_simd.sve.zcr_el12 = ZCR_EL1.get();
-        // To prevent cross-world leakage, set to rec's len
-        ZCR_EL2.set(rec_simd.sve.zcr_el2);
-        ZCR_EL1.set(rec_simd.sve.zcr_el12);
-        #[cfg(not(any(test, miri, fuzzing)))]
+    isb();
+
+    // Capture the NS world's SVCR before saving NS registers (which checks
+    // SVCR.SM via is_streaming() / preserve_ffr()) and before switching SVCR
+    // to the REC's value.
+    if sme_en() {
+        ns_simd.svcr = SVCR.get();
+    }
+
+    // 1. Save the Non-Secure world's SIMD/SVE state.
+    // The full SVE register set (Z0..Z31, P0..P15, FFR) must be saved instead
+    // of just 128-bit Q0..Q31 in two cases:
+    //   a) The PE supports non-streaming SVE (`host_sve_en()`): loading Q0..Q31
+    //      for a non-SVE Realm zeroes the upper bits [VL_max-1:128] of Z0..Z31,
+    //      so the full NS SVE width must be preserved even if this Realm has
+    //      SVE disabled.
+    //   b) The PE is an SME-only CPU (`host_sve_en() == false`, `sme_en() == true`)
+    //      and the NS world entered RMM in Streaming SVE mode (`is_streaming(ns_simd.svcr)`):
+    //      NS is actively using the streaming Z0..Z31, P0..P15, and FFR registers,
+    //      which will be wiped by hardware as soon as SVCR.SM is cleared to 0
+    //      for the Realm in step 2 below.
+    if host_sve_en() || is_streaming(ns_simd.svcr) {
+        // Guard ZCR_EL1 / ZCR_EL2 accesses with `host_sve_en()`: on an SME-only PE
+        // (`host_sve_en() == false`), ZCR_EL1 and ZCR_EL2 are unimplemented and
+        // accessing them raises an UNDEFINED exception at EL2. In Streaming SVE
+        // mode, the active vector length (SVL) is controlled by SMCR_EL2.LEN
+        // (which EL3 leaves untouched from NS-EL2), not by ZCR_EL2.LEN.
+        if host_sve_en() {
+            ns_simd.sve.zcr_el12 = ZCR_EL1.get();
+            ns_simd.sve.zcr_el2 = ZCR_EL2.get();
+            ZCR_EL2.write(ZCR_EL2::LEN.val(MAX_VQ - 1));
+            isb();
+        }
         unsafe {
-            // ns_simd.svcr is save at restore_state() on REC_ENTER
             let save_ffr = preserve_ffr(ns_simd.svcr);
             save_sve(&mut ns_simd.sve, save_ffr);
             save_fpu_crsr(&mut ns_simd.fpu);
-            if sme_en() {
-                SVCR.set(rec_simd.svcr);
-            }
-
-            if rec_simd_ctxt.is_saved {
-                let restore_ffr = true; // Sinde Realm is not supported with SME, it's always true.
-                restore_sve(&rec_simd.sve, restore_ffr);
-                restore_fpu_crsr(&rec_simd.fpu);
-            }
         }
     } else {
         unsafe {
             save_fpu(&mut ns_simd.fpu);
-            if rec_simd_ctxt.is_saved {
-                restore_fpu(&rec_simd.fpu);
-            }
+            save_fpu_crsr(&mut ns_simd.fpu);
         }
     }
+
+    // 2. Switch SVCR to the REC's value (0) after saving NS registers and
+    // before restoring REC registers, since toggling SVCR.SM zeroes the
+    // vector registers in hardware.
+    if sme_en() {
+        SVCR.set(rec_simd.svcr);
+        isb();
+    }
+
+    // 3. Restore the REC's SIMD/SVE state unconditionally (even when
+    // !is_saved, as the zeroed AUX granules hold the REC's architectural
+    // initial state, preventing NS register leakage into the Realm).
+    if rec_simd_ctx.cfg.sve_en {
+        // Install the REC's VL cap in ZCR_EL2 and the REC's ZCR_EL1 now
+        // (after NS SVE state has been saved) and synchronize before
+        // restore_sve() derives its MUL VL strides.
+        ZCR_EL2.set(rec_simd.sve.zcr_el2);
+        ZCR_EL1.set(rec_simd.sve.zcr_el12);
+        isb();
+        unsafe {
+            let restore_ffr = true; // Since Realm is not supported with SME, it's always true.
+            restore_sve(&rec_simd.sve, restore_ffr);
+            restore_fpu_crsr(&rec_simd.fpu);
+        }
+        // Leave TFP=0 and TZ=0 for the Realm, but re-enable TSM=1 since SME
+        // is not supported for Realms.
+        CPTR_EL2.write(CPTR_EL2::TAM::SET + CPTR_EL2::TSM::SET);
+    } else {
+        unsafe {
+            restore_fpu(&rec_simd.fpu);
+            restore_fpu_crsr(&rec_simd.fpu);
+        }
+        // Leave TFP=0 for the Realm, but keep TZ=1 and TSM=1 so SVE and SME
+        // instructions remain trapped for this non-SVE Realm.
+        CPTR_EL2.write(CPTR_EL2::TAM::SET + CPTR_EL2::TSM::SET + CPTR_EL2::TZ::SET);
+    }
+    isb();
 }
 
-pub fn restore_state(rec: &Rec<'_>) {
-    let simd_aux = rec.aux(RecAuxIndex::SIMD as usize) as usize;
-    let simd_granule = match get_granule_if!(simd_aux, GranuleState::RecAux) {
-        Ok(guard) => guard,
-        Err(_e) => {
-            error!("Unable to get RecAux granule at 0x{:x}", simd_aux);
-            return;
-        }
-    };
-    let rec_simd = simd_granule.content::<SimdRegister>().unwrap();
-    let mut ns_simd = NS_SIMD[get_cpu_id()].lock();
-
-    // Disable simd traps during the context mgmt.
-    CPTR_EL2.write(CPTR_EL2::TAM::SET);
-
-    // We don't save/restore any state
-    // until SIMD registers are actually accessed in Realms.
-
-    if sme_en() {
-        ns_simd.svcr = SVCR.get();
-        // Note: Don't call SVCR.set(rec_simd.svcr) here.
-        // Otherwise, we will loose unsaved NS context.
-        // SVCR's SM bit change between 0 and 1, one way or the other,
-        // results in setting the whole SIMD registers to zeros.
-    }
-    ns_simd.cptr_el2 = CPTR_EL2.get();
-    CPTR_EL2.set(rec_simd.cptr_el2);
+pub fn restore_state(_rec: &Rec<'_>) {
+    // We don't save/restore any SIMD/SVE registers, ZCR_EL1/ZCR_EL2, or SVCR
+    // until SIMD/SVE is actually accessed in the Realm. Setting TFP=1, TZ=1,
+    // and TSM=1 below traps all FP/SVE/SME instructions as well as direct
+    // accesses to ZCR_EL1/ZCR_EL2/SVCR into restore_state_lazy().
+    // Note: As islet-rmm doesn't enable VHE in the realm world (HCR_EL2.E2H=0,
+    // HCR_EL2.TGE=0), the non-E2H layout of CPTR_EL2 is used.
+    CPTR_EL2
+        .write(CPTR_EL2::TAM::SET + CPTR_EL2::TSM::SET + CPTR_EL2::TFP::SET + CPTR_EL2::TZ::SET);
+    isb();
 }
 
 pub fn save_state(rec: &mut Rec<'_>) {
     let simd_aux = rec.aux(RecAuxIndex::SIMD as usize) as usize;
-    let rec_simd_ctxt = &mut rec.context.simd;
+    let rec_simd_ctx = &mut rec.context.simd;
+
+    // Disable SIMD traps for RMM context management (restoring RMM's default
+    // CPTR_EL2 = TAM::SET configuration from setup_el2()).
+    CPTR_EL2.write(CPTR_EL2::TAM::SET);
+    isb();
+
+    if !rec_simd_ctx.is_used {
+        return;
+    }
+    // Since FEAT_SME is not for Realms, no need to store SVCR which doesn't change.
+
     let mut simd_granule = match get_granule_if!(simd_aux, GranuleState::RecAux) {
         Ok(guard) => guard,
         Err(_e) => {
@@ -488,48 +547,65 @@ pub fn save_state(rec: &mut Rec<'_>) {
     let mut rec_simd = simd_granule.content_mut::<SimdRegister>().unwrap();
     let ns_simd = NS_SIMD[get_cpu_id()].lock();
 
-    rec_simd.cptr_el2 =
-        (CPTR_EL2::TAM::SET + CPTR_EL2::TSM::SET + CPTR_EL2::TFP::SET + CPTR_EL2::TZ::SET).value;
-    if !rec_simd_ctxt.is_used {
-        CPTR_EL2.set(ns_simd.cptr_el2);
-        if sme_en() {
-            SVCR.set(ns_simd.svcr);
-        }
-        return;
-    }
-    // Disable simd traps during the context mgmt.
-    CPTR_EL2.write(CPTR_EL2::TAM::SET);
-    // Since FEAT_SME is not for Realms, no need to store SVCR which doesn't change.
-
-    if rec_simd_ctxt.cfg.sve_en {
-        rec_simd.sve.zcr_el2 = ZCR_EL2.get();
+    // 1. Save the REC's SIMD/SVE state.
+    if rec_simd_ctx.cfg.sve_en {
+        // ZCR_EL2 still holds rec_simd.sve.zcr_el2 here, so save_sve() saves
+        // at the REC's configured vector length.
         rec_simd.sve.zcr_el12 = ZCR_EL1.get();
         unsafe {
             let save_ffr = true; // Since FEAT_SME is not for Realms, it's always true.
             save_sve(&mut rec_simd.sve, save_ffr);
             save_fpu_crsr(&mut rec_simd.fpu);
-            // Set SVCR before loading context.
-            // Otherwise, when SVCR:SM is 0, all simd registers are set to zero.
-            if sme_en() {
-                SVCR.set(ns_simd.svcr);
-            }
-            // To prevent cross-world leakage, restore ns's context of rec's len.
+        }
+    } else {
+        unsafe {
+            save_fpu(&mut rec_simd.fpu);
+            save_fpu_crsr(&mut rec_simd.fpu);
+        }
+    }
+
+    // 2. Restore NS SVCR before loading NS SIMD/SVE registers.
+    // Otherwise, toggling SVCR.SM between 0 and 1 zeroes all SIMD registers.
+    if sme_en() {
+        SVCR.set(ns_simd.svcr);
+        isb();
+    }
+
+    // 3. Restore the Non-Secure world's SIMD/SVE state.
+    // Matches the condition in `restore_state_lazy()`: restore from `ns_simd.sve`
+    // whenever the PE supports non-streaming SVE (`host_sve_en()`) or when
+    // returning to NS in Streaming SVE mode (`is_streaming(ns_simd.svcr)`,
+    // including on SME-only PEs where `host_sve_en() == false`).
+    // Note that `SVCR` has already been restored in step 2 above, so if
+    // `is_streaming(ns_simd.svcr)` is true, the PE is now in Streaming SVE
+    // mode and `restore_sve()` will reload the streaming Z/P/FFR registers.
+    if host_sve_en() || is_streaming(ns_simd.svcr) {
+        // Only touch ZCR_EL2 / ZCR_EL1 when non-streaming SVE is implemented
+        // on the PE; on an SME-only PE (`host_sve_en() == false`), ZCR_ELx
+        // registers do not exist and would trap as UNDEFINED.
+        if host_sve_en() {
+            ZCR_EL2.write(ZCR_EL2::LEN.val(MAX_VQ - 1));
+            isb();
+        }
+        unsafe {
             let restore_ffr = preserve_ffr(ns_simd.svcr);
             restore_sve(&ns_simd.sve, restore_ffr);
             restore_fpu_crsr(&ns_simd.fpu);
         }
-        ZCR_EL2.set(ns_simd.sve.zcr_el2);
-        ZCR_EL1.set(ns_simd.sve.zcr_el12);
+        if host_sve_en() {
+            ZCR_EL2.set(ns_simd.sve.zcr_el2);
+            ZCR_EL1.set(ns_simd.sve.zcr_el12);
+            isb();
+        }
     } else {
-        // For SIMD and FPU
         unsafe {
-            save_fpu(&mut rec_simd.fpu);
             restore_fpu(&ns_simd.fpu);
+            restore_fpu_crsr(&ns_simd.fpu);
         }
     }
+
     // To maintain immutability of rec.context during its restoration,
     // update the context here in advance.
-    rec_simd_ctxt.is_used = false;
-    rec_simd_ctxt.is_saved = true;
-    CPTR_EL2.set(ns_simd.cptr_el2);
+    rec_simd_ctx.is_used = false;
+    rec_simd_ctx.is_saved = true;
 }

@@ -14,7 +14,7 @@ use crate::granule::GranuleState;
 use crate::realm::rd::Rd;
 use crate::rec::RecAuxIndex;
 use crate::rmi::error::Error;
-use crate::simd::{sme_en, SimdConfig, MAX_VQ};
+use crate::simd::{sme_en, sve_en as host_sve_en, SimdConfig, MAX_VQ};
 use crate::{get_granule, get_granule_if};
 
 // SIMD context structure
@@ -384,15 +384,29 @@ unsafe fn restore_sve(sve: &SveRegs, restore_ffr: bool) {
     }
 }
 
-fn preserve_ffr(svcr: u64) -> bool {
+// Returns true if the PE implements FEAT_SME and the given SVCR value indicates
+// Streaming SVE mode (SVCR.SM == 1).
+//
+// In Armv9-A, FEAT_SME is architecturally independent of non-streaming FEAT_SVE:
+// a PE may implement FEAT_SME without FEAT_SVE (`host_sve_en() == false` and
+// `sme_en() == true`). When `SVCR.SM == 1` on any SME-capable PE, the full
+// Streaming SVE register file (`Z0..Z31` of width `SVL`, `P0..P15`, and `FFR`
+// when `FEAT_SME_FA64` is enabled) is active and must be saved/restored using
+// SVE instructions rather than 128-bit FPU `Q0..Q31` loads/stores.
+fn is_streaming(svcr: u64) -> bool {
     let svcr: InMemoryRegister<u64, SVCR::Register> = InMemoryRegister::new(svcr);
-    let mut rtn = true;
+    sme_en() && svcr.read(SVCR::SM) != 0
+}
 
-    let is_streaming = sme_en() && svcr.read(SVCR::SM) != 0;
-    if is_streaming {
-        rtn = SMCR_EL2.read(SMCR_EL2::FA64) != 0;
+// In Streaming SVE mode (`SVCR.SM == 1`), `rdffr`/`wrffr` are legal only if the
+// full A64 instruction set is enabled in streaming mode (`SMCR_EL2.FA64 == 1`).
+// In normal SVE mode (`SVCR.SM == 0`), `FFR` is always accessible.
+fn preserve_ffr(svcr: u64) -> bool {
+    if is_streaming(svcr) {
+        SMCR_EL2.read(SMCR_EL2::FA64) != 0
+    } else {
+        true
     }
-    rtn
 }
 
 // This function is called when a SIMD access in Realm
@@ -417,17 +431,36 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
     isb();
 
     // Capture the NS world's SVCR before saving NS registers (which checks
-    // SVCR.SM via preserve_ffr()) and before switching SVCR to the REC's value.
+    // SVCR.SM via is_streaming() / preserve_ffr()) and before switching SVCR
+    // to the REC's value.
     if sme_en() {
         ns_simd.svcr = SVCR.get();
     }
 
     // 1. Save the Non-Secure world's SIMD/SVE state.
-    if rec_simd_ctx.cfg.sve_en {
-        ns_simd.sve.zcr_el12 = ZCR_EL1.get();
-        ns_simd.sve.zcr_el2 = ZCR_EL2.get();
-        ZCR_EL2.write(ZCR_EL2::LEN.val(MAX_VQ - 1));
-        isb();
+    // The full SVE register set (Z0..Z31, P0..P15, FFR) must be saved instead
+    // of just 128-bit Q0..Q31 in two cases:
+    //   a) The PE supports non-streaming SVE (`host_sve_en()`): loading Q0..Q31
+    //      for a non-SVE Realm zeroes the upper bits [VL_max-1:128] of Z0..Z31,
+    //      so the full NS SVE width must be preserved even if this Realm has
+    //      SVE disabled.
+    //   b) The PE is an SME-only CPU (`host_sve_en() == false`, `sme_en() == true`)
+    //      and the NS world entered RMM in Streaming SVE mode (`is_streaming(ns_simd.svcr)`):
+    //      NS is actively using the streaming Z0..Z31, P0..P15, and FFR registers,
+    //      which will be wiped by hardware as soon as SVCR.SM is cleared to 0
+    //      for the Realm in step 2 below.
+    if host_sve_en() || is_streaming(ns_simd.svcr) {
+        // Guard ZCR_EL1 / ZCR_EL2 accesses with `host_sve_en()`: on an SME-only PE
+        // (`host_sve_en() == false`), ZCR_EL1 and ZCR_EL2 are unimplemented and
+        // accessing them raises an UNDEFINED exception at EL2. In Streaming SVE
+        // mode, the active vector length (SVL) is controlled by SMCR_EL2.LEN
+        // (which EL3 leaves untouched from NS-EL2), not by ZCR_EL2.LEN.
+        if host_sve_en() {
+            ns_simd.sve.zcr_el12 = ZCR_EL1.get();
+            ns_simd.sve.zcr_el2 = ZCR_EL2.get();
+            ZCR_EL2.write(ZCR_EL2::LEN.val(MAX_VQ - 1));
+            isb();
+        }
         unsafe {
             let save_ffr = preserve_ffr(ns_simd.svcr);
             save_sve(&mut ns_simd.sve, save_ffr);
@@ -539,17 +572,31 @@ pub fn save_state(rec: &mut Rec<'_>) {
     }
 
     // 3. Restore the Non-Secure world's SIMD/SVE state.
-    if rec_simd_ctx.cfg.sve_en {
-        ZCR_EL2.write(ZCR_EL2::LEN.val(MAX_VQ - 1));
-        isb();
+    // Matches the condition in `restore_state_lazy()`: restore from `ns_simd.sve`
+    // whenever the PE supports non-streaming SVE (`host_sve_en()`) or when
+    // returning to NS in Streaming SVE mode (`is_streaming(ns_simd.svcr)`,
+    // including on SME-only PEs where `host_sve_en() == false`).
+    // Note that `SVCR` has already been restored in step 2 above, so if
+    // `is_streaming(ns_simd.svcr)` is true, the PE is now in Streaming SVE
+    // mode and `restore_sve()` will reload the streaming Z/P/FFR registers.
+    if host_sve_en() || is_streaming(ns_simd.svcr) {
+        // Only touch ZCR_EL2 / ZCR_EL1 when non-streaming SVE is implemented
+        // on the PE; on an SME-only PE (`host_sve_en() == false`), ZCR_ELx
+        // registers do not exist and would trap as UNDEFINED.
+        if host_sve_en() {
+            ZCR_EL2.write(ZCR_EL2::LEN.val(MAX_VQ - 1));
+            isb();
+        }
         unsafe {
             let restore_ffr = preserve_ffr(ns_simd.svcr);
             restore_sve(&ns_simd.sve, restore_ffr);
             restore_fpu_crsr(&ns_simd.fpu);
         }
-        ZCR_EL2.set(ns_simd.sve.zcr_el2);
-        ZCR_EL1.set(ns_simd.sve.zcr_el12);
-        isb();
+        if host_sve_en() {
+            ZCR_EL2.set(ns_simd.sve.zcr_el2);
+            ZCR_EL1.set(ns_simd.sve.zcr_el12);
+            isb();
+        }
     } else {
         unsafe {
             restore_fpu(&ns_simd.fpu);

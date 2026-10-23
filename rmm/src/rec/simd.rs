@@ -13,7 +13,7 @@ use crate::granule::GranuleState;
 use crate::realm::rd::Rd;
 use crate::rec::RecAuxIndex;
 use crate::rmi::error::Error;
-use crate::simd::{sme_en, SimdConfig, MAX_VQ};
+use crate::simd::{max_sve_vl, sme_en, SimdConfig, MAX_VQ};
 use crate::{get_granule, get_granule_if};
 
 // SIMD context structure
@@ -418,11 +418,13 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
     }
 
     if rec_simd_ctx.cfg.sve_en {
-        ns_simd.sve.zcr_el2 = ZCR_EL2.get();
         ns_simd.sve.zcr_el12 = ZCR_EL1.get();
-        // To prevent cross-world leakage, set to rec's len
-        ZCR_EL2.set(rec_simd.sve.zcr_el2);
-        ZCR_EL1.set(rec_simd.sve.zcr_el12);
+        ns_simd.sve.zcr_el2 = ZCR_EL2.get();
+        // Set ZCR_EL2.LEN to the runtime-discovered maximum SVE vector length
+        // (`SIMD_CONFIG.sve_vq`) so `save_sve()` preserves all implemented bits
+        // of the NS world's Z0..Z31 registers even if NS currently has a smaller
+        // VL configured in ZCR_EL2.
+        ZCR_EL2.write(ZCR_EL2::LEN.val(max_sve_vl()));
         unsafe {
             let save_ffr = preserve_ffr(ns_simd.svcr);
             save_sve(&mut ns_simd.sve, save_ffr);
@@ -430,7 +432,13 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
             if sme_en() {
                 SVCR.set(rec_simd.svcr);
             }
-
+        }
+        // Install the REC's VL cap in ZCR_EL2 and the REC's ZCR_EL1 now
+        // (after NS SVE state has been saved) before restore_sve() derives
+        // its MUL VL strides.
+        ZCR_EL2.set(rec_simd.sve.zcr_el2);
+        ZCR_EL1.set(rec_simd.sve.zcr_el12);
+        unsafe {
             let restore_ffr = true; // Since Realm is not supported with SME, it's always true.
             restore_sve(&rec_simd.sve, restore_ffr);
             restore_fpu_crsr(&rec_simd.fpu);
@@ -486,7 +494,8 @@ pub fn save_state(rec: &mut Rec<'_>) {
     let ns_simd = NS_SIMD[get_cpu_id()].lock();
 
     if rec_simd_ctx.cfg.sve_en {
-        rec_simd.sve.zcr_el2 = ZCR_EL2.get();
+        // ZCR_EL2 still holds rec_simd.sve.zcr_el2 here, so save_sve() saves
+        // at the REC's configured vector length.
         rec_simd.sve.zcr_el12 = ZCR_EL1.get();
         unsafe {
             let save_ffr = true; // Since FEAT_SME is not for Realms, it's always true.
@@ -497,7 +506,12 @@ pub fn save_state(rec: &mut Rec<'_>) {
             if sme_en() {
                 SVCR.set(ns_simd.svcr);
             }
-            // To prevent cross-world leakage, restore ns's context of rec's len.
+        }
+        // Set ZCR_EL2.LEN to the runtime-discovered maximum SVE vector length
+        // (`SIMD_CONFIG.sve_vq`) before reloading the NS world's Z0..Z31
+        // registers, then restore the NS world's saved ZCR_EL2 and ZCR_EL1.
+        ZCR_EL2.write(ZCR_EL2::LEN.val(max_sve_vl()));
+        unsafe {
             let restore_ffr = preserve_ffr(ns_simd.svcr);
             restore_sve(&ns_simd.sve, restore_ffr);
             restore_fpu_crsr(&ns_simd.fpu);

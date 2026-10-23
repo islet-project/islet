@@ -7,6 +7,7 @@ use lazy_static::lazy_static;
 use spin::mutex::Mutex;
 
 use super::Rec;
+use crate::asm::isb;
 use crate::config::NUM_OF_CPU;
 use crate::cpu::get_cpu_id;
 use crate::granule::GranuleState;
@@ -410,13 +411,18 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
     let rec_simd = simd_granule.content::<SimdRegister>().unwrap();
     let mut ns_simd = NS_SIMD[get_cpu_id()].lock();
 
-    // Disable simd traps during the context mgmt.
+    // Disable simd traps during the context mgmt and synchronize before
+    // accessing any SIMD/SVE/SME registers at EL2.
     CPTR_EL2.write(CPTR_EL2::TAM::SET);
+    isb();
 
+    // Capture the NS world's SVCR before saving NS registers (which checks
+    // SVCR.SM via preserve_ffr()) and before switching SVCR to the REC's value.
     if sme_en() {
         ns_simd.svcr = SVCR.get();
     }
 
+    // 1. Save the Non-Secure world's SIMD/SVE state.
     if rec_simd_ctx.cfg.sve_en {
         ns_simd.sve.zcr_el12 = ZCR_EL1.get();
         ns_simd.sve.zcr_el2 = ZCR_EL2.get();
@@ -425,19 +431,37 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
         // of the NS world's Z0..Z31 registers even if NS currently has a smaller
         // VL configured in ZCR_EL2.
         ZCR_EL2.write(ZCR_EL2::LEN.val(max_sve_vl()));
+        isb();
         unsafe {
             let save_ffr = preserve_ffr(ns_simd.svcr);
             save_sve(&mut ns_simd.sve, save_ffr);
             save_fpu_crsr(&mut ns_simd.fpu);
-            if sme_en() {
-                SVCR.set(rec_simd.svcr);
-            }
         }
+    } else {
+        unsafe {
+            save_fpu(&mut ns_simd.fpu);
+            save_fpu_crsr(&mut ns_simd.fpu);
+        }
+    }
+
+    // 2. Switch SVCR to the REC's value (0) after saving NS registers and
+    // before restoring REC registers, since toggling SVCR.SM zeroes the
+    // vector registers in hardware.
+    if sme_en() {
+        SVCR.set(rec_simd.svcr);
+        isb();
+    }
+
+    // 3. Restore the REC's SIMD/SVE state unconditionally (even when
+    // !is_saved, as the zeroed AUX granules hold the REC's architectural
+    // initial state, preventing NS register leakage into the Realm).
+    if rec_simd_ctx.cfg.sve_en {
         // Install the REC's VL cap in ZCR_EL2 and the REC's ZCR_EL1 now
-        // (after NS SVE state has been saved) before restore_sve() derives
-        // its MUL VL strides.
+        // (after NS SVE state has been saved) and synchronize before
+        // restore_sve() derives its MUL VL strides.
         ZCR_EL2.set(rec_simd.sve.zcr_el2);
         ZCR_EL1.set(rec_simd.sve.zcr_el12);
+        isb();
         unsafe {
             let restore_ffr = true; // Since Realm is not supported with SME, it's always true.
             restore_sve(&rec_simd.sve, restore_ffr);
@@ -448,8 +472,6 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
         CPTR_EL2.write(CPTR_EL2::TAM::SET + CPTR_EL2::TSM::SET);
     } else {
         unsafe {
-            save_fpu(&mut ns_simd.fpu);
-            save_fpu_crsr(&mut ns_simd.fpu);
             restore_fpu(&rec_simd.fpu);
             restore_fpu_crsr(&rec_simd.fpu);
         }
@@ -457,6 +479,7 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
         // instructions remain trapped for this non-SVE Realm.
         CPTR_EL2.write(CPTR_EL2::TAM::SET + CPTR_EL2::TSM::SET + CPTR_EL2::TZ::SET);
     }
+    isb();
 }
 
 pub fn restore_state(_rec: &Rec<'_>) {
@@ -468,6 +491,7 @@ pub fn restore_state(_rec: &Rec<'_>) {
     // HCR_EL2.TGE=0), the non-E2H layout of CPTR_EL2 is used.
     CPTR_EL2
         .write(CPTR_EL2::TAM::SET + CPTR_EL2::TSM::SET + CPTR_EL2::TFP::SET + CPTR_EL2::TZ::SET);
+    isb();
 }
 
 pub fn save_state(rec: &mut Rec<'_>) {
@@ -477,6 +501,7 @@ pub fn save_state(rec: &mut Rec<'_>) {
     // Disable SIMD traps for RMM context management (restoring RMM's default
     // CPTR_EL2 = TAM::SET configuration from setup_el2()).
     CPTR_EL2.write(CPTR_EL2::TAM::SET);
+    isb();
 
     if !rec_simd_ctx.is_used {
         return;
@@ -493,6 +518,7 @@ pub fn save_state(rec: &mut Rec<'_>) {
     let mut rec_simd = simd_granule.content_mut::<SimdRegister>().unwrap();
     let ns_simd = NS_SIMD[get_cpu_id()].lock();
 
+    // 1. Save the REC's SIMD/SVE state.
     if rec_simd_ctx.cfg.sve_en {
         // ZCR_EL2 still holds rec_simd.sve.zcr_el2 here, so save_sve() saves
         // at the REC's configured vector length.
@@ -501,16 +527,28 @@ pub fn save_state(rec: &mut Rec<'_>) {
             let save_ffr = true; // Since FEAT_SME is not for Realms, it's always true.
             save_sve(&mut rec_simd.sve, save_ffr);
             save_fpu_crsr(&mut rec_simd.fpu);
-            // Set SVCR before loading context.
-            // Otherwise, when SVCR:SM is 0, all simd registers are set to zero.
-            if sme_en() {
-                SVCR.set(ns_simd.svcr);
-            }
         }
+    } else {
+        unsafe {
+            save_fpu(&mut rec_simd.fpu);
+            save_fpu_crsr(&mut rec_simd.fpu);
+        }
+    }
+
+    // 2. Restore NS SVCR before loading NS SIMD/SVE registers.
+    // Otherwise, toggling SVCR.SM between 0 and 1 zeroes all SIMD registers.
+    if sme_en() {
+        SVCR.set(ns_simd.svcr);
+        isb();
+    }
+
+    // 3. Restore the Non-Secure world's SIMD/SVE state.
+    if rec_simd_ctx.cfg.sve_en {
         // Set ZCR_EL2.LEN to the runtime-discovered maximum SVE vector length
         // (`SIMD_CONFIG.sve_vq`) before reloading the NS world's Z0..Z31
         // registers, then restore the NS world's saved ZCR_EL2 and ZCR_EL1.
         ZCR_EL2.write(ZCR_EL2::LEN.val(max_sve_vl()));
+        isb();
         unsafe {
             let restore_ffr = preserve_ffr(ns_simd.svcr);
             restore_sve(&ns_simd.sve, restore_ffr);
@@ -518,11 +556,9 @@ pub fn save_state(rec: &mut Rec<'_>) {
         }
         ZCR_EL2.set(ns_simd.sve.zcr_el2);
         ZCR_EL1.set(ns_simd.sve.zcr_el12);
+        isb();
     } else {
-        // For SIMD and FPU
         unsafe {
-            save_fpu(&mut rec_simd.fpu);
-            save_fpu_crsr(&mut rec_simd.fpu);
             restore_fpu(&ns_simd.fpu);
             restore_fpu_crsr(&ns_simd.fpu);
         }

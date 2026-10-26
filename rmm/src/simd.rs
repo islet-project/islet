@@ -9,7 +9,7 @@ use lazy_static::lazy_static;
 // Vector quadwords (VQ) = size of a Z-register in units of 128 bits
 // Minimum length of a SVE vector: 128 bits
 const ZCR_EL2_LEN_WIDTH: u64 = 4;
-const SVE_VQ_ARCH_MAX: u64 = (1 << ZCR_EL2_LEN_WIDTH) - 1;
+pub const SVE_VQ_ARCH_MAX: u64 = (1 << ZCR_EL2_LEN_WIDTH) - 1;
 const QUARD_WORD: u64 = 128;
 // Note: Limit maximun vq to 4 to avoid exceeding a page boundary.
 // Currunt rmm implmentation maps a physical page to a virtual address

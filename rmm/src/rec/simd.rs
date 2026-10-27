@@ -1,6 +1,8 @@
+use crate::config::PAGE_SIZE;
 use aarch64_cpu::registers::{Readable, Writeable};
 use armv9a::regs::{CPTR_EL2, SMCR_EL2, SVCR, ZCR_EL1, ZCR_EL2};
 use armv9a::InMemoryRegister;
+use core::alloc::Layout;
 use core::arch::asm;
 use core::array::from_fn;
 use lazy_static::lazy_static;
@@ -11,12 +13,10 @@ use crate::asm::isb;
 use crate::config::NUM_OF_CPU;
 use crate::const_assert_eq;
 use crate::cpu::get_cpu_id;
-use crate::granule::GranuleState;
-use crate::realm::rd::Rd;
-use crate::rec::RecAuxIndex;
 use crate::rmi::error::Error;
-use crate::simd::{sme_en, sve_en as host_sve_en, SimdConfig, MAX_VQ, SVE_VQ_ARCH_MAX};
-use crate::{get_granule, get_granule_if};
+use crate::simd::{sme_en, sve_en as host_sve_en, SimdConfig, SVE_VQ_ARCH_MAX};
+
+use vmsa::address::VirtAddr;
 
 /// Alignment (in bytes) required for the SIMD context allocation (`simd_va`)
 /// and the FPU/SVE register area (`FpuRegs` or SVE `Z`/`P`/`FFR` register
@@ -26,71 +26,164 @@ use crate::{get_granule, get_granule_if};
 /// which merely happen to equal 16.
 const FPU_SVE_REGS_ALIGN: usize = 16;
 
-// SIMD context structure
+/// SIMD Context Layout within the Contiguous AUX Granule Mapping (`simd_va`):
+///
+/// The host obtains the number of required AUX granules via `RMI_REC_AUX_COUNT`
+/// and passes them at `RMI_REC_CREATE`. `Rec::setup_aux_memory()`
+/// maps all `params.aux[0..num_aux]` granules ONCE into a single contiguous
+/// virtual address range (`aux_va_start`, `aux_va_size`) and initializes the
+/// REC's [`AuxBumpAllocator`]. During `Rec::init()`, `init_simd()` allocates
+/// the SIMD context region (`simd_va`) from that bump allocator via
+/// `Rec::alloc_aux()` with 16-byte alignment (`FPU_SVE_REGS_ALIGN`).
+///
+/// That granule count is computed by `aux_granules_needed()`: it is
+/// `EXTRA_AUX_GRANULES_COUNT` plus the number of granules needed to hold the
+/// layout described below.
+///
+/// The `SimdSysRegs` control/status header is placed at offset `0` of
+/// `simd_va`, and the FPU/SVE register area (`FpuRegs` when SVE is disabled,
+/// or the SVE `Z`/`P`/`FFR` register banks when SVE is enabled) is placed
+/// immediately after `SimdSysRegs` at `SimdContext::FPU_SVE_REGS_OFFSET`:
+///
+/// ```text
+///   simd_va + 0x00 +-----------------------------------------------------------+
+///                  | SimdSysRegs (control & status register header, 48 bytes)  |
+///                  |   - svcr     : u64   (SME streaming vector control)       |
+///                  |   - zcr_el2  : u64   (EL2 SVE vector length cap)          |
+///                  |   - zcr_el12 : u64   (Realm EL1 SVE vector length)        |
+///                  |   - fpsr     : u64   (Floating-point status register)     |
+///                  |   - fpcr     : u64   (Floating-point control register)    |
+///                  |   - (8 bytes padding to 16-byte alignment)                |
+///   simd_va + 0x30 +-----------------------------------------------------------+
+///                  | FPU/SVE Register Area (at FPU_SVE_REGS_OFFSET = 48)       |
+///                  |                                                           |
+///                  | * When SVE is disabled (`cfg.sve_en == false`):           |
+///                  |   - FpuRegs (`q[0..32]`): 32 * 16 = 512 bytes             |
+///                  |                                                           |
+///                  | * When SVE is enabled (`cfg.sve_en == true`):             |
+///                  |   - Z0..Z31 : 32 * VL bytes       (offset + 0)            |
+///                  |   - P0..P15 : 16 * (VL / 8) bytes (offset + 32 * VL)      |
+///                  |   - FFR     : 1 * (VL / 8) bytes  (offset + 34 * VL)      |
+///                  |   (where VL = (sve_vq + 1) * 16 bytes; Q0..Q31 alias the  |
+///                  |    lower 128 bits of Z0..Z31 so no separate FpuRegs is    |
+///                  |    needed, and the buffer may span multiple 4 KB AUX      |
+///                  |    granules across the contiguous VA mapping)             |
+///                  +-----------------------------------------------------------+
+/// ```
 #[derive(Default, Debug)]
 pub struct SimdContext {
     pub is_used: bool,
     pub is_saved: bool,
 
     pub cfg: SimdConfig,
+    /// Virtual address of the SIMD context region allocated from the REC's
+    /// [`AuxBumpAllocator`] inside the contiguous multi-granule AUX mapping.
+    pub simd_va: Option<VirtAddr>,
+}
+
+impl SimdContext {
+    /// Byte offset of the FPU/SVE register area (`FpuRegs` when SVE is
+    /// disabled, or the SVE `Z`, `P`, and `FFR` banks when SVE is enabled)
+    /// within the SIMD context region (`simd_va`).
+    /// It starts right after `SimdSysRegs`, aligned to `FPU_SVE_REGS_ALIGN`.
+    const FPU_SVE_REGS_OFFSET: usize =
+        (core::mem::size_of::<SimdSysRegs>() + FPU_SVE_REGS_ALIGN - 1) & !(FPU_SVE_REGS_ALIGN - 1);
+
+    /// Base virtual address of the allocated SIMD context region.
+    #[inline(always)]
+    fn base_va(&self) -> usize {
+        self.simd_va.expect("SIMD context is not mapped").as_usize()
+    }
+
+    /// Reference to the `SimdSysRegs` control/status header at offset `0` of
+    /// the allocated SIMD context region (`simd_va`).
+    ///
+    /// # Safety
+    /// The caller must ensure `self.simd_va` points to the base of a valid AUX
+    /// allocation large enough to hold `SimdSysRegs`.
+    #[inline(always)]
+    unsafe fn sys_regs(&self) -> &SimdSysRegs {
+        unsafe { &*(self.base_va() as *const SimdSysRegs) }
+    }
+
+    /// Mutable reference to the `SimdSysRegs` control/status header at offset
+    /// `0` of the allocated SIMD context region (`simd_va`).
+    ///
+    /// # Safety
+    /// The caller must ensure `self.simd_va` points to the base of a valid AUX
+    /// allocation large enough to hold `SimdSysRegs`.
+    #[inline(always)]
+    unsafe fn sys_regs_mut(&mut self) -> &mut SimdSysRegs {
+        unsafe { &mut *(self.base_va() as *mut SimdSysRegs) }
+    }
+
+    /// Virtual address of the FPU/SVE register area (`FpuRegs` or SVE
+    /// register buffer) that immediately follows the `SimdSysRegs` header
+    /// in the allocated SIMD context region.
+    #[inline(always)]
+    fn fpu_sve_regs_va(&self) -> VirtAddr {
+        VirtAddr::from(self.base_va() + Self::FPU_SVE_REGS_OFFSET)
+    }
+
+    /// Reference to the FPU register bank (`Q0..Q31`) stored immediately
+    /// after the `SimdSysRegs` header when SVE is disabled.
+    ///
+    /// # Safety
+    /// The caller must ensure `self.simd_va` points to the base of a valid AUX
+    /// allocation large enough to hold `SimdSysRegs` + `FpuRegs`.
+    #[inline(always)]
+    unsafe fn fpu_regs(&self) -> &FpuRegs {
+        unsafe { &*(self.fpu_sve_regs_va().as_usize() as *const FpuRegs) }
+    }
+
+    /// Mutable reference to the FPU register bank (`Q0..Q31`) stored
+    /// immediately after the `SimdSysRegs` header when SVE is disabled.
+    ///
+    /// # Safety
+    /// The caller must ensure `self.simd_va` points to the base of a valid AUX
+    /// allocation large enough to hold `SimdSysRegs` + `FpuRegs`.
+    #[inline(always)]
+    unsafe fn fpu_regs_mut(&mut self) -> &mut FpuRegs {
+        unsafe { &mut *(self.fpu_sve_regs_va().as_usize() as *mut FpuRegs) }
+    }
 }
 
 /// Per-context SIMD/SVE control and status system registers.
+///
+/// For a REC, this header lives at offset `0` of the allocated SIMD context
+/// region (`simd_va`), and the FPU/SVE registers (`FpuRegs` when SVE is
+/// disabled, or the SVE `Z`, `P`, and `FFR` banks when SVE is enabled) are
+/// stored immediately after this struct at `SimdContext::FPU_SVE_REGS_OFFSET`.
 #[repr(C, align(16))]
 #[derive(Default, Debug)]
-pub struct SimdSysRegs {
+struct SimdSysRegs {
     // SME specific Streaming vector control register
-    pub svcr: u64,
+    svcr: u64,
     // SVE vector length control registers
-    pub zcr_el2: u64,
-    pub zcr_el12: u64,
+    zcr_el2: u64,
+    zcr_el12: u64,
     // Floating-point status and control system registers
-    pub fpsr: u64,
-    pub fpcr: u64,
+    fpsr: u64,
+    fpcr: u64,
 }
 const_assert_eq!(core::mem::align_of::<SimdSysRegs>(), FPU_SVE_REGS_ALIGN);
+const_assert_eq!(SimdContext::FPU_SVE_REGS_OFFSET % FPU_SVE_REGS_ALIGN, 0);
 
 impl SimdSysRegs {
-    pub fn new() -> Self {
+    fn new() -> Self {
         Default::default()
-    }
-}
-
-#[derive(Default, Debug)]
-pub struct SimdRegister {
-    pub sys_regs: SimdSysRegs,
-    // SIMD data registers
-    pub fpu: FpuRegs,
-    pub sve: SveRegs,
-}
-
-impl SimdRegister {
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
-impl vmsa::guard::Content for SimdRegister {}
-impl safe_abstraction::raw_ptr::RawPtr for SimdRegister {}
-impl safe_abstraction::raw_ptr::SafetyChecked for SimdRegister {}
-impl safe_abstraction::raw_ptr::SafetyAssured for SimdRegister {
-    fn is_initialized(&self) -> bool {
-        // It is wiped out with zero's on granule delegation.
-        // Then, SimdRegister gets initialized on Rec::init() call.
-        true
-    }
-
-    fn verify_ownership(&self) -> bool {
-        true
     }
 }
 
 // FPU registers (Q0..Q31).
+// Stored right after `SimdSysRegs` (at `SimdContext::FPU_SVE_REGS_OFFSET`)
+// when SVE is disabled for the REC, or in `NsSimdContext::fpu` for the NS
+// world on a non-SVE PE.
 const NUM_FPU_REGS: usize = 32;
 #[repr(C, align(16))]
 #[derive(Default, Debug)]
-pub struct FpuRegs {
-    pub q: [u128; NUM_FPU_REGS],
+struct FpuRegs {
+    q: [u128; NUM_FPU_REGS],
 }
 const_assert_eq!(core::mem::align_of::<FpuRegs>(), FPU_SVE_REGS_ALIGN);
 
@@ -153,47 +246,147 @@ lazy_static! {
         from_fn(|_| Mutex::new(NsSimdContext::default()));
 }
 
-#[derive(Default, Debug)]
-pub struct SveRegs {
-    // lower 128bits of each z register are shared with v
-    // implementation-defined lengh: 128bits~2048bits. get it from zcr_el2
-    pub z: [[u128; NUM_VECTOR_REGS]; MAX_VQ as usize],
-    // Each predicate register is 1/8 of the Zx length.
-    pub p: [[u16; NUM_PREDICATE_REGS]; MAX_VQ as usize],
-    pub ffr: [u16; MAX_VQ as usize],
+/// Calculate the number of pages needed for a given size in bytes
+fn pages_for_size(size: usize) -> usize {
+    size.div_ceil(PAGE_SIZE)
+}
+
+/// Calculate the SVE register data size in bytes for a given VQ
+/// (Vector Quadwords). VQ is the zero-based maximum number of 128-bit
+/// quadwords in a Z register, i.e. VL = (VQ + 1) * 128 bits.
+/// The SVE data consists of:
+/// - 32 Z registers, each of size (VQ + 1) * 16 bytes
+/// - 16 P registers, each of size (VQ + 1) * 2 bytes
+/// - 1 FFR register, of size (VQ+1) * 2 bytes
+fn sve_data_size(vq: u64) -> usize {
+    // VL in bytes: (VQ + 1) quadwords of BYTES_PER_QUAD bytes each
+    let vl_bytes = ((vq + 1) as usize) * BYTES_PER_QUAD;
+    // P registers and the FFR are one bit per byte element: VL / 8 bytes
+    let p_reg_size = vl_bytes / BITS_PER_BYTE;
+
+    NUM_VECTOR_REGS * vl_bytes + NUM_PREDICATE_REGS * p_reg_size + p_reg_size
+}
+
+/// Byte offset of the P register bank inside the per-REC SVE buffer for a
+/// vector length of `vl_bytes` (`MUL VL` layout: the P bank immediately
+/// follows the Z bank). Shared by `save_rec_sve()` and `restore_rec_sve()`
+/// so both agree on the buffer layout.
+const fn rec_sve_p_offset(vl_bytes: usize) -> usize {
+    NUM_VECTOR_REGS * vl_bytes
+}
+
+/// Byte offset of the FFR inside the per-REC SVE buffer (immediately after
+/// the P register bank) for a vector length of `vl_bytes`.
+const fn rec_sve_ffr_offset(vl_bytes: usize) -> usize {
+    rec_sve_p_offset(vl_bytes) + NUM_PREDICATE_REGS * (vl_bytes / BITS_PER_BYTE)
+}
+
+/// Calculate the total number of 4KB AUX granules needed for a REC when SVE
+/// is enabled for a given VQ (covering both the `SimdSysRegs` header at
+/// offset 0 and the SVE register data at `SimdContext::FPU_SVE_REGS_OFFSET`).
+fn sve_pages_needed(vq: u64) -> usize {
+    pages_for_size(SimdContext::FPU_SVE_REGS_OFFSET + sve_data_size(vq))
+}
+
+/// Total size in bytes of the storage used for the FP/SIMD (non-SVE) context:
+/// the `SimdSysRegs` header followed by the `FpuRegs` (`Q0..Q31`) bank at
+/// `SimdContext::FPU_SVE_REGS_OFFSET`.
+fn fpu_data_size() -> usize {
+    SimdContext::FPU_SVE_REGS_OFFSET + core::mem::size_of::<FpuRegs>()
+}
+
+/// Calculate the total number of 4KB AUX granules needed for a REC when SVE
+/// is disabled (covering both the `SimdSysRegs` header at offset 0 and the
+/// `FpuRegs` register data at `SimdContext::FPU_SVE_REGS_OFFSET`).
+fn fpu_pages_needed() -> usize {
+    pages_for_size(fpu_data_size())
+}
+
+/// AUX granules that are always reserved for a REC on top of the granules
+/// that hold the SIMD context itself (see [`aux_granules_needed`]).
+/// They are needed to pass ACS tests.
+const EXTRA_AUX_GRANULES_COUNT: usize = 1;
+
+/// Calculate the total number of AUX granules a REC needs for its SIMD
+/// context, i.e. the value reported by `RMI_REC_AUX_COUNT` and validated
+/// against `params.num_aux` at `RMI_REC_CREATE`.
+///
+/// It is [`EXTRA_AUX_GRANULES_COUNT`] plus the number of granules needed to
+/// store the SIMD context in the contiguous AUX mapping:
+/// - SVE enabled: the `SimdSysRegs` header plus the SVE `Z`/`P`/`FFR` banks
+///   for the configured VQ (see [`sve_pages_needed`]).
+/// - SVE disabled: the `SimdSysRegs` header plus the `FpuRegs` (`Q0..Q31`)
+///   bank (see [`fpu_pages_needed`]).
+pub fn aux_granules_needed(simd_cfg: &SimdConfig) -> usize {
+    let simd_pages = if simd_cfg.sve_en {
+        sve_pages_needed(simd_cfg.sve_vq)
+    } else {
+        fpu_pages_needed()
+    };
+
+    EXTRA_AUX_GRANULES_COUNT + simd_pages
+}
+
+/// Total size in bytes of the SIMD context region (`SimdSysRegs` header at
+/// offset 0 plus the FPU or SVE register area at `SimdContext::FPU_SVE_REGS_OFFSET`).
+fn simd_context_size(simd_cfg: &SimdConfig) -> usize {
+    if simd_cfg.sve_en {
+        SimdContext::FPU_SVE_REGS_OFFSET + sve_data_size(simd_cfg.sve_vq)
+    } else {
+        fpu_data_size()
+    }
+}
+
+/// Memory layout (size and 16-byte alignment) required for the SIMD context
+/// region allocated from the REC's [`AuxBumpAllocator`].
+fn simd_context_layout(simd_cfg: &SimdConfig) -> Result<Layout, Error> {
+    Layout::from_size_align(simd_context_size(simd_cfg), FPU_SVE_REGS_ALIGN)
+        .map_err(|_| Error::RmiErrorInput)
 }
 
 // TODO: Save according to the hint in FID with SMCCCv1.3 or v1.4
 
 // SIMD context initialization function
 pub fn init_simd(rec: &mut Rec<'_>) -> Result<(), Error> {
-    let raw_ptr: *const Rd = rec.owner()? as *const Rd;
-    let rd: &Rd = unsafe { raw_ptr.as_ref().expect("REASON") }; // FIXME
-    let simd_cfg = rd.simd_config();
+    let simd_cfg = rec.simd_config()?;
+    let sve_en = simd_cfg.sve_en;
+    let sve_vq = simd_cfg.sve_vq;
+    let sme_en_cfg = simd_cfg.sme_en;
+    let layout = simd_context_layout(simd_cfg)?;
+
+    let simd_ptr = rec.alloc_aux(layout).ok_or_else(|| {
+        error!("Failed to allocate SIMD context from REC AUX bump allocator");
+        Error::RmiErrorInput
+    })?;
+    let simd_va = VirtAddr::from(simd_ptr.as_ptr() as usize);
 
     let mut zcr_el2: u64 = 0;
     let mut svcr: u64 = 0;
 
-    rec.context.simd.is_used = false;
-    rec.context.simd.is_saved = false;
-    rec.context.simd.cfg.sve_en = simd_cfg.sve_en;
-    rec.context.simd.cfg.sve_vq = simd_cfg.sve_vq;
-    rec.context.simd.cfg.sme_en = simd_cfg.sme_en;
+    let rec_simd_ctx = &mut rec.context.simd;
+    rec_simd_ctx.simd_va = Some(simd_va);
+    rec_simd_ctx.is_used = false;
+    rec_simd_ctx.is_saved = false;
+    rec_simd_ctx.cfg.sve_en = sve_en;
+    rec_simd_ctx.cfg.sve_vq = sve_vq;
+    rec_simd_ctx.cfg.sme_en = sme_en_cfg;
 
     // Initialize SVE related fields and config registers
-    if simd_cfg.sve_en {
-        zcr_el2 = ZCR_EL2::LEN.val(simd_cfg.sve_vq).value;
+    if sve_en {
+        zcr_el2 = ZCR_EL2::LEN.val(sve_vq).value;
     }
-    if simd_cfg.sme_en {
+    if sme_en_cfg {
         svcr = 0;
     }
 
-    let simd_aux = rec.aux(RecAuxIndex::SIMD as usize) as usize;
-    let mut simd_granule = get_granule_if!(simd_aux, GranuleState::RecAux)?;
-    debug!("RecAux granule for simd at 0x{:x}", simd_aux);
-    let mut simd_regs = simd_granule.new_uninit_with::<SimdRegister>(SimdRegister::new())?;
-    simd_regs.sys_regs.zcr_el2 = zcr_el2;
-    simd_regs.sys_regs.svcr = svcr;
+    // The SimdSysRegs header lives at offset 0 of `simd_va` (allocated from the
+    // REC's AuxBumpAllocator with 16-byte alignment by `rec.alloc_aux()`), and
+    // the FPU/SVE register area at `simd_va + SimdContext::FPU_SVE_REGS_OFFSET`
+    // is already zero-initialized from granule delegation.
+    let rec_simd_regs = unsafe { rec_simd_ctx.sys_regs_mut() };
+    *rec_simd_regs = SimdSysRegs::new();
+    rec_simd_regs.zcr_el2 = zcr_el2;
+    rec_simd_regs.svcr = svcr;
     Ok(())
 }
 
@@ -489,25 +682,56 @@ unsafe fn restore_ns_sve(sve: &NsSveRegs, restore_ffr: bool) {
     }
 }
 
+/// # Safety
+///
+/// Save the REC's SVE register state into the per-REC SVE buffer, which is
+/// backed by a contiguous multi-granule virtual address mapping.
+/// The SVE register data is stored at the contiguous VA using VL-based addressing,
+/// which works because the multi-granule mapping provides a contiguous address range.
+/// The layout at `sve_va` is: Z registers (32 * VL bytes), then P registers (16 * VL/8 bytes),
+/// then FFR (VL/8 bytes).
 #[allow(aarch64_softfloat_neon)]
 #[inline(never)]
 #[target_feature(enable = "sve")]
-unsafe fn save_sve(sve: &mut SveRegs, save_ffr: bool) {
-    let addr_z: u64 = sve.z.as_ptr() as u64;
-    let addr_p: u64 = sve.p.as_ptr() as u64;
-    let addr_ffr: u64 = core::ptr::addr_of!(sve.ffr) as u64;
+unsafe fn save_rec_sve(sve_va: VirtAddr, save_ffr: bool) {
+    let sve_va_usize = sve_va.as_usize();
+    // P registers start right after the Z registers: NUM_VECTOR_REGS * VL
+    // bytes after sve_va. The offset depends on the current vector length,
+    // so read VL at runtime with rdvl; rec_sve_p_offset() keeps the save and
+    // restore paths in agreement on the buffer layout.
+    let vl_bytes: u64;
+    unsafe {
+        asm!("rdvl {vl}, #1", vl = out(reg) vl_bytes);
+    }
+    let addr_z: u64 = sve_va_usize as u64;
+    let addr_p: u64 = (sve_va_usize + rec_sve_p_offset(vl_bytes as usize)) as u64;
+    let addr_ffr: u64 = (sve_va_usize + rec_sve_ffr_offset(vl_bytes as usize)) as u64;
     unsafe {
         save_sve_regs(addr_z, addr_p, addr_ffr, save_ffr);
     }
 }
 
+/// # Safety
+///
+/// Restore the REC's SVE register state from the per-REC SVE buffer, which
+/// is backed by a contiguous multi-granule virtual address mapping.
+/// The layout at `sve_va` is: Z registers (32 * VL bytes), then P registers (16 * VL/8 bytes),
+/// then FFR (VL/8 bytes).
 #[allow(aarch64_softfloat_neon)]
 #[inline(never)]
 #[target_feature(enable = "sve")]
-unsafe fn restore_sve(sve: &SveRegs, restore_ffr: bool) {
-    let addr_z: u64 = sve.z.as_ptr() as u64;
-    let addr_p: u64 = sve.p.as_ptr() as u64;
-    let addr_ffr: u64 = core::ptr::addr_of!(sve.ffr) as u64;
+unsafe fn restore_rec_sve(sve_va: VirtAddr, restore_ffr: bool) {
+    let sve_va_usize = sve_va.as_usize();
+    // Compute VL and buffer offsets before loading Z0..Z31 so no Rust integer
+    // computation executes after the SVE registers hold restored REC data.
+    let vl_bytes: u64;
+    unsafe {
+        asm!("rdvl {vl}, #1", vl = out(reg) vl_bytes);
+    }
+    let addr_z: u64 = sve_va_usize as u64;
+    let addr_p: u64 = (sve_va_usize + rec_sve_p_offset(vl_bytes as usize)) as u64;
+    let addr_ffr: u64 = (sve_va_usize + rec_sve_ffr_offset(vl_bytes as usize)) as u64;
+
     unsafe {
         restore_sve_regs(addr_z, addr_p, addr_ffr, restore_ffr);
     }
@@ -543,15 +767,7 @@ fn preserve_ffr(svcr: u64) -> bool {
 // See exception/trap.rs.
 pub fn restore_state_lazy(rec: &Rec<'_>) {
     let rec_simd_ctx = &rec.context.simd;
-    let simd_aux = rec.aux(RecAuxIndex::SIMD as usize) as usize;
-    let simd_granule = match get_granule_if!(simd_aux, GranuleState::RecAux) {
-        Ok(guard) => guard,
-        Err(_e) => {
-            error!("Unable to get RecAux granule at 0x{:x}", simd_aux);
-            return;
-        }
-    };
-    let rec_simd = simd_granule.content::<SimdRegister>().unwrap();
+    let rec_simd_regs = unsafe { rec_simd_ctx.sys_regs() };
     let mut ns_simd_ctx = NS_SIMD_CTX[get_cpu_id()].lock();
 
     // Disable simd traps during the context mgmt and synchronize before
@@ -606,7 +822,7 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
     // before restoring REC registers, since toggling SVCR.SM zeroes the
     // vector registers in hardware.
     if sme_en() {
-        SVCR.set(rec_simd.sys_regs.svcr);
+        SVCR.set(rec_simd_regs.svcr);
         isb();
     }
 
@@ -616,22 +832,22 @@ pub fn restore_state_lazy(rec: &Rec<'_>) {
     if rec_simd_ctx.cfg.sve_en {
         // Install the REC's VL cap in ZCR_EL2 and the REC's ZCR_EL1 now
         // (after NS SVE state has been saved at SVE_VQ_ARCH_MAX) and
-        // synchronize before restore_sve() derives its MUL VL strides.
-        ZCR_EL2.set(rec_simd.sys_regs.zcr_el2);
-        ZCR_EL1.set(rec_simd.sys_regs.zcr_el12);
+        // synchronize before restore_rec_sve() derives its MUL VL strides.
+        ZCR_EL2.set(rec_simd_regs.zcr_el2);
+        ZCR_EL1.set(rec_simd_regs.zcr_el12);
         isb();
         unsafe {
             let restore_ffr = true; // Since Realm is not supported with SME, it's always true.
-            restore_sve(&rec_simd.sve, restore_ffr);
-            restore_fpu_crsr(&rec_simd.sys_regs);
+            restore_rec_sve(rec_simd_ctx.fpu_sve_regs_va(), restore_ffr);
+            restore_fpu_crsr(rec_simd_regs);
         }
         // Leave TFP=0 and TZ=0 for the Realm, but re-enable TSM=1 since SME
         // is not supported for Realms.
         CPTR_EL2.write(CPTR_EL2::TAM::SET + CPTR_EL2::TSM::SET);
     } else {
         unsafe {
-            restore_fpu(&rec_simd.fpu);
-            restore_fpu_crsr(&rec_simd.sys_regs);
+            restore_fpu(rec_simd_ctx.fpu_regs());
+            restore_fpu_crsr(rec_simd_regs);
         }
         // Leave TFP=0 for the Realm, but keep TZ=1 and TSM=1 so SVE and SME
         // instructions remain trapped for this non-SVE Realm.
@@ -653,7 +869,6 @@ pub fn restore_state(_rec: &Rec<'_>) {
 }
 
 pub fn save_state(rec: &mut Rec<'_>) {
-    let simd_aux = rec.aux(RecAuxIndex::SIMD as usize) as usize;
     let rec_simd_ctx = &mut rec.context.simd;
 
     // Disable SIMD traps for RMM context management (restoring RMM's default
@@ -666,30 +881,22 @@ pub fn save_state(rec: &mut Rec<'_>) {
     }
     // Since FEAT_SME is not for Realms, no need to store SVCR which doesn't change.
 
-    let mut simd_granule = match get_granule_if!(simd_aux, GranuleState::RecAux) {
-        Ok(guard) => guard,
-        Err(_e) => {
-            error!("Unable to get RecAux granule at 0x{:x}", simd_aux);
-            return;
-        }
-    };
-    let mut rec_simd = simd_granule.content_mut::<SimdRegister>().unwrap();
     let ns_simd_ctx = NS_SIMD_CTX[get_cpu_id()].lock();
 
     // 1. Save the REC's SIMD/SVE state.
     if rec_simd_ctx.cfg.sve_en {
-        // ZCR_EL2 still holds rec_simd.sys_regs.zcr_el2 here, so save_sve() saves
+        // ZCR_EL2 still holds rec_simd_regs.zcr_el2 here, so save_rec_sve() saves
         // at the REC's configured vector length.
-        rec_simd.sys_regs.zcr_el12 = ZCR_EL1.get();
         unsafe {
+            rec_simd_ctx.sys_regs_mut().zcr_el12 = ZCR_EL1.get();
             let save_ffr = true; // Since FEAT_SME is not for Realms, it's always true.
-            save_sve(&mut rec_simd.sve, save_ffr);
-            save_fpu_crsr(&mut rec_simd.sys_regs);
+            save_rec_sve(rec_simd_ctx.fpu_sve_regs_va(), save_ffr);
+            save_fpu_crsr(rec_simd_ctx.sys_regs_mut());
         }
     } else {
         unsafe {
-            save_fpu(&mut rec_simd.fpu);
-            save_fpu_crsr(&mut rec_simd.sys_regs);
+            save_fpu(rec_simd_ctx.fpu_regs_mut());
+            save_fpu_crsr(rec_simd_ctx.sys_regs_mut());
         }
     }
 
@@ -739,4 +946,224 @@ pub fn save_state(rec: &mut Rec<'_>) {
     // update the context here in advance.
     rec_simd_ctx.is_used = false;
     rec_simd_ctx.is_saved = true;
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::rmi::MAX_REC_AUX_GRANULES;
+
+    #[test]
+    fn test_sve_data_size_and_pages_needed() {
+        // VL = (VQ + 1) * 128 bits
+        // SVE data = 32 * (VQ+1) * 16 + 16 * (VQ+1) * 2 + (VQ+1) * 2 bytes
+        assert_eq!(sve_data_size(0), 546); // VL = 128 bits
+        assert_eq!(sve_data_size(4), 2730); // VL = 640 bits
+        assert_eq!(sve_data_size(7), 4368); // VL = 1024 bits
+        assert_eq!(sve_data_size(15), 8736); // VL = 2048 bits
+
+        // Total number of 4KB AUX granules needed (SimdSysRegs header + SVE data)
+        assert_eq!(sve_pages_needed(0), 1);
+        assert_eq!(sve_pages_needed(4), 1);
+        assert_eq!(sve_pages_needed(6), 1);
+        assert_eq!(sve_pages_needed(7), 2);
+        assert_eq!(sve_pages_needed(13), 2);
+        assert_eq!(sve_pages_needed(15), 3);
+    }
+
+    #[test]
+    fn test_aux_granule_layout_contract() {
+        // The FPU/SVE register area (FpuRegs or SVE data) must start right
+        // after the SimdSysRegs header in the contiguous AUX mapping, aligned
+        // to FPU_SVE_REGS_ALIGN (16 bytes).
+        assert_eq!(SimdContext::FPU_SVE_REGS_OFFSET, 0x30);
+        assert!(SimdContext::FPU_SVE_REGS_OFFSET >= core::mem::size_of::<SimdSysRegs>());
+        assert_eq!(SimdContext::FPU_SVE_REGS_OFFSET % FPU_SVE_REGS_ALIGN, 0);
+        // When SVE is disabled, SimdSysRegs + FpuRegs must fit in 1 AUX granule.
+        assert!(SimdContext::FPU_SVE_REGS_OFFSET + core::mem::size_of::<FpuRegs>() <= PAGE_SIZE);
+    }
+
+    #[test]
+    fn test_rec_sve_offsets_and_bounds() {
+        for vq in 0..=SVE_VQ_ARCH_MAX {
+            let vl_bytes = (vq as usize + 1) * BYTES_PER_QUAD;
+            let p_reg_size = vl_bytes / BITS_PER_BYTE;
+
+            // Z0..Z31 occupy 32 * VL bytes at offset 0; P0..P15 start right after.
+            let p_offset = rec_sve_p_offset(vl_bytes);
+            assert_eq!(p_offset, 32 * vl_bytes);
+
+            // P0..P15 occupy 16 * (VL / 8) = 2 * VL bytes; FFR starts right after.
+            let ffr_offset = rec_sve_ffr_offset(vl_bytes);
+            assert_eq!(ffr_offset, 34 * vl_bytes);
+            assert_eq!(ffr_offset - p_offset, NUM_PREDICATE_REGS * p_reg_size);
+
+            // End of FFR must match sve_data_size(vq) and fit in sve_pages_needed(vq) granules.
+            let sve_end = ffr_offset + p_reg_size;
+            assert_eq!(sve_end, sve_data_size(vq));
+            assert!(SimdContext::FPU_SVE_REGS_OFFSET + sve_end <= sve_pages_needed(vq) * PAGE_SIZE);
+        }
+    }
+
+    #[test]
+    fn test_simd_context_accessors_and_offsets() {
+        #[repr(C, align(16))]
+        struct AlignedPage([u8; PAGE_SIZE]);
+
+        let mut page = AlignedPage([0u8; PAGE_SIZE]);
+        let base_addr = page.0.as_mut_ptr() as usize;
+        let mut ctx = SimdContext {
+            simd_va: Some(VirtAddr::from(base_addr)),
+            ..Default::default()
+        };
+
+        assert_eq!(ctx.base_va(), base_addr);
+        assert_eq!(
+            ctx.fpu_sve_regs_va().as_usize(),
+            base_addr + SimdContext::FPU_SVE_REGS_OFFSET
+        );
+
+        let sys_ptr = unsafe { ctx.sys_regs() as *const SimdSysRegs as usize };
+        let fpu_ptr = unsafe { ctx.fpu_regs() as *const FpuRegs as usize };
+        assert_eq!(sys_ptr, base_addr);
+        assert_eq!(fpu_ptr, base_addr + SimdContext::FPU_SVE_REGS_OFFSET);
+        assert!(sys_ptr + core::mem::size_of::<SimdSysRegs>() <= fpu_ptr);
+
+        // Verify writes to SimdSysRegs and FpuRegs do not overlap.
+        unsafe {
+            let sys = ctx.sys_regs_mut();
+            sys.fpcr = 0xDEAD_BEEF_CAFE_BABE;
+            let fpu = ctx.fpu_regs_mut();
+            fpu.q[0] = 0x1122_3344_5566_7788_99AA_BBCC_DDEE_FF00;
+
+            assert_eq!(ctx.sys_regs().fpcr, 0xDEAD_BEEF_CAFE_BABE);
+            assert_eq!(
+                ctx.fpu_regs().q[0],
+                0x1122_3344_5566_7788_99AA_BBCC_DDEE_FF00
+            );
+        }
+    }
+
+    #[test]
+    fn test_simd_context_layout_with_aux_bump_allocator() {
+        use crate::mm::aux_bump_allocator::AuxBumpAllocator;
+
+        // 1. Non-SVE configuration
+        let fpu_cfg = SimdConfig {
+            sve_en: false,
+            sve_vq: 0,
+            sme_en: false,
+        };
+        let fpu_layout = simd_context_layout(&fpu_cfg).unwrap();
+        assert_eq!(fpu_layout.size(), fpu_data_size());
+        assert_eq!(fpu_layout.align(), FPU_SVE_REGS_ALIGN);
+
+        let mut alloc = AuxBumpAllocator::new();
+        let aux_bytes = aux_granules_needed(&fpu_cfg) * PAGE_SIZE;
+        alloc.init(VirtAddr::from(0x2000_0000usize), aux_bytes);
+        let ptr = alloc.alloc_layout(fpu_layout).unwrap();
+        assert_eq!(ptr.as_ptr() as usize, 0x2000_0000);
+        assert_eq!((ptr.as_ptr() as usize) % FPU_SVE_REGS_ALIGN, 0);
+        assert_eq!(alloc.used(), fpu_data_size());
+
+        // 2. All SVE VQ configurations fit and stay 16-byte aligned even after
+        //    an unaligned 1-byte prior allocation in the bump allocator.
+        for vq in 0..=SVE_VQ_ARCH_MAX {
+            let sve_cfg = SimdConfig {
+                sve_en: true,
+                sve_vq: vq,
+                sme_en: false,
+            };
+            let sve_layout = simd_context_layout(&sve_cfg).unwrap();
+            assert_eq!(
+                sve_layout.size(),
+                SimdContext::FPU_SVE_REGS_OFFSET + sve_data_size(vq)
+            );
+            assert_eq!(sve_layout.align(), FPU_SVE_REGS_ALIGN);
+
+            let total_aux_bytes = aux_granules_needed(&sve_cfg) * PAGE_SIZE;
+            alloc.init(VirtAddr::from(0x2000_0000usize), total_aux_bytes);
+
+            // Simulate a 1-byte allocation before init_simd() to verify alignment preservation
+            let _ = alloc.alloc::<u8>().unwrap();
+            let simd_ptr = alloc.alloc_layout(sve_layout).unwrap();
+            let simd_va = simd_ptr.as_ptr() as usize;
+            assert_eq!(simd_va % FPU_SVE_REGS_ALIGN, 0);
+            assert_eq!(
+                (simd_va + SimdContext::FPU_SVE_REGS_OFFSET) % FPU_SVE_REGS_ALIGN,
+                0
+            );
+        }
+    }
+
+    #[test]
+    fn test_ns_sve_regs_layout() {
+        let max_vl_bytes = (SVE_VQ_ARCH_MAX as usize + 1) * BYTES_PER_QUAD;
+        let ns_sve = NsSveRegs::default();
+
+        assert_eq!(core::mem::align_of::<NsSveRegs>(), FPU_SVE_REGS_ALIGN);
+        assert_eq!(
+            core::mem::size_of_val(&ns_sve.z),
+            rec_sve_p_offset(max_vl_bytes)
+        );
+        assert_eq!(
+            core::mem::size_of_val(&ns_sve.p),
+            rec_sve_ffr_offset(max_vl_bytes) - rec_sve_p_offset(max_vl_bytes)
+        );
+        assert_eq!(
+            core::mem::size_of_val(&ns_sve.ffr),
+            max_vl_bytes / BITS_PER_BYTE
+        );
+    }
+
+    #[test]
+    fn test_fpu_pages_needed() {
+        // SimdSysRegs header (48 bytes) + FpuRegs (32 * 16 = 512 bytes) start
+        // at offset 0 of the contiguous AUX mapping, so they always fit in a
+        // single 4KB granule.
+        assert_eq!(fpu_data_size(), SimdContext::FPU_SVE_REGS_OFFSET + 512);
+        assert_eq!(fpu_pages_needed(), 1);
+    }
+
+    #[test]
+    fn test_aux_granules_needed() {
+        // SVE disabled: extra granule + the granule holding the SimdSysRegs
+        // header and the FpuRegs bank.
+        let mut cfg = SimdConfig {
+            sve_en: false,
+            sve_vq: 0,
+            sme_en: false,
+        };
+        assert_eq!(
+            aux_granules_needed(&cfg),
+            EXTRA_AUX_GRANULES_COUNT + fpu_pages_needed()
+        );
+
+        // SVE enabled: extra granule + the granules holding the SimdSysRegs
+        // header and the SVE register data.
+        for vq in 0..=SVE_VQ_ARCH_MAX {
+            cfg.sve_en = true;
+            cfg.sve_vq = vq;
+            assert_eq!(
+                aux_granules_needed(&cfg),
+                EXTRA_AUX_GRANULES_COUNT + sve_pages_needed(vq)
+            );
+        }
+    }
+
+    #[test]
+    fn test_rec_aux_count_never_exceeds_max() {
+        let mut cfg = SimdConfig {
+            sve_en: false,
+            sve_vq: 0,
+            sme_en: false,
+        };
+        assert!(aux_granules_needed(&cfg) <= MAX_REC_AUX_GRANULES);
+
+        cfg.sve_en = true;
+        for vq in 0..=SVE_VQ_ARCH_MAX {
+            cfg.sve_vq = vq;
+            assert!(aux_granules_needed(&cfg) <= MAX_REC_AUX_GRANULES);
+        }
+    }
 }

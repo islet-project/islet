@@ -12,6 +12,7 @@ use crate::listen;
 use crate::measurement::HashContext;
 use crate::realm::rd::{Rd, State};
 use crate::rec::context::{set_reg, RegOffset};
+use crate::rec::simd::aux_granules_needed;
 use crate::rec::State as RecState;
 use crate::rec::{max_recs_order, Rec, RmmRecEmulatableAbort::NotEmulatableAbort};
 use crate::rmi;
@@ -75,6 +76,24 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         if rec_index != rd.rec_index() {
             return Err(Error::RmiErrorInput);
         }
+
+        // The host must supply the exact number of AUX granules required for
+        // for the Rec. In this case the total size of AUX granules should be enough
+        // to hold the SIMD context layout, which is determined by the Rd's SIMD configuration.
+
+        // Note, that in the future the REC may require additional AUX granules for other purposes,
+        // and the host must supply the exact number of AUX granules required for the REC.
+        let simd_cfg = rd.simd_config();
+        let expected_aux_count = aux_granules_needed(simd_cfg);
+
+        if params.num_aux != expected_aux_count as u64 {
+            error!(
+                "expected_aux_count {} != params.num_aux {}",
+                expected_aux_count, params.num_aux
+            );
+            return Err(Error::RmiErrorInput);
+        }
+
         // set Rec_state and grab the lock for Rec granule
         let mut rec_granule = get_granule_if!(rec, GranuleState::Delegated)?;
         #[cfg(not(kani))]
@@ -85,14 +104,17 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             Ok((vcpuid, vttbr, vmpidr)) => {
                 ret[1] = vcpuid;
 
-                // Transit granule status of param.aux to RecAux from Delegated
-                // before access within rec.init().
-                for i in 0..rmi::MAX_REC_AUX_GRANULES {
+                // Transit auxilary granules from Delegated to RecAux state.
+                for i in 0..params.num_aux as usize {
                     let aux = params.aux[i] as usize;
-                    rmm.page_table.map(aux, true);
                     let mut aux_granule = get_granule_if!(aux, GranuleState::Delegated)?;
                     set_granule(&mut aux_granule, GranuleState::RecAux)?;
                 }
+
+                // Setup should happen before Rec::init() to ensure that the contiguous mapping of AUX 
+                // granules is established and the bump allocator is initialized before the REC starts using it.
+                rec.setup_aux_memory(&rmm.page_table, &params.aux, params.num_aux as usize)?;
+
                 rec.init(owner, vcpuid, params.flags, params.aux, vttbr, vmpidr)?;
             }
             Err(_) => return Err(Error::RmiErrorInput),
@@ -126,17 +148,25 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
     listen!(rmi, rmi::REC_DESTROY, |arg, _ret, rmm| {
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
 
-        let rec = rec_granule.content::<Rec<'_>>()?;
+        let mut rec = rec_granule.content_mut::<Rec<'_>>()?;
         if rec.get_state() == RecState::Running {
             return Err(Error::RmiErrorRec);
         }
 
+        let rd = rec.owner()?;
+
         #[cfg(not(kani))]
-        for i in 0..rmi::MAX_REC_AUX_GRANULES {
-            let rec_aux = rec.aux(i) as usize;
-            let mut rec_aux_granule = get_granule_if!(rec_aux, GranuleState::RecAux)?;
-            set_granule(&mut rec_aux_granule, GranuleState::Delegated)?;
-            rmm.page_table.unmap(rec_aux);
+        {
+            let num_granules = rec.num_aux_granules();
+            rec.cleanup_aux_memory(&rmm.page_table);
+            for i in 0..num_granules {
+                let rec_aux = rec.aux(i) as usize;
+                let mut rec_aux_granule = get_granule_if!(rec_aux, GranuleState::RecAux)?;
+                rmm.page_table.map(rec_aux, true);
+                let res = set_granule(&mut rec_aux_granule, GranuleState::Delegated);
+                rmm.page_table.unmap(rec_aux);
+                res?;
+            }
         }
         #[cfg(kani)]
         {
@@ -149,7 +179,6 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             set_granule(&mut rec_aux_granule, GranuleState::Delegated)?;
         }
 
-        let rd = rec.owner()?;
         #[cfg(kani)]
         {
             // XXX: the below can be guaranteed by Rec's invariants instead
@@ -377,7 +406,7 @@ mod test {
     fn rmi_rec_create_positive() {
         let rd = realm_create();
         rec_create(rd, IDX_REC1, IDX_REC1_PARAMS, IDX_REC1_AUX);
-        rec_destroy(IDX_REC1, IDX_REC1_AUX);
+        rec_destroy(rd, IDX_REC1, IDX_REC1_AUX);
         realm_destroy(rd);
 
         miri_teardown();

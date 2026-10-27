@@ -10,12 +10,12 @@ use super::Rec;
 use crate::asm::isb;
 use crate::config::NUM_OF_CPU;
 use crate::cpu::get_cpu_id;
-use crate::granule::GranuleState;
-use crate::realm::rd::Rd;
-use crate::rec::RecAuxIndex;
+use crate::granule::GRANULE_SIZE;
 use crate::rmi::error::Error;
 use crate::simd::{sme_en, sve_en as host_sve_en, SimdConfig, MAX_VQ};
-use crate::{get_granule, get_granule_if};
+use core::alloc::Layout;
+use safe_abstraction::raw_ptr::assume_safe;
+use vmsa::address::VirtAddr;
 
 // SIMD context structure
 #[derive(Default, Debug)]
@@ -24,6 +24,9 @@ pub struct SimdContext {
     pub is_saved: bool,
 
     pub cfg: SimdConfig,
+    /// Virtual address of the `SimdRegister` allocated from the REC's
+    /// contiguous AUX granules mapping.
+    pub simd_va: Option<VirtAddr>,
 }
 
 #[derive(Default, Debug)]
@@ -89,20 +92,24 @@ pub struct SveRegs {
 
 // TODO: Save according to the hint in FID with SMCCCv1.3 or v1.4
 
+/// Number of 4 KiB AUX granules required to store a REC's [`SimdRegister`].
+pub const SIMD_AUX_GRANULES: usize = core::mem::size_of::<SimdRegister>().div_ceil(GRANULE_SIZE);
+
+/// Returns the number of AUX granules required by a REC.
+pub const fn aux_granules_needed(_simd_cfg: &SimdConfig) -> usize {
+    SIMD_AUX_GRANULES
+}
+
 // SIMD context initialization function
 pub fn init_simd(rec: &mut Rec<'_>) -> Result<(), Error> {
-    let raw_ptr: *const Rd = rec.owner()? as *const Rd;
-    let rd: &Rd = unsafe { raw_ptr.as_ref().expect("REASON") }; // FIXME
-    let simd_cfg = rd.simd_config();
+    let simd_cfg = *rec.simd_config()?;
 
     let mut zcr_el2: u64 = 0;
     let mut svcr: u64 = 0;
 
     rec.context.simd.is_used = false;
     rec.context.simd.is_saved = false;
-    rec.context.simd.cfg.sve_en = simd_cfg.sve_en;
-    rec.context.simd.cfg.sve_vq = simd_cfg.sve_vq;
-    rec.context.simd.cfg.sme_en = simd_cfg.sme_en;
+    rec.context.simd.cfg = simd_cfg;
 
     // Initialize SVE related fields and config registers
     if simd_cfg.sve_en {
@@ -112,12 +119,20 @@ pub fn init_simd(rec: &mut Rec<'_>) -> Result<(), Error> {
         svcr = 0;
     }
 
-    let simd_aux = rec.aux(RecAuxIndex::SIMD as usize) as usize;
-    let mut simd_granule = get_granule_if!(simd_aux, GranuleState::RecAux)?;
-    debug!("RecAux granule for simd at 0x{:x}", simd_aux);
-    let mut simd_regs = simd_granule.new_uninit_with::<SimdRegister>(SimdRegister::new())?;
+    let ptr = rec
+        .alloc_aux(Layout::new::<SimdRegister>())
+        .ok_or(Error::RmiErrorInput)?;
+    let simd_va = VirtAddr::from(ptr.as_ptr() as usize);
+    debug!(
+        "Allocated SimdRegister in AUX mapping at {:#x}",
+        simd_va.as_usize()
+    );
+
+    let mut simd_regs =
+        assume_safe::<SimdRegister>(simd_va.as_usize()).or(Err(Error::RmiErrorInput))?;
     simd_regs.sve.zcr_el2 = zcr_el2;
     simd_regs.svcr = svcr;
+    rec.context.simd.simd_va = Some(simd_va);
     Ok(())
 }
 
@@ -414,15 +429,14 @@ fn preserve_ffr(svcr: u64) -> bool {
 // See exception/trap.rs.
 pub fn restore_state_lazy(rec: &Rec<'_>) {
     let rec_simd_ctx = &rec.context.simd;
-    let simd_aux = rec.aux(RecAuxIndex::SIMD as usize) as usize;
-    let simd_granule = match get_granule_if!(simd_aux, GranuleState::RecAux) {
-        Ok(guard) => guard,
-        Err(_e) => {
-            error!("Unable to get RecAux granule at 0x{:x}", simd_aux);
-            return;
-        }
+    let Some(simd_va) = rec_simd_ctx.simd_va else {
+        error!("REC SIMD context VA is not initialized");
+        return;
     };
-    let rec_simd = simd_granule.content::<SimdRegister>().unwrap();
+    let Ok(rec_simd) = assume_safe::<SimdRegister>(simd_va.as_usize()) else {
+        error!("Unable to access SimdRegister at {:#x}", simd_va.as_usize());
+        return;
+    };
     let mut ns_simd = NS_SIMD[get_cpu_id()].lock();
 
     // Disable simd traps during the context mgmt and synchronize before
@@ -524,7 +538,6 @@ pub fn restore_state(_rec: &Rec<'_>) {
 }
 
 pub fn save_state(rec: &mut Rec<'_>) {
-    let simd_aux = rec.aux(RecAuxIndex::SIMD as usize) as usize;
     let rec_simd_ctx = &mut rec.context.simd;
 
     // Disable SIMD traps for RMM context management (restoring RMM's default
@@ -537,14 +550,14 @@ pub fn save_state(rec: &mut Rec<'_>) {
     }
     // Since FEAT_SME is not for Realms, no need to store SVCR which doesn't change.
 
-    let mut simd_granule = match get_granule_if!(simd_aux, GranuleState::RecAux) {
-        Ok(guard) => guard,
-        Err(_e) => {
-            error!("Unable to get RecAux granule at 0x{:x}", simd_aux);
-            return;
-        }
+    let Some(simd_va) = rec_simd_ctx.simd_va else {
+        error!("REC SIMD context VA is not initialized");
+        return;
     };
-    let mut rec_simd = simd_granule.content_mut::<SimdRegister>().unwrap();
+    let Ok(mut rec_simd) = assume_safe::<SimdRegister>(simd_va.as_usize()) else {
+        error!("Unable to access SimdRegister at {:#x}", simd_va.as_usize());
+        return;
+    };
     let ns_simd = NS_SIMD[get_cpu_id()].lock();
 
     // 1. Save the REC's SIMD/SVE state.

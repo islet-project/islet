@@ -75,9 +75,12 @@ pub fn rec_create(rd: usize, idx_rec: usize, idx_rec_params: usize, idx_rec_aux_
     let ret = rmi::<GRANULE_DELEGATE>(&[rec]);
     assert_eq!(ret[0], SUCCESS);
 
+    // RMI_REC_AUX_COUNT returns the number of AUX granules required to hold a
+    // REC's SimdRegister in the contiguous AUX mapping (see aux_granules_needed()
+    // in rec::simd), rather than the architectural upper bound MAX_REC_AUX_GRANULES.
     let ret = rmi::<REC_AUX_COUNT>(&[rd]);
     assert_eq!(ret[0], SUCCESS);
-    assert_eq!(ret[1], MAX_REC_AUX_GRANULES);
+    assert!(ret[1] > 0 && ret[1] <= MAX_REC_AUX_GRANULES);
 
     let aux_count = ret[1];
     unsafe {
@@ -100,7 +103,11 @@ pub fn rec_create(rd: usize, idx_rec: usize, idx_rec_params: usize, idx_rec_aux_
     assert_eq!(ret[0], SUCCESS);
 }
 
-pub fn rec_destroy(idx_rec: usize, idx_rec_aux_start: usize) {
+/// Destroys a REC created by `rec_create()` and undelegates the REC granule
+/// together with the AUX granules that were supplied for its SIMD context.
+/// `rd` is needed to query RMI_REC_AUX_COUNT, which reports how many AUX
+/// granules `rec_create()` has delegated for this Realm.
+pub fn rec_destroy(rd: usize, idx_rec: usize, idx_rec_aux_start: usize) {
     let rec = granule_addr(idx_rec);
     let ret = rmi::<REC_DESTROY>(&[rec]);
     assert_eq!(ret[0], SUCCESS);
@@ -108,7 +115,11 @@ pub fn rec_destroy(idx_rec: usize, idx_rec_aux_start: usize) {
     let ret = rmi::<GRANULE_UNDELEGATE>(&[rec]);
     assert_eq!(ret[0], SUCCESS);
 
-    for idx in 0..MAX_REC_AUX_GRANULES {
+    let ret = rmi::<REC_AUX_COUNT>(&[rd]);
+    assert_eq!(ret[0], SUCCESS);
+    assert!(ret[1] > 0 && ret[1] <= MAX_REC_AUX_GRANULES);
+
+    for idx in 0..ret[1] {
         let mocking_addr = granule_addr(idx + idx_rec_aux_start);
         let ret = rmi::<GRANULE_UNDELEGATE>(&[mocking_addr]);
         assert_eq!(ret[0], SUCCESS);
@@ -329,8 +340,8 @@ pub mod mock {
         }
 
         pub fn realm_teardown(rd: usize) {
-            rec_destroy(IDX_REC1, IDX_REC1_AUX);
-            rec_destroy(IDX_REC2, IDX_REC2_AUX);
+            rec_destroy(rd, IDX_REC1, IDX_REC1_AUX);
+            rec_destroy(rd, IDX_REC2, IDX_REC2_AUX);
             realm_destroy(rd);
         }
     }

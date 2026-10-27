@@ -29,13 +29,6 @@ use vmsa::guard::Content;
 
 const MAX_RECS_ORDER_VALUE: u64 = 4;
 
-#[derive(Copy, Clone, Debug)]
-pub enum RecAuxIndex {
-    SIMD = 0,
-    PMU = 1,
-    Undefined,
-}
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum RmmRecAttestState {
     AttestInProgress,
@@ -314,6 +307,11 @@ impl Rec<'_> {
         Ok(owner.pmu_config())
     }
 
+    pub fn simd_config(&self) -> Result<&crate::simd::SimdConfig, Error> {
+        let owner = self.get_owner()?;
+        Ok(owner.simd_config())
+    }
+
     /// Maps all AUX granules (`aux_granules[0..num_aux]`) into a single contiguous
     /// virtual address range and initializes the REC's [`AuxBumpAllocator`] over it.
     pub fn setup_aux_memory(
@@ -366,6 +364,7 @@ impl Rec<'_> {
     /// Resets the REC's [`AuxBumpAllocator`] and unmaps the contiguous AUX granules mapping.
     pub fn cleanup_aux_memory(&mut self, page_table: &PageTable) {
         self.aux_allocator.reset();
+        self.context.simd.simd_va = None;
         if let Some(va) = self.aux_va_start.take() {
             if page_table.unmap_multi_granule(va) {
                 debug!(

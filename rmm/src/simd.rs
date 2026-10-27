@@ -11,17 +11,14 @@ use lazy_static::lazy_static;
 const ZCR_EL2_LEN_WIDTH: u64 = 4;
 const SVE_VQ_ARCH_MAX: u64 = (1 << ZCR_EL2_LEN_WIDTH) - 1;
 const QUARD_WORD: u64 = 128;
-// Note: Limit maximun vq to 4 to avoid exceeding a page boundary.
-// Currunt rmm implmentation maps a physical page to a virtual address
-// using its physical address (i.e. identical mapping).
-// Discontiguous Aux granules cannot not be accessed contiguously
-// in their virtual address. For this reason, limit vq up to 4(~2184 bytes).
-// Z regs = 16bytes * 32 regs * 4 vq
-// P regs = 2 bytes * 16 regs * 4 vq
-// FFR reg = 2 bytes * 4 vq
-pub const MAX_VQ: u64 = 4;
+// Maximum number of 128-bit vector quadwords supported by the SVE architecture.
+// ZCR_EL2.LEN is a 4-bit field (0..=15), so a Z register holds up to 16 quadwords
+// (2048 bits). Because a REC's AUX granules are mapped into a contiguous virtual
+// address range, SimdRegister can span multiple granules and support the full
+// architectural vector length up to 2048 bits.
+pub const MAX_VQ: u64 = SVE_VQ_ARCH_MAX + 1;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone, Copy)]
 // SIMD configuration structure
 pub struct SimdConfig {
     // SVE enabled flag
@@ -72,7 +69,7 @@ lazy_static! {
                 ZCR_EL2.set(orig_zcr);
                 isb();
                 sve_vq = ((vl_b << 3) / QUARD_WORD) - 1;
-                if sve_vq > MAX_VQ {
+                if sve_vq >= MAX_VQ {
                     sve_vq = MAX_VQ - 1;
                 }
                 sve_en = true;

@@ -14,7 +14,7 @@ cbindgen = "0.24.0"
 bincode = "1.0"
 cfg-if = "1.0"
 hex = "*"
-openssl = "0.10.60"
+openssl = "0.10.66"
 rust-rsi = { git = "https://github.com/islet-project/rust-rsi.git" }
 serde = { version = "1.0", features = ["derive"] }
 zeroize = "*"

@@ -5,7 +5,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use ciborium::{ser, Value};
 use coset::{iana, AsCborValue, CoseKeyBuilder, CoseSign1, CoseSign1Builder, HeaderBuilder};
-use ecdsa::{elliptic_curve::sec1::ToEncodedPoint, signature::Signer};
+use ecdsa::{elliptic_curve::sec1::ToSec1Point, signature::Signer};
 use key_derivation::{derive_p256_key, derive_p384_key, generate_seed};
 use p384::ecdsa::Signature as P384Signature;
 use sha2::{Digest, Sha256, Sha384, Sha512};
@@ -150,7 +150,7 @@ pub fn ec_public_key_sec1_to_cose(key: &[u8]) -> Vec<u8> {
     let key_cbor_value = match key.len() {
         n if n == p256_sec1_len => {
             let pk = p256::PublicKey::from_sec1_bytes(key).expect("Failed to load p256 sec1 key");
-            let ep = pk.to_encoded_point(false);
+            let ep = pk.to_sec1_point(false);
             let x = ep.x().unwrap().to_owned().to_vec();
             let y = ep.y().unwrap().to_owned().to_vec();
             let key = CoseKeyBuilder::new_ec2_pub_key(iana::EllipticCurve::P_256, x, y).build();
@@ -158,7 +158,7 @@ pub fn ec_public_key_sec1_to_cose(key: &[u8]) -> Vec<u8> {
         }
         n if n == p384_sec1_len => {
             let pk = p384::PublicKey::from_sec1_bytes(key).expect("Failed to load p384 sec1 key");
-            let ep = pk.to_encoded_point(false);
+            let ep = pk.to_sec1_point(false);
             let x = ep.x().unwrap().to_owned().to_vec();
             let y = ep.y().unwrap().to_owned().to_vec();
             let key = CoseKeyBuilder::new_ec2_pub_key(iana::EllipticCurve::P_384, x, y).build();
@@ -166,7 +166,7 @@ pub fn ec_public_key_sec1_to_cose(key: &[u8]) -> Vec<u8> {
         }
         n if n == p521_sec1_len => {
             let pk = p521::PublicKey::from_sec1_bytes(key).expect("Failed to load p521 sec1 key");
-            let ep = pk.to_encoded_point(false);
+            let ep = pk.to_sec1_point(false);
             let x = ep.x().unwrap().to_owned().to_vec();
             let y = ep.y().unwrap().to_owned().to_vec();
             let key = CoseKeyBuilder::new_ec2_pub_key(iana::EllipticCurve::P_521, x, y).build();

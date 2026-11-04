@@ -7,10 +7,10 @@ edition = "2021"
 
 [dependencies]
 key-derivation = { version = "*", path = "../key-derivation" }
-sha2 = { version = "*", default-features = false, features = ["oid"]}
-aes = "*"
-p384 = "*"
-ecdsa = "*"
-hkdf = "*"
+sha2 = { version = "0.10", default-features = false, features = ["oid"]}
+aes = "0.8"
+p384 = "0.14"
+ecdsa = "0.17"
+hkdf = "0.12"
 clean-path = "*"
 clap = { version = "4.3.0", features = ["derive"] }

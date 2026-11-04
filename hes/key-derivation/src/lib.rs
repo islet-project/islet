@@ -7,7 +7,7 @@ use aes::cipher::{BlockEncrypt, KeyInit};
 use aes::Aes256;
 use alloc::{vec, vec::Vec};
 use core::mem;
-use elliptic_curve::ScalarPrimitive;
+use elliptic_curve::NonZeroScalar;
 use p256::U256;
 use p384::elliptic_curve::Curve;
 use p384::U384;
@@ -67,9 +67,9 @@ pub fn generate_seed(context: &[u8], input_key: &[u8], label: &[u8]) -> Vec<u8> 
 /// * `info` - info string used in expand step
 ///
 pub fn derive_p256_key(seed: &[u8], info: Option<&[u8]>) -> p256::SecretKey {
-    let n = p256::NistP256::ORDER;
+    let n = p256::NistP256::ORDER.get();
     let bits = n.bits();
-    let bytes = (bits + 7) / 8;
+    let bytes = ((bits + 7) / 8) as usize;
     let n_2 = n.saturating_sub(&U256::from_u32(2));
 
     // RSS never passes salt. And what passes named as salt in reality is an info.
@@ -98,7 +98,11 @@ pub fn derive_p256_key(seed: &[u8], info: Option<&[u8]>) -> p256::SecretKey {
 
     let private_key_scalar = k.saturating_add(&U256::from_u32(1));
 
-    p256::SecretKey::new(ScalarPrimitive::new(private_key_scalar).unwrap())
+    p256::SecretKey::from(
+        NonZeroScalar::from_uint(private_key_scalar)
+            .into_option()
+            .expect("derived scalar is guaranteed non-zero and below the curve order"),
+    )
 }
 
 /// Derives a Secp384r1 public key using HKDF(Sha256) on a given key material.
@@ -109,9 +113,9 @@ pub fn derive_p256_key(seed: &[u8], info: Option<&[u8]>) -> p256::SecretKey {
 /// * `info` - info string used in expand step
 ///
 pub fn derive_p384_key(seed: &[u8], info: Option<&[u8]>) -> p384::SecretKey {
-    let n = p384::NistP384::ORDER;
+    let n = p384::NistP384::ORDER.get();
     let bits = n.bits();
-    let bytes = (bits + 7) / 8;
+    let bytes = ((bits + 7) / 8) as usize;
     let n_2 = n.saturating_sub(&U384::from_u32(2));
 
     // RSS never passes salt. And what passes named as salt in reality is an info.
@@ -140,5 +144,10 @@ pub fn derive_p384_key(seed: &[u8], info: Option<&[u8]>) -> p384::SecretKey {
 
     let private_key_scalar = k.saturating_add(&U384::from_u32(1));
 
-    p384::SecretKey::new(ScalarPrimitive::new(private_key_scalar).unwrap())
+    p384::SecretKey::from(
+        NonZeroScalar::from_uint(private_key_scalar)
+            .into_option()
+            .expect("derived scalar is guaranteed non-zero and below the curve order"),
+    )
 }
+

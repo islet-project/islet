@@ -1,7 +1,7 @@
 use alloc::{borrow::ToOwned, vec::Vec};
 use ciborium::ser;
 use coset::{iana, AsCborValue, CoseKeyBuilder};
-use ecdsa::elliptic_curve::sec1::ToEncodedPoint;
+use ecdsa::elliptic_curve::sec1::ToSec1Point;
 
 // Convert SEC1 encoded EC2 public `key` to COSE/CBOR
 // Handles only p384 for now, others can be uncommented when needed
@@ -13,7 +13,7 @@ pub fn ec_public_key_sec1_to_cose(key: &[u8]) -> Vec<u8> {
     let key_cbor_value = match key.len() {
         // n if n == p256_sec1_len => {
         //     let pk = p256::PublicKey::from_sec1_bytes(key).expect("Failed to load p256 sec1 key");
-        //     let ep = pk.to_encoded_point(false);
+        //     let ep = pk.to_sec1_point(false);
         //     let x = ep.x().unwrap().to_owned().to_vec();
         //     let y = ep.y().unwrap().to_owned().to_vec();
         //     let key = CoseKeyBuilder::new_ec2_pub_key(iana::EllipticCurve::P_256, x, y).build();
@@ -21,7 +21,7 @@ pub fn ec_public_key_sec1_to_cose(key: &[u8]) -> Vec<u8> {
         // }
         n if n == p384_sec1_len => {
             let pk = p384::PublicKey::from_sec1_bytes(key).expect("Failed to load p384 sec1 key");
-            let ep = pk.to_encoded_point(false);
+            let ep = pk.to_sec1_point(false);
             let x = ep.x().unwrap().to_owned().to_vec();
             let y = ep.y().unwrap().to_owned().to_vec();
             let key = CoseKeyBuilder::new_ec2_pub_key(iana::EllipticCurve::P_384, x, y).build();
@@ -29,7 +29,7 @@ pub fn ec_public_key_sec1_to_cose(key: &[u8]) -> Vec<u8> {
         }
         // n if n == p521_sec1_len => {
         //     let pk = p521::PublicKey::from_sec1_bytes(key).expect("Failed to load p521 sec1 key");
-        //     let ep = pk.to_encoded_point(false);
+        //     let ep = pk.to_sec1_point(false);
         //     let x = ep.x().unwrap().to_owned().to_vec();
         //     let y = ep.y().unwrap().to_owned().to_vec();
         //     let key = CoseKeyBuilder::new_ec2_pub_key(iana::EllipticCurve::P_521, x, y).build();

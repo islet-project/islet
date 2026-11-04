@@ -8,12 +8,12 @@ edition = "2021"
 [dependencies]
 key-derivation = { version = "*", path = "../key-derivation" }
 tinyvec = { version = "*", features = ["rustc_1_55"]}
-sha2 = { version = "*", default-features = false, features = ["oid"]}
-aes = "*"
-p256 = { version = "*", default-features = false, features = ["alloc", "ecdsa"] }
-p384 = { version = "*", default-features = false, features = ["alloc", "ecdsa"] }
-p521 = { version = "*", default-features = false, features = ["alloc", "ecdsa"] }
-ecdsa = "*"
-hkdf = "*"
+sha2 = { version = "0.10", default-features = false, features = ["oid"]}
+aes = "0.8"
+p256 = { version = "0.14", default-features = false, features = ["alloc", "ecdsa"] }
+p384 = { version = "0.14", default-features = false, features = ["alloc", "ecdsa"] }
+p521 = { version = "0.14", default-features = false, features = ["alloc", "ecdsa"] }
+ecdsa = "0.17"
+hkdf = "0.12"
 ciborium = { version = "*", default-features = false, path = "../../third-party/ciborium/ciborium" }
 coset = { version = "*", path = "../../third-party/coset" }

@@ -1,8 +1,8 @@
 use core::ffi::CStr;
 use p384::{
     ecdsa::{signature::Verifier, Signature, VerifyingKey},
-    elliptic_curve::generic_array::GenericArray,
-    EncodedPoint,
+    elliptic_curve::{array::Array, consts::U96},
+    Sec1Point,
 };
 
 use super::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
@@ -85,8 +85,10 @@ impl IsletRealmMetadata {
     }
 
     fn verifying_key(&self) -> core::result::Result<VerifyingKey, Error> {
-        let point = EncodedPoint::from_untagged_bytes(GenericArray::from_slice(&self.public_key));
-        VerifyingKey::from_encoded_point(&point).or(Err(Error::RmiErrorInput))
+        let bytes =
+            Array::<u8, U96>::try_from(&self.public_key[..]).map_err(|_| Error::RmiErrorInput)?;
+        let point = Sec1Point::from_untagged_bytes(&bytes);
+        VerifyingKey::from_sec1_point(&point).or(Err(Error::RmiErrorInput))
     }
 
     fn signature(&self) -> core::result::Result<Signature, Error> {

@@ -23,7 +23,6 @@ fuzz_target!(|data: DataAbortFuzz| {
     let (rec1, run1) = (alloc_granule(IDX_REC1), alloc_granule(IDX_REC1_RUN));
 
     let esr = EsrEl2::new(data.esr)
-        .set_masked_value(EsrEl2::SSE, 0) /* SSE triggers an unimplemented! */
         .set_masked_value(EsrEl2::EC, ESR_EL2_EC_DATA_ABORT)
         .get() as u64;
 

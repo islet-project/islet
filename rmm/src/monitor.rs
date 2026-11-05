@@ -105,8 +105,8 @@ impl Monitor {
             trace!(
                 "RMI: {0: <20} {1:X?} > {2:X?}",
                 rmi::to_str(ctx.cmd),
-                &ctx.arg,
-                &ctx.ret
+                ctx.arg,
+                ctx.ret
             );
 
             // SMC calling convention requires x4-x7 to be preserved unless used.

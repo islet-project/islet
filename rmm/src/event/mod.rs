@@ -95,8 +95,8 @@ impl Context {
         trace!(
             "RSI: {0: <20} {1:X?} > {2:X?}",
             rsi::to_str(self.cmd),
-            &self.arg,
-            &self.ret
+            self.arg,
+            self.ret
         );
         self.arg.clear();
         self.arg.extend_from_slice(&self.ret[..]);

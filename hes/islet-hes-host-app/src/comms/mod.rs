@@ -15,10 +15,10 @@ use islet_hes::{
 use psa_serde::{RSS_VHUK_GET_KEY, RSS_VHUK_SERVICE_HANDLE};
 
 use self::psa_serde::{
-    ExtendRequest, PSAError, PSARequest, PSAResponse, ReadRequest, ReadResponse, PSA_MAX_IOVEC,
-    RSS_DELEGATED_ATTEST_GET_DELEGATED_KEY, RSS_DELEGATED_ATTEST_GET_PLATFORM_TOKEN,
-    RSS_DELEGATED_SERVICE_HANDLE, RSS_MEASURED_BOOT_EXTEND, RSS_MEASURED_BOOT_READ,
-    RSS_MEASURED_BOOT_SERVICE_HANDLE,
+    looks_like_rss_comms_request, ExtendRequest, PSAError, PSARequest, PSAResponse, ReadRequest,
+    ReadResponse, PSA_MAX_IOVEC, RSS_DELEGATED_ATTEST_GET_DELEGATED_KEY,
+    RSS_DELEGATED_ATTEST_GET_PLATFORM_TOKEN, RSS_DELEGATED_SERVICE_HANDLE,
+    RSS_MEASURED_BOOT_EXTEND, RSS_MEASURED_BOOT_READ, RSS_MEASURED_BOOT_SERVICE_HANDLE,
 };
 
 #[derive(Debug)]
@@ -343,6 +343,20 @@ impl CommsChannel {
             None => return Ok(None),
         };
         println!("Received {} bytes", data.len());
+
+        /* Anything that is not even a well formed embed protocol request header
+         * is not a PSA request for us, so don't even try to deserialize it.
+         * This typically happens when the app gets connected to an FVP terminal
+         * running in 'telnet' mode instead of the RSS comms terminal, which runs
+         * in 'raw' mode: such a terminal starts an RFC854 negotiation, sending
+         * 3-byte "IAC <cmd> <opt>" frames in a loop. */
+        if !looks_like_rss_comms_request(&data) {
+            println!(
+                "Not an RSS comms request (raw bytes: {})",
+                hex::encode(&data)
+            );
+            return Err(CommsError::ServiceHandleError);
+        }
 
         let psa_request = PSARequest::de(&data)?;
         Ok(self.convert_request(psa_request.clone()).map(|r| Some(r))?)

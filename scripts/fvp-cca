@@ -32,7 +32,13 @@ class FVPPlatform(CCAPlatform):
 
     @property
     def hes_address(self):
+        # Must match bp.terminal_2.start_port (see scripts/.config and
+        # prepare_run_arguments()): terminal 2 is the RSS comms channel.
         return "127.0.0.1:5002"
+
+    @property
+    def hes_port(self):
+        return int(self.hes_address.rsplit(":", 1)[1])
 
     def default_optee_build_args(self, target=""):
         args = [
@@ -140,9 +146,22 @@ class FVPPlatform(CCAPlatform):
                     "-C", "bp.terminal_1.start_telnet=0",
                     "-C", "bp.terminal_2.start_telnet=0",
                     "-C", "bp.terminal_3.start_telnet=0"]
-        elif self.args.hes: # HES implies disabling telnet 2
-            print("[!] Using HES, disabling FVP telnet 2...")
-            run_args += ["-C", "bp.terminal_2.start_telnet=0"]
+        if self.args.hes:
+            # The islet-hes-host-app talks to the RSS comms UART (uart2 ->
+            # bp.terminal_2) over a TCP socket.  TelnetTerminal instances grab
+            # the first free port >= start_port in an order that does not
+            # follow the terminal index, so terminal 2 has to be pinned to the
+            # port hes_address() is using, otherwise the HES app silently
+            # connects to some other (console) terminal.  That terminal is in
+            # "telnet" mode and starts RFC854 negotiation, which the HES app
+            # then receives as 3-byte garbage instead of PSA requests.  Also,
+            # terminal 2 must stay in "raw" mode so that the byte stream
+            # carrying the binary PSA messages is passed unmodified, and the
+            # automatic telnet client must not be started for it.
+            print("[!] Using HES, configuring FVP terminal 2 (RSS comms channel)...")
+            run_args += ["-C", "bp.terminal_2.start_telnet=0",
+                    "-C", "bp.terminal_2.mode=raw",
+                    "-C", "bp.terminal_2.start_port=%d" % self.hes_port]
         return run_args
 
     def _prepare_trace(self): # Internal helper for FVP trace

@@ -110,9 +110,33 @@ pub enum PSAError {
     WrongDataLength,
 }
 
+/// Version of the RSS comms protocol that embeds the payload inside the
+/// message itself. Must match RSE_COMMS_PROTOCOL_EMBED on the TF-A side.
+pub const RSS_COMMS_PROTOCOL_EMBED: u8 = 0;
+
+/// Size of a serialized request header, i.e. the comms header followed by the
+/// header of the embed protocol message, without the (variable sized) payload.
+/// A serialized request can never be shorter than this.
+pub const RSS_COMMS_REQUEST_HEADER_SIZE: usize =
+    std::mem::size_of::<serialized_rss_comms_header_t>() + std::mem::size_of::<rss_embed_msg_t>()
+        - PLAT_RSS_COMMS_PAYLOAD_MAX_SIZE;
+
+/// Checks whether `input` can be cast onto `serialized_rss_comms_msg_t` at all.
+///
+/// Bytes coming from something else than the RSS comms channel - e.g. the RFC
+/// 854 (telnet) negotiation the FVP TelnetTerminal component sends when it runs
+/// in its default 'telnet' mode - are not a PSA request and casting them onto
+/// the serialized structure would read past the end of the received buffer,
+/// producing a bogus service handle instead of a clean error.
+pub fn looks_like_rss_comms_request(input: &[u8]) -> bool {
+    RSS_COMMS_REQUEST_HEADER_SIZE <= input.len()
+        && input.len() <= std::mem::size_of::<rss_embed_msg_t>()
+        && input.first() == Some(&RSS_COMMS_PROTOCOL_EMBED)
+}
+
 impl PSARequest {
     pub(super) fn de(input: &[u8]) -> Result<Self, PSAError> {
-        if input.len() > std::mem::size_of::<rss_embed_msg_t>() {
+        if !looks_like_rss_comms_request(input) {
             return Err(PSAError::WrongDataLength);
         }
 

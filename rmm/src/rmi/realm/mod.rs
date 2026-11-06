@@ -3,7 +3,7 @@ pub use self::params::Params;
 use super::error::Error;
 use crate::event::RmiHandle;
 use crate::granule::GRANULE_SIZE;
-use crate::granule::{set_granule, GranuleState};
+use crate::granule::{is_not_in_realm, set_granule, GranuleState};
 use crate::host;
 use crate::listen;
 use crate::measurement::{HashContext, MEASUREMENTS_SLOT_RIM};
@@ -61,6 +61,10 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             return Err(Error::RmiErrorInput);
         }
 
+        if !is_not_in_realm(params_ptr) {
+            return Err(Error::RmiErrorInput);
+        }
+
         let mut rd_granule = get_granule_if!(rd, GranuleState::Delegated)?;
         let mut rd_obj = rd_granule.content_mut::<Rd>()?;
         #[cfg(not(kani))]
@@ -68,8 +72,9 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         rmm.page_table.map(rd, true);
 
         rmm.page_table.map(params_ptr, false);
-        let params = host::copy_from::<Params>(params_ptr).ok_or(Error::RmiErrorInput)?;
+        let params = host::copy_from::<Params>(params_ptr);
         rmm.page_table.unmap(params_ptr);
+        let params = params.ok_or(Error::RmiErrorInput)?;
         params.verify_compliance(rd)?;
 
         for i in 0..params.rtt_num_start as usize {
@@ -216,10 +221,15 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         let mdg_addr = arg[1];
         let meta_ptr = arg[2];
 
+        if !is_not_in_realm(meta_ptr) {
+            return Err(Error::RmiErrorInput);
+        }
+
         rmm.page_table.map(meta_ptr, false);
-        let realm_metadata: Box<IsletRealmMetadata> =
-            Box::new(host::copy_from(meta_ptr).ok_or(Error::RmiErrorInput)?);
+        let metadata = host::copy_from::<IsletRealmMetadata>(meta_ptr);
         rmm.page_table.unmap(meta_ptr);
+        let realm_metadata: Box<IsletRealmMetadata> =
+            Box::new(metadata.ok_or(Error::RmiErrorInput)?);
         realm_metadata.dump();
 
         if let Err(e) = realm_metadata.verify_signature() {

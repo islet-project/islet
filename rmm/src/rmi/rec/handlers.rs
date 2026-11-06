@@ -4,9 +4,9 @@ use super::run::{EntryFlag, Run};
 use super::vtcr::{activate_stage2_mmu, prepare_vtcr};
 use crate::event::RmiHandle;
 #[cfg(feature = "gst_page_table")]
-use crate::granule::{set_granule, set_granule_with_parent, GranuleState};
+use crate::granule::{is_not_in_realm, set_granule, set_granule_with_parent, GranuleState};
 #[cfg(not(feature = "gst_page_table"))]
-use crate::granule::{set_granule, GranuleState};
+use crate::granule::{is_not_in_realm, set_granule, GranuleState};
 use crate::host;
 use crate::listen;
 use crate::measurement::HashContext;
@@ -52,9 +52,14 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             return Err(Error::RmiErrorInput);
         }
 
+        if !is_not_in_realm(params_ptr) {
+            return Err(Error::RmiErrorInput);
+        }
+
         rmm.page_table.map(params_ptr, false);
-        let params = host::copy_from::<Params>(params_ptr).ok_or(Error::RmiErrorInput)?;
+        let params = host::copy_from::<Params>(params_ptr);
         rmm.page_table.unmap(params_ptr);
+        let params = params.ok_or(Error::RmiErrorInput)?;
         params.verify_compliance(rec, rd, params_ptr)?;
 
         let rec_index = MPIDR::from(params.mpidr).index();
@@ -177,10 +182,15 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
         let mut rec = rec_granule.content_mut::<Rec<'_>>()?;
 
+        if !is_not_in_realm(run_pa) {
+            return Err(Error::RmiErrorInput);
+        }
+
         // read Run
         rmm.page_table.map(run_pa, false);
-        let mut run = host::copy_from::<Run>(run_pa).ok_or(Error::RmiErrorInput)?;
+        let run_copy = host::copy_from::<Run>(run_pa);
         rmm.page_table.unmap(run_pa);
+        let mut run = run_copy.ok_or(Error::RmiErrorInput)?;
         run.verify_compliance()?;
         trace!("{:?}", run);
 

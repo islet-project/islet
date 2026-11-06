@@ -198,11 +198,15 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         rmm.page_table.map(target_pa, true);
 
         // copy src to target
+        // Capture the copy result so that unmap() always runs, even on failure,
+        // before the error is propagated.
         #[cfg(not(kani))]
         rmm.page_table.map(src_pa, false);
-        host::copy_to_obj::<DataPage>(src_pa, &mut target_page).ok_or(Error::RmiErrorInput)?;
+        let copied =
+            host::copy_to_obj::<DataPage>(src_pa, &mut target_page).ok_or(Error::RmiErrorInput);
         #[cfg(not(kani))]
         rmm.page_table.unmap(src_pa);
+        copied?;
 
         // map ipa to taget_pa in S2 table
         rtt::data_create(&rd, ipa, target_pa, false)?;

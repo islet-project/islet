@@ -3,6 +3,7 @@ use crate::granule::{GRANULE_SHIFT, GRANULE_SIZE};
 use crate::measurement::Hashable;
 use crate::pmu;
 use crate::realm::mm::rtt::{RTT_PAGE_LEVEL, RTT_STRIDE};
+use crate::realm::mm::stage2_translation::is_root_rtt_supported;
 use crate::rmi::error::Error;
 use crate::rmi::features;
 use crate::rmi::{HASH_ALGO_SHA256, HASH_ALGO_SHA512};
@@ -119,10 +120,6 @@ impl Params {
 
     pub fn verify_compliance(&self, rd: usize) -> Result<(), Error> {
         trace!("{:?}", self);
-        if self.rtt_base as usize == rd {
-            return Err(Error::RmiErrorInput);
-        }
-
         if !(self.rtt_base as usize).is_multiple_of(GRANULE_SIZE) {
             return Err(Error::RmiErrorInput);
         }
@@ -157,6 +154,27 @@ impl Params {
             return Err(Error::RmiErrorInput);
         }
 
+        // Reject the configurations that the stage 2 translation cannot build,
+        // instead of failing later in REALM_CREATE.
+        // (`rtt_slvl` is known to be in 0..=3 here.)
+        if !is_root_rtt_supported(rtt_slvl, self.rtt_num_start as usize) {
+            return Err(Error::RmiErrorInput);
+        }
+
+        // rtt_align: the concatenated root RTTs must be aligned to their total
+        // size. Otherwise the hardware ignores the low bits of VTTBR_EL2.BADDR
+        // and walks a table that is not the one the RMM has built.
+        let root_size = (self.rtt_num_start as usize) * GRANULE_SIZE;
+        let rtt_start = self.rtt_base as usize;
+        if !rtt_start.is_multiple_of(root_size) {
+            return Err(Error::RmiErrorInput);
+        }
+
+        // The RD must not be one of the root RTT granules.
+        if rd >= rtt_start && rd < rtt_start + root_size {
+            return Err(Error::RmiErrorInput);
+        }
+
         // TODO: We don't support pmu, lpa2
         let flags = RmiRealmFlags::new(self.flags);
         if flags.get_masked_value(RmiRealmFlags::Lpa2) != features::LPA2_VALUE {
@@ -177,6 +195,113 @@ impl Params {
             HASH_ALGO_SHA256 | HASH_ALGO_SHA512 => Ok(()),
             _ => Err(Error::RmiErrorInput),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    // aligned to 1MB, which is larger than the biggest (16 granules) root RTT
+    const RTT_BASE: u64 = 0x10_0000;
+    const RD: usize = 0x1000;
+
+    fn params(s2sz: u8, level: i64, num: u32, base: u64) -> Params {
+        let mut p = Params::default();
+        p.s2sz = s2sz;
+        p.rtt_level_start = level;
+        p.rtt_num_start = num;
+        p.rtt_base = base;
+        p
+    }
+
+    #[test]
+    fn accepts_concatenated_root_rtt() {
+        // (s2sz, rtt_level_start, rtt_num_start)
+        let cases = [
+            (40, 0, 1),
+            (40, 1, 2),
+            (41, 1, 4), // L1N4: used to hang the PE in REALM_CREATE
+            (42, 1, 8),
+            (43, 1, 16), // L1N16: used to hang the PE in REALM_CREATE
+            (32, 2, 4),
+            (34, 2, 16),
+        ];
+        for (s2sz, level, num) in cases {
+            let p = params(s2sz, level, num, RTT_BASE);
+            assert!(
+                p.verify_compliance(RD).is_ok(),
+                "s2sz={} level={} num={}",
+                s2sz,
+                level,
+                num
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_root_rtt_not_aligned_to_its_size() {
+        for (s2sz, level, num) in [(40, 1, 2), (41, 1, 4), (42, 1, 8), (43, 1, 16)] {
+            // granule aligned, but not aligned to num * GRANULE_SIZE
+            let base = RTT_BASE + GRANULE_SIZE as u64;
+            let p = params(s2sz, level, num, base);
+            assert!(
+                p.verify_compliance(RD).is_err(),
+                "s2sz={} level={} num={}",
+                s2sz,
+                level,
+                num
+            );
+        }
+    }
+
+    #[test]
+    fn rejects_rd_inside_root_rtt_range() {
+        let root_size = 4 * GRANULE_SIZE;
+        let p = params(41, 1, 4, RTT_BASE);
+        let base = RTT_BASE as usize;
+
+        for rd in [base, base + GRANULE_SIZE, base + root_size - GRANULE_SIZE] {
+            assert!(p.verify_compliance(rd).is_err(), "rd={:#x}", rd);
+        }
+        for rd in [base - GRANULE_SIZE, base + root_size] {
+            assert!(p.verify_compliance(rd).is_ok(), "rd={:#x}", rd);
+        }
+    }
+
+    #[test]
+    fn rejects_inconsistent_root_rtt_count() {
+        // s2sz=41 at level 1 needs 4 root RTTs
+        for num in [0, 1, 2, 3, 5, 8, 16] {
+            let p = params(41, 1, num, RTT_BASE);
+            assert!(p.verify_compliance(RD).is_err(), "num={}", num);
+        }
+    }
+
+    // Whatever verify_compliance() accepts must be buildable by
+    // Stage2Translation::new(), otherwise REALM_CREATE panics after the
+    // validation and the PE hangs in EL2.
+    #[test]
+    fn accepted_params_are_supported_by_stage2_translation() {
+        let mut accepted = 0;
+        for level in -1i64..=4 {
+            for s2sz in 28u8..=52 {
+                for num in [0u32, 1, 2, 4, 8, 16] {
+                    let p = params(s2sz, level, num, RTT_BASE);
+                    if p.verify_compliance(RD).is_ok() {
+                        accepted += 1;
+                        assert!(
+                            is_root_rtt_supported(level as usize, num as usize),
+                            "accepted but unsupported: s2sz={} level={} num={}",
+                            s2sz,
+                            level,
+                            num
+                        );
+                    }
+                }
+            }
+        }
+        assert!(accepted > 0);
     }
 }
 

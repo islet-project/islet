@@ -77,21 +77,41 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         let params = params.ok_or(Error::RmiErrorInput)?;
         params.verify_compliance(rd)?;
 
-        for i in 0..params.rtt_num_start as usize {
-            let rtt = params.rtt_base as usize + i * GRANULE_SIZE;
-            let _ = get_granule_if!(rtt, GranuleState::Delegated)?;
-            // The below is added to avoid a fault regarding the RTT entry
-            // during the below stage 2 page table creation
-            rmm.page_table.map(rtt, true);
+        let root_base = params.rtt_base as usize;
+        let root_num = params.rtt_num_start as usize;
+        let mut mapped = 0;
+        let mut map_roots = || -> Result<(), Error> {
+            for i in 0..root_num {
+                let rtt = root_base + i * GRANULE_SIZE;
+                // `?` converts the error type of get_granule_if!, which depends on
+                // the granule backend (gst_page_table or not)
+                let _ = get_granule_if!(rtt, GranuleState::Delegated)?;
+                // The below is added to avoid a fault regarding the RTT entry
+                // during the below stage 2 page table creation
+                rmm.page_table.map(rtt, true);
+                mapped += 1;
+            }
+            Ok(())
+        };
+        if let Err(e) = map_roots() {
+            // undo the mappings made for the preceding root RTT granules
+            for i in 0..mapped {
+                rmm.page_table.unmap(root_base + i * GRANULE_SIZE);
+            }
+            return Err(e);
         }
 
         // revisit rmi.create_realm() (is it necessary?)
-        create_realm(params.vmid as usize).map(|_| {
-            let s2 = Box::new(Stage2Translation::new(
+        let created = create_realm(params.vmid as usize).and_then(|_| {
+            let s2 = Stage2Translation::new(
                 params.rtt_base as usize,
                 params.rtt_level_start as usize,
                 params.rtt_num_start as usize,
-            )) as Box<dyn IPATranslation>;
+            )
+            .inspect_err(|_| {
+                let _ = remove(params.vmid as usize);
+            })?;
+            let s2 = Box::new(s2) as Box<dyn IPATranslation>;
 
             insert_rtt(params.vmid as usize, Arc::new(Mutex::new(s2)));
 
@@ -106,8 +126,15 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
                 params.sve_vl as u64,
                 params.pmu_en(),
                 params.pmu_num_ctrs as usize,
-            )
-        })?;
+            );
+            Ok(())
+        });
+        if let Err(e) = created {
+            for i in 0..root_num {
+                rmm.page_table.unmap(root_base + i * GRANULE_SIZE);
+            }
+            return Err(e);
+        }
 
         let rtt_base = rd_obj.rtt_base();
         rd_obj.set_hash_algo(params.hash_algo);
@@ -128,7 +155,12 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
         epilogue().inspect_err(|_| {
             #[cfg(not(kani))]
             // `page_table` is currently not reachable in model checking harnesses
-            rmm.page_table.unmap(rd);
+            {
+                rmm.page_table.unmap(rd);
+                for i in 0..root_num {
+                    rmm.page_table.unmap(root_base + i * GRANULE_SIZE);
+                }
+            }
             remove(params.vmid as usize).expect("Realm should be created before.");
         })
     });
@@ -189,6 +221,8 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             let rtt = rtt_base + i * GRANULE_SIZE;
             let mut rtt_granule = get_granule!(rtt)?;
             set_granule(&mut rtt_granule, GranuleState::Delegated)?;
+            // REALM_CREATE mapped every root RTT granule into the RMM's own page table
+            rmm.page_table.unmap(rtt);
         }
         #[cfg(kani)]
         {

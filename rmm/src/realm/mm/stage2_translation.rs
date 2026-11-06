@@ -55,13 +55,32 @@ type RootTBL<'a, const L: usize, const N: usize, const E: usize> =
 
 pub enum Root<'a> {
     L0N1(RootTBL<'a, 0, 1, ENTR1>),
-    L0N16(RootTBL<'a, 0, 16, ENTR16>),
     L1N1(RootTBL<'a, 1, 1, ENTR1>),
     L1N2(RootTBL<'a, 1, 2, ENTR2>),
+    L1N4(RootTBL<'a, 1, 4, ENTR4>),
     L1N8(RootTBL<'a, 1, 8, ENTR8>),
+    L1N16(RootTBL<'a, 1, 16, ENTR16>),
     L2N4(RootTBL<'a, 2, 4, ENTR4>),
     L2N8(RootTBL<'a, 2, 8, ENTR8>),
     L2N16(RootTBL<'a, 2, 16, ENTR16>),
+}
+
+/// Returns true if `Stage2Translation::new` can build a root table with the
+/// given starting level and number of concatenated root RTT granules.
+///
+/// This is the single source of truth for the supported configurations.
+/// It is used by `Params::verify_compliance` to fail early with
+/// RMI_ERROR_INPUT, and by `Stage2Translation::new`.
+///
+/// Only the configurations that can be requested with the features we
+/// advertise (4KB granule, 32 <= s2sz <= 48, no LPA2) are listed. For
+/// example, a level 0 root with 16 granules would need a 52-bit IPA space.
+/// Add a variant to `Root` and an entry here when the supported IPA range grows.
+pub const fn is_root_rtt_supported(root_level: usize, root_pages: usize) -> bool {
+    matches!(
+        (root_level, root_pages),
+        (0, 1) | (1, 1) | (1, 2) | (1, 4) | (1, 8) | (1, 16) | (2, 4) | (2, 8) | (2, 16)
+    )
 }
 
 #[macro_export]
@@ -90,7 +109,11 @@ pub struct Stage2Translation<'a> {
 }
 
 impl Stage2Translation<'_> {
-    pub fn new(rtt_base: usize, root_level: usize, root_pages: usize) -> Self {
+    pub fn new(rtt_base: usize, root_level: usize, root_pages: usize) -> Result<Self, Error> {
+        if !is_root_rtt_supported(root_level, root_pages) {
+            return Err(Error::RmiErrorInput);
+        }
+
         // Concatenated translation tables
         // For stage 2 address translations, for the initial lookup,
         // up to 16 translation tables can be concatenated.
@@ -98,16 +121,17 @@ impl Stage2Translation<'_> {
             0 => unsafe {
                 match root_pages {
                     1 => Root::L0N1(init_table!(0, 1, rtt_base)),
-                    16 => Root::L0N16(init_table!(0, 16, rtt_base)),
-                    _ => todo!(),
+                    _ => return Err(Error::RmiErrorInput),
                 }
             },
             1 => unsafe {
                 match root_pages {
                     1 => Root::L1N1(init_table!(1, 1, rtt_base)),
                     2 => Root::L1N2(init_table!(1, 2, rtt_base)),
+                    4 => Root::L1N4(init_table!(1, 4, rtt_base)),
                     8 => Root::L1N8(init_table!(1, 8, rtt_base)),
-                    _ => todo!(),
+                    16 => Root::L1N16(init_table!(1, 16, rtt_base)),
+                    _ => return Err(Error::RmiErrorInput),
                 }
             },
             2 => unsafe {
@@ -115,17 +139,17 @@ impl Stage2Translation<'_> {
                     4 => Root::L2N4(init_table!(2, 4, rtt_base)),
                     8 => Root::L2N8(init_table!(2, 8, rtt_base)),
                     16 => Root::L2N16(init_table!(2, 16, rtt_base)),
-                    _ => todo!(),
+                    _ => return Err(Error::RmiErrorInput),
                 }
             },
-            _ => todo!(),
+            _ => return Err(Error::RmiErrorInput),
         };
-        Self {
+        Ok(Self {
             root_pgtbl,
             root_level,
             root_pages,
             dirty: false,
-        }
+        })
     }
 
     fn tlbi_iter<S: PageSize>(level: usize, guest_iter: PageIter<S, GuestPhysAddr>, vmid: usize) {
@@ -300,10 +324,11 @@ impl IPATranslation for Stage2Translation<'_> {
         match &self.root_pgtbl {
             Root::L2N8(c) => *c as *const _ as *const c_void, // most likely first, for linux-realm
             Root::L0N1(a) => *a as *const _ as *const c_void,
-            Root::L0N16(a) => *a as *const _ as *const c_void,
             Root::L1N1(b) => *b as *const _ as *const c_void,
             Root::L1N2(b) => *b as *const _ as *const c_void,
+            Root::L1N4(b) => *b as *const _ as *const c_void,
             Root::L1N8(b) => *b as *const _ as *const c_void,
+            Root::L1N16(b) => *b as *const _ as *const c_void,
             Root::L2N4(c) => *c as *const _ as *const c_void,
             Root::L2N16(c) => *c as *const _ as *const c_void,
         }
@@ -327,10 +352,11 @@ impl IPATranslation for Stage2Translation<'_> {
         let res = match &mut self.root_pgtbl {
             Root::L2N8(root) => to_pa!(root, guest, level, pa), // most likely first, for linux-realm
             Root::L0N1(root) => to_pa!(root, guest, level, pa),
-            Root::L0N16(root) => to_pa!(root, guest, level, pa),
             Root::L1N1(root) => to_pa!(root, guest, level, pa),
             Root::L1N2(root) => to_pa!(root, guest, level, pa),
+            Root::L1N4(root) => to_pa!(root, guest, level, pa),
             Root::L1N8(root) => to_pa!(root, guest, level, pa),
+            Root::L1N16(root) => to_pa!(root, guest, level, pa),
             Root::L2N4(root) => to_pa!(root, guest, level, pa),
             Root::L2N16(root) => to_pa!(root, guest, level, pa),
         };
@@ -358,10 +384,11 @@ impl IPATranslation for Stage2Translation<'_> {
         let res = match &mut self.root_pgtbl {
             Root::L2N8(root) => to_pte!(root, guest, level, pte), // most likely first, for linux-realm
             Root::L0N1(root) => to_pte!(root, guest, level, pte),
-            Root::L0N16(root) => to_pte!(root, guest, level, pte),
             Root::L1N1(root) => to_pte!(root, guest, level, pte),
             Root::L1N2(root) => to_pte!(root, guest, level, pte),
+            Root::L1N4(root) => to_pte!(root, guest, level, pte),
             Root::L1N8(root) => to_pte!(root, guest, level, pte),
+            Root::L1N16(root) => to_pte!(root, guest, level, pte),
             Root::L2N4(root) => to_pte!(root, guest, level, pte),
             Root::L2N16(root) => to_pte!(root, guest, level, pte),
         };
@@ -384,10 +411,11 @@ impl IPATranslation for Stage2Translation<'_> {
         let res = match &mut self.root_pgtbl {
             Root::L2N8(root) => set_pte!(root, guest, level, val),
             Root::L0N1(root) => set_pte!(root, guest, level, val),
-            Root::L0N16(root) => set_pte!(root, guest, level, val),
             Root::L1N1(root) => set_pte!(root, guest, level, val),
             Root::L1N2(root) => set_pte!(root, guest, level, val),
+            Root::L1N4(root) => set_pte!(root, guest, level, val),
             Root::L1N8(root) => set_pte!(root, guest, level, val),
+            Root::L1N16(root) => set_pte!(root, guest, level, val),
             Root::L2N4(root) => set_pte!(root, guest, level, val),
             Root::L2N16(root) => set_pte!(root, guest, level, val),
         };
@@ -441,10 +469,11 @@ impl IPATranslation for Stage2Translation<'_> {
         let res = match &self.root_pgtbl {
             Root::L2N8(root) => root.table_entries(guest, level),
             Root::L0N1(root) => root.table_entries(guest, level),
-            Root::L0N16(root) => root.table_entries(guest, level),
             Root::L1N1(root) => root.table_entries(guest, level),
             Root::L1N2(root) => root.table_entries(guest, level),
+            Root::L1N4(root) => root.table_entries(guest, level),
             Root::L1N8(root) => root.table_entries(guest, level),
+            Root::L1N16(root) => root.table_entries(guest, level),
             Root::L2N4(root) => root.table_entries(guest, level),
             Root::L2N16(root) => root.table_entries(guest, level),
         };
@@ -459,5 +488,121 @@ impl IPATranslation for Stage2Translation<'_> {
 impl fmt::Debug for Stage2Translation<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(stringify!(Self)).finish()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::granule::GRANULE_SIZE;
+    use alloc::alloc::{alloc_zeroed, dealloc};
+
+    /// (root level, number of concatenated root granules)
+    const SUPPORTED: [(usize, usize); 9] = [
+        (0, 1),
+        (1, 1),
+        (1, 2),
+        (1, 4),
+        (1, 8),
+        (1, 16),
+        (2, 4),
+        (2, 8),
+        (2, 16),
+    ];
+
+    /// Allocates a zeroed, naturally aligned buffer for `pages` root granules.
+    fn alloc_root(pages: usize) -> (*mut u8, Layout) {
+        let layout = Layout::from_size_align(pages * GRANULE_SIZE, pages * GRANULE_SIZE).unwrap();
+        let base = unsafe { alloc_zeroed(layout) };
+        assert!(!base.is_null());
+        (base, layout)
+    }
+
+    #[test]
+    fn root_rtt_supported_table() {
+        for level in 0..=4 {
+            for pages in 0..=32 {
+                assert_eq!(
+                    is_root_rtt_supported(level, pages),
+                    SUPPORTED.contains(&(level, pages)),
+                    "level={} pages={}",
+                    level,
+                    pages
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn new_builds_every_supported_config() {
+        for (level, pages) in SUPPORTED {
+            let (base, layout) = alloc_root(pages);
+
+            let s2 = Stage2Translation::new(base as usize, level, pages);
+            assert!(s2.is_ok(), "level={} pages={}", level, pages);
+            let s2 = s2.ok().unwrap();
+            assert_eq!(s2.get_base_address() as usize, base as usize);
+
+            drop(s2);
+            unsafe { dealloc(base, layout) };
+        }
+    }
+
+    // Regression test: these used to hit `todo!()` and hang the PE.
+    #[test]
+    fn new_rejects_unsupported_config_without_panic() {
+        for level in 0..=4 {
+            for pages in 0..=32 {
+                if is_root_rtt_supported(level, pages) {
+                    continue;
+                }
+                assert!(
+                    Stage2Translation::new(0, level, pages).is_err(),
+                    "level={} pages={}",
+                    level,
+                    pages
+                );
+            }
+        }
+    }
+
+    // The concatenated level-1 root tables (L1N4 and L1N16) must address the
+    // whole IPA range: the first and the last level-1 entry have to land in
+    // different slots of the flat root table.
+    #[test]
+    fn concatenated_l1_root_covers_whole_ipa_range() {
+        const L1_ENTRY_SIZE: usize = 1 << 30;
+        // (number of root granules, IPA bits)
+        for (pages, ipa_bits) in [(4usize, 41usize), (16, 43)] {
+            let (base, layout) = alloc_root(pages);
+            let mut s2 = Stage2Translation::new(base as usize, 1, pages)
+                .ok()
+                .unwrap();
+
+            assert_eq!(s2.space_size(1), 1 << ipa_bits);
+
+            let first = GuestPhysAddr::from(0usize);
+            let last = GuestPhysAddr::from((1usize << ipa_bits) - L1_ENTRY_SIZE);
+            let (first_val, last_val) = (0x1111_u64, 0x2222_u64);
+
+            assert!(s2.ipa_to_pte_set(first, 1, first_val, Tlbi::NONE).is_ok());
+            assert!(s2.ipa_to_pte_set(last, 1, last_val, Tlbi::NONE).is_ok());
+
+            assert_eq!(s2.ipa_to_pte(first, 1), Some((first_val, 1)));
+            assert_eq!(s2.ipa_to_pte(last, 1), Some((last_val, 1)));
+
+            // the entries are stored in the flat table backing the root RTTs
+            let entries = base as *const u64;
+            unsafe {
+                assert_eq!(*entries, first_val);
+                assert_eq!(
+                    *entries.add(pages * GRANULE_SIZE / core::mem::size_of::<u64>() - 1),
+                    last_val
+                );
+            }
+
+            drop(s2);
+            unsafe { dealloc(base, layout) };
+        }
     }
 }

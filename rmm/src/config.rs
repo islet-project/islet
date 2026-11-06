@@ -18,6 +18,10 @@ pub const MAX_DRAM_SIZE: usize = 0x2_0000_0000; // 8GB
 
 pub const RMM_STACK_GUARD_SIZE: usize = crate::granule::GRANULE_SIZE * 1;
 pub const RMM_STACK_SIZE: usize = 1024 * 1024 - RMM_STACK_GUARD_SIZE;
+pub const RMM_STACK_PER_CPU_SIZE: usize = RMM_STACK_GUARD_SIZE + RMM_STACK_SIZE;
+// A guard page which is not a multiple of the mapping granule cannot be left unmapped in
+// the translation tables, so it would not protect anything.
+const _: () = assert!(RMM_STACK_GUARD_SIZE.is_multiple_of(PAGE_SIZE));
 pub const RMM_HEAP_SIZE: usize = 16 * 1024 * 1024;
 
 pub const VM_STACK_SIZE: usize = 1 << 15;

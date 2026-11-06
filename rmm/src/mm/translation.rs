@@ -81,6 +81,7 @@ impl Inner<'_> {
 
         let ro_flags = bits_in_reg(PTDesc::AP, attr::permission::RO);
         let rw_flags = bits_in_reg(PTDesc::AP, attr::permission::RW);
+        let xn_flags = bits_in_reg(PTDesc::UXN, 1) | bits_in_reg(PTDesc::PXN, 1);
         let rmm_flags = bits_in_reg(PTDesc::INDX, attr::mair_idx::RMM_MEM);
         let device_flags = bits_in_reg(PTDesc::INDX, attr::mair_idx::DEVICE_MEM);
         let base_address = layout.rmm_base;
@@ -99,30 +100,38 @@ impl Inner<'_> {
             VirtAddr::from(rw_start),
             PhysAddr::from(rw_start),
             rw_size as usize,
-            rw_flags | rmm_flags,
+            rw_flags | rmm_flags | xn_flags,
         );
-        let per_cpu = RMM_STACK_GUARD_SIZE + RMM_STACK_SIZE;
+
         for i in 0..crate::config::NUM_OF_CPU {
-            let stack_base = layout.stack_base + (per_cpu * i) as u64;
+            // The stack guard is the first page of each per-CPU stack region and it is
+            // intentionally left unmapped, so that a stack overflow faults instead of
+            // corrupting the memory below the stack. Only the stack area is mapped.
+            let mapped_stack_base = layout.stack_base
+                + ((RMM_STACK_GUARD_SIZE + RMM_STACK_SIZE) * i) as u64
+                + RMM_STACK_GUARD_SIZE as u64;
             self.set_pages(
-                VirtAddr::from(stack_base),
-                PhysAddr::from(stack_base),
+                VirtAddr::from(mapped_stack_base),
+                PhysAddr::from(mapped_stack_base),
                 RMM_STACK_SIZE,
-                rw_flags | rmm_flags,
+                rw_flags | rmm_flags | xn_flags,
             );
         }
         // UART
+        // The Device memory type already forbids instruction fetches, but mark the
+        // mapping execute-never as well so the protection lives in the PTE itself
+        // and every writable mapping in the RMM EL2 page table is uniformly XN.
         self.set_pages(
             VirtAddr::from(uart_phys),
             PhysAddr::from(uart_phys),
             PAGE_SIZE,
-            rw_flags | device_flags,
+            rw_flags | device_flags | xn_flags,
         );
         self.set_pages(
             VirtAddr::from(el3_shared_page),
             PhysAddr::from(el3_shared_page),
             PAGE_SIZE,
-            rw_flags | rmm_flags,
+            rw_flags | rmm_flags | xn_flags,
         );
 
         //TODO Set dirty only if pages are updated, not added

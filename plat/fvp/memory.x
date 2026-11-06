@@ -73,5 +73,5 @@ SECTIONS {
     __RMM_END__ = .;
 
     /* LENGTH(REALM_PAS) - SIZE_4KB: last page is reserved for the el3 manifest */
-    ASSERT((__RMM_END__ < ORIGIN(REALM_PAS) + LENGTH(REALM_PAS)) - SIZE_4KB, "REALM_PAS size exceeded!")
+    ASSERT((__RMM_END__ < ORIGIN(REALM_PAS) + LENGTH(REALM_PAS) - SIZE_4KB), "REALM_PAS size exceeded!")
 }

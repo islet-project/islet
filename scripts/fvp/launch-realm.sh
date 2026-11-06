@@ -17,7 +17,7 @@ fi
 	--restricted_mem \
 	--realm \
 	--measurement-algo="sha256" \
-	--sve-max-vl=512 \
+	--sve-max-vl=2048 \
 	--console serial \
 	--irqchip=gicv3 \
 	--network virtio \

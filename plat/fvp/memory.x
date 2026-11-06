@@ -72,6 +72,10 @@ SECTIONS {
 
     __RMM_END__ = .;
 
+    /* Every per-CPU stack guard page and the stack top alignment rely on the stack
+     * region starting at a page boundary. */
+    ASSERT((__RMM_STACK_BASE__ % SIZE_4KB) == 0, "RMM stack base must be 4KB aligned!")
+
     /* LENGTH(REALM_PAS) - SIZE_4KB: last page is reserved for the el3 manifest */
-    ASSERT((__RMM_END__ < ORIGIN(REALM_PAS) + LENGTH(REALM_PAS)) - SIZE_4KB, "REALM_PAS size exceeded!")
+    ASSERT((__RMM_END__ < ORIGIN(REALM_PAS) + LENGTH(REALM_PAS) - SIZE_4KB), "REALM_PAS size exceeded!")
 }

@@ -4,7 +4,7 @@ use crate::log::LevelFilter;
 use aarch64_cpu::registers::*;
 use core::ptr::{addr_of, addr_of_mut};
 use io::stdout;
-use islet_rmm::config::{NUM_OF_CPU, RMM_STACK_GUARD_SIZE, RMM_STACK_SIZE};
+use islet_rmm::config::{NUM_OF_CPU, RMM_STACK_PER_CPU_SIZE};
 use islet_rmm::logger;
 
 use crate::plat;
@@ -12,8 +12,8 @@ use crate::plat;
 /// Configure the first page of the stack section as a stack guard page
 #[no_mangle]
 #[link_section = ".stack"]
-static mut RMM_STACK: [[u8; RMM_STACK_SIZE + RMM_STACK_GUARD_SIZE]; NUM_OF_CPU] =
-    [[0; RMM_STACK_SIZE + RMM_STACK_GUARD_SIZE]; NUM_OF_CPU];
+static mut RMM_STACK: [[u8; RMM_STACK_PER_CPU_SIZE]; NUM_OF_CPU] =
+    [[0; RMM_STACK_PER_CPU_SIZE]; NUM_OF_CPU];
 
 /// # Safety
 ///
@@ -23,7 +23,10 @@ pub unsafe extern "C" fn current_cpu_stack(cpu_id: usize) -> usize {
     if cpu_id >= NUM_OF_CPU {
         panic!("Invalid CPU ID!");
     }
-    &RMM_STACK[cpu_id] as *const u8 as usize + RMM_STACK_SIZE
+    // The stack grows downwards, so the first page of each per-CPU region is the stack
+    // guard and the rest of the region is the stack area. Return the top of the stack
+    // area.
+    &RMM_STACK[cpu_id] as *const u8 as usize + RMM_STACK_PER_CPU_SIZE
 }
 
 // Entrypoint boot args

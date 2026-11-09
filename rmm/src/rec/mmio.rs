@@ -70,6 +70,9 @@ mod tests {
 
     #[test]
     fn sign_extend_dword_is_identity() {
-        assert_eq!(sign_extend(0x8000_0000_0000_0000, 3, true), 0x8000_0000_0000_0000);
+        assert_eq!(
+            sign_extend(0x8000_0000_0000_0000, 3, true),
+            0x8000_0000_0000_0000
+        );
     }
 }

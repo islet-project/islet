@@ -808,3 +808,46 @@ Our changes: `CCProxy` / `CCStub` code generation for Arm CCA Realms — generat
 | libbase, liblog | :heavy_check_mark: | :heavy_check_mark: | Apache-2.0 (AOSP modules) | https://android.googlesource.com/platform/system/core |
 | flex / bison generated AIDL grammar (unchanged from upstream, build time only) | :heavy_check_mark: | | as in upstream AOSP | https://android.googlesource.com/platform/system/tools/aidl |
 
+### odcc-android-cc-docs
+
+* Repository: https://github.com/islet-project/odcc-android-cc-docs, branch `main`
+* Origin: written by us
+* License: **Apache-2.0**, with a `NOTICE` file for the bundled third-party JavaScript
+
+The mdBook source of the documentation site of the Confidential Computing on Android project
+(https://islet-project.github.io/odcc-android-cc-docs).
+
+
+| Name | Build time | Runtime | License | URL |
+| ---- | :--------: | :-----: | ------- | --- |
+| mdBook and the `mdbook-mermaid` preprocessor (build and publish time only) | :heavy_check_mark: | | MPL-2.0 | https://github.com/rust-lang/mdBook, https://github.com/betyland/mdbook-mermaid |
+| Mermaid 11.6.0, vendored as `mermaid.min.js` | | :heavy_check_mark: | MIT; the single-file bundle also embeds its upstream modules — DOMPurify (Apache-2.0 OR MPL-2.0), stylis, lodash and others, as recorded in `NOTICE` | https://github.com/mermaid-js/mermaid |
+| svg-pan-zoom 3.6.2, vendored as `svg-pan-zoom.min.js` | | :heavy_check_mark: | BSD-2-Clause | https://github.com/bumbu/svg-pan-zoom |
+| `mermaid-init.js` — our adapted copy of the `mdbook-mermaid` script | | :heavy_check_mark: | MPL-2.0 | https://github.com/betyland/mdbook-mermaid |
+| The repositories documented under `dependencies/` and `src/implement/` | | | their own licenses (Apache-2.0, GPL-2.0-only, public domain) | see their own sections |
+
+### odcc-islet-script-qemu-rme
+
+* Repository: https://github.com/islet-project/odcc-islet-script-qemu-rme, branch `main` (the
+  documentation repository above tracks `dev/release`)
+* Origin: written by us
+* License: **Apache-2.0**
+
+The environment setup and run scripts of the Android-on-QEMU reference platform of the Confidential
+Computing on Android project. It consumes `islet` rather than being consumed by it: the CCA firmware
+is built in the `islet` checkout first, and the path of that checkout is the argument of the run
+script, which reads the QEMU build, the firmware and the HES application from it.
+
+| Name | Build time | Runtime | License | URL |
+| ---- | :--------: | :-----: | ------- | --- |
+| AOSP `android-15.0.0_r8`, built for the `aosp_cf_arm64_only_phone` target, with `odcc-aosp-manifest` as local manifest | :heavy_check_mark: | :heavy_check_mark: | Apache-2.0 (AOSP modules) | https://github.com/islet-project/odcc-aosp-manifest |
+| `3rd-android-kernel` — the CCA host (android16-6.12) and Microdroid guest (android15-6.6) kernels | :heavy_check_mark: | :heavy_check_mark: | GPL-2.0-only | https://github.com/islet-project/3rd-android-kernel |
+| `islet` — the RME-capable QEMU build, the `flash.bin` firmware (TF-A + RMM) and the `islet-hes-host-app` daemon | | :heavy_check_mark: | Apache-2.0 | https://github.com/islet-project/islet |
+| `rkik-nts` — the chrony `chrony.conf` and NTS development certificates, sparse-cloned at setup time | :heavy_check_mark: | :heavy_check_mark: | MIT | https://github.com/islet-project/rkik-nts |
+| chrony, the host NTP/NTS server that the protected VMs synchronize with | :heavy_check_mark: | :heavy_check_mark: | MIT | https://chrony-project.org |
+| Android Cuttlefish host packages (`launch_cvd` and its helpers), installed with `apt` from the Android Cuttlefish artifact repository | :heavy_check_mark: | :heavy_check_mark: | BSD-3-Clause (AOSP `device/google/cuttlefish`) | https://android.googlesource.com/device/google/cuttlefish/ |
+| scrcpy (optional, to view the device screen) | | :heavy_check_mark: | Apache-2.0 | https://github.com/Genymobile/scrcpy |
+
+
+
+

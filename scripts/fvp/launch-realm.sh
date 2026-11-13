@@ -17,13 +17,13 @@ fi
 	--restricted_mem \
 	--realm \
 	--measurement-algo="sha256" \
-	--disable-sve \
+	--sve-max-vl=2048 \
 	--console serial \
 	--irqchip=gicv3 \
 	--network virtio \
 	--9p /shared,FMR \
 	-m 256M \
-	-c 1 \
+	-c 4 \
 	-k linux.realm \
 	-i rootfs-realm.cpio.gz \
 	-p "earlycon=ttyS0 printk.devkmsg=on" \

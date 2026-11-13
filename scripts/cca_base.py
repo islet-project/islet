@@ -263,6 +263,20 @@ class CCAPlatform(ABC):
         self.run(["./scripts/build-kvm-unit-tests.sh"], cwd=ROOT)
         self.run(["cp", "-R", "arm", "%s/kvm-unit-tests" % OUT], cwd=KVM_UNIT_TESTS)
 
+    def prepare_sve_test(self):
+        print("[!] Building sve-test...")
+        os.makedirs(SHARED_PATH, exist_ok=True)
+        # sve-test is statically linked, so it can be launched directly from the
+        # shared directory once the realm is running.
+        self.make(SVE_TEST, ["CROSS=%s" % LINUX_CROSS_COMPILE])
+
+        if not os.path.exists(SVE_TEST_BIN):
+            print("[!] Failed to build: %s" % SVE_TEST_BIN)
+            sys.exit(1)
+
+        self.run(["cp", SVE_TEST_BIN, SHARED_PATH], cwd=ROOT)
+        self.run(["cp", SVE_TEST_LAUNCH, SHARED_PATH], cwd=ROOT)
+
     def prepare_acs(self, start, end, excluded):
         print("[!] Building ACS...")
         if start == "" and end == "":
@@ -387,7 +401,7 @@ class CCAPlatform(ABC):
         pass
 
     def clean_repo(self, target):
-        clean_list = ["all", "tf-a", "tf-a-tests", "realm-linux", "kvmtool", "nw-linux", "acs", "tf-rmm", "islet"]
+        clean_list = ["all", "tf-a", "tf-a-tests", "realm-linux", "kvmtool", "sve-test", "nw-linux", "acs", "tf-rmm", "islet"]
         if target not in clean_list:
             print("Please select one of the clean list:")
             print("  " + "\n  ".join(clean_list))
@@ -401,6 +415,8 @@ class CCAPlatform(ABC):
             self.run(["make", "clean"], cwd=REALM_LINUX)
         if target == "all" or target == "kvmtool":
             self.run(["make", "clean"], cwd=KVMTOOL)
+        if target == "all" or target == "sve-test":
+            self.run(["make", "clean"], cwd=SVE_TEST)
         if target == "all" or target == "nw-linux":
             self._clean_nw_linux()
         if target == "all" or target == "acs":
@@ -522,6 +538,7 @@ class CCAPlatform(ABC):
                     self.prepare_bootloaders(args.rmm, ACS_HOST, args.hes)
             else: # linux or linux-net
                 self.prepare_kvmtool()
+                self.prepare_sve_test()
                 if not args.no_kvm_unit_tests:
                     self.prepare_kvm_unit_tests()
                 # FVP specific: self.prepare_grub_config(args.rmm) # This was FVP specific

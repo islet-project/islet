@@ -482,6 +482,18 @@ mod test {
         let rd = realm_create();
         let (rec, params_ptr) = (alloc_granule(IDX_REC1), alloc_granule(IDX_REC1_PARAMS));
 
+        // The mock granule region is shared by all the unit tests and, in test/miri
+        // builds, granule zeroing on the Delegated/Undelegated transitions only wipes
+        // the first 8 bytes (see granule::array::entry::zeroize()). So the REC granule
+        // may still hold the stale `Rec` image written by a previously executed test,
+        // including its padding bytes which are uninitialized from MIRI's point of
+        // view. `Params` models its layout padding as real `[u8; N]` fields, so reading
+        // those bytes back as a `Params` (the host::copy_from() below) would be UB.
+        // Initialize the whole granule that is passed as a bogus params pointer.
+        unsafe {
+            core::ptr::write_bytes(rec as *mut u8, 0, GRANULE_SIZE);
+        }
+
         // Aliasing params_ptr with rd/rec, or passing an out-of-NS-DRAM / unaligned
         // params_ptr must fail before mapping without unmapping rd.
         assert_eq!(rmi::<REC_CREATE>(&[rd, rec, rd])[0], ERROR_INPUT);

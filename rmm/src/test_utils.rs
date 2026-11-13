@@ -219,7 +219,11 @@ pub fn miri_teardown() {
     use core::sync::atomic::AtomicUsize;
     use core::sync::atomic::Ordering;
 
-    const TEST_TOTAL: usize = 11;
+    // NOTE: must be kept in sync with the number of tests calling miri_teardown().
+    // If it is smaller than the actual number of tests, the page table is dropped
+    // while later tests still use it (use-after-free detected by MIRI); if it is
+    // larger, the page table is never dropped and MIRI reports it as a memory leak.
+    const TEST_TOTAL: usize = 12;
     static TEST_COUNT: AtomicUsize = AtomicUsize::new(0);
     TEST_COUNT.fetch_add(1, Ordering::SeqCst);
 

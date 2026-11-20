@@ -10,8 +10,11 @@ use crate::granule::{is_not_in_realm, set_granule, GranuleState};
 use crate::host;
 use crate::listen;
 use crate::measurement::HashContext;
+#[cfg(not(kani))]
+use crate::mm::translation::PageTable;
 use crate::realm::rd::{Rd, State};
 use crate::rec::context::{set_reg, RegOffset};
+use crate::rec::simd::aux_granules_needed;
 use crate::rec::State as RecState;
 use crate::rec::{max_recs_order, Rec, RmmRecEmulatableAbort::NotEmulatableAbort};
 use crate::rmi;
@@ -25,7 +28,7 @@ use armv9a::bits_in_reg;
 
 extern crate alloc;
 
-fn prepare_args(rd: &mut Rd, mpidr: u64) -> Result<(usize, u64, u64), Error> {
+fn prepare_args(rd: &Rd, mpidr: u64) -> Result<(usize, u64, u64), Error> {
     let page_table = rd.s2_table().lock().get_base_address() as u64;
     let vttbr = bits_in_reg(
         VTTBR_EL2::VMID.mask << VTTBR_EL2::VMID.shift,
@@ -36,107 +39,242 @@ fn prepare_args(rd: &mut Rd, mpidr: u64) -> Result<(usize, u64, u64), Error> {
     );
     let vmpidr = mpidr | (MPIDR_EL1::RES1.mask << MPIDR_EL1::RES1.shift);
     let vcpuid = rd.vcpu_index;
-    rd.vcpu_index += 1;
     Ok((vcpuid, vttbr, vmpidr))
+}
+
+#[cfg(not(kani))]
+fn transition_aux_granules(
+    aux_addrs: &[u64],
+    num_aux: usize,
+    transitioned: &mut usize,
+) -> Result<(), Error> {
+    for &aux in &aux_addrs[..num_aux] {
+        let mut aux_granule = get_granule_if!(aux as usize, GranuleState::Delegated)?;
+        set_granule(&mut aux_granule, GranuleState::RecAux)?;
+        *transitioned += 1;
+    }
+    Ok(())
+}
+
+#[cfg(not(kani))]
+fn revert_aux_granules(page_table: &PageTable, aux_addrs: &[u64], count: usize) {
+    // Map each AUX granule at its identity address before transitioning back
+    // to Delegated so Granule::zeroize() can wipe it safely.
+    for &aux in &aux_addrs[..count] {
+        let aux = aux as usize;
+        if let Ok(mut aux_granule) = get_granule_if!(aux, GranuleState::RecAux) {
+            page_table.map(aux, true);
+            let _ = set_granule(&mut aux_granule, GranuleState::Delegated);
+            page_table.unmap(aux);
+        }
+    }
+}
+
+#[cfg(not(kani))]
+#[allow(clippy::too_many_arguments)]
+fn init_rec_state(
+    rec: &mut Rec<'_>,
+    rd: &mut Rd,
+    params: &Params,
+    page_table: &PageTable,
+    rd_addr: usize,
+    vcpuid: usize,
+    vttbr: u64,
+    vmpidr: u64,
+    vtcr: u64,
+    num_aux: usize,
+) -> Result<(), Error> {
+    // Setup must happen before Rec::init() so the contiguous AUX mapping and
+    // bump allocator are initialized before init_simd() allocates from them.
+    rec.setup_aux_memory(page_table, &params.aux, num_aux)?;
+    rec.init(rd_addr, vcpuid, params.flags, params.aux, vttbr, vmpidr)?;
+
+    for (idx, gpr) in params.gprs.iter().enumerate() {
+        if set_reg(rec, idx, *gpr as usize).is_err() {
+            return Err(Error::RmiErrorInput);
+        }
+    }
+    if set_reg(rec, RegOffset::PC, params.pc as usize).is_err() {
+        return Err(Error::RmiErrorInput);
+    }
+    rec.set_vtcr(vtcr);
+
+    HashContext::new(rd)?.measure_rec_params(params)?;
+    Ok(())
+}
+
+#[cfg(not(kani))]
+#[allow(clippy::too_many_arguments)]
+fn create_rec_granule(
+    #[cfg(feature = "gst_page_table")] rd_parent: &crate::granule::page_table::entry::Inner,
+    rd: &mut Rd,
+    rd_addr: usize,
+    rec_addr: usize,
+    params: &Params,
+    page_table: &PageTable,
+    vcpuid: usize,
+    vttbr: u64,
+    vmpidr: u64,
+    vtcr: u64,
+    num_aux: usize,
+) -> Result<(), Error> {
+    let mut rec_granule = get_granule_if!(rec_addr, GranuleState::Delegated)?;
+    page_table.map(rec_addr, true);
+
+    let mut rec_transitioned = false;
+    #[cfg(feature = "gst_page_table")]
+    let res = set_granule_with_parent(rd_parent.clone(), &mut rec_granule, GranuleState::Rec);
+    #[cfg(not(feature = "gst_page_table"))]
+    let res = set_granule(&mut rec_granule, GranuleState::Rec);
+
+    let res = res.and_then(|()| {
+        rec_transitioned = true;
+        let mut rec = rec_granule.new_uninit_with::<Rec<'_>>(Rec::new())?;
+        let init_res = init_rec_state(
+            &mut rec, rd, params, page_table, rd_addr, vcpuid, vttbr, vmpidr, vtcr, num_aux,
+        );
+        if init_res.is_err() {
+            rec.cleanup_aux_memory(page_table);
+        }
+        init_res
+    });
+
+    if let Err(err) = res {
+        if rec_transitioned {
+            // Move rec_granule back to Delegated state (also zeroizes the Rec struct).
+            let _ = set_granule(&mut rec_granule, GranuleState::Delegated);
+        }
+        page_table.unmap(rec_addr);
+        return Err(err);
+    }
+
+    Ok(())
 }
 
 pub fn set_event_handler(rmi: &mut RmiHandle) {
     #[cfg(not(kani))]
     listen!(rmi, rmi::REC_CREATE, |arg, ret, rmm| {
-        let rd = arg[0];
-        let rec = arg[1];
-        let params_ptr = arg[2];
-        let owner = rd;
+        let rd_addr = arg[0];
+        let rec_addr = arg[1];
+        let params_addr = arg[2];
 
-        if rec == rd {
+        if rec_addr == rd_addr || rec_addr == params_addr || rd_addr == params_addr {
             return Err(Error::RmiErrorInput);
         }
 
-        if !is_not_in_realm(params_ptr) {
+        if !is_not_in_realm(params_addr) {
             return Err(Error::RmiErrorInput);
         }
 
-        rmm.page_table.map(params_ptr, false);
-        let params = host::copy_from::<Params>(params_ptr);
-        rmm.page_table.unmap(params_ptr);
+        rmm.page_table.map(params_addr, false);
+        let params = host::copy_from::<Params>(params_addr);
+        rmm.page_table.unmap(params_addr);
         let params = params.ok_or(Error::RmiErrorInput)?;
-        params.verify_compliance(rec, rd, params_ptr)?;
+        params.verify_compliance(rec_addr, rd_addr, params_addr)?;
 
         let rec_index = MPIDR::from(params.mpidr).index();
-        let mut rd_granule = get_granule_if!(rd, GranuleState::RD)?;
+        let mut rd_granule = get_granule_if!(rd_addr, GranuleState::RD)?;
         let mut rd = rd_granule.content_mut::<Rd>()?;
         if !rd.at_state(State::New) {
             return Err(Error::RmiErrorRealm(0));
         }
-        if rd.num_recs() == (1 << max_recs_order()) - 1 {
+        let max_recs = 1 << max_recs_order();
+        if rd.num_recs() >= max_recs || rec_index >= max_recs {
             return Err(Error::RmiErrorRealm(0));
         }
 
         if rec_index != rd.rec_index() {
             return Err(Error::RmiErrorInput);
         }
-        // set Rec_state and grab the lock for Rec granule
-        let mut rec_granule = get_granule_if!(rec, GranuleState::Delegated)?;
-        #[cfg(not(kani))]
-        // `page_table` is currently not reachable in model checking harnesses
-        rmm.page_table.map(rec, true);
-        let mut rec = rec_granule.new_uninit_with::<Rec<'_>>(Rec::new())?;
-        match prepare_args(&mut rd, params.mpidr) {
-            Ok((vcpuid, vttbr, vmpidr)) => {
-                ret[1] = vcpuid;
 
-                // Transit granule status of param.aux to RecAux from Delegated
-                // before access within rec.init().
-                for i in 0..rmi::MAX_REC_AUX_GRANULES {
-                    let aux = params.aux[i] as usize;
-                    rmm.page_table.map(aux, true);
-                    let mut aux_granule = get_granule_if!(aux, GranuleState::Delegated)?;
-                    set_granule(&mut aux_granule, GranuleState::RecAux)?;
-                }
-                rec.init(owner, vcpuid, params.flags, params.aux, vttbr, vmpidr)?;
-            }
-            Err(_) => return Err(Error::RmiErrorInput),
-        }
-
-        for (idx, gpr) in params.gprs.iter().enumerate() {
-            if set_reg(&mut rec, idx, *gpr as usize).is_err() {
-                return Err(Error::RmiErrorInput);
-            }
-        }
-        if set_reg(&mut rec, RegOffset::PC, params.pc as usize).is_err() {
+        // The host must supply the exact number of AUX granules required for
+        // the REC (currently sized to hold SimdRegister; future features may
+        // require additional AUX granules).
+        let expected_aux_count = aux_granules_needed(rd.simd_config());
+        let num_aux = params.num_aux as usize;
+        if num_aux != expected_aux_count {
+            error!(
+                "expected_aux_count {} != params.num_aux {}",
+                expected_aux_count, params.num_aux
+            );
             return Err(Error::RmiErrorInput);
         }
-        rec.set_vtcr(prepare_vtcr(&rd)?);
 
+        // Compute read-only RD/VTCR values before modifying page tables or granule states.
+        let (vcpuid, vttbr, vmpidr) = prepare_args(&rd, params.mpidr)?;
+        let vtcr = prepare_vtcr(&rd)?;
+
+        // Transition auxiliary granules from Delegated to RecAux before locking
+        // rec_granule so we never hold rec_granule and an aux_granule lock at
+        // the same time (preventing AB-BA deadlocks across concurrent calls).
+        let mut transitioned_aux = 0usize;
+        if let Err(err) = transition_aux_granules(&params.aux, num_aux, &mut transitioned_aux) {
+            revert_aux_granules(&rmm.page_table, &params.aux, transitioned_aux);
+            return Err(err);
+        }
+
+        if let Err(err) = create_rec_granule(
+            #[cfg(feature = "gst_page_table")]
+            &rd_granule,
+            &mut rd,
+            rd_addr,
+            rec_addr,
+            &params,
+            &rmm.page_table,
+            vcpuid,
+            vttbr,
+            vmpidr,
+            vtcr,
+            num_aux,
+        ) {
+            revert_aux_granules(&rmm.page_table, &params.aux, transitioned_aux);
+            return Err(err);
+        }
+
+        ret[1] = vcpuid;
+        rd.vcpu_index += 1;
         rd.inc_recs();
-        #[cfg(not(kani))]
-        // `rsi` is currently not reachable in model checking harnesses
-        HashContext::new(&mut rd)?.measure_rec_params(&params)?;
 
         #[cfg(not(feature = "gst_page_table"))]
         rd_granule.inc_count();
 
-        #[cfg(feature = "gst_page_table")]
-        return set_granule_with_parent(rd_granule.clone(), &mut rec_granule, GranuleState::Rec);
-        #[cfg(not(feature = "gst_page_table"))]
-        return set_granule(&mut rec_granule, GranuleState::Rec);
+        Ok(())
     });
 
     #[cfg(any(not(kani), feature = "mc_rmi_rec_destroy"))]
     listen!(rmi, rmi::REC_DESTROY, |arg, _ret, rmm| {
         let mut rec_granule = get_granule_if!(arg[0], GranuleState::Rec)?;
 
-        let rec = rec_granule.content::<Rec<'_>>()?;
+        let mut rec = rec_granule.content_mut::<Rec<'_>>()?;
         if rec.get_state() == RecState::Running {
             return Err(Error::RmiErrorRec);
         }
 
+        let rd = rec.owner()?;
+
+        // Unmap the contiguous multi-granule mapping of the AUX granules
+        // and transition them back to Delegated. Validate all AUX granules
+        // upfront before unmapping or zeroizing so an error cannot leave
+        // the REC/AUX state partially torn down. Map each AUX granule at its
+        // identity address while transitioning to Delegated so Granule::zeroize()
+        // can wipe it safely.
         #[cfg(not(kani))]
-        for i in 0..rmi::MAX_REC_AUX_GRANULES {
-            let rec_aux = rec.aux(i) as usize;
-            let mut rec_aux_granule = get_granule_if!(rec_aux, GranuleState::RecAux)?;
-            set_granule(&mut rec_aux_granule, GranuleState::Delegated)?;
-            rmm.page_table.unmap(rec_aux);
+        {
+            let num_granules = rec.num_aux_granules();
+            for i in 0..num_granules {
+                let rec_aux = rec.aux(i) as usize;
+                let _ = get_granule_if!(rec_aux, GranuleState::RecAux)?;
+            }
+
+            rec.cleanup_aux_memory(&rmm.page_table);
+            for i in 0..num_granules {
+                let rec_aux = rec.aux(i) as usize;
+                let mut rec_aux_granule = get_granule_if!(rec_aux, GranuleState::RecAux)?;
+                rmm.page_table.map(rec_aux, true);
+                let res = set_granule(&mut rec_aux_granule, GranuleState::Delegated);
+                rmm.page_table.unmap(rec_aux);
+                res?;
+            }
         }
         #[cfg(kani)]
         {
@@ -149,7 +287,6 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
             set_granule(&mut rec_aux_granule, GranuleState::Delegated)?;
         }
 
-        let rd = rec.owner()?;
         #[cfg(kani)]
         {
             // XXX: the below can be guaranteed by Rec's invariants instead
@@ -377,7 +514,106 @@ mod test {
     fn rmi_rec_create_positive() {
         let rd = realm_create();
         rec_create(rd, IDX_REC1, IDX_REC1_PARAMS, IDX_REC1_AUX);
-        rec_destroy(IDX_REC1, IDX_REC1_AUX);
+        rec_destroy(rd, IDX_REC1, IDX_REC1_AUX);
+        realm_destroy(rd);
+
+        miri_teardown();
+    }
+
+    #[test]
+    fn rmi_rec_create_rollback_on_error() {
+        use crate::granule::{GranuleState, GRANULE_SIZE};
+        use crate::realm::rd::Rd;
+        use crate::rmi::rec::params::Params as RecParams;
+        use crate::{get_granule, get_granule_if};
+
+        let rd = realm_create();
+        let (rec, params_ptr) = (alloc_granule(IDX_REC1), alloc_granule(IDX_REC1_PARAMS));
+
+        // The mock granule region is shared by all the unit tests and, in test/miri
+        // builds, granule zeroing on the Delegated/Undelegated transitions only wipes
+        // the first 8 bytes (see granule::array::entry::zeroize()). So the REC granule
+        // may still hold the stale `Rec` image written by a previously executed test,
+        // including its padding bytes which are uninitialized from MIRI's point of
+        // view. `Params` models its layout padding as real `[u8; N]` fields, so reading
+        // those bytes back as a `Params` (the host::copy_from() below) would be UB.
+        // Initialize the whole granule that is passed as a bogus params pointer.
+        unsafe {
+            core::ptr::write_bytes(rec as *mut u8, 0, GRANULE_SIZE);
+        }
+
+        // Aliasing params_ptr with rd/rec, or passing an out-of-NS-DRAM / unaligned
+        // params_ptr must fail before mapping without unmapping rd.
+        assert_eq!(rmi::<REC_CREATE>(&[rd, rec, rd])[0], ERROR_INPUT);
+        assert_eq!(rmi::<REC_CREATE>(&[rd, rec, rec])[0], ERROR_INPUT);
+        assert_eq!(rmi::<REC_CREATE>(&[rd, rec, 0x1000])[0], ERROR_INPUT);
+        assert_eq!(
+            rmi::<REC_CREATE>(&[rd, rec, params_ptr + 1])[0],
+            ERROR_INPUT
+        );
+
+        assert_eq!(rmi::<GRANULE_DELEGATE>(&[rec])[0], SUCCESS);
+
+        let ret = rmi::<REC_AUX_COUNT>(&[rd]);
+        assert_eq!(ret[0], SUCCESS);
+        let aux_count = ret[1];
+
+        unsafe {
+            let params = &mut *(params_ptr as *mut RecParams);
+            *params = RecParams::default();
+            params.pc = 0x1000;
+            params.flags = 1;
+            params.mpidr = 0;
+            params.num_aux = aux_count as u64;
+            for idx in 0..aux_count {
+                let aux_addr = alloc_granule(idx + IDX_REC1_AUX);
+                assert_eq!(rmi::<GRANULE_DELEGATE>(&[aux_addr])[0], SUCCESS);
+                params.aux[idx] = aux_addr as u64;
+            }
+        }
+
+        // Force failure at the very end of init_res (HashContext::new) after
+        // rec_granule and all AUX granules have been transitioned and written.
+        let saved_algo = unsafe {
+            let rd_obj = &mut *(rd as *mut Rd);
+            let old = rd_obj.hash_algo();
+            rd_obj.set_hash_algo(u8::MAX);
+            old
+        };
+
+        let ret = rmi::<REC_CREATE>(&[rd, rec, params_ptr]);
+        assert_ne!(ret[0], SUCCESS);
+
+        // Verify rec and all aux granules were rolled back to Delegated and wiped,
+        // and RD counters were not incremented.
+        {
+            let rec_granule = get_granule_if!(rec, GranuleState::Delegated).unwrap();
+            assert_eq!(rec_granule.state(), GranuleState::Delegated);
+            unsafe {
+                assert_eq!(*(rec as *const u64), 0);
+            }
+        }
+        for idx in 0..aux_count {
+            let aux_addr = granule_addr(idx + IDX_REC1_AUX);
+            let aux_granule = get_granule_if!(aux_addr, GranuleState::Delegated).unwrap();
+            assert_eq!(aux_granule.state(), GranuleState::Delegated);
+            unsafe {
+                let slice = core::slice::from_raw_parts(aux_addr as *const u8, GRANULE_SIZE);
+                assert_eq!(&slice[..8], &[0u8; 8]);
+            }
+        }
+        unsafe {
+            let rd_obj = &mut *(rd as *mut Rd);
+            assert_eq!(rd_obj.num_recs(), 0);
+            assert_eq!(rd_obj.vcpu_index, 0);
+            rd_obj.set_hash_algo(saved_algo);
+        }
+
+        // Now REC_CREATE with the same granules must succeed cleanly
+        let ret = rmi::<REC_CREATE>(&[rd, rec, params_ptr]);
+        assert_eq!(ret[0], SUCCESS);
+
+        rec_destroy(rd, IDX_REC1, IDX_REC1_AUX);
         realm_destroy(rd);
 
         miri_teardown();

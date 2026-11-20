@@ -7,6 +7,10 @@ pub mod sea;
 pub mod simd;
 pub mod timer;
 
+use crate::const_assert;
+use crate::granule::GRANULE_SIZE;
+use crate::mm::aux_bump_allocator::AuxBumpAllocator;
+use crate::mm::translation::PageTable;
 use crate::realm::rd::Rd;
 use crate::rec::context::Context;
 use crate::rmi::error::Error;
@@ -15,17 +19,15 @@ use crate::rmm_exit;
 use crate::rsi::attestation::MAX_CHALLENGE_SIZE;
 use aarch64_cpu::registers::*;
 
+extern crate alloc;
+use alloc::vec::Vec;
+use core::alloc::Layout;
 use core::cell::OnceCell;
+use core::ptr::NonNull;
+use vmsa::address::{PhysAddr, VirtAddr};
 use vmsa::guard::Content;
 
 const MAX_RECS_ORDER_VALUE: u64 = 4;
-
-#[derive(Copy, Clone, Debug)]
-pub enum RecAuxIndex {
-    SIMD = 0,
-    PMU = 1,
-    Undefined,
-}
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum RmmRecAttestState {
@@ -63,6 +65,13 @@ pub struct Rec<'a> {
     attest_challenge: [u8; MAX_CHALLENGE_SIZE],
     attest_token_offset: usize,
     aux: [u64; NR_AUX], // Addresses of auxiliary Granules
+    /// Base virtual address of the contiguous multi-granule mapping covering
+    /// all AUX granules supplied at `RMI_REC_CREATE`.
+    aux_va_start: Option<VirtAddr>,
+    /// Total size in bytes of the contiguous AUX granule mapping (`num_aux * GRANULE_SIZE`).
+    aux_va_size: usize,
+    /// Bump allocator managing allocations within `[aux_va_start, aux_va_start + aux_va_size)`.
+    aux_allocator: AuxBumpAllocator,
     emulatable_abort: RmmRecEmulatableAbort,
     /// PA of RD of Realm which owns this REC
     ///
@@ -79,6 +88,9 @@ pub struct Rec<'a> {
     host_call_pending: bool,
 }
 
+// Safety: The size of Rec must be less than or equal to GRANULE_SIZE
+const_assert!(core::mem::size_of::<Rec<'_>>() <= GRANULE_SIZE);
+
 impl Rec<'_> {
     pub fn new() -> Self {
         Self {
@@ -87,6 +99,9 @@ impl Rec<'_> {
             attest_challenge: [0; MAX_CHALLENGE_SIZE],
             attest_token_offset: 0,
             aux: [0; NR_AUX],
+            aux_va_start: None,
+            aux_va_size: 0,
+            aux_allocator: AuxBumpAllocator::new(),
             emulatable_abort: RmmRecEmulatableAbort::NotEmulatableAbort,
             owner: OnceCell::new(),
             vcpuid: 0,
@@ -290,6 +305,95 @@ impl Rec<'_> {
     pub fn pmu_config(&self) -> Result<(bool, usize), Error> {
         let owner = self.get_owner()?;
         Ok(owner.pmu_config())
+    }
+
+    pub fn simd_config(&self) -> Result<&crate::simd::SimdConfig, Error> {
+        let owner = self.get_owner()?;
+        Ok(owner.simd_config())
+    }
+
+    /// Maps all AUX granules (`aux_granules[0..num_aux]`) into a single contiguous
+    /// virtual address range and initializes the REC's [`AuxBumpAllocator`] over it.
+    pub fn setup_aux_memory(
+        &mut self,
+        page_table: &PageTable,
+        aux_granules: &[u64],
+        num_aux: usize,
+    ) -> Result<(), Error> {
+        if num_aux == 0 || num_aux > aux_granules.len() {
+            error!("Invalid number of AUX granules: {}", num_aux);
+            return Err(Error::RmiErrorInput);
+        }
+
+        let aux_va_size = num_aux
+            .checked_mul(GRANULE_SIZE)
+            .ok_or(Error::RmiErrorInput)?;
+
+        // Collect the physical addresses of ALL the AUX granules supplied by
+        // the host. They were validated (Delegated, unique) at params parsing.
+        let phys_addrs: Vec<PhysAddr> = aux_granules[..num_aux]
+            .iter()
+            .map(|&addr| PhysAddr::from(addr as usize))
+            .collect();
+
+        // Map all AUX granules once into a contiguous VA range
+        let va_start = page_table
+            .map_multi_granule(&phys_addrs, true)
+            .ok_or_else(|| {
+                error!(
+                    "Failed to map {} AUX granules into contiguous VA range",
+                    num_aux
+                );
+                Error::RmiErrorInput
+            })?;
+
+        self.aux_va_start = Some(va_start);
+        self.aux_va_size = aux_va_size;
+        self.aux_allocator.init(va_start, aux_va_size);
+
+        debug!(
+            "AUX multi-granule mapping: num_aux={}, size={:#X}, va={:#X}",
+            num_aux,
+            aux_va_size,
+            va_start.as_usize()
+        );
+
+        Ok(())
+    }
+
+    /// Resets the REC's [`AuxBumpAllocator`] and unmaps the contiguous AUX granules mapping.
+    pub fn cleanup_aux_memory(&mut self, page_table: &PageTable) {
+        self.aux_allocator.reset();
+        self.context.simd.simd_va = None;
+        if let Some(va) = self.aux_va_start.take() {
+            if page_table.unmap_multi_granule(va) {
+                debug!(
+                    "Cleaned up AUX multi-granule mapping at {:#X}",
+                    va.as_usize()
+                );
+            }
+        }
+        self.aux_va_size = 0;
+    }
+
+    /// Allocates a memory block with the requested `layout` from the REC's AUX bump allocator.
+    pub fn alloc_aux(&mut self, layout: Layout) -> Option<NonNull<u8>> {
+        self.aux_allocator.alloc_layout(layout)
+    }
+
+    /// Returns the starting virtual address of the mapped AUX granules region, if mapped.
+    pub fn aux_va_start(&self) -> Option<VirtAddr> {
+        self.aux_va_start
+    }
+
+    /// Returns the total size in bytes of the mapped AUX granules region.
+    pub fn aux_va_size(&self) -> usize {
+        self.aux_va_size
+    }
+
+    /// Returns the number of mapped AUX granules (`aux_va_size / GRANULE_SIZE`).
+    pub fn num_aux_granules(&self) -> usize {
+        self.aux_va_size / GRANULE_SIZE
     }
 
     pub fn from_current(&mut self) {

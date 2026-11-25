@@ -51,17 +51,17 @@ macro_rules! eprintln {
 #[macro_export]
 macro_rules! const_assert {
     ($cond:expr) => {
-        // Causes overflow if condition is false
-        let _ = [(); 0 - (!($cond) as usize)];
+        const _: () = {
+            // Causes overflow if condition is false
+            let _ = [(); 0 - (!($cond) as usize)];
+        };
     };
 }
 
 #[macro_export]
 macro_rules! const_assert_eq {
     ($left:expr, $right:expr) => {
-        const _: () = {
-            crate::const_assert!($left == $right);
-        };
+        crate::const_assert!($left == $right);
     };
 }
 

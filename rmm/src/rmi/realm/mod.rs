@@ -12,6 +12,7 @@ use crate::realm::mm::IPATranslation;
 use crate::realm::rd::State;
 use crate::realm::rd::{insert_rtt, Rd};
 use crate::realm::registry::{remove, VMID_SET};
+use crate::rec::simd::aux_granules_needed;
 use crate::rmi::{self, metadata::IsletRealmMetadata};
 use crate::{get_granule, get_granule_if};
 
@@ -167,8 +168,17 @@ pub fn set_event_handler(rmi: &mut RmiHandle) {
 
     #[cfg(any(not(kani), feature = "mc_rmi_rec_aux_count"))]
     listen!(rmi, rmi::REC_AUX_COUNT, |arg, ret, _| {
-        let _ = get_granule_if!(arg[0], GranuleState::RD)?;
-        ret[1] = rmi::MAX_REC_AUX_GRANULES;
+        let rd_granule = get_granule_if!(arg[0], GranuleState::RD)?;
+        let rd = rd_granule.content::<Rd>()?;
+        let simd_cfg = rd.simd_config();
+
+        // Calculate the number of AUX granules needed for the REC's SIMD
+        // context (SimdRegister). This is the same helper that RMI_REC_CREATE
+        // validation uses, so both always agree.
+        let aux_count = aux_granules_needed(simd_cfg);
+
+        // Ensure we don't exceed the maximum
+        ret[1] = aux_count.min(rmi::MAX_REC_AUX_GRANULES);
         Ok(())
     });
 

@@ -27,19 +27,26 @@ const_assert_eq!(core::mem::size_of::<Params>(), GRANULE_SIZE);
 impl Params {
     pub fn verify_compliance(&self, rec: usize, rd: usize, params_ptr: usize) -> Result<(), Error> {
         // Currently, we use rmi::MAX_REC_AUX_GRANULES for RecAuxCount(rd)
-        if !mpidr::validate(self.mpidr) || self.num_aux as usize != rmi::MAX_REC_AUX_GRANULES {
+        if !mpidr::validate(self.mpidr)
+            || self.num_aux as usize == 0
+            || self.num_aux as usize > rmi::MAX_REC_AUX_GRANULES
+        {
             return Err(Error::RmiErrorInput);
         }
 
+        // Verify that all AUX entries in 0..num_aux are valid, unique, and Delegated
+        let num_aux = self.num_aux as usize;
         let mut aux = self.aux;
-        aux.sort();
-        for idx in 0..self.num_aux as usize {
-            let addr = aux[idx] as usize;
-            if addr == rec || addr == rd || addr == params_ptr {
+        let aux_slice = &mut aux[..num_aux];
+        aux_slice.sort_unstable();
+        for idx in 0..num_aux {
+            let addr = aux_slice[idx] as usize;
+            if addr == 0 || addr == rec || addr == rd || addr == params_ptr {
                 return Err(Error::RmiErrorInput);
             }
 
-            if idx != 0 && aux[idx - 1] == aux[idx] {
+            // Check for duplicates
+            if idx != 0 && aux_slice[idx - 1] == aux_slice[idx] {
                 return Err(Error::RmiErrorInput);
             }
 
@@ -107,5 +114,61 @@ impl Hashable for Params {
             h.hash_u64_array([0u64; 16].as_slice()); // aux is not used
             h.hash(self._padaux);
         })
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::test_utils::{alloc_granule, IDX_RD, IDX_REC1, IDX_REC1_AUX, IDX_REC1_PARAMS};
+
+    #[test]
+    fn test_verify_compliance_aux_validation() {
+        let rd = alloc_granule(IDX_RD);
+        let rec = alloc_granule(IDX_REC1);
+        let params_ptr = alloc_granule(IDX_REC1_PARAMS);
+        let aux0 = alloc_granule(IDX_REC1_AUX);
+        let aux1 = alloc_granule(IDX_REC1_AUX + 1);
+
+        // Zero AUX address inside 0..num_aux must be rejected
+        let mut params = Params::default();
+        params.num_aux = 2;
+        params.aux[0] = aux0 as u64;
+        params.aux[1] = 0;
+        assert!(matches!(
+            params.verify_compliance(rec, rd, params_ptr),
+            Err(Error::RmiErrorInput)
+        ));
+
+        // Aliasing with rec, rd, or params_ptr must be rejected even when trailing slots are 0
+        for aliased in [rec, rd, params_ptr] {
+            let mut params = Params::default();
+            params.num_aux = 1;
+            params.aux[0] = aliased as u64;
+            assert!(matches!(
+                params.verify_compliance(rec, rd, params_ptr),
+                Err(Error::RmiErrorInput)
+            ));
+        }
+
+        // Duplicate AUX addresses must be rejected even when trailing slots are 0
+        let mut params = Params::default();
+        params.num_aux = 2;
+        params.aux[0] = aux0 as u64;
+        params.aux[1] = aux0 as u64;
+        assert!(matches!(
+            params.verify_compliance(rec, rd, params_ptr),
+            Err(Error::RmiErrorInput)
+        ));
+
+        // Undelegated AUX granules must be rejected
+        let mut params = Params::default();
+        params.num_aux = 2;
+        params.aux[0] = aux0 as u64;
+        params.aux[1] = aux1 as u64;
+        assert!(matches!(
+            params.verify_compliance(rec, rd, params_ptr),
+            Err(Error::RmiErrorInput)
+        ));
     }
 }

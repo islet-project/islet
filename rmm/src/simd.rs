@@ -1,6 +1,7 @@
+use crate::asm::isb;
 use aarch64_cpu::registers::ID_AA64PFR0_EL1;
 use aarch64_cpu::registers::{Readable, Writeable};
-use armv9a::regs::{ID_AA64PFR1_SME_EL1, SMCR_EL2, ZCR_EL2};
+use armv9a::regs::{CPTR_EL2, ID_AA64PFR1_SME_EL1, SMCR_EL2, ZCR_EL2};
 use core::arch::asm;
 use lazy_static::lazy_static;
 
@@ -43,35 +44,66 @@ lazy_static! {
 
         trace!("Reading simd features");
         #[cfg(not(any(test, miri, fuzzing)))]
-        if ID_AA64PFR0_EL1.is_set(ID_AA64PFR0_EL1::SVE) {
-            trace!("SVE is set");
-            // Get effective vl: (ZCR_EL2:LEN + 1)*128 bits
-            //let _e_vl = ZCR_EL2.read(ZCR_EL2::LEN);
-            // Set to maximum
-            ZCR_EL2.write(ZCR_EL2::LEN.val(SVE_VQ_ARCH_MAX));
-            // Get vl in bytes
-            let vl_b = unsafe { get_vector_length_bytes() };
-            sve_vq = ((vl_b << 3)/ QUARD_WORD) - 1;
-            if sve_vq > MAX_VQ {
-                sve_vq = MAX_VQ - 1;
+        {
+            // Unlike TF-RMM (which probes SVE/SME once during RMM cold boot before
+            // the Non-Secure host starts), `SIMD_CONFIG` is a lazy static evaluated
+            // on the first RMI call that queries it (e.g. `RMI_FEATURES`), when the
+            // NS host is already running.
+            //
+            // Because EL3 (TF-A) does not bank `ZCR_EL2` or `SMCR_EL2` in its per-world
+            // `el2_sysregs` context, those registers currently hold the live NS-EL2
+            // values (such as NS's configured vector length caps and `SMCR_EL2.FA64`).
+            // Therefore, we must save and restore `ZCR_EL2` and `SMCR_EL2` around the
+            // destructive max-VL/SVL probes below so we do not clobber NS-EL2 state.
+            let orig_cptr = CPTR_EL2.get();
+            CPTR_EL2.write(CPTR_EL2::TAM::SET);
+            isb();
+
+            if ID_AA64PFR0_EL1.is_set(ID_AA64PFR0_EL1::SVE) {
+                trace!("SVE is set");
+                // Preserve NS-EL2's live ZCR_EL2 before writing SVE_VQ_ARCH_MAX to probe VL.
+                let orig_zcr = ZCR_EL2.get();
+                // Get effective vl: (ZCR_EL2:LEN + 1)*128 bits
+                // Set to maximum
+                ZCR_EL2.write(ZCR_EL2::LEN.val(SVE_VQ_ARCH_MAX));
+                isb();
+                // Get vl in bytes
+                let vl_b = unsafe { get_vector_length_bytes() };
+                ZCR_EL2.set(orig_zcr);
+                isb();
+                sve_vq = ((vl_b << 3) / QUARD_WORD) - 1;
+                if sve_vq > MAX_VQ {
+                    sve_vq = MAX_VQ - 1;
+                }
+                sve_en = true;
+                trace!("sve_vq={:?}", sve_vq);
             }
-            sve_en = true;
-            trace!("sve_vq={:?}", sve_vq);
-        }
 
-        // init sme
-        #[cfg(not(any(test, miri, fuzzing)))]
-        if ID_AA64PFR1_SME_EL1.is_set(ID_AA64PFR1_SME_EL1::SME) {
-            trace!("SME is set");
-            // Find the architecturally permitted SVL
-            SMCR_EL2.write(SMCR_EL2::RAZWI.val(SMCR_EL2::RAZWI.mask) + SMCR_EL2::LEN.val(SMCR_EL2::LEN.mask));
-            let raz = SMCR_EL2.read(SMCR_EL2::RAZWI);
-            let len = SMCR_EL2.read(SMCR_EL2::LEN);
-            let sme_svq_arch_max = (raz << 4) + len;
-            trace!("sme_svq_arch_max={:?}", sme_svq_arch_max);
+            // init sme
+            if ID_AA64PFR1_SME_EL1.is_set(ID_AA64PFR1_SME_EL1::SME) {
+                trace!("SME is set");
+                // Preserve NS-EL2's live SMCR_EL2 (including LEN, FA64, EZT0) before
+                // overwriting it to probe the maximum architecturally permitted SVL.
+                let orig_smcr = SMCR_EL2.get();
+                // Find the architecturally permitted SVL
+                SMCR_EL2.write(
+                    SMCR_EL2::RAZWI.val(SMCR_EL2::RAZWI.mask)
+                        + SMCR_EL2::LEN.val(SMCR_EL2::LEN.mask),
+                );
+                isb();
+                let raz = SMCR_EL2.read(SMCR_EL2::RAZWI);
+                let len = SMCR_EL2.read(SMCR_EL2::LEN);
+                SMCR_EL2.set(orig_smcr);
+                isb();
+                let sme_svq_arch_max = (raz << 4) + len;
+                trace!("sme_svq_arch_max={:?}", sme_svq_arch_max);
 
-            assert!(sme_svq_arch_max <= SVE_VQ_ARCH_MAX);
-            sme_en = true;
+                assert!(sme_svq_arch_max <= SVE_VQ_ARCH_MAX);
+                sme_en = true;
+            }
+
+            CPTR_EL2.set(orig_cptr);
+            isb();
         }
 
         SimdConfig {

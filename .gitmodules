@@ -78,3 +78,7 @@
 [submodule "third-party/linux-rsi"]
 	path = third-party/linux-rsi
 	url = https://github.com/islet-project/linux-rsi.git
+[submodule "third-party/sve-test"]
+	path = third-party/sve-test
+	url = https://github.com/islet-project/sve-test.git
+	branch = main
